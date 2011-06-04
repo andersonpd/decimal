@@ -51,7 +51,7 @@ private BigInt fives[18];
 public int numDigits(const BigInt big) {
 	BigInt billion = pow10(9);
 	BigInt quintillion = pow10(18);
-	BigInt dig = cast(BigInt)big;
+	BigInt dig = cast()big;
 	int count = 0;
 	while (dig > quintillion) {
 		dig = decShr(dig, 18);
@@ -151,23 +151,6 @@ public long decShl(ref long num, int n) {
 	return num;
 }
 
-/*
-public long decShr(ref long num, uint n) {
-	for (int m = 0; m < n; m++) {
-		num /= 10;
-		if (num == 0) break;
-	}
-	return num;
-}
-
-public long decShl(ref long num, uint n) {
-	for (int m = 0; m < n; m++) {
-		num *= 10;
-	}
-	return num;
-}
-*/
-
 public int lastDigit(const long num) {
 	return cast(int)(num % 10);
 }
@@ -189,5 +172,22 @@ public int numDigits(const long num) {
 	}
 	return count;
 }
+
+/*
+public long decShr(ref long num, uint n) {
+	for (int m = 0; m < n; m++) {
+		num /= 10;
+		if (num == 0) break;
+	}
+	return num;
+}
+
+public long decShl(ref long num, uint n) {
+	for (int m = 0; m < n; m++) {
+		num *= 10;
+	}
+	return num;
+}
+*/
 
 

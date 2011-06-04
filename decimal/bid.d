@@ -35,12 +35,14 @@ module decimal.bid;
 import decimal.decimal;
 import std.bigint;
 import std.bitmanip;
+import std.stdio;
+import std.string;
 
 
 struct Dec32 {
 
-	private union {
-		uint value;
+	package union {
+		uint value = qnan;
 		mixin (bitfields!(
 			uint, "mant1", 23,
 			uint, "expo1", 8,
@@ -53,26 +55,38 @@ struct Dec32 {
 			bool, "sign2", 1
 		));
 	}
-	enum uint bias = 101,
-			  mantBits = 23,
-			  expoBits = 8,
-			  testBits = 2,
-			  signBits = 1;
 
-	enum uint pos_sNaN     = 0x7E000000,
-			  pos_sNaN_max = 0x7FFFFFFF,
-			  neg_sNaN     = 0xFE000000,
-			  neg_sNaN_max = 0xFFFFFFFF,
+	immutable uint bias = 101;
+	immutable uint mantBits = 23;;
+	immutable uint expoBits = 8;
+	immutable uint signBits = 1;
+	immutable uint testBits = 2;
+	immutable uint normBits = mantBits - testBits;
 
-			  pos_qNaN     = 0x7C000000,
-			  pos_qNaN_max = 0x7DFFFFFF,
-			  neg_qNaN     = 0xFC000000,
-			  neg_qNaN_max = 0xFDFFFFFF,
+	immutable uint snan = 0x7E000000;
+	immutable uint max_snan = 0x7FFFFFFF;
+	immutable uint qnan = 0x7C000000;
+	immutable uint max_qnan = 0x7dFFFFFF;
+	immutable uint inf  = 0x78000000;
+	immutable uint max_inf = 0x7BFFFFFF;
 
-			  pos_inf      = 0x78000000,
-			  pos_inf_max  = 0x7BFFFFFF,
-			  neg_inf      = 0xF8000000,
-			  neg_inf_max  = 0xFBFFFFFF;
+	immutable uint max_norm = (1 << normBits) - 1;
+	immutable uint max_mant = (1 << mantBits) - 1;
+	immutable uint max_expo =   90;
+	immutable uint min_expo = -101;
+
+/*	public Dec32 init() {
+		return qnan;
+	}*/
+
+	/**
+	 * Creates a Dec32 from a long integer.
+	 */
+	public this(const long n) {
+		sign1 = n < 0;
+		expo1 = 0;
+		mant1 = cast(uint)std.math.abs(n);
+	}
 
 	/**
 	 * Creates a Decimal from this Dec32
@@ -80,76 +94,107 @@ struct Dec32 {
 	public this(Decimal num) {
 		// check for special values
 		if (num.isInfinite) {
-			value = num.sign ? neg_inf : pos_inf;
+			value = inf;
+			sign2 = num.sign;
 			return;
 		}
 		if (num.isQuiet) {
-			value = num.sign ? neg_qNaN : pos_qNaN;
+			value = qnan;
+			sign2 = num.sign;
 			return;
 		}
 		if (num.isSignaling) {
-			value = num.sign ? neg_sNaN : pos_sNaN;
+			value = snan;
+			sign2 = num.sign;
 			return;
 		}
+		if (num.isZero) {
+			value = 0;
+			sign2 = num.sign;
+			return;
+		}
+
 		// number is finite
-		if (num.mant > (2 << (mantBits - 2)) - 1) {
-			// modify the test bits
-			test = 3;
+		if (num.mant > max_mant || num.expo > max_expo || num.expo < min_expo) {
+			throw new Exception("Can't fit in this struct!");
+		}
+
+		uint mant = cast(uint)num.mant.toInt;
+		if (mant > max_norm) {
+			// set the test bits
+			test = 0B11;
 			sign2 = num.sign;
 			expo2 = num.expo;
-			mant2 = cast(uint)(num.mant % (2 << 21));
+			// TODO: this can be done with a mask.
+			mant2 = mant % max_norm;
 		}
 		else {
 			sign1 = num.sign;
 			expo1 = num.expo;
-			mant1 = cast(uint)num.mant.toInt;
+			mant1 = mant;
 		}
-
 	}
 
 	public Decimal toDecimal() {
-		long mant;
+		uint mant;
 		int expo;
 		bool sign;
 
-		if (test == 3) {
+		if (test == 0B11) {
 			// check for special values
-			if (sign2) {	// negative values
-				if (value >= neg_inf && value <= neg_inf_max) {
-					return Decimal(true, "Inf", 0);
-				}
-				if (value >= neg_qNaN && value <= neg_qNaN_max) {
-					return Decimal(true, "qNaN", 0);
-				}
-				if (value >= neg_sNaN && value <= neg_sNaN_max) {
-					return Decimal(true, "sNaN", 0);
-				}
+			if (sign2) {
+				sign = true;
+				mant = value & 0x7FFFFFFF;
 			}
-			else {			// positive values
-				if (value >= pos_inf && value <= pos_inf_max) {
-					return Decimal(false, "Inf", 0);
-				}
-				if (value >= pos_qNaN && value <= pos_qNaN_max) {
-					return Decimal(false, "qNaN", 0);
-				}
-				if (value >= pos_sNaN && value <= pos_sNaN_max) {
-					return Decimal(false, "sNaN", 0);
-				}
+			else {
+				sign = false;
+				mant = value;
 			}
-			// number is finite
-			mant = cast(long)mant2 | (0b100 << mantBits - testBits);
+			if (mant == inf || value > inf && value <= max_inf) {
+				return Decimal(sign, "Inf", 0);
+			}
+			if (mant == qnan || value > qnan && value <= max_qnan) {
+				return Decimal(sign, "qNaN", 0);
+			}
+			if (mant == snan || value > snan && value <= max_snan) {
+				return Decimal(sign, "sNan", 0);
+			}
+			// number is finite, set msbs
+			mant = mant2 | (0b100 << normBits);
 			sign = sign2;
 			expo = expo2 - bias;
 		}
 		else {
-			mant = cast(long) mant1;
+			mant = mant1;
 			sign = sign1;
 			expo = expo1 - bias;
 		}
-		if (sign) {
-			mant = -mant;
-		}
-		return Decimal(mant, expo);
+		return Decimal(sign, BigInt(mant), expo);
 	}
 
+	public string toString() {
+ 		string str = format("0x%08X",value);
+		return str;
+	}
+}
+
+unittest {
+	Dec32 dec = Dec32();
+	writefln("dec = ", dec);
+	writefln("dec.mant1 = ", dec.mant1);
+
+	Decimal num = Decimal(0);
+	dec = Dec32(num);
+	writeln("num = ", num);
+	writeln("dec = ", dec);
+
+	num = Decimal(1);
+	dec = Dec32(num);
+	writeln("num = ", num);
+	writeln("dec = ", dec);
+
+	num = Decimal(-1);
+	dec = Dec32(num);
+	writeln("num = ", num);
+	writeln("dec = ", dec);
 }

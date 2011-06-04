@@ -1106,7 +1106,7 @@ unittest {
 	writeln("..failed");
 }
 
-unittest {
+/*unittest {
 	Decimal dcm;
 	write("is-canonical.");
 	dcm = Decimal("2.50");
@@ -1208,7 +1208,7 @@ unittest {
 	assert(isZero(dcm));
 	writeln("passed");
 
-}
+}*/
 
 unittest {
 	write("or...........");
