@@ -39,45 +39,218 @@ import std.stdio;
 import std.string;
 
 
+immutable uint bias = 101;
+immutable uint mantBits = 23;;
+immutable uint expoBits = 8;
+immutable uint signBits = 1;
+immutable uint testBits = 2;
+immutable uint normBits = mantBits - testBits;
+immutable uint unsignedBits = 21;
+
+immutable uint snan_val = 0x7E000000;
+immutable uint max_snan = 0x7FFFFFFF;
+immutable uint qnan_val = 0x7C000000;
+immutable uint max_qnan = 0x7dFFFFFF;
+immutable uint inf_val  = 0x78000000;
+immutable uint max_inf = 0x7BFFFFFF;
+
+immutable uint max_norm = (1 << normBits) - 1;
+immutable uint max_mant = (1 << mantBits) - 1;
+immutable int max_expo =   90;
+immutable int min_expo = -101;
+
 struct Dec32 {
 
-	package union {
-		uint value = qnan;
+	private union {
+		uint value = qnan_val;
+
 		mixin (bitfields!(
-			uint, "mant1", 23,
-			uint, "expo1", 8,
-			bool, "sign1", 1
-		));
+			uint, "unsigned", 31,
+			bool, "signbit", signBits)
+		);
 		mixin (bitfields!(
-			uint, "mant2", 21,
-			uint, "expo2", 8,
-			uint, "test", 2,
-			bool, "sign2", 1
-		));
+			uint, "mant1", mantBits,
+			uint, "expo1", expoBits,
+			bool, "sign1", signBits)
+		);
+		mixin (bitfields!(
+			uint, "mant2", normBits,
+			uint, "expo2", expoBits,
+			uint, "test" , testBits,
+			bool, "sign2", signBits)
+		);
 	}
 
-	immutable uint bias = 101;
-	immutable uint mantBits = 23;;
-	immutable uint expoBits = 8;
-	immutable uint signBits = 1;
-	immutable uint testBits = 2;
-	immutable uint normBits = mantBits - testBits;
+	public:
 
-	immutable uint snan = 0x7E000000;
-	immutable uint max_snan = 0x7FFFFFFF;
-	immutable uint qnan = 0x7C000000;
-	immutable uint max_qnan = 0x7dFFFFFF;
-	immutable uint inf  = 0x78000000;
-	immutable uint max_inf = 0x7BFFFFFF;
+	@property bool sign() {
+		return signbit;
+	}
 
-	immutable uint max_norm = (1 << normBits) - 1;
-	immutable uint max_mant = (1 << mantBits) - 1;
-	immutable uint max_expo =   90;
-	immutable uint min_expo = -101;
+	@property bool sign(bool value) {
+		signbit = value;
+		return signbit;
+	}
 
-/*	public Dec32 init() {
-		return qnan;
+	@property int exponent() {
+		if (this.isImplicit) {
+			return expo2;
+		}
+		else {
+			return expo1;
+		}
+	}
+
+	// TODO: Need to add range checks >= minExpo and <= maxExpo
+	@property int exponent(int expo) {
+		if (this.isImplicit) {
+			expo2 = expo;
+		}
+		else {
+			expo1 = expo;
+		}
+		return expo;
+	}
+
+	@property uint coefficient() {
+		if (this.isImplicit) {
+			return mant2 | 0x7FFFFFFF;
+		}
+		else {
+			return mant1;
+		}
+	}
+
+	@property uint coefficient(uint mant) {
+		if (this.isImplicit) {
+			mant = value | 0x7FFFFFFF;
+		}
+		else {
+			mant = value;
+		}
+		return mant;
+	}
+
+	bool isImplicit() {
+		return test == 0b11;
+	}
+
+	immutable Dec32 qNaN = Dec32(qnan_val);
+	immutable Dec32 sNaN = Dec32(snan_val);
+	immutable Dec32 infinity = Dec32(inf_val);
+
+//--------------------------------
+//  floating point properties
+//--------------------------------
+
+	static Dec32 init() {
+		return qNaN;
+	}
+
+	static Dec32 nan() {
+		return qNaN;
+	}
+
+	static int dig() {
+		return 7;
+	}
+
+//--------------------------------
+//  classification properties
+//--------------------------------
+
+	/**
+	 * Returns true if this number's representation is canonical.
+	 */
+	const bool isCanonical() {
+		return isInfinite  && unsigned == inf_val  ||
+			   isQuiet     && unsigned == qnan_val ||
+			   isSignaling && unsigned == snan_val;
+	}
+
+	/**
+	 * Returns true if this number is +\- zero.
+	 */
+	const bool isZero() {
+		return unsigned == 0;
+	}
+
+	/**
+	 * Returns true if this number is a quiet or signaling NaN.
+	 */
+	const bool isNaN() {
+		return isQuiet || isSignaling;
+	}
+
+	/**
+	 * Returns true if this number is a signaling NaN.
+	 */
+	const bool isSignaling() {
+		return unsigned == snan_val ||
+			unsigned > snan_val && unsigned <= max_snan;
+	}
+
+	/**
+	 * Returns true if this number is a quiet NaN.
+	 */
+	const bool isQuiet() {
+		return unsigned == qnan_val || unsigned > qnan_val && unsigned <= max_qnan;
+	}
+
+	/**
+	 * Returns true if this number is +\- infinity.
+	 */
+	const bool isInfinite() {
+		return unsigned == inf_val || unsigned > inf_val && unsigned <= max_inf;
+	}
+
+	/**
+	 * Returns true if this number is neither infinite nor a NaN.
+	 */
+	const bool isFinite() {
+		return !isNaN && !isInfinite;
+	}
+
+	/**
+	 * Returns true if this number is a NaN or infinity.
+	 */
+	const bool isSpecial() {
+		return isInfinite || isNaN;
+	}
+
+	/**
+	 * Returns true if this number is negative. (Includes -0)
+	 */
+	const bool isSigned() {
+		return signbit;
+	}
+
+	const bool isNegative() {
+		return signbit;
+	}
+
+	/**
+	 * Returns true if this number is subnormal.
+	 */
+/*	const bool isSubnormal() {
+		if (sval != SV.CLEAR) return false;
+		return adjustedExponent < context.eMin;
 	}*/
+
+	/**
+	 * Returns true if this number is normal.
+	 */
+/*	const bool isNormal() {
+		if (sval != SV.CLEAR) return false;
+		return adjustedExponent >= context.eMin;
+	}*/
+
+	/**
+	 * Creates a Dec32 from an unsigned integer.
+	 */
+	public this(const uint u) {
+		value = u;
+	}
 
 	/**
 	 * Creates a Dec32 from a long integer.
@@ -85,7 +258,7 @@ struct Dec32 {
 	public this(const long n) {
 		sign1 = n < 0;
 		expo1 = 0;
-		mant1 = cast(uint)std.math.abs(n);
+		mant1 = cast(uint) std.math.abs(n);
 	}
 
 	/**
@@ -94,17 +267,17 @@ struct Dec32 {
 	public this(Decimal num) {
 		// check for special values
 		if (num.isInfinite) {
-			value = inf;
+			value = inf_val;
 			sign2 = num.sign;
 			return;
 		}
 		if (num.isQuiet) {
-			value = qnan;
+			value = qnan_val;
 			sign2 = num.sign;
 			return;
 		}
 		if (num.isSignaling) {
-			value = snan;
+			value = snan_val;
 			sign2 = num.sign;
 			return;
 		}
@@ -150,13 +323,13 @@ struct Dec32 {
 				sign = false;
 				mant = value;
 			}
-			if (mant == inf || value > inf && value <= max_inf) {
+			if (mant == inf_val || value > inf_val && value <= max_inf) {
 				return Decimal(sign, "Inf", 0);
 			}
-			if (mant == qnan || value > qnan && value <= max_qnan) {
+			if (mant == qnan_val || value > qnan_val && value <= max_qnan) {
 				return Decimal(sign, "qNaN", 0);
 			}
-			if (mant == snan || value > snan && value <= max_snan) {
+			if (mant == snan_val || value > snan_val && value <= max_snan) {
 				return Decimal(sign, "sNan", 0);
 			}
 			// number is finite, set msbs
@@ -172,16 +345,25 @@ struct Dec32 {
 		return Decimal(sign, BigInt(mant), expo);
 	}
 
-	public string toString() {
- 		string str = format("0x%08X",value);
-		return str;
+	const public string toHexString() {
+ 		return format("0x%08X", value);
 	}
+
 }
 
 unittest {
+/*	writefln("num.mant = 0x%08X", num.mant);
+	writefln("max_mant = 0x%08X", max_mant);
+	writeln("num.expo = ", num.expo);
+	writeln("max_expo = ", max_expo);
+	writeln("min_expo = ", min_expo);*/
+
+	writefln("Dec32.qnan_val = 0x%08X", Dec32.qnan_val);
+    writeln("Dec32.qNaN = ", Dec32.qNaN);
+
 	Dec32 dec = Dec32();
-	writefln("dec = ", dec);
-	writefln("dec.mant1 = ", dec.mant1);
+	writeln("dec = ", dec);
+	writeln("dec.mant1 = ", dec.mant1);
 
 	Decimal num = Decimal(0);
 	dec = Dec32(num);
