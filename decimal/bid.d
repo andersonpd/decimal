@@ -39,27 +39,27 @@ import std.stdio;
 import std.string;
 
 
-immutable uint bias = 101;
-immutable uint mantBits = 23;;
-immutable uint expoBits = 8;
-immutable uint signBits = 1;
-immutable uint testBits = 2;
-immutable uint normBits = mantBits - testBits;
-immutable uint unsignedBits = 21;
-
-immutable uint snan_val = 0x7E000000;
-immutable uint max_snan = 0x7FFFFFFF;
-immutable uint qnan_val = 0x7C000000;
-immutable uint max_qnan = 0x7dFFFFFF;
-immutable uint inf_val  = 0x78000000;
-immutable uint max_inf = 0x7BFFFFFF;
-
-immutable uint max_norm = (1 << normBits) - 1;
-immutable uint max_mant = (1 << mantBits) - 1;
-immutable int max_expo =   90;
-immutable int min_expo = -101;
-
 struct Dec32 {
+
+	immutable uint bias = 101;
+	immutable uint mantBits = 23;;
+	immutable uint expoBits = 8;
+	immutable uint signBits = 1;
+	immutable uint testBits = 2;
+	immutable uint normBits = mantBits - testBits;
+	immutable uint unsignedBits = 31;
+
+	immutable uint snan_val = 0x7E000000;
+	immutable uint max_snan = 0x7FFFFFFF;
+	immutable uint qnan_val = 0x7C000000;
+	immutable uint max_qnan = 0x7dFFFFFF;
+	immutable uint inf_val  = 0x78000000;
+	immutable uint max_inf = 0x7BFFFFFF;
+
+	immutable uint max_norm = (1 << normBits) - 1;
+	immutable uint max_mant = (1 << mantBits) - 1;
+	immutable int max_expo =   90;
+	immutable int min_expo = -101;
 
 	private union {
 		uint value = qnan_val;
@@ -93,51 +93,49 @@ struct Dec32 {
 	}
 
 	@property int exponent() {
-		if (this.isImplicit) {
-			return expo2;
+		if (this.isExplicit) {
+			return expo1;
 		}
 		else {
-			return expo1;
+			return expo2;
 		}
 	}
 
 	// TODO: Need to add range checks >= minExpo and <= maxExpo
+	// TODO: Need to define exceptions. Out of range exponents: infinity or zero.
 	@property int exponent(int expo) {
-		if (this.isImplicit) {
-			expo2 = expo;
+		if (this.isExplicit) {
+			expo1 = expo;
 		}
 		else {
-			expo1 = expo;
+			expo2 = expo;
 		}
 		return expo;
 	}
 
 	@property uint coefficient() {
-		if (this.isImplicit) {
-			return mant2 | 0x7FFFFFFF;
+		if (this.isExplicit) {
+			return mant1;
 		}
 		else {
-			return mant1;
+			return mant2 | 0x7FFFFFFF;
 		}
 	}
 
 	@property uint coefficient(uint mant) {
-		if (this.isImplicit) {
-			mant = value | 0x7FFFFFFF;
+		if (this.isExplicit) {
+			mant = value;
 		}
 		else {
-			mant = value;
+			mant = value | 0x7FFFFFFF;
 		}
 		return mant;
 	}
 
-	bool isImplicit() {
-		return test == 0b11;
-	}
-
 	immutable Dec32 qNaN = Dec32(qnan_val);
 	immutable Dec32 sNaN = Dec32(snan_val);
-	immutable Dec32 infinity = Dec32(inf_val);
+	immutable Dec32 Infinity = Dec32(inf_val);
+	immutable Dec32 Zero = Dec32(0);
 
 //--------------------------------
 //  floating point properties
@@ -158,6 +156,10 @@ struct Dec32 {
 //--------------------------------
 //  classification properties
 //--------------------------------
+
+	bool isExplicit() {
+		return test != 0b11;
+	}
 
 	/**
 	 * Returns true if this number's representation is canonical.
@@ -245,6 +247,10 @@ struct Dec32 {
 		return adjustedExponent >= context.eMin;
 	}*/
 
+//--------------------------------
+//  constructors
+//--------------------------------
+
 	/**
 	 * Creates a Dec32 from an unsigned integer.
 	 */
@@ -256,34 +262,34 @@ struct Dec32 {
 	 * Creates a Dec32 from a long integer.
 	 */
 	public this(const long n) {
-		sign1 = n < 0;
+		signbit = n < 0;
 		expo1 = 0;
 		mant1 = cast(uint) std.math.abs(n);
 	}
 
 	/**
-	 * Creates a Decimal from this Dec32
+	 * Creates a Dec32 from a Decimal
 	 */
 	public this(Decimal num) {
 		// check for special values
 		if (num.isInfinite) {
 			value = inf_val;
-			sign2 = num.sign;
+			signbit = num.sign;
 			return;
 		}
 		if (num.isQuiet) {
 			value = qnan_val;
-			sign2 = num.sign;
+			signbit = num.sign;
 			return;
 		}
 		if (num.isSignaling) {
 			value = snan_val;
-			sign2 = num.sign;
+			signbit = num.sign;
 			return;
 		}
 		if (num.isZero) {
 			value = 0;
-			sign2 = num.sign;
+			signbit = num.sign;
 			return;
 		}
 
@@ -295,27 +301,39 @@ struct Dec32 {
 		uint mant = cast(uint)num.mant.toInt;
 		if (mant > max_norm) {
 			// set the test bits
-			test = 0B11;
-			sign2 = num.sign;
+			test = 0b11;
+			signbit = num.sign;
 			expo2 = num.expo;
 			// TODO: this can be done with a mask.
 			mant2 = mant % max_norm;
 		}
 		else {
-			sign1 = num.sign;
+			signbit = num.sign;
 			expo1 = num.expo;
 			mant1 = mant;
 		}
 	}
 
+//--------------------------------
+//  conversions
+//--------------------------------
+
+	/**
+	 * Converts a Dec32 to a Decimal
+	 */
 	public Decimal toDecimal() {
 		uint mant;
-		int expo;
+		int  expo;
 		bool sign;
 
-		if (test == 0B11) {
+		if (isExplicit) {
+			mant = mant1;
+			sign = signbit;
+			expo = expo1 - bias;
+		}
+		else {
 			// check for special values
-			if (sign2) {
+			if (signbit) {
 				sign = true;
 				mant = value & 0x7FFFFFFF;
 			}
@@ -334,31 +352,36 @@ struct Dec32 {
 			}
 			// number is finite, set msbs
 			mant = mant2 | (0b100 << normBits);
-			sign = sign2;
 			expo = expo2 - bias;
-		}
-		else {
-			mant = mant1;
-			sign = sign1;
-			expo = expo1 - bias;
+			sign = signbit;
 		}
 		return Decimal(sign, BigInt(mant), expo);
 	}
 
+	/**
+	 * Converts a Dec32 to a hexadecimal string
+	 */
 	const public string toHexString() {
  		return format("0x%08X", value);
+	}
+
+	/**
+	 * Converts a Dec32 to a string
+	 */
+	const public string toString() {
+ 		return toHexString();
 	}
 
 }
 
 unittest {
-/*	writefln("num.mant = 0x%08X", num.mant);
-	writefln("max_mant = 0x%08X", max_mant);
-	writeln("num.expo = ", num.expo);
-	writeln("max_expo = ", max_expo);
-	writeln("min_expo = ", min_expo);*/
+//	writefln("num.mant = 0x%08X", num.mant);
+	writefln("max_mant = 0x%08X", Dec32.max_mant);
+	writefln("max_norm = 0x%08X", Dec32.max_norm);
+	writeln("max_expo = ", Dec32.max_expo);
+	writeln("min_expo = ", Dec32.min_expo);
 
-	writefln("Dec32.qnan_val = 0x%08X", Dec32.qnan_val);
+	writefln("qnan_val = 0x%08X", Dec32.qnan_val);
     writeln("Dec32.qNaN = ", Dec32.qNaN);
 
 	Dec32 dec = Dec32();
