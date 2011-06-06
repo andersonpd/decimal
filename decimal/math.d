@@ -168,7 +168,7 @@ public:
 			i++;
 		}
         Decimal result = a*a/t;
-		round(result);
+		round(result, context);
 		context.precision = savedPrecision;
 		return result;
     }
@@ -263,7 +263,7 @@ public:
 			i++;
 		}
 //		writeln(xp);
-		round(xp);
+		round(xp, context);
 		precision = savedPrecision;
         return xp;
     }

@@ -61,43 +61,43 @@ import std.string;
 
 // UNREADY: toSciString. Description. Unit Tests.
 /**
- * Converts a Decimal to a string representation.
+ * Converts a Dec32 to a string representation.
  */
 public string toSciString(const Decimal num) {
 
 	// string representation of special values
-	if (num.sval > Decimal.SV.ZERO) {
+	if (num.isSpecial) {
 		string str;
-		switch(num.sval) {
-			case Decimal.SV.ZERO:
-				str = "0";
-				break;
-			case Decimal.SV.INF:
-				str = "Infinity";
-				break;
-			case Decimal.SV.SNAN:
-				str = "sNaN";
-				break;
-			default:
-				str = "NaN";
+		if (num.isInfinite) {
+			str = "Infinity";
 		}
-		if (num.sval >= Decimal.SV.QNAN && num.mant != BigInt(0)) {
-			str ~= toDecString(num.mant);
+		else if (num.isSignaling) {
+			str = "sNaN";
 		}
-		return num.sign ? "-" ~ str : str;
+		else {
+			str = "NaN";
+		}
+		// add payload to NaN, if present
+		if (num.isNaN && num.coefficient != 0) {
+			str ~= toDecString(num.coefficient);
+//			str ~= to!string(num.coefficient);
+		}
+		// add sign, if present
+		return num.isSigned ? "-" ~ str : str;
 	}
 
 	// string representation of finite numbers
-	string temp = toDecString(num.mant);
+	string temp = toDecString(num.coefficient);
+//	string temp = to!string(coefficient);
 	char[] cstr = temp.dup;
 	int clen = cstr.length;
-	int adjx = num.expo + clen - 1;
+	int adjx = num.exponent + clen - 1;
 
 	// if exponent is small, don't use exponential notation
-	if (num.expo <= 0 && adjx >= -6) {
+	if (num.exponent <= 0 && adjx >= -6) {
 		// if exponent is not zero, insert a decimal point
-		if (num.expo != 0) {
-			int point = std.math.abs(num.expo);
+		if (num.exponent != 0) {
+			int point = std.math.abs(num.exponent);
 			// if coefficient is too small, pad with zeroes
 			if (point > clen) {
 				cstr = zfill(cstr, point);
@@ -112,7 +112,7 @@ public string toSciString(const Decimal num) {
 				insertInPlace(cstr, cstr.length - point, ".");
 			}
 		}
-		return num.sign ? ("-" ~ cstr).idup : cstr.idup;
+		return num.isSigned ? ("-" ~ cstr).idup : cstr.idup;
 	}
 	// use exponential notation
 	if (clen > 1) {
@@ -123,14 +123,9 @@ public string toSciString(const Decimal num) {
 		xstr = "+" ~ xstr;
 	}
 	string str = (cstr ~ "E" ~ xstr).idup;
-	if (num.sign) {
-		return "-" ~ str;
-	}
-	else {
-		return str;
-	}
+	return (num.isSigned) ? "-" ~ str : str;
 
-};	// end toString()
+};	// end toSciString()
 
 // UNREADY: toEngString. Not implemented: returns toSciString
 /**
@@ -455,7 +450,7 @@ public Decimal quantize(const Decimal op1, const Decimal op2) {
 	else {
 		pushPrecision;
     	context.precision = (-diff > op1.digits) ? 0 : op1.digits + diff;
-		round(result);
+		round(result, context);
 		result.expo = op2.expo;
 		popPrecision;
 		return result;
@@ -512,7 +507,7 @@ public Decimal abs(const Decimal num) {
 		return result;
 	}
 	result = copyAbs(num);
-	round(result);
+	round(result, context);
 	return result;
 }
 
@@ -530,7 +525,7 @@ public Decimal plus(const Decimal num) {
 		return result;
 	}
 	result = num;
-	round(result);
+	round(result, context);
 	return result;
 }
 
@@ -547,7 +542,7 @@ public Decimal minus(const Decimal num) {
 		return result;
 	}
 	result = copyNegate(num);
-	round(result);
+	round(result, context);
 	return result;
 }
 
@@ -620,7 +615,7 @@ public Decimal nextToward(const Decimal op1, const Decimal op2) {
 	if (comp < 0) return nextPlus(op1);
 	if (comp > 0) return nextMinus(op1);
 	result = copySign(op1, op2);
-	round(result);
+	round(result, context);
 	return result;
 }
 
@@ -1007,7 +1002,7 @@ public Decimal add(const Decimal op1, const Decimal op2, bool rounded = true) {
 
 	// round the result
 	if (rounded) {
-		round(sum);
+		round(sum, context);
 	}
 	return sum;
 }	// end add(augend, addend)
@@ -1054,7 +1049,7 @@ public Decimal multiply(
 	product.sign = op1.sign ^ op2.sign;
 	product.digits = numDigits(product.mant);
 	if (rounded) {
-		round(product);
+		round(product, context);
 	}
 	return product;
 }
@@ -1119,7 +1114,7 @@ public Decimal divide(
 	quotient.digits = numDigits(quotient.mant);
 	context.precision -= 2;
 	if (rounded) {
-		round(quotient);
+		round(quotient, context);
 		if (!context.getFlag(INEXACT)) {
 			quotient = reduceToIdeal(quotient, diff);
     	}
@@ -1239,7 +1234,7 @@ public Decimal roundToIntegralValue(const Decimal num){
 }
 
 // UNREADY: round. Description. Private or public?
-public void round(ref Decimal num) {
+public void round(ref Decimal num, DecimalContext context) {
 
 	if (!num.isFinite) return;
 
@@ -1252,7 +1247,7 @@ public void round(ref Decimal num) {
 	}
 
 	// check for overflow
-	if (incrementOverflowed(num)) {
+	if (willOverflow(num)) {
 		context.setFlag(OVERFLOW);
 		switch (context.mode) {
 			case Rounding.HALF_UP:
@@ -1377,7 +1372,7 @@ private void increment(ref Decimal num) {
 	}
 }
 
-private bool incrementOverflowed(const Decimal num) {
+private bool willOverflow(const Decimal num) {
 	return num.adjustedExponent > context.eMax;
 }
 
@@ -1448,7 +1443,7 @@ private void roundByMode(ref Decimal num) {
 package void setDigits(ref Decimal num) {
 	int diff = num.digits - context.precision;
 	if (diff > 0) {
-		round(num);
+		round(num, context);
 	}
 	else if (diff < 0) {
 		num.mant = decShl(num.mant, -diff);

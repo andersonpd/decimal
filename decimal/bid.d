@@ -33,8 +33,10 @@
 module decimal.bid;
 
 import decimal.decimal;
+import std.array: insertInPlace;
 import std.bigint;
 import std.bitmanip;
+import std.conv;
 import std.stdio;
 import std.string;
 
@@ -52,7 +54,7 @@ struct Dec32 {
 	immutable uint snan_val = 0x7E000000;
 	immutable uint max_snan = 0x7FFFFFFF;
 	immutable uint qnan_val = 0x7C000000;
-	immutable uint max_qnan = 0x7dFFFFFF;
+	immutable uint max_qnan = 0x7DFFFFFF;
 	immutable uint inf_val  = 0x78000000;
 	immutable uint max_inf = 0x7BFFFFFF;
 
@@ -92,7 +94,8 @@ struct Dec32 {
 		return signbit;
 	}
 
-	@property int exponent() {
+	@property
+	const int exponent() {
 		if (this.isExplicit) {
 			return expo1;
 		}
@@ -103,7 +106,8 @@ struct Dec32 {
 
 	// TODO: Need to add range checks >= minExpo and <= maxExpo
 	// TODO: Need to define exceptions. Out of range exponents: infinity or zero.
-	@property int exponent(int expo) {
+	@property
+	 int exponent(int expo) {
 		if (this.isExplicit) {
 			expo1 = expo;
 		}
@@ -113,16 +117,21 @@ struct Dec32 {
 		return expo;
 	}
 
-	@property uint coefficient() {
+	@property
+	const uint coefficient() {
 		if (this.isExplicit) {
 			return mant1;
+		}
+		else if (isSpecial) {
+			return mant2;
 		}
 		else {
 			return mant2 | 0x7FFFFFFF;
 		}
 	}
 
-	@property uint coefficient(uint mant) {
+	@property
+	uint coefficient(uint mant) {
 		if (this.isExplicit) {
 			mant = value;
 		}
@@ -130,6 +139,11 @@ struct Dec32 {
 			mant = value | 0x7FFFFFFF;
 		}
 		return mant;
+	}
+
+	@property
+	int digits() {
+		return 7;
 	}
 
 	immutable Dec32 qNaN = Dec32(qnan_val);
@@ -157,7 +171,7 @@ struct Dec32 {
 //  classification properties
 //--------------------------------
 
-	bool isExplicit() {
+	const bool isExplicit() {
 		return test != 0b11;
 	}
 
@@ -294,6 +308,8 @@ struct Dec32 {
 		}
 
 		// number is finite
+		writefln("num.mant = %d", num.mant);
+		writeln("num.expo = ", num.expo);
 		if (num.mant > max_mant || num.expo > max_expo || num.expo < min_expo) {
 			throw new Exception("Can't fit in this struct!");
 		}
@@ -365,11 +381,77 @@ struct Dec32 {
  		return format("0x%08X", value);
 	}
 
+	// UNREADY: toSciString. Description. Unit Tests.
+	/**
+ 	* Converts a Dec32 to a string representation.
+ 	*/
+	const public string toSciString() {
+
+		// string representation of special values
+		if (isSpecial) {
+			string str;
+			if (isInfinite) {
+				str = "Infinity";
+			}
+			else if (isSignaling) {
+				str = "sNaN";
+			}
+			else {
+				str = "NaN";
+			}
+			// add payload to NaN, if present
+			if (isNaN && coefficient != 0) {
+				str ~= to!string(coefficient);
+			}
+			// add sign, if present
+			return isSigned ? "-" ~ str : str;
+		}
+
+		// string representation of finite numbers
+		string temp = to!string(coefficient);
+		char[] cstr = temp.dup;
+		int clen = cstr.length;
+		int adjx = exponent + clen - 1;
+
+		// if exponent is small, don't use exponential notation
+		if (exponent <= 0 && adjx >= -6) {
+			// if exponent is not zero, insert a decimal point
+			if (exponent != 0) {
+				int point = std.math.abs(exponent);
+				// if coefficient is too small, pad with zeroes
+				if (point > clen) {
+					cstr = zfill(cstr, point);
+					clen = cstr.length;
+				}
+				// if no chars precede the decimal point, prefix a zero
+				if (point == clen) {
+					cstr = "0." ~ cstr;
+				}
+				// otherwise insert a decimal point
+				else {
+					insertInPlace(cstr, cstr.length - point, ".");
+				}
+			}
+			return isSigned ? ("-" ~ cstr).idup : cstr.idup;
+		}
+		// use exponential notation
+		if (clen > 1) {
+			insertInPlace(cstr, 1, ".");
+		}
+		string xstr = to!string(adjx);
+		if (adjx >= 0) {
+			xstr = "+" ~ xstr;
+		}
+		string str = (cstr ~ "E" ~ xstr).idup;
+		return (isSigned) ? "-" ~ str : str;
+
+	};	// end toSciString()
+
 	/**
 	 * Converts a Dec32 to a string
 	 */
 	const public string toString() {
- 		return toHexString();
+ 		return toSciString();
 	}
 
 }
@@ -399,6 +481,16 @@ unittest {
 	writeln("dec = ", dec);
 
 	num = Decimal(-1);
+	dec = Dec32(num);
+	writeln("num = ", num);
+	writeln("dec = ", dec);
+
+	num = Decimal(-16000);
+	dec = Dec32(num);
+	writeln("num = ", num);
+	writeln("dec = ", dec);
+
+	num = Decimal(uint.max);
 	dec = Dec32(num);
 	writeln("num = ", num);
 	writeln("dec = ", dec);
