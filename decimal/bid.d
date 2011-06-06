@@ -381,80 +381,106 @@ struct Dec32 {
  		return format("0x%08X", value);
 	}
 
-	// UNREADY: toSciString. Description. Unit Tests.
-	/**
- 	* Converts a Dec32 to a string representation.
- 	*/
-	const public string toSciString() {
-
-		// string representation of special values
-		if (isSpecial) {
-			string str;
-			if (isInfinite) {
-				str = "Infinity";
-			}
-			else if (isSignaling) {
-				str = "sNaN";
-			}
-			else {
-				str = "NaN";
-			}
-			// add payload to NaN, if present
-			if (isNaN && coefficient != 0) {
-				str ~= to!string(coefficient);
-			}
-			// add sign, if present
-			return isSigned ? "-" ~ str : str;
-		}
-
-		// string representation of finite numbers
-		string temp = to!string(coefficient);
-		char[] cstr = temp.dup;
-		int clen = cstr.length;
-		int adjx = exponent + clen - 1;
-
-		// if exponent is small, don't use exponential notation
-		if (exponent <= 0 && adjx >= -6) {
-			// if exponent is not zero, insert a decimal point
-			if (exponent != 0) {
-				int point = std.math.abs(exponent);
-				// if coefficient is too small, pad with zeroes
-				if (point > clen) {
-					cstr = zfill(cstr, point);
-					clen = cstr.length;
-				}
-				// if no chars precede the decimal point, prefix a zero
-				if (point == clen) {
-					cstr = "0." ~ cstr;
-				}
-				// otherwise insert a decimal point
-				else {
-					insertInPlace(cstr, cstr.length - point, ".");
-				}
-			}
-			return isSigned ? ("-" ~ cstr).idup : cstr.idup;
-		}
-		// use exponential notation
-		if (clen > 1) {
-			insertInPlace(cstr, 1, ".");
-		}
-		string xstr = to!string(adjx);
-		if (adjx >= 0) {
-			xstr = "+" ~ xstr;
-		}
-		string str = (cstr ~ "E" ~ xstr).idup;
-		return (isSigned) ? "-" ~ str : str;
-
-	};	// end toSciString()
-
 	/**
 	 * Converts a Dec32 to a string
 	 */
 	const public string toString() {
- 		return toSciString();
+ 		return toSciString!Dec32(this);
 	}
 
 }
+
+/**
+ * Detect whether T is a built-in integral type. Types $(D bool), $(D
+ * char), $(D wchar), and $(D dchar) are not considered integral.
+ */
+
+template isDecimal(T) {
+    enum bool isDecimal = is(T: Dec32);
+}
+
+/*	staticIndexOf!(Unqual!(T),
+		Dec32) >= 0;*/
+
+/*unittest
+{
+    static assert(isIntegral!(byte));
+    static assert(isIntegral!(const(byte)));
+    static assert(isIntegral!(immutable(byte)));
+    static assert(isIntegral!(shared(byte)));
+    static assert(isIntegral!(shared(const(byte))));
+}*/
+
+
+// UNREADY: toSciString. Description. Unit Tests.
+/**
+	* Converts a Decimal number to a string representation.
+	*/
+public string toSciString(T)(const T num) if (isDecimal!T) {
+
+	auto mant = num.coefficient;
+	int  expo = num.exponent;
+    bool signed = num.isSigned;
+
+	// string representation of special values
+	if (num.isSpecial) {
+		string str;
+		if (num.isInfinite) {
+			str = "Infinity";
+		}
+		else if (num.isSignaling) {
+			str = "sNaN";
+		}
+		else {
+			str = "NaN";
+		}
+		// add payload to NaN, if present
+		if (num.isNaN && mant != 0) {
+			str ~= to!string(mant);
+		}
+		// add sign, if present
+		return signed ? "-" ~ str : str;
+	}
+
+	// string representation of finite numbers
+	string temp = to!string(mant);
+	char[] cstr = temp.dup;
+	int clen = cstr.length;
+	int adjx = expo + clen - 1;
+
+	// if exponent is small, don't use exponential notation
+	if (expo <= 0 && adjx >= -6) {
+		// if exponent is not zero, insert a decimal point
+		if (expo != 0) {
+			int point = std.math.abs(expo);
+			// if coefficient is too small, pad with zeroes
+			if (point > clen) {
+				cstr = zfill(cstr, point);
+				clen = cstr.length;
+			}
+			// if no chars precede the decimal point, prefix a zero
+			if (point == clen) {
+				cstr = "0." ~ cstr;
+			}
+			// otherwise insert a decimal point
+			else {
+				insertInPlace(cstr, cstr.length - point, ".");
+			}
+		}
+		return signed ? ("-" ~ cstr).idup : cstr.idup;
+	}
+	// use exponential notation
+	if (clen > 1) {
+		insertInPlace(cstr, 1, ".");
+	}
+	string xstr = to!string(adjx);
+	if (adjx >= 0) {
+		xstr = "+" ~ xstr;
+	}
+	string str = (cstr ~ "E" ~ xstr).idup;
+	return signed ? "-" ~ str : str;
+
+};	// end toSciString()
 
 unittest {
 //	writefln("num.mant = 0x%08X", num.mant);
