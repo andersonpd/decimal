@@ -27,7 +27,6 @@ import std.conv;
 import std.stdio;
 import std.string;
 
-
 //--------------------------------
 //  conversions
 //--------------------------------
@@ -72,11 +71,22 @@ public Decimal toDecimal(T)(const T num) if (isSmallDecimal!T) {
     return Decimal(sign, BigInt(mant), expo);
 }
 
+unittest {
+    write("toDecimal...");
+    writeln("test missing");
+}
+
 /**
  * Converts an encoded decimal number to a hexadecimal string
  */
 public string toHexString(T)(const T num) if (isSmallDecimal!T) {
+    // TODO: what's the syntax for a variable format string?
     return format("0x%016X", value);
+}
+
+unittest {
+    write("toHexString...");
+    writeln("test missing");
 }
 
 /**
@@ -86,6 +96,11 @@ template isDecimal(T) {
     enum bool isDecimal = is(T: Dec32) || is(T: Dec64);
 }
 
+unittest {
+    write("isDecimal(T)...");
+    writeln("test missing");
+}
+
 /**
  * Detect whether T is a decimal type.
  */
@@ -93,11 +108,21 @@ template isBigDecimal(T) {
     enum bool isBigDecimal = is(T: Decimal);
 }
 
+unittest {
+    write("isBigDecimal(T)...");
+    writeln("test missing");
+}
+
 /**
  * Detect whether T is a decimal type.
  */
 template isSmallDecimal(T) {
     enum bool isSmallDecimal = is(T: Dec32) || is(T: Dec64);
+}
+
+unittest {
+    write("isSmallDecimal(T)...");
+    writeln("test missing");
 }
 
 /*unittest
@@ -179,6 +204,11 @@ public string toSciString(T)(const T num) if (isDecimal!T) {
     return signed ? "-" ~ str : str;
 
 };    // end toSciString()
+
+unittest {
+    write("toSciString...");
+    writeln("test missing");
+}
 
 unittest {
 /*    writefln("num.mant = 0x%08X", num.mant);

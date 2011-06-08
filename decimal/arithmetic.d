@@ -191,8 +191,8 @@ public string toEngString(const Decimal num) {
 };
 
 unittest {
-	write("toEngString...");
-	writeln("test missing");
+    write("toEngString...");
+    writeln("test missing");
 }
 
 // UNREADY: toNumber. Description. Corner Cases.
@@ -1563,8 +1563,8 @@ public int compareSignal(const Decimal op1, const Decimal op2,
 }
 
 unittest {
-	write("compareSignal...");
-	writeln("test missing");
+    write("compareSignal...");
+    writeln("test missing");
 }
 
 // UNREADY: compareTotal
@@ -1635,8 +1635,8 @@ int compareTotalMagnitude(const Decimal op1, const Decimal op2) {
 }
 
 unittest {
-	write("compareTotalMagnitude...");
-	writeln("test missing");
+    write("compareTotalMagnitude...");
+    writeln("test missing");
 }
 
 // UNREADY: max. Flags.
@@ -1706,8 +1706,8 @@ const(Decimal) maxMagnitude(const Decimal op1, const Decimal op2) {
 }
 
 unittest {
-	write("maxMagnitude...");
-	writeln("test missing");
+    write("maxMagnitude...");
+    writeln("test missing");
 }
 
 // UNREADY: min. Flags.
@@ -1778,8 +1778,8 @@ const(Decimal) minMagnitude(const Decimal op1, const Decimal op2) {
 }
 
 unittest {
-	write("minMagnitude...");
-	writeln("test missing");
+    write("minMagnitude...");
+    writeln("test missing");
 }
 
 //------------------------------------------
@@ -1844,6 +1844,61 @@ unittest {
     digits = 2;
     act = shift(num, digits);
     writeln("act = ", act);
+    writeln("..failed");
+}
+
+/**
+ * Rotates the first operand by the specified number of decimal digits.
+ * (Not binary digits!) Positive values of the second operand rotate the
+ * first operand left (multiplying by tens). Negative values rotate right
+ * (divide by 10s). If the number is NaN, or if the rotate value is less
+ * than -precision or greater than precision, an INVALID_OPERATION is signaled.
+ * An infinite number is returned unchanged.
+ */
+public Decimal rotate(const Decimal op1, const int op2) {
+
+    Decimal result;
+    // check for NaN operand
+    if (invalidOperand(op1, result)) {
+        return result;
+    }
+    if (op2 < -context.precision || op2 > context.precision) {
+        result = flagInvalid();
+        return result;
+    }
+    if (op1.isInfinite) {
+        return op1.dup;
+    }
+    if (op2 == 0) {
+        return op1.dup;
+    }
+    result = op1.dup;
+
+    // TODO: And then a miracle happens....
+
+    return result;
+}
+
+unittest {
+    write("rotate........");
+/*    Decimal num = 34;
+    int digits = 8;
+    Decimal act = rotate(num, digits);
+    writeln("act = ", act);
+    num = 12;
+    digits = 9;
+    act = rotate(num, digits);
+    writeln("act = ", act);
+    num = 123456789;
+    digits = -2;
+    act = rotate(num, digits);
+    writeln("act = ", act);
+    digits = 0;
+    act = rotate(num, digits);
+    writeln("act = ", act);
+    digits = 2;
+    act = rotate(num, digits);
+    writeln("act = ", act);*/
     writeln("..failed");
 }
 
@@ -1982,8 +2037,8 @@ public Decimal subtract(const Decimal minuend, const Decimal subtrahend,
 }    // end subtract(minuend, subtrahend)
 
 unittest {
-	write("subtract...");
-	writeln("test missing");
+    write("subtract...");
+    writeln("test missing");
 }
 
 // READY: multiply
@@ -2347,8 +2402,8 @@ public Decimal remainderNear(const Decimal dividend, const Decimal divisor) {
 }
 
 unittest {
-	write("remainderNear...");
-	writeln("test missing");
+    write("remainderNear...");
+    writeln("test missing");
 }
 
 //--------------------------------
@@ -2419,9 +2474,10 @@ public Decimal roundToIntegralValue(const Decimal num){
 }
 
 unittest {
-	write("roundToIntegralValue...");
-	writeln("test missing");
+    write("roundToIntegralValue...");
+    writeln("test missing");
 }
+
 // UNREADY: round. Description. Private or public?
 public void round(ref Decimal num, DecimalContext context) {
 
@@ -2600,8 +2656,8 @@ private Decimal shorten(ref Decimal num) {
 }
 
 unittest {
-	write("shorten...");
-	writeln("test missing");
+    write("shorten...");
+    writeln("test missing");
 }
 
 // UNREADY: increment. Unit tests. Order.
@@ -2625,8 +2681,8 @@ private void increment(ref Decimal num) {
 }
 
 unittest {
-	write("increment...");
-	writeln("test missing");
+    write("increment...");
+    writeln("test missing");
 }
 
 private bool willOverflow(const Decimal num) {
@@ -2707,8 +2763,8 @@ private void roundByMode(ref Decimal num) {
 } // end roundByMode()
 
 unittest {
-	write("roundByMode...");
-	writeln("test missing");
+    write("roundByMode...");
+    writeln("test missing");
 }
 
 // UNREADY: setDigits. Description. Ordering.
@@ -2728,8 +2784,8 @@ package void setDigits(ref Decimal num) {
 }
 
 unittest {
-	write("setDigits...");
-	writeln("test missing");
+    write("setDigits...");
+    writeln("test missing");
 }
 
 // UNREADY: reduceToIdeal. Description. Flags.
@@ -2762,8 +2818,8 @@ private Decimal reduceToIdeal(const Decimal num, int ideal) {
 }
 
 unittest {
-	write("reduceToIdeal...");
-	writeln("test missing");
+    write("reduceToIdeal...");
+    writeln("test missing");
 }
 
 // UNREADY: flagInvalid. Unit Tests.
@@ -2832,8 +2888,8 @@ private void alignOps(ref Decimal op1, ref Decimal op2) {
 }
 
 unittest {
-	write("alignOps...");
-	writeln("test missing");
+    write("alignOps...");
+    writeln("test missing");
 }
 
 // UNREADY: isInvalidBinaryOp. Unit Tests. Payload.
@@ -2870,8 +2926,8 @@ private bool isInvalidBinaryOp(const Decimal op1, const Decimal op2,
 }
 
 unittest {
-	write("isInvalidBinaryOp...");
-	writeln("test missing");
+    write("isInvalidBinaryOp...");
+    writeln("test missing");
 }
 
 // UNREADY: invalidOperand. Unit Tests. Payload.
@@ -2907,8 +2963,8 @@ private bool invalidOperand(const Decimal op1, ref Decimal result) {
 }
 
 unittest {
-	write("invalidOperand...");
-	writeln("test missing");
+    write("invalidOperand...");
+    writeln("test missing");
 }
 
 // UNREADY: isInvalidAddition. Description.
@@ -2934,8 +2990,8 @@ private bool isInvalidAddition(Decimal op1, Decimal op2, ref Decimal result) {
 }
 
 unittest {
-	write("isInvalidAddition...");
-	writeln("test missing");
+    write("isInvalidAddition...");
+    writeln("test missing");
 }
 
 // UNREADY: isInvalidMultiplication. Flags. Unit Tests.
@@ -2958,8 +3014,8 @@ private bool isInvalidMultiplication(
 }
 
 unittest {
-	write("isInvalidMultiplication...");
-	writeln("test missing");
+    write("isInvalidMultiplication...");
+    writeln("test missing");
 }
 
 // UNREADY: isInvalidDivision. Unit Tests.
@@ -2991,8 +3047,8 @@ private bool isInvalidDivision(
 }
 
 unittest {
-	write("isInvalidDivision...");
-	writeln("test missing");
+    write("isInvalidDivision...");
+    writeln("test missing");
 }
 
 // UNREADY: isZeroDividend. Unit tests.
@@ -3013,8 +3069,8 @@ private bool isZeroDividend(const Decimal dividend, const Decimal divisor,
 }
 
 unittest {
-	write("isZeroDividend...");
-	writeln("test missing");
+    write("isZeroDividend...");
+    writeln("test missing");
 }
 
 //--------------------------------

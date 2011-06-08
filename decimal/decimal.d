@@ -39,6 +39,14 @@ import std.math: PI, LOG2;
 import std.stdio: write, writeln;
 import std.string;
 
+unittest {
+    writeln();
+    writeln("-------------------");
+    writeln("testing.....Decimal");
+    writeln("-------------------");
+    writeln();
+}
+
 alias Decimal.context context;
 // alias Decimal.context.precision precision;
 
@@ -557,6 +565,23 @@ const string toString() {
         return  true;
     }
 
+unittest {
+	write("isCanonical...");
+	writeln("test missing");
+}
+
+    /**
+     * Returns the canonical form of the number.
+     */
+    const Decimal canonical() {
+        return this.dup;
+    }
+
+unittest {
+	write("canonical...");
+	writeln("test missing");
+}
+
     /**
      * Returns true if this number is + or - zero.
      */
@@ -827,4 +852,12 @@ const string toString() {
 //-----------------------------
 
 }    // end struct Decimal
+
+unittest {
+    writeln();
+    writeln("-------------------");
+    writeln("Decimal......tested");
+    writeln("-------------------");
+    writeln();
+}
 

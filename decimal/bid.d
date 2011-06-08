@@ -26,244 +26,35 @@ import std.conv;
 import std.stdio;
 import std.string;
 
-struct Dec64 {
-
-    private immutable uint w = 10;
-    private immutable uint j = 5;
-    private immutable uint p = (3*j) + 1;
-    static assert(p == 16);
-    private immutable uint bp = 3 * (1 << (w - 3)) + p - 2;
-    static assert(bp == 398);
-    private immutable uint xr = 3 * (1 << (w - 2)) - 1;
-    static assert(xr == 767);
-
-    immutable uint expoBits = 10;
-    immutable uint bias = 398;
-    immutable int  max_expo = 767 - bias;
-    static assert (max_expo == 369);
-    immutable int  min_expo = -bias;
-
-    immutable uint mantBits = 10*j + 3;
-    immutable uint signBits = 1;
-    immutable uint testBits = 2;
-    immutable uint normBits = mantBits - testBits;
-    immutable uint unsignedBits = 63;
-
-    immutable ulong snan_val = 0x7E00000000000000;
-    immutable ulong max_snan = 0x7FFFFFFFFFFFFFFF;
-    immutable ulong qnan_val = 0x7C00000000000000;
-    immutable ulong max_qnan = 0x7DFFFFFFFFFFFFFF;
-    immutable ulong inf_val  = 0x7800000000000000;
-    immutable ulong max_inf  = 0x7BFFFFFFFFFFFFFF;
-
-    immutable ulong max_norm = (1L << normBits) - 1;
-    immutable ulong max_mant = (1L << mantBits) - 1;
-
-    private union {
-        ulong value = qnan_val;
-
-        mixin (bitfields!(
-            ulong, "unsigned", 63,
-            bool,  "signbit", signBits)
-        );
-        mixin (bitfields!(
-            ulong, "mant1", mantBits,
-            uint,  "expo1", expoBits,
-            bool,  "sign1", signBits)
-        );
-        mixin (bitfields!(
-            ulong, "mant2", normBits,
-            uint,  "expo2", expoBits,
-            uint,  "test" , testBits,
-            bool,  "sign2", signBits)
-        );
-    }
-    public:
-
-    @property bool sign() {
-        return signbit;
-    }
-
-    @property bool sign(bool value) {
-        signbit = value;
-        return signbit;
-    }
-
-    @property
-    const int exponent() {
-        if (this.isExplicit) {
-            return expo1;
-        }
-        else {
-            return expo2;
-        }
-    }
-
-    // TODO: Need to add range checks >= minExpo and <= maxExpo
-    // TODO: Need to define exceptions. Out of range exponents: infinity or zero.
-    @property
-     int exponent(int expo) {
-        if (this.isExplicit) {
-            expo1 = expo;
-        }
-        else {
-            expo2 = expo;
-        }
-        return expo;
-    }
-
-    @property
-    const ulong coefficient() {
-        if (this.isExplicit) {
-            return mant1;
-        }
-        else if (isSpecial) {
-            return mant2;
-        }
-        else {
-            return mant2 | 0x7FFFFFFFFFFFFFFF;
-        }
-    }
-
-    @property
-    ulong coefficient(ulong mant) {
-        if (this.isExplicit) {
-            mant = value;
-        }
-        else {
-            mant = value | 0x7FFFFFFFFFFFFFFF;
-        }
-        return mant;
-    }
-
-    @property
-    int digits() {
-        return 7;
-    }
-
-//--------------------------------
-//  classification properties
-//--------------------------------
-
-    const bool isExplicit() {
-        return test != 0b11;
-    }
-
-    /**
-     * Returns true if this number's representation is canonical.
-     */
-    const bool isCanonical() {
-        return isInfinite  && unsigned == inf_val  ||
-               isQuiet     && unsigned == qnan_val ||
-               isSignaling && unsigned == snan_val;
-    }
-
-    /**
-     * Returns true if this number is +\- zero.
-     */
-    const bool isZero() {
-        return unsigned == 0;
-    }
-
-    /**
-     * Returns true if this number is a quiet or signaling NaN.
-     */
-    const bool isNaN() {
-        return isQuiet || isSignaling;
-    }
-
-    /**
-     * Returns true if this number is a signaling NaN.
-     */
-    const bool isSignaling() {
-        return unsigned == snan_val ||
-            unsigned > snan_val && unsigned <= max_snan;
-    }
-
-    /**
-     * Returns true if this number is a quiet NaN.
-     */
-    const bool isQuiet() {
-        return unsigned == qnan_val || unsigned > qnan_val && unsigned <= max_qnan;
-    }
-
-    /**
-     * Returns true if this number is +\- infinity.
-     */
-    const bool isInfinite() {
-        return unsigned == inf_val || unsigned > inf_val && unsigned <= max_inf;
-    }
-
-    /**
-     * Returns true if this number is neither infinite nor a NaN.
-     */
-    const bool isFinite() {
-        return !isNaN && !isInfinite;
-    }
-
-    /**
-     * Returns true if this number is a NaN or infinity.
-     */
-    const bool isSpecial() {
-        return isInfinite || isNaN;
-    }
-
-    /**
-     * Returns true if this number is negative. (Includes -0)
-     */
-    const bool isSigned() {
-        return signbit;
-    }
-
-    const bool isNegative() {
-        return signbit;
-    }
-
-    /**
-     * Returns true if this number is subnormal.
-     */
-/*    const bool isSubnormal() {
-        if (sval != SV.CLEAR) return false;
-        return adjustedExponent < context.eMin;
-    }*/
-
-    /**
-     * Returns true if this number is normal.
-     */
-/*    const bool isNormal() {
-        if (sval != SV.CLEAR) return false;
-        return adjustedExponent >= context.eMin;
-    }*/
-
-}
-
 struct Dec32 {
 
-    immutable uint bias = 101;
-    immutable uint mantBits = 23;;
-    immutable uint expoBits = 8;
+    immutable uint svalBits = 32;
     immutable uint signBits = 1;
+    immutable uint uvalBits = svalBits - signBits;
     immutable uint testBits = 2;
+    immutable uint expoBits = 8;
+    immutable uint mantBits = 23;;
     immutable uint normBits = mantBits - testBits;
-    immutable uint unsignedBits = 31;
 
-    immutable uint snan_val = 0x7E000000;
-    immutable uint max_snan = 0x7FFFFFFF;
-    immutable uint qnan_val = 0x7C000000;
-    immutable uint max_qnan = 0x7DFFFFFF;
-    immutable uint inf_val  = 0x78000000;
-    immutable uint max_inf = 0x7BFFFFFF;
+    immutable uint bias = 101;
+
+    immutable uint snan_val = 0x7E;
+    immutable uint max_snan = 0x7F;
+    immutable uint qnan_val = 0x7C;
+    immutable uint max_qnan = 0x7D;
+    immutable uint inf_val  = 0x78;
+    immutable uint max_inf  = 0x7B;
 
     immutable uint max_norm = (1 << normBits) - 1;
     immutable uint max_mant = (1 << mantBits) - 1;
-    immutable int max_expo =   90;
-    immutable int min_expo = -101;
+    immutable int max_expo  =   90;
+    immutable int min_expo  = -101;
 
     private union {
         uint value = qnan_val;
 
         mixin (bitfields!(
-            uint, "unsigned", 31,
+            uint, "unsigned", uvalBits,
             bool, "signbit", signBits)
         );
         mixin (bitfields!(
@@ -276,6 +67,12 @@ struct Dec32 {
             uint, "expo2", expoBits,
             uint, "test" , testBits,
             bool, "sign2", signBits)
+        );
+        mixin (bitfields!(
+            uint, "payload", normBits,
+            uint, "space3", 32 - normBits - signBits - 7,
+            uint, "sval" , 7,
+            bool, "sign3", signBits)
         );
     }
 
@@ -526,11 +323,10 @@ struct Dec32 {
         }
     }
 
-	unittest {
-		writeln("this(Decimal)...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        write("this(Decimal)...");
+        writeln("test missing");
+    }
 
 //--------------------------------
 //  conversions
@@ -559,13 +355,13 @@ struct Dec32 {
                 sign = false;
                 mant = value;
             }
-            if (mant == inf_val || value > inf_val && value <= max_inf) {
+            if (sval >= inf_val && sval <= max_inf) {
                 return Decimal(sign, "Inf", 0);
             }
-            if (mant == qnan_val || value > qnan_val && value <= max_qnan) {
+            if (sval >= qnan_val && sval <= max_qnan) {
                 return Decimal(sign, "qNaN", 0);
             }
-            if (mant == snan_val || value > snan_val && value <= max_snan) {
+            if (sval >= snan_val && sval <= max_snan) {
                 return Decimal(sign, "sNan", 0);
             }
             // number is finite, set msbs
@@ -576,11 +372,10 @@ struct Dec32 {
         return Decimal(sign, BigInt(mant), expo);
     }
 
-	unittest {
-		writeln("toDecimal...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        write("toDecimal...");
+        writeln("test missing");
+    }
 
     /**
      * Converts a Dec32 to a hexadecimal string
@@ -589,11 +384,11 @@ struct Dec32 {
          return format("0x%08X", value);
     }
 
-	unittest {
-		writeln("toHexString...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("toHexString...");
+        writeln("test missing");
+        writeln("failed");
+    }
 
     /**
      * Converts a Dec32 to a string
@@ -602,27 +397,23 @@ struct Dec32 {
          return toSciString!Dec32(this);
     }
 
-	unittest {
-		writeln("toString...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        write("toString...");
+        writeln("test missing");
+    }
 
 }
 
 /**
- * Detect whether T is a built-in integral type. Types $(D bool), $(D
- * char), $(D wchar), and $(D dchar) are not considered integral.
+ * Detect whether T is a decimal type.
  */
-
 template isDecimal(T) {
     enum bool isDecimal = is(T: Dec32);
 }
 
 unittest {
-	writeln("isDecimal(T)...");
-	writeln("test missing");
-	writeln("failed");
+    write("isDecimal(T)...");
+    writeln("test missing");
 }
 
 /*    staticIndexOf!(Unqual!(T),
@@ -709,9 +500,8 @@ public string toSciString(T)(const T num) if (isDecimal!T) {
 };    // end toSciString()
 
 unittest {
-	write("toSciString...");
-	writeln("Unit tests missing");
-	writeln("failed");
+    write("toSciString...");
+    writeln("tests missing");
 }
 
 unittest {

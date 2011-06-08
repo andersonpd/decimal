@@ -47,11 +47,11 @@ public:
         return result;
     }
 
-	unittest {
-		writeln("e...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("e...");
+        writeln("test missing");
+        writeln("failed");
+    }
 
     /**
      * Returns the value of e to the specified precision.
@@ -61,11 +61,11 @@ public:
         return result;
     }
 
-	unittest {
-		writeln("e...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("e...");
+        writeln("test missing");
+        writeln("failed");
+    }
 
     /**
      * Returns the value of pi to the default precision.
@@ -133,11 +133,11 @@ public:
         return pi (context.precision);
     }
 
-	unittest {
-		writeln("pi...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("pi...");
+        writeln("test missing");
+        writeln("failed");
+    }
 /*    unittest {
         write("pi....");
         writeln("pi = ", pi());
@@ -147,13 +147,13 @@ public:
         return x * x;
     }
 
-	unittest {
-		writeln("sqr...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("sqr...");
+        writeln("test missing");
+        writeln("failed");
+    }
 
-	/**
+    /**
      * Returns the value of pi to the specified precision.
      */
     Decimal pi(uint precision) {
@@ -182,11 +182,11 @@ public:
         return result;
     }
 
-	unittest {
-		writeln("pi...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("pi...");
+        writeln("test missing");
+        writeln("failed");
+    }
 
     /**
      * Returns the square root of the argument to the current precision.
@@ -195,11 +195,11 @@ public:
         return sqrt(arg, context.precision);
     }
 
-	unittest {
-		writeln("sqrt...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("sqrt...");
+        writeln("test missing");
+        writeln("failed");
+    }
 
 /*    unittest {
         write("sqrt.....");
@@ -216,31 +216,31 @@ public:
       return std.math.abs(n % 2) != 0;
     }
 
-	unittest {
-		writeln("odd...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("odd...");
+        writeln("test missing");
+        writeln("failed");
+    }
 
     Decimal sqrt(const long arg, uint precision) {
         return sqrt(Decimal(arg), precision);
     }
 
-	unittest {
-		writeln("sqrt...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("sqrt...");
+        writeln("test missing");
+        writeln("failed");
+    }
 
     Decimal sqrt(const long arg) {
         return sqrt(Decimal(arg));
     }
 
-	unittest {
-		writeln("sqrt...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("sqrt...");
+        writeln("test missing");
+        writeln("failed");
+    }
 
     /**
      * Returns the square root of the argument to the specified precision.
@@ -306,11 +306,11 @@ public:
         return xp;
     }
 
-	unittest {
-		writeln("sqrt...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("sqrt...");
+        writeln("test missing");
+        writeln("failed");
+    }
 
     //--------------------------------
     //
@@ -343,11 +343,11 @@ public:
         return sum;
     }
 
-	unittest {
-		writeln("exp...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("exp...");
+        writeln("test missing");
+        writeln("failed");
+    }
 
     /**
      * Decimal version of std.math function.
@@ -358,11 +358,11 @@ public:
         return result;
     }
 
-	unittest {
-		writeln("exp2...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("exp2...");
+        writeln("test missing");
+        writeln("failed");
+    }
 
     /**
      * Decimal version of std.math function.
@@ -373,11 +373,11 @@ public:
         return result;
     }
 
-	unittest {
-		writeln("expm1...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("expm1...");
+        writeln("test missing");
+        writeln("failed");
+    }
 
     /**
      * Decimal version of std.math function.
@@ -403,11 +403,11 @@ public:
         }
     }
 
-	unittest {
-		writeln("log...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("log...");
+        writeln("test missing");
+        writeln("failed");
+    }
 
     /**
      * log1p (== log(1 + x)).
@@ -418,11 +418,11 @@ public:
         return result;
     }
 
-	unittest {
-		writeln("log1p...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("log1p...");
+        writeln("test missing");
+        writeln("failed");
+    }
 
     /**
      * Decimal version of std.math.log10.
@@ -434,14 +434,14 @@ public:
         return result;
     }
 
-	unittest {
-		writeln("log10...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("log10...");
+        writeln("test missing");
+        writeln("failed");
+    }
 
     /**
-	 * Decimal version of std.math.log2.
+     * Decimal version of std.math.log2.
      * Required by General Decimal Arithmetic Specification
      */
     Decimal log2(Decimal arg) {
@@ -449,14 +449,14 @@ public:
         return result;
     }
 
-	unittest {
-		writeln("log2...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("log2...");
+        writeln("test missing");
+        writeln("failed");
+    }
 
     /**
-	 * Decimal version of std.math.logb.
+     * Decimal version of std.math.logb.
      * Required by General Decimal Arithmetic Specification
      */
     Decimal logb(Decimal arg) {
@@ -464,11 +464,11 @@ public:
         return result;
     }
 
-	unittest {
-		writeln("logb...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("logb...");
+        writeln("test missing");
+        writeln("failed");
+    }
 
     /**
      * Decimal version of std.math.pow.
@@ -479,11 +479,26 @@ public:
         return result;
     }
 
-	unittest {
-		writeln("pow...");
-		writeln("test missing");
-		writeln("failed");
-	}
+    unittest {
+        writeln("pow...");
+        writeln("test missing");
+        writeln("failed");
+    }
+
+    /**
+     * power.
+     * Required by General Decimal Arithmetic Specification
+     */
+    Decimal power(Decimal op1, Decimal op2) {
+        Decimal result;
+        return result;
+    }
+
+    unittest {
+        writeln("power...");
+        writeln("test missing");
+        writeln("failed");
+    }
 
 
     //--------------------------------
@@ -710,10 +725,8 @@ public:
         return result;
     }
 
-	unittest {
-		writeln("ln...");
-		writeln("test missing");
-		writeln("failed");
-	}
-
+    unittest {
+        write("ln...");
+        writeln("test missing");
+    }
 
