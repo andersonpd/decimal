@@ -28,22 +28,13 @@ import std.ctype: isdigit;
 import std.stdio: write, writeln;
 import std.string;
 
+unittest {
+    writeln("---------------------");
+    writeln("rounding......testing");
+    writeln("---------------------");
+}
 
 //TODO: add ref context flags to parameters.
-// TODO: No. Don't modify round; modify roundByMode.
-/**
- * Rounds the integral number to the specified precision.
- * Returns the exponent value corresponding to number of digits rounded.
- */
-/*public int round(ref long num, uint precision) {
-
-    roundByMode(num, context);
-} // end round()*/
-
-unittest {
-    write("long round...");
-    writeln("test missing");
-}
 
 // UNREADY: round. Description. Private or public?
 public void round(ref Decimal num, DecimalContext context) {
@@ -124,14 +115,13 @@ public void round(ref Decimal num, DecimalContext context) {
 } // end round()
 
 unittest {
-    writeln("-------------");
-    write("round........");
+    write("round.........");
     Decimal before = Decimal(9999);
     Decimal after = before;
     pushPrecision;
     context.precision = 3;
-    round(after, context);;
-    assert(after.toString() == "1.00E+5");
+    round(after, context);
+    assert(after.toString() == "1.00E+4");
     before = Decimal(1234567890);
     after = before;
     context.precision = 3;
@@ -225,7 +215,7 @@ private Decimal shorten(ref Decimal num, DecimalContext context) {
 }
 
 unittest {
-    write("shorten...");
+    write("shorten1......");
     writeln("test missing");
 }
 
@@ -260,12 +250,11 @@ private ulong shorten(ref ulong num, ref uint digits, uint precision) {
 }
 
 unittest {
-    write("shorten ulong...");
+    write("shorten2......");
     writeln("test missing");
 }
 
 // UNREADY: increment. Unit tests. Order.
-// TODO: unittest this
 /**
  * Increments the coefficient by 1. If this causes an overflow, divides by 10.
  */
@@ -276,18 +265,32 @@ private void increment(ref Decimal num) {
     Decimal test1 = Decimal(1, num.digits + num.expo);
     Decimal test2 = num;
     test2.digits++;
-    int result = decimal.arithmetic.compare(test1, test2, false);
-    if (result == 0) {
-        num.expo++;
+    int comp = decimal.arithmetic.compare(test1, test2, false);
+    if (comp == 0) {
         num.digits++;
         setDigits(num);
     }
 }
 
 unittest {
-    write("increment...");
-    writeln("test missing");
+    write("increment1....");
+    Decimal num;
+    Decimal expd;
+    num = 10;
+    expd = 11;
+    increment(num);
+    assert(num == expd);
+    num = 19;
+    expd = 20;
+    increment(num);
+    assert(num == expd);
+    num = 999;
+    expd = 1000;
+    increment(num);
+    assert(num == expd);
+    writeln("passed");
 }
+
 
 /**
  * Increments the coefficient by 1.
@@ -296,7 +299,7 @@ unittest {
  */
 private bool increment(ref ulong num) {
     uint digits = numDigits(num);
-    num ++;
+    num++;
     if (numDigits(num) > digits) {
         return true;
     }
@@ -306,8 +309,22 @@ private bool increment(ref ulong num) {
 }
 
 unittest {
-    write("increment ulong...");
-    writeln("test missing");
+    write("increment2....");
+    ulong num;
+    ulong expd;
+    num = 10;
+    expd = 11;
+    assert(!increment(num));
+    assert(num == expd);
+    num = 19;
+    expd = 20;
+    assert(!increment(num));
+    assert(num == expd);
+    num = 999;
+    expd = 1000;
+    assert(increment(num));
+    assert(num == expd);
+    writeln("passed");
 }
 
 /**
@@ -318,7 +335,7 @@ template isDecimal(T) {
 }
 
 unittest {
-    write("isDecimal(T)...");
+    write("isDecimal(T)..");
     writeln("test missing");
 }
 
@@ -333,7 +350,7 @@ private bool willOverflow(T)(const T num, DecimalContext context) if (isDecimal!
 }
 
 unittest{
-    write("willOverflow.....");
+    write("willOverflow..");
     Decimal dec = Decimal(123, 99);
     assert(willOverflow!Decimal(dec, Decimal.context));
     dec = Decimal(12, 99);
@@ -406,7 +423,7 @@ private void roundByMode(ref Decimal num, DecimalContext context) {
 } // end roundByMode()
 
 unittest {
-    write("roundByMode...");
+    write("roundByMode1..");
     writeln("test missing");
 }
 
@@ -480,29 +497,32 @@ private void roundByMode(bool sign, ref ulong num, ref uint digits, const uint p
 } // end roundByMode()
 
 unittest {
-    write("roundByMode ulong...");
+    write("roundByMode2..");
     writeln("test missing");
 }
 
 // UNREADY: setDigits. Description. Ordering.
+// TODO: check if flags are set (or not) incorrectly.
 /**
- * Sets the number of digits to the current precision.
+ * Sets the number of digits to (no more than) the current precision.
  */
 package void setDigits(ref Decimal num) {
     int diff = num.digits - context.precision;
     if (diff > 0) {
         round(num, context);
     }
-    else if (diff < 0) {
-        num.mant = decShl(num.mant, -diff);
-        num.expo += diff;
-    }
-    num.digits = context.precision;
 }
 
 unittest {
-    write("setDigits...");
+    write("setDigits.....");
     writeln("test missing");
+}
+
+unittest {
+    writeln("---------------------");
+    writeln("rounding.....finished");
+    writeln("---------------------");
+    writeln();
 }
 
 

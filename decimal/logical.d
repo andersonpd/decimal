@@ -31,8 +31,8 @@ bool isLogical(const Decimal num) {
 }
 
 unittest {
-	write("isLogical...");
-	writeln("test missing");
+    write("isLogical...");
+    writeln("test missing");
 }
 
 

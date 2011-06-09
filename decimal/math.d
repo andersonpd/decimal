@@ -24,13 +24,15 @@ import decimal.digits;
 import decimal.arithmetic;
 //import std.math;
 
-public:
+unittest {
+    writeln("---------------------");
+    writeln("math..........testing");
+    writeln("---------------------");
+}
 
-    //--------------------------------
-    //
-    // CONSTANTS
-    //
-    //--------------------------------
+//--------------------------------
+// CONSTANTS
+//--------------------------------
 
 //    public Decimal HALF;
 //    private static immutable  Decimal ONE = Decimal.ONE;
@@ -48,9 +50,8 @@ public:
     }
 
     unittest {
-        writeln("e...");
+        write("e..............");
         writeln("test missing");
-        writeln("failed");
     }
 
     /**
@@ -62,9 +63,8 @@ public:
     }
 
     unittest {
-        writeln("e...");
+        write("e..............");
         writeln("test missing");
-        writeln("failed");
     }
 
     /**
@@ -134,9 +134,8 @@ public:
     }
 
     unittest {
-        writeln("pi...");
+        write("pi.............");
         writeln("test missing");
-        writeln("failed");
     }
 /*    unittest {
         write("pi....");
@@ -148,9 +147,8 @@ public:
     }
 
     unittest {
-        writeln("sqr...");
+        write("sqr............");
         writeln("test missing");
-        writeln("failed");
     }
 
     /**
@@ -183,9 +181,8 @@ public:
     }
 
     unittest {
-        writeln("pi...");
+        write("pi.............");
         writeln("test missing");
-        writeln("failed");
     }
 
     /**
@@ -196,9 +193,8 @@ public:
     }
 
     unittest {
-        writeln("sqrt...");
+        write("sqrt...........");
         writeln("test missing");
-        writeln("failed");
     }
 
 /*    unittest {
@@ -217,9 +213,8 @@ public:
     }
 
     unittest {
-        writeln("odd...");
+        write("odd............");
         writeln("test missing");
-        writeln("failed");
     }
 
     Decimal sqrt(const long arg, uint precision) {
@@ -227,9 +222,8 @@ public:
     }
 
     unittest {
-        writeln("sqrt...");
+        write("sqrt...........");
         writeln("test missing");
-        writeln("failed");
     }
 
     Decimal sqrt(const long arg) {
@@ -237,9 +231,8 @@ public:
     }
 
     unittest {
-        writeln("sqrt...");
+        write("sqrt...........");
         writeln("test missing");
-        writeln("failed");
     }
 
     /**
@@ -307,9 +300,8 @@ public:
     }
 
     unittest {
-        writeln("sqrt...");
+        write("sqrt...........");
         writeln("test missing");
-        writeln("failed");
     }
 
     //--------------------------------
@@ -344,9 +336,8 @@ public:
     }
 
     unittest {
-        writeln("exp...");
+        write("exp............");
         writeln("test missing");
-        writeln("failed");
     }
 
     /**
@@ -359,9 +350,8 @@ public:
     }
 
     unittest {
-        writeln("exp2...");
+        write("exp2...........");
         writeln("test missing");
-        writeln("failed");
     }
 
     /**
@@ -374,9 +364,8 @@ public:
     }
 
     unittest {
-        writeln("expm1...");
+        write("expm1..........");
         writeln("test missing");
-        writeln("failed");
     }
 
     /**
@@ -404,9 +393,8 @@ public:
     }
 
     unittest {
-        writeln("log...");
+        write("log............");
         writeln("test missing");
-        writeln("failed");
     }
 
     /**
@@ -419,9 +407,8 @@ public:
     }
 
     unittest {
-        writeln("log1p...");
+        write("log1p..........");
         writeln("test missing");
-        writeln("failed");
     }
 
     /**
@@ -435,9 +422,8 @@ public:
     }
 
     unittest {
-        writeln("log10...");
+        write("log10..........");
         writeln("test missing");
-        writeln("failed");
     }
 
     /**
@@ -450,24 +436,8 @@ public:
     }
 
     unittest {
-        writeln("log2...");
+        write("log2...........");
         writeln("test missing");
-        writeln("failed");
-    }
-
-    /**
-     * Decimal version of std.math.logb.
-     * Required by General Decimal Arithmetic Specification
-     */
-    Decimal logb(Decimal arg) {
-        Decimal result;
-        return result;
-    }
-
-    unittest {
-        writeln("logb...");
-        writeln("test missing");
-        writeln("failed");
     }
 
     /**
@@ -480,9 +450,8 @@ public:
     }
 
     unittest {
-        writeln("pow...");
+        write("pow............");
         writeln("test missing");
-        writeln("failed");
     }
 
     /**
@@ -495,9 +464,8 @@ public:
     }
 
     unittest {
-        writeln("power...");
+        write("power..........");
         writeln("test missing");
-        writeln("failed");
     }
 
 
@@ -691,7 +659,7 @@ public:
     }
 
     unittest {
-        write("acosh.......");
+        write("acosh........");
         writeln("..failed");
     }
 
@@ -705,7 +673,7 @@ public:
     }
 
     unittest {
-        write("atanh.......");
+        write("atanh........");
         writeln("..failed");
     }
 
@@ -726,7 +694,15 @@ public:
     }
 
     unittest {
-        write("ln...");
+        write("ln.............");
         writeln("test missing");
     }
+
+unittest {
+    writeln("---------------------");
+    writeln("math.........finished");
+    writeln("---------------------");
+    writeln();
+}
+
 

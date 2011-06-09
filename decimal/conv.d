@@ -27,6 +27,12 @@ import std.conv;
 import std.stdio;
 import std.string;
 
+unittest {
+    writeln("---------------------");
+    writeln("conv..........testing");
+    writeln("---------------------");
+}
+
 //--------------------------------
 //  conversions
 //--------------------------------
@@ -249,3 +255,11 @@ unittest {
     writeln("num = ", num);
     writeln("dec = ", dec);*/
 }
+
+unittest {
+    writeln("---------------------");
+    writeln("conv.........finished");
+    writeln("---------------------");
+}
+
+

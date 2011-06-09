@@ -26,6 +26,12 @@ import std.string;
 private BigInt tens[18];
 private BigInt fives[18];
 
+unittest {
+    writeln("---------------------");
+    writeln("digits........testing");
+    writeln("---------------------");
+}
+
 //public static ZERO = BigInt();
 
 // TODO: preload the powers of ten and powers of five (& powers of 2?)
@@ -33,6 +39,11 @@ private BigInt fives[18];
 // TODO: compare benchmarks for division by powers of 10 vs. 2s * 5s.
 
 // BigInt versions
+unittest {
+    writeln("---------------------");
+    writeln("BigInt functions");
+    writeln("---------------------");
+}
 
 public int numDigits(const BigInt big) {
     BigInt billion = pow10(9);
@@ -52,9 +63,39 @@ public int numDigits(const BigInt big) {
     return count + numDigits(n);
 }
 
+public int firstDigit(const BigInt big) {
+    BigInt billion = pow10(9);
+    BigInt quintillion = pow10(18);
+    BigInt dig = cast(BigInt)big;
+    while (dig > quintillion) {
+        dig = decShr(dig, 18);
+    }
+    if (dig > billion) {
+        dig = decShr(dig, 9);
+    }
+
+    long n = dig.toLong();
+    return firstDigit(n);
+}
+
+unittest {
+    write("firstDigit.....");
+    writeln("test missing");
+}
+
+unittest {
+    write("numDigits......");
+    writeln("test missing");
+}
+
 public BigInt pow10(const int n) {
     BigInt big = BigInt(1);
     return decShl(big, n);
+}
+
+unittest {
+    write("pow10..........");
+    writeln("test missing");
 }
 
 public BigInt decShl(ref BigInt big, int n) {
@@ -68,6 +109,11 @@ public BigInt decShl(ref BigInt big, int n) {
     big = big << n;
     big *= fives;
     return big;
+}
+
+unittest {
+    write("decShl.........");
+    writeln("test missing");
 }
 
 public BigInt decShr(ref BigInt big, int n) {
@@ -87,6 +133,11 @@ public BigInt decShr(ref BigInt big, int n) {
     return big;
 }
 
+unittest {
+    write("decShr.........");
+    writeln("test missing");
+}
+
 string toDecString(const BigInt x){
     string outbuff="";
     void sink(const(char)[] s) { outbuff ~= s; }
@@ -94,32 +145,35 @@ string toDecString(const BigInt x){
     return outbuff;
 }
 
-public int firstDigit(const BigInt big) {
-    BigInt billion = pow10(9);
-    BigInt quintillion = pow10(18);
-    BigInt dig = cast(BigInt)big;
-    while (dig > quintillion) {
-        dig = decShr(dig, 18);
-    }
-    if (dig > billion) {
-        dig = decShr(dig, 9);
-    }
-
-    long n = dig.toLong();
-    return firstDigit(n);
+unittest {
+    write("toDecString....");
+    writeln("test missing");
 }
 
 public BigInt dup(const BigInt big) {
     return cast(BigInt)big;
 }
 
+unittest {
+    write("dup(BigInt)....");
+    writeln("test missing");
+}
+
 public int lastDigit(BigInt big) {
     return cast(int)(big % 10); // big % 10;
 }
 
-//
+unittest {
+    write("lastDigit......");
+    writeln("test missing");
+}
+
 //    long integer versions
-//
+unittest {
+    writeln("---------------------");
+    writeln("long integer functions");
+    writeln("---------------------");
+}
 
 // TODO: check for overflow
 public long decShr(ref long num, int n) {
@@ -127,6 +181,11 @@ public long decShr(ref long num, int n) {
     long scale = std.math.pow(10L,n);
     num /= scale;
     return num;
+}
+
+unittest {
+    write("decShr.........");
+    writeln("test missing");
 }
 
 // TODO: check for overflow
@@ -137,8 +196,18 @@ public long decShl(ref long num, int n) {
     return num;
 }
 
+unittest {
+    write("decShl.........");
+    writeln("test missing");
+}
+
 public int lastDigit(const long num) {
     return cast(int)(num % 10);
+}
+
+unittest {
+    write("lastDigit......");
+    writeln("test missing");
 }
 
 public int firstDigit(const long num) {
@@ -149,6 +218,11 @@ public int firstDigit(const long num) {
     return cast(int)n;
 }
 
+unittest {
+    write("firstDigit.....");
+    writeln("test missing");
+}
+
 public int numDigits(const long num) {
     long n = num;
     int count = 1;
@@ -157,6 +231,11 @@ public int numDigits(const long num) {
         count++;
     }
     return count;
+}
+
+unittest {
+    write("numDigits......");
+    writeln("test missing");
 }
 
 /*
@@ -196,14 +275,6 @@ template Test(T) {
 //--------------------------------
 
 unittest {
-    writeln();
-    writeln("-------------------");
-    writeln("testing......digits");
-    writeln("-------------------");
-    writeln();
-}
-
-unittest {
     bool passed = true;
     long n = 12345;
     Test!(long).isEqual(lastDigit(n), 5, "digits 1");
@@ -218,8 +289,13 @@ unittest {
 //    assert(lastDigit(big) == 5);
 //    assert(numDigits(big) == 101);
 //    assert(firstDigit(big) == 1);
-    writeln("Digits tested");
 }
 
+unittest {
+    writeln("-------------------");
+    writeln("digits...end testing");
+    writeln("-------------------");
+    writeln();
+}
 
 

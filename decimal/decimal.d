@@ -40,11 +40,9 @@ import std.stdio: write, writeln;
 import std.string;
 
 unittest {
-    writeln();
     writeln("-------------------");
-    writeln("testing.....Decimal");
+    writeln("decimal.....testing");
     writeln("-------------------");
-    writeln();
 }
 
 alias Decimal.context context;
@@ -58,9 +56,19 @@ package static void pushPrecision() {
     precisionStack.push(context.precision);
 }
 
+unittest {
+	write("pushPrecision...");
+	writeln("test missing");
+}
+
 /// restores the previous precision
 package static void popPrecision() {
     context.precision = precisionStack.pop();
+}
+
+unittest {
+	write("popPrecision...");
+	writeln("test missing");
 }
 
 /**
@@ -129,9 +137,19 @@ public:
         sval = sv;
     }
 
+    unittest {
+	    write("this(bool, SV)...");
+	    writeln("test missing");
+    }
+
     // UNREADY: this(SV). Flags. Unit Tests.
     private this(SV sv) {
         sval = sv;
+    }
+
+    unittest {
+	    write("this(SV)...");
+	    writeln("test missing");
     }
 
     // UNREADY: this(bool, const BigInt, const int). Flags. Unit Tests.
@@ -167,6 +185,11 @@ public:
 //        writeln("8");
         this.digits = numDigits(this.mant);
 //        writeln("0");
+    }
+
+    unittest {
+	    write("this(bool, BigInt, int)...");
+	    writeln("test missing");
     }
 
 /*    /// Assign a BigInt
@@ -210,6 +233,11 @@ public:
         mant = payload;
     }
 
+    unittest {
+	    write("this(bool, string, uint)...");
+	    writeln("test missing");
+    }
+
     // UNREADY: this(const BigInt, const int). Flags. Unit Tests.
     /**
      * Constructs a Decimal from a BigInt coefficient and an int exponent.
@@ -219,6 +247,11 @@ public:
 //        writeln("calling this(3)");
         this(false, coefficient, exponent);
     };
+
+    unittest {
+	    write("this(BigInt, int)...");
+	    writeln("test missing");
+    }
 
     // UNREADY: this(const BigInt). Flags. Unit Tests.
     /**
@@ -237,6 +270,11 @@ public:
         this(BigInt(coefficient), exponent);
     }
 
+    unittest {
+	    write("this(long, int..");
+	    writeln("test missing");
+    }
+
     // UNREADY: this(const long). Flags. Unit Tests.
     /**
      * Constructs a number from an integer value.
@@ -244,6 +282,11 @@ public:
     this(const long coefficient) {
 //        writeln("calling this(6)");
         this(BigInt(coefficient));
+    }
+
+    unittest {
+	    write("this(long)...");
+	    writeln("test missing");
     }
 
     // UNREADY: this(const long, const int, const int). Flags. Unit Tests.
@@ -258,6 +301,11 @@ public:
         context.precision = precision;
         setDigits(this);
 //        popPrecision;
+    }
+
+    unittest {
+	    write("this(long, int, int)...");
+	    writeln("test missing");
     }
 
     // UNREADY: this(const long, const int, const int). Flags. Unit Tests.
@@ -280,6 +328,11 @@ public:
         this = str;
     };
 
+    unittest {
+	    write("this(string)...");
+	    writeln("test missing");
+    }
+
     // UNREADY: this(const real). Flags. Unit Tests.
     /**
      *    Constructs a number from a real value.
@@ -287,6 +340,11 @@ public:
     this(const real r) {
         string str = format("%.*G", cast(int)context.precision, r);
         this = str;
+    }
+
+    unittest {
+	    write("this(real)...");
+	    writeln("test missing");
     }
 
     // UNREADY: this(const real, const int). Flags. Unit Tests.
@@ -299,11 +357,21 @@ public:
         this = str;
     }
 
+    unittest {
+	    write("this(real, int..");
+	    writeln("test missing");
+    }
+
     // UNREADY: this(Decimal). Flags. Unit Tests.
     // copy constructor
     this(const Decimal that) {
         this = that;
     };
+
+    unittest {
+	    write("this(Decimal)...");
+	    writeln("test missing");
+    }
 
     // UNREADY: dup. Flags. Unit Tests.
     /**
@@ -317,6 +385,11 @@ public:
         copy.mant = cast(BigInt) mant;
         copy.digits = digits;
         return copy;
+    }
+
+    unittest {
+	    write("dup...");
+	    writeln("test missing");
     }
 
 unittest {
@@ -367,43 +440,50 @@ unittest {
     // UNREADY: opAssign(T: Decimal)(const Decimal). Flags. Unit Tests.
     /// Assigns a Decimal (makes a copy)
     void opAssign/*(T:Decimal)*/(const Decimal that) {
-//        writeln("Decimal assign");
-//        writeln("==============");
         this.sign = that.sign;
         this.sval = that.sval;
         this.digits = that.digits;
         this.expo = that.expo;
         this.mant = cast(BigInt) that.mant;
-//        writeln("this.digits = ", this.digits);
-//        writeln("that.digits = ", that.digits);
-
     }
 
-    // UNREADY: opAssign(T)(const T). Flags. Unit Tests.
+    unittest {
+	    write("opAssign(Decimal)...");
+	    writeln("test missing");
+    }
+
+    // UNREADY: opAssign(T)(const T). Flags.
     ///    Assigns a floating point value.
     void opAssign/*(T)*/(const long that) {
-//        writeln("T assign [", /*T.stringof,*/ "]");
-//        writeln("==============");
         this = Decimal(that);
+    }
+
+    unittest {
+	    write("opAssign(long)...");
+	    writeln("test missing");
     }
 
     // UNREADY: opAssign(T)(const T). Flags. Unit Tests.
     ///    Assigns a floating point value.
     void opAssign/*(T)*/(const real that) {
-//        writeln("T assign [", /*T.stringof,*/ "]");
-//        writeln("==============");
         this = Decimal(that);
     }
 
+    unittest {
+	    write("opAssign(real)...");
+	    writeln("test missing");
+    }
+
+    // TODO: Don says this implicit cast is "disgusting"!!
     /// Assigns a string
     void opAssign/*(T:string)*/(const string numeric_string) {
-//        writeln("string assign");
-//        writeln("-------------");
         this = toNumber(numeric_string);
-//        writeln("this.mant = ", this.mant);
-//        writeln("this.digits = ", this.digits);
+    }
 
-    };
+    unittest {
+	    write("opAssign(string)...");
+	    writeln("test missing");
+    }
 
 //--------------------------------
 // string representations
@@ -427,6 +507,11 @@ public const string toAbstract() {
     }
 }
 
+unittest {
+	write("toAbstract...");
+	writeln("test missing");
+}
+
 /**
  * Converts a number to its string representation.
  */
@@ -434,29 +519,55 @@ const string toString() {
     return toSciString(this);
 };    // end toString()
 
+unittest {
+	write("toString...");
+	writeln("test missing");
+}
+
 //--------------------------------
 // member properties
 //--------------------------------
+
+// TODO: make these true properties.
 
     /// returns the exponent of this number
     const int exponent() {
         return this.expo;
     }
 
+unittest {
+	write("exponent...");
+	writeln("test missing");
+}
     /// returns the adjusted exponent of this number
     const int adjustedExponent() {
         return expo + digits - 1;
     }
+
+unittest {
+	write("adjustedExponent...");
+	writeln("test missing");
+}
 
     /// returns the number of decimal digits in the coefficient of this number
     const int getDigits() {
         return this.digits;
     }
 
+unittest {
+	write("getDigits...");
+	writeln("test missing");
+}
+
     /// returns the coefficient of this number
     const const(BigInt) coefficient() {
         return this.mant;
     }
+
+unittest {
+	write("coefficient...");
+	writeln("test missing");
+}
 
     /// returns the sign of this number
     const int sgn() {
@@ -464,11 +575,21 @@ const string toString() {
         return sign ? -1 : 1;
     }
 
+unittest {
+	write("sgn...");
+	writeln("test missing");
+}
+
     /// returns a number with the same exponent as this number
     /// and a coefficient of 1.
     const Decimal quantum() {
         return Decimal(1, this.expo);
     }
+
+unittest {
+	write("quantum...");
+	writeln("test missing");
+}
 
     // TODO: check for NaN? Is this the right thing to do here?
     const ulong getNaNPayload() {
@@ -476,29 +597,59 @@ const string toString() {
         return cast(ulong)this.mant.toLong;
     }
 
+unittest {
+	write("getNanPayload...");
+	writeln("test missing");
+}
+
     // TODO: check for NaN? Is this the right thing to do here?
     void setNaNPayload(const ulong payload) {
         if (!isNaN) throw new Exception("Invalid Operation");
         this.mant = BigInt(payload);
     }
 
+unittest {
+	write("setNaNPayload...");
+	writeln("test missing");
+}
 
 //--------------------------------
 // floating point properties
 //--------------------------------
 
+    unittest {
+        writeln("-------------------");
+        writeln("floating pt properties");
+        writeln("-------------------");
+    }
+
     static int precision() {
         return context.precision;
     }
+
+unittest {
+	write("precision...");
+	writeln("test missing");
+}
 
     /// returns the default value for this type (NaN)
     static Decimal init() {
         return NaN.dup;
     }
 
+unittest {
+	write("init...");
+	writeln("test missing");
+}
+
     /// Returns NaN
     static Decimal nan() {
         return NaN.dup;
+    }
+
+    unittest {
+	    write("nan...");
+	    writeln("test missing");
     }
 
     /// Returns positive infinity.
@@ -506,9 +657,19 @@ const string toString() {
         return POS_INF.dup;
     }
 
+    unittest {
+	    write("infinity...");
+	    writeln("test missing");
+    }
+
     /// Returns the number of decimal digits in this context.
     static uint dig() {
         return context.precision;
+    }
+
+    unittest {
+	    write("dig...");
+	    writeln("test missing");
     }
 
     /// Returns the number of binary digits in this context.
@@ -516,12 +677,27 @@ const string toString() {
         return cast(int)(context.precision/LOG2);
     }
 
+    unittest {
+	    write("mant_dig...");
+	    writeln("test missing");
+    }
+
     static int min_exp() {
         return cast(int)(context.eMin/LOG2);
     }
 
+    unittest {
+	    write("min_exp...");
+	    writeln("test missing");
+    }
+
     static int max_exp() {
         return cast(int)(context.eMax/LOG2);
+    }
+
+    unittest {
+	    write("max_exp...");
+	    writeln("test missing");
     }
 
     // Returns the maximum representable normal value in the current context.
@@ -531,9 +707,19 @@ const string toString() {
         return Decimal(cstr);
     }
 
+    unittest {
+	    write("max...");
+	    writeln("test missing");
+    }
+
     // Returns the minimum representable normal value in the current context.
     static Decimal min_normal() {
         return Decimal(1, context.eMin);
+    }
+
+    unittest {
+	    write("min_normal...");
+	    writeln("test missing");
     }
 
     // Returns the minimum representable subnormal value in the current context.
@@ -541,17 +727,37 @@ const string toString() {
         return Decimal(1, context.eTiny);
     }
 
+    unittest {
+	    write("min...");
+	    writeln("test missing");
+    }
+
     // returns the smallest available increment to 1.0 in this context
     static Decimal epsilon() {
         return Decimal(1, -context.precision);
+    }
+
+    unittest {
+	    write("epsilon...");
+	    writeln("test missing");
     }
 
     static int min_10_exp() {
         return context.eMin;
     }
 
+    unittest {
+	    write("min_10_exp...");
+	    writeln("test missing");
+    }
+
     static int max_10_exp() {
         return context.eMax;
+    }
+
+    unittest {
+	    write("max_10_exp...");
+	    writeln("test missing");
     }
 
 //--------------------------------
@@ -565,10 +771,10 @@ const string toString() {
         return  true;
     }
 
-unittest {
-	write("isCanonical...");
-	writeln("test missing");
-}
+    unittest {
+        write("isCanonical...");
+        writeln("test missing");
+    }
 
     /**
      * Returns the canonical form of the number.
@@ -577,16 +783,30 @@ unittest {
         return this.dup;
     }
 
-unittest {
-	write("canonical...");
-	writeln("test missing");
-}
+    unittest {
+        write("canonical....");
+        Decimal num = Decimal("2.50");
+        assert(num.isCanonical);
+        writeln("passed");
+    }
 
     /**
      * Returns true if this number is + or - zero.
      */
     const bool isZero() {
         return sval == SV.ZERO;
+    }
+
+    unittest {
+	    write("isZero.......");
+        Decimal num;
+        num = Decimal("0");
+        assert(num.isZero);
+        num = Decimal("2.50");
+        assert(!num.isZero);
+        num = Decimal("-0E+2");
+        assert(num.isZero);
+        writeln("passed");
     }
 
     /**
@@ -596,11 +816,35 @@ unittest {
         return this.sval == SV.QNAN || this.sval == SV.SNAN;
     }
 
+    unittest {
+	    write("isNaN........");
+        Decimal num;
+        num = Decimal("2.50");
+        assert(!num.isNaN);
+        num = Decimal("NaN");
+        assert(num.isNaN);
+        num = Decimal("-sNaN");
+        assert(num.isNaN);
+        writeln("passed");
+    }
+
     /**
      * Returns true if this number is a signaling NaN.
      */
     const bool isSignaling() {
         return this.sval == SV.SNAN;
+    }
+
+    unittest {
+	    write("isSignaling..");
+        Decimal num;
+        num = Decimal("2.50");
+        assert(!num.isSignaling);
+        num = Decimal("NaN");
+        assert(!num.isSignaling);
+        num = Decimal("sNaN");
+        assert(num.isSignaling);
+        writeln("passed");
     }
 
     /**
@@ -610,11 +854,35 @@ unittest {
         return this.sval == SV.QNAN;
     }
 
+    unittest {
+	    write("isQuiet......");
+        Decimal num;
+        num = Decimal("2.50");
+        assert(!num.isQuiet);
+        num = Decimal("NaN");
+        assert(num.isQuiet);
+        num = Decimal("sNaN");
+        assert(!num.isQuiet);
+        writeln("passed");
+    }
+
     /**
      * Returns true if this number is + or - infinity.
      */
     const bool isInfinite() {
         return this.sval == SV.INF;
+    }
+
+    unittest {
+	    write("isInfinite...");
+        Decimal num;
+        num = Decimal("2.50");
+        assert(!num.isInfinite);
+        num = Decimal("-Inf");
+        assert(num.isInfinite);
+        num = Decimal("NaN");
+        assert(!num.isInfinite);
+        writeln("passed");
     }
 
     /**
@@ -626,6 +894,24 @@ unittest {
             && sval != SV.SNAN;
     }
 
+    unittest {
+	    write("isFinite.....");
+        Decimal num;
+        num = Decimal("2.50");
+        assert(num.isFinite);
+        num = Decimal("-0.3");
+        assert(num.isFinite);
+        num = 0;
+        assert(num.isFinite);
+        num = Decimal("Inf");
+        assert(!num.isFinite);
+        num = Decimal("-Inf");
+        assert(!num.isFinite);
+        num = Decimal("NaN");
+        assert(!num.isFinite);
+        writeln("passed");
+    }
+
     /**
      * Returns true if this number is a NaN or infinity.
      */
@@ -635,6 +921,11 @@ unittest {
             || sval == SV.SNAN;
     }
 
+    unittest {
+	    write("isSpecial....");
+	    writeln("test missing");
+    }
+
     /**
      * Returns true if this number is negative. (Includes -0)
      */
@@ -642,8 +933,32 @@ unittest {
         return this.sign;
     }
 
+    unittest {
+	    write("isSigned.....");
+        Decimal num;
+        num = Decimal("2.50");
+        assert(!num.isSigned);
+        num = Decimal("-12");
+        assert(num.isSigned);
+        num = Decimal("-0");
+        assert(num.isSigned);
+        writeln("passed");
+    }
+
     const bool isNegative() {
         return this.sign;
+    }
+
+    unittest {
+	    write("isNegative...");
+        Decimal num;
+        num = Decimal("2.50");
+        assert(!num.isNegative);
+        num = Decimal("-12");
+        assert(num.isNegative);
+        num = Decimal("-0");
+        assert(num.isNegative);
+        writeln("passed");
     }
 
     /**
@@ -654,12 +969,57 @@ unittest {
         return adjustedExponent < context.eMin;
     }
 
+    unittest {
+	    write("isSubnormal..");
+        Decimal num;
+        num = Decimal("2.50");
+        assert(!num.isSubnormal);
+        num = Decimal("0.1E-99");
+        assert(num.isSubnormal);
+        num = Decimal("0.00");
+        assert(!num.isSubnormal);
+        num = Decimal("-Inf");
+        assert(!num.isSubnormal);
+        num = Decimal("NaN");
+        assert(!num.isSubnormal);
+        writeln("passed");
+    }
+
     /**
      * Returns true if this number is normal.
      */
     const bool isNormal() {
         if (sval != SV.CLEAR) return false;
         return adjustedExponent >= context.eMin;
+    }
+
+    unittest {
+	    write("isNormal.....");
+        Decimal num;
+        num = Decimal("2.50");
+        assert(num.isNormal);
+        num = Decimal("0.1E-99");
+        assert(!num.isNormal);
+        num = Decimal("0.00");
+        assert(!num.isNormal);
+        num = Decimal("-Inf");
+        assert(!num.isNormal);
+        num = Decimal("NaN");
+        assert(!num.isNormal);
+        writeln("passed");
+    }
+
+    /**
+     * Returns true if this number is integral;
+     * that is, its fractional part is zero.
+     */
+     const bool isIntegral() {
+        return expo >= 0;
+     }
+
+    unittest {
+	    write("isIntegral...");
+	    writeln("test missing");
     }
 
 //--------------------------------
@@ -674,6 +1034,11 @@ unittest {
         return compare(this, that);
     }
 
+unittest {
+	write("opCmp...");
+	writeln("test missing");
+}
+
     /**
      * Returns true if this number is equal to the specified Decimal.
      * A NaN is not equal to any number, not even to another NaN.
@@ -686,6 +1051,10 @@ unittest {
         return equals(this, that);
     }
 
+unittest {
+	write("opEquals...");
+	writeln("test missing");
+}
 
 //--------------------------------
 // unary arithmetic operators
@@ -700,6 +1069,11 @@ unittest {
         return minus(this);
     }
 
+    unittest {
+	    write("opUnary...");
+	    writeln("test missing");
+    }
+
     /**
      * unary plus -- returns a copy.
      * This operation may set flags -- equivalent to
@@ -707,6 +1081,11 @@ unittest {
      */
     const Decimal opPos() {
         return plus(this);
+    }
+
+    unittest {
+	    write("opUnary...");
+	    writeln("test missing");
     }
 
     /**
@@ -717,12 +1096,22 @@ unittest {
         return this;
     }
 
+    unittest {
+	    write("opUnary...");
+	    writeln("test missing");
+    }
+
     /**
      * Returns this - 1.
      */
     Decimal opPostDec() {
         this -= 1;
         return this;
+    }
+
+    unittest {
+	    write("opUnary...");
+	    writeln("test missing");
     }
 
 //--------------------------------
@@ -760,42 +1149,91 @@ unittest {
         return add(this, addend);
     }
 
+    unittest {
+	    write("opBinary...");
+	    writeln("test missing");
+    }
+
     // Adds a number to this and returns the result.
     const Decimal opAdd(T)(const T addend) {
         return add(this, Decimal(addend));
     }
 
+    unittest {
+	    write("opBinary...");
+	    writeln("test missing");
+    }
 
     const Decimal opSub(T:Decimal)(const T subtrahend) {
         return subtract(this, subtrahend);
+    }
+
+    unittest {
+	    write("opBinary...");
+	    writeln("test missing");
     }
 
     const Decimal opSub(T)(const T subtrahend) {
         return subtract(this, Decimal(subtrahend));
     }
 
+    unittest {
+	    write("opBinary...");
+	    writeln("test missing");
+    }
+
     const Decimal opMul(T:Decimal)(const T multiplier) {
         return multiply(this, multiplier);
+    }
+
+    unittest {
+	    write("opBinary...");
+	    writeln("test missing");
     }
 
     const Decimal opMul(T)(const T multiplier) {
         return multiply(this, Decimal(multiplier));
     }
 
+    unittest {
+	    write("opBinary...");
+	    writeln("test missing");
+    }
+
     const Decimal opDiv(T:Decimal)(const T divisor) {
         return divide(this, divisor);
+    }
+
+    unittest {
+	    write("opBinary...");
+	    writeln("test missing");
     }
 
     const Decimal opDiv(T)(const T divisor) {
         return divide(this, Decimal(divisor));
     }
 
+    unittest {
+	    write("opBinary...");
+	    writeln("test missing");
+    }
+
     const Decimal opMod(T:Decimal)(const T divisor) {
         return remainder(this, divisor);
     }
 
+    unittest {
+	    write("opBinary...");
+	    writeln("test missing");
+    }
+
     const Decimal opMod(T)(const T divisor) {
         return remainder(this, Decimal(divisor));
+    }
+
+    unittest {
+	    write("opBinary...");
+	    writeln("test missing");
     }
 
 //--------------------------------
@@ -807,13 +1245,28 @@ unittest {
         return this;
     }
 
+    unittest {
+	    write("opOpAssign...");
+	    writeln("test missing");
+    }
+
 /*    ref Decimal opOpAssign(string op, T)(const T operand) {
         return opBinary!op(this, operand);
     }*/
 
+    unittest {
+	    write("opOpAssign...");
+	    writeln("test missing");
+    }
+
     Decimal opSubAssign(T)(const T subtrahend) {
         this = this - subtrahend;
         return this;
+    }
+
+    unittest {
+	    write("opOpAssign...");
+	    writeln("test missing");
     }
 
     Decimal opMulAssign(T)(const T factor) {
@@ -821,14 +1274,29 @@ unittest {
         return this;
     }
 
+    unittest {
+	    write("opOpAssign...");
+	    writeln("test missing");
+    }
+
     Decimal opDivAssign(T)(const T divisor) {
         this = this / divisor;
         return this;
     }
 
+    unittest {
+	    write("opOpAssign...");
+	    writeln("test missing");
+    }
+
     Decimal opModAssign(T)(const T divisor) {
         this = this % divisor;
         return this;
+    }
+
+    unittest {
+	    write("opOpAssign...");
+	    writeln("test missing");
     }
 
 //-----------------------------
@@ -839,13 +1307,28 @@ unittest {
         return nextPlus(this);
     }
 
+unittest {
+	write("nextUp...");
+	writeln("test missing");
+}
+
     const Decimal nextDown() {
         return nextMinus(this);
     }
 
+unittest {
+	write("nextMinus...");
+	writeln("test missing");
+}
+
     const Decimal nextAfter(const Decimal dcm) {
         return nextToward(this, dcm);
     }
+
+unittest {
+	write("nextAfter...");
+	writeln("test missing");
+}
 
 //-----------------------------
 // helper functions

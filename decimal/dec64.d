@@ -159,8 +159,8 @@ struct Dec64 {
     }
 
 unittest {
-	write("isCanonical...");
-	writeln("test missing");
+    write("isCanonical...");
+    writeln("test missing");
 }
 
     /**

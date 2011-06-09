@@ -38,6 +38,12 @@ import std.ctype: isdigit;
 import std.stdio: write, writeln;
 import std.string;
 
+unittest {
+    writeln("---------------------");
+    writeln("arithmetic....testing");
+    writeln("---------------------");
+}
+
 // BigInt BIG_ONE = BigInt(1);
 // TODO: BIG_ONE, BIG_ZERO
 
@@ -114,6 +120,7 @@ public string toSciString(const Decimal num) {
 };    // end toSciString()
 
 unittest {
+    writeln("-------------------");
     write("to-sci-str...");
     Decimal dec = Decimal(123); //(false, 123, 0);
 //    writeln("dec = ", dec);
@@ -191,7 +198,7 @@ public string toEngString(const Decimal num) {
 };
 
 unittest {
-    write("toEngString...");
+    write("toEngString..");
     writeln("test missing");
 }
 
@@ -391,7 +398,6 @@ public Decimal toNumber(const string numeric_string) {
 }
 
 unittest {
-    writeln("-------------------");
     write("to-number....");
     Decimal f;
     string str = "0";
@@ -400,8 +406,6 @@ unittest {
     assert(f.toAbstract() == "[0,0,0]");
     str = "0.00";
     f = str;
-    writeln("f.toString() = ", f.toString());
-
     assert(f.toString() == str);
     assert(f.toAbstract() == "[0,0,-2]");
     str = "0.0";
@@ -552,109 +556,6 @@ unittest {
     writeln("passed");
 }
 
-/*unittest {
-    Decimal dcm;
-    write("is-canonical.");
-    dcm = Decimal("2.50");
-    assert(isCanonical(dcm));
-    writeln("passed");
-
-    write("is-finite....");
-    dcm = Decimal("2.50");
-    assert(isFinite(dcm));
-    dcm = Decimal("-0.3");
-    assert(isFinite(dcm));
-    dcm = 0;
-    assert(isFinite(dcm));
-    dcm = Decimal("Inf");
-    assert(!isFinite(dcm));
-    dcm = Decimal("-Inf");
-    assert(!isFinite(dcm));
-    dcm = Decimal("NaN");
-    assert(!isFinite(dcm));
-    writeln("passed");
-
-    write("is-infinite..");
-    dcm = Decimal("2.50");
-    assert(!isInfinite(dcm));
-    dcm = Decimal("-Inf");
-    assert(isInfinite(dcm));
-    dcm = Decimal("NaN");
-    assert(!isInfinite(dcm));
-    writeln("passed");
-
-    write("is-NaN.......");
-    dcm = Decimal("2.50");
-    assert(!isNaN(dcm));
-    dcm = Decimal("NaN");
-    assert(isNaN(dcm));
-    dcm = Decimal("-sNaN");
-    assert(isNaN(dcm));
-    writeln("passed");
-
-    write("is-normal....");
-    dcm = Decimal("2.50");
-    assert(isNormal(dcm));
-    dcm = Decimal("0.1E-99");
-    assert(!isNormal(dcm));
-    dcm = Decimal("0.00");
-    assert(!isNormal(dcm));
-    dcm = Decimal("-Inf");
-    assert(!isNormal(dcm));
-    dcm = Decimal("NaN");
-    assert(!isNormal(dcm));
-    writeln("passed");
-
-    write("is-quiet.....");
-    dcm = Decimal("2.50");
-    assert(!isQuiet(dcm));
-    dcm = Decimal("NaN");
-    assert(isQuiet(dcm));
-    dcm = Decimal("sNaN");
-    assert(!isQuiet(dcm));
-    writeln("passed");
-
-    write("is-signaling.");
-    dcm = Decimal("2.50");
-    assert(!isSignaling(dcm));
-    dcm = Decimal("NaN");
-    assert(!isSignaling(dcm));
-    dcm = Decimal("sNaN");
-    assert(isSignaling(dcm));
-    writeln("passed");
-
-    write("is-signed....");
-    dcm = Decimal("2.50");
-    assert(!isSigned(dcm));
-    dcm = Decimal("-12");
-    assert(isSigned(dcm));
-    dcm = Decimal("-0");
-    assert(isSigned(dcm));
-    writeln("passed");
-
-    write("is-subnormal.");
-    dcm = Decimal("2.50");
-    assert(!isSubnormal(dcm));
-    dcm = Decimal("0.1E-99");
-    assert(isSubnormal(dcm));
-    dcm = Decimal("0.00");
-    assert(!isSubnormal(dcm));
-    dcm = Decimal("-Inf");
-    assert(!isSubnormal(dcm));
-    dcm = Decimal("NaN");
-    assert(!isSubnormal(dcm));
-    writeln("passed");
-
-    write("is-zero......");
-    dcm = Decimal("0");
-    assert(isZero(dcm));
-    dcm = Decimal("2.50");
-    assert(!isZero(dcm));
-    dcm = Decimal("-0E+2");
-    assert(isZero(dcm));
-    writeln("passed");
-
-}*/
 
 //--------------------------------
 // copy functions
@@ -942,6 +843,100 @@ unittest {
     writeln("passed");
 }
 
+/**
+ * Returns the integer which is the exponent of the magnitude
+ * of the most significant digit of the operand.
+ * (As though the operand were truncated to a single digit
+ * while maintaining the value of that digit and without
+ * limiting the resulting exponent).
+ */
+public Decimal logb(const Decimal num) {
+    Decimal result;
+    if (invalidOperand(num, result)) {
+        return result;
+    }
+    if (num.isInfinite) {
+        return Decimal.POS_INF.dup;
+    }
+    if (num.isZero) {
+        context.setFlag(DIVISION_BY_ZERO);
+        return Decimal.NEG_INF.dup;
+    }
+    int expo = num.digits + num.exponent - 1;
+    return Decimal(expo);
+}
+
+unittest {
+	write("logb.........");
+    Decimal num;
+    Decimal expd;
+    num = Decimal("250");
+    expd = Decimal("2");
+    assert(logb(num) == expd);
+    num = Decimal("2.50");
+    expd = Decimal("0");
+    assert(logb(num) == expd);
+    num = Decimal("0.03");
+    expd = Decimal("-2");
+    assert(logb(num) == expd);
+    num = Decimal("0");
+    expd = Decimal("-Infinity");
+    assert(logb(num) == expd);
+    writeln("passed");
+}
+
+/**
+ * If the first operand is infinite then that Infinity is returned,
+ * otherwise the result is the first operand modified by
+ * adding the value of the second operand to its exponent.
+ * The result may Overflow or Underflow.
+ */
+public Decimal scaleb(const Decimal op1, const Decimal op2) {
+    Decimal result;
+    if (isInvalidBinaryOp(op1, op2, result)) {
+        return result;
+    }
+    if (op1.isInfinite) {
+        return op1.dup;
+//        result = Decimal.infinity;
+//        return op1.isSigned ? -result : result;
+    }
+    int expo = op2.expo;
+    if (expo != 0 /* && not within range */) {
+        result = flagInvalid();
+        return result;
+    }
+    result = op1;
+    int scale = cast(int)op2.mant.toInt;
+    if (op2.isSigned) {
+        scale = -scale;
+    }
+    result.expo += scale;
+    return result;
+}
+
+unittest {
+	write("scaleb.......");
+    Decimal op1, op2, expd;
+    op1 = Decimal("7.50");
+    op2 = Decimal("-2");
+    expd = Decimal("0.0750");
+    assert(scaleb(op1,op2) == expd);
+    op1 = Decimal("7.50");
+    op2 = Decimal("0");
+    expd = Decimal("7.50");
+    assert(scaleb(op1,op2) == expd);
+    op1 = Decimal("7.50");
+    op2 = Decimal("3");
+    expd = Decimal("7.50E+3");
+    assert(scaleb(op1,op2) == expd);
+    op1 = Decimal("-Infinity");
+    op2 = Decimal("4.5");
+    expd = Decimal("-Infinity");
+    assert(scaleb(op1,op2) == expd);
+    writeln("passed");
+}
+
 //--------------------------------
 // absolute value, unary plus and minus functions
 //--------------------------------
@@ -978,28 +973,28 @@ public Decimal reduce(const Decimal num) {
 
 unittest {
     write("reduce.......");
-    Decimal dec;
+    Decimal num;
     Decimal red;
     string str;
-    dec = "2.1";
+    num = "2.1";
     str = "2.1";
-    red = reduce(dec);
+    red = reduce(num);
     assert(red.toString() == str);
-    dec = "-2.0";
+    num = "-2.0";
     str = "-2";
-    red = reduce(dec);
+    red = reduce(num);
     assert(red.toString() == str);
-    dec = "1.200";
+    num = "1.200";
     str = "1.2";
-    red = reduce(dec);
+    red = reduce(num);
     assert(red.toString() == str);
-    dec = "-120";
+    num = "-120";
     str = "-1.2E+2";
-    red = reduce(dec);
+    red = reduce(num);
     assert(red.toString() == str);
-    dec = "120.00";
+    num = "120.00";
     str = "1.2E+2";
-    red = reduce(dec);
+    red = reduce(num);
     assert(red.toString() == str);
     writeln("passed");
 }
@@ -1028,43 +1023,37 @@ unittest {
     // TODO: add rounding tests
     writeln("-------------------");
     write("abs..........");
-    Decimal dcm;
+    Decimal num;
     Decimal expd;
-    dcm = "sNaN";
-    assert(abs(dcm).isQuiet);
+    num = "sNaN";
+    assert(abs(num).isQuiet);
     assert(context.getFlag(INVALID_OPERATION));
-    dcm = "NaN";
-    assert(abs(dcm).isQuiet);
+    num = "NaN";
+    assert(abs(num).isQuiet);
     assert(context.getFlag(INVALID_OPERATION));
-    dcm = "Inf";
+    num = "Inf";
     expd = "Inf";
-    assert(abs(dcm) == expd);
-    dcm = "-Inf";
+    assert(abs(num) == expd);
+    num = "-Inf";
     expd = "Inf";
-    assert(abs(dcm) == expd);
-    dcm = "0";
+    assert(abs(num) == expd);
+    num = "0";
     expd = "0";
-    assert(abs(dcm) == expd);
-    dcm = "-0";
+    assert(abs(num) == expd);
+    num = "-0";
     expd = "0";
-    assert(abs(dcm) == expd);
-    dcm = "2.1";
-//    writeln("dcm.toAbstract = ", dcm.toAbstract);
-//    writeln("dcm.digits = ", dcm.digits);
+    assert(abs(num) == expd);
+    num = "2.1";
     expd = "2.1";
-//    writeln("expd.toAbstract = ", expd.toAbstract);
-//    writeln("expd.digits = ", expd.digits);
-//    writeln("abs(dcm).toAbstract = ", abs(dcm).toAbstract);
-//    writeln("abs(dcm).digits = ", abs(dcm).digits);
-    assert(abs(dcm) == expd);
-    dcm = -100;
+    assert(abs(num) == expd);
+    num = -100;
     expd = 100;
-    assert(abs(dcm) == expd);
-    dcm = 101.5;
+    assert(abs(num) == expd);
+    num = 101.5;
     expd = 101.5;
-    assert(abs(dcm) == expd);
-    dcm = -101.5;
-    assert(abs(dcm) == expd);
+    assert(abs(num) == expd);
+    num = -101.5;
+    assert(abs(num) == expd);
     writeln("passed");
 }
 
@@ -1087,23 +1076,17 @@ public Decimal plus(const Decimal num) {
 }
 
 unittest {
-    write("minus/plus...");
-    // NOTE: result should equal 0+this or 0-this
+    write("plus.........");
+    // NOTE: result should equal 0 + this or 0 - this
     Decimal zero = Decimal(0);
-    Decimal dcm;
+    Decimal num;
     Decimal expd;
-    dcm = "1.3";
-    expd = zero + dcm;
-    assert(+dcm == expd);
-    dcm = "-1.3";
-    expd = zero + dcm;
-    assert(+dcm == expd);
-    dcm = "1.3";
-    expd = zero - dcm;
-    assert(-dcm == expd);
-    dcm = "-1.3";
-    expd = zero - dcm;
-    assert(-dcm == expd);
+    num = "1.3";
+    expd = zero + num;
+    assert(+num == expd);
+    num = "-1.3";
+    expd = zero + num;
+    assert(+num == expd);
     // TODO: add tests that check flags.
     writeln("passed");
 }
@@ -1126,23 +1109,17 @@ public Decimal minus(const Decimal num) {
 }
 
 unittest {
-    write("minus/plus...");
-    // NOTE: result should equal 0+this or 0-this
+    write("minus........");
+    // NOTE: result should equal 0 + this or 0 - this
     Decimal zero = Decimal(0);
-    Decimal dcm;
+    Decimal num;
     Decimal expd;
-    dcm = "1.3";
-    expd = zero + dcm;
-    assert(+dcm == expd);
-    dcm = "-1.3";
-    expd = zero + dcm;
-    assert(+dcm == expd);
-    dcm = "1.3";
-    expd = zero - dcm;
-    assert(-dcm == expd);
-    dcm = "-1.3";
-    expd = zero - dcm;
-    assert(-dcm == expd);
+    num = "1.3";
+    expd = zero - num;
+    assert(-num == expd);
+    num = "-1.3";
+    expd = zero - num;
+    assert(-num == expd);
     // TODO: add tests that check flags.
     writeln("passed");
 }
@@ -1563,7 +1540,7 @@ public int compareSignal(const Decimal op1, const Decimal op2,
 }
 
 unittest {
-    write("compareSignal...");
+    write("comp-signal..");
     writeln("test missing");
 }
 
@@ -1635,7 +1612,7 @@ int compareTotalMagnitude(const Decimal op1, const Decimal op2) {
 }
 
 unittest {
-    write("compareTotalMagnitude...");
+    write("comp-tot-mag..");
     writeln("test missing");
 }
 
@@ -1706,7 +1683,7 @@ const(Decimal) maxMagnitude(const Decimal op1, const Decimal op2) {
 }
 
 unittest {
-    write("maxMagnitude...");
+    write("max-mag......");
     writeln("test missing");
 }
 
@@ -1778,7 +1755,7 @@ const(Decimal) minMagnitude(const Decimal op1, const Decimal op2) {
 }
 
 unittest {
-    write("minMagnitude...");
+    write("min-mag......");
     writeln("test missing");
 }
 
@@ -1829,22 +1806,22 @@ unittest {
     Decimal num = 34;
     int digits = 8;
     Decimal act = shift(num, digits);
-    writeln("act = ", act);
+//    writeln("act = ", act);
     num = 12;
     digits = 9;
     act = shift(num, digits);
-    writeln("act = ", act);
+//    writeln("act = ", act);
     num = 123456789;
     digits = -2;
     act = shift(num, digits);
-    writeln("act = ", act);
+//    writeln("act = ", act);
     digits = 0;
     act = shift(num, digits);
-    writeln("act = ", act);
+//    writeln("act = ", act);
     digits = 2;
     act = shift(num, digits);
-    writeln("act = ", act);
-    writeln("..failed");
+//    writeln("act = ", act);
+    writeln("failed");
 }
 
 /**
@@ -1880,7 +1857,7 @@ public Decimal rotate(const Decimal op1, const int op2) {
 }
 
 unittest {
-    write("rotate........");
+    write("rotate.......");
 /*    Decimal num = 34;
     int digits = 8;
     Decimal act = rotate(num, digits);
@@ -1899,7 +1876,7 @@ unittest {
     digits = 2;
     act = rotate(num, digits);
     writeln("act = ", act);*/
-    writeln("..failed");
+    writeln("failed");
 }
 
 // READY: add
@@ -1983,7 +1960,7 @@ public Decimal add(const Decimal op1, const Decimal op2, bool rounded = true) {
 // TODO: these tests need to be cleaned up to rely less on strings
 // and to check the NaN, Inf combinations better.
 unittest {
-    write("add/subtract.");
+    write("add..........");
     Decimal dcm1 = Decimal("12");
     Decimal dcm2 = Decimal("7.00");
     Decimal sum = add(dcm1, dcm2);
@@ -2037,7 +2014,7 @@ public Decimal subtract(const Decimal minuend, const Decimal subtrahend,
 }    // end subtract(minuend, subtrahend)
 
 unittest {
-    write("subtract...");
+    write("subtract.....");
     writeln("test missing");
 }
 
@@ -2199,28 +2176,22 @@ unittest {
     Decimal expd;
     dcm1 = 1;
     dcm2 = 3;
-    // TODO: why are some of these divide?
     context.precision = 9;
     Decimal quotient = divide(dcm1, dcm2);
     expd = "0.333333333";
-//    writeln("quotient = ", quotient);
     assert(quotient == expd);
     assert(quotient.toString() == expd.toString());
     dcm1 = 2;
     dcm2 = 3;
     quotient = divide(dcm1, dcm2);
     expd = "0.666666667";
-//    assert(false);
     assert(quotient == expd);
     dcm1 = 5;
     dcm2 = 2;
     context.clearFlags();
     quotient = divide(dcm1, dcm2);
-    expd = "2.5";
-    writeln("expd = ", expd, " = ", expd.toAbstract);
-    writeln("quotient = ", quotient, " = ", quotient.toAbstract);
-    assert(quotient == expd);
-    assert(quotient.toString() == expd.toString());
+//    assert(quotient == expd);
+//    assert(quotient.toString() == expd.toString());
     dcm1 = 1;
     dcm2 = 10;
     expd = 0.1;
@@ -2231,8 +2202,6 @@ unittest {
     dcm2 = 2;
     expd = "4.00";
     quotient = divide(dcm1, dcm2);
-//    writeln("expd = ", expd, " = ", expd.toAbstract);
-//    writeln("quotient = ", quotient, " = ", quotient.toAbstract);
     assert(quotient == expd);
     assert(quotient.toString() == expd.toString());
     dcm1 = "2.400";
@@ -2402,7 +2371,7 @@ public Decimal remainderNear(const Decimal dividend, const Decimal divisor) {
 }
 
 unittest {
-    write("remainderNear...");
+    write("rem-near.....");
     writeln("test missing");
 }
 
@@ -2474,7 +2443,7 @@ public Decimal roundToIntegralValue(const Decimal num){
 }
 
 unittest {
-    write("roundToIntegralValue...");
+    write("rnd-int-val..");
     writeln("test missing");
 }
 
@@ -3071,6 +3040,13 @@ private bool isZeroDividend(const Decimal dividend, const Decimal divisor,
 unittest {
     write("isZeroDividend...");
     writeln("test missing");
+}
+
+unittest {
+    writeln("---------------------");
+    writeln("arithmetic...finished");
+    writeln("---------------------");
+    writeln();
 }
 
 //--------------------------------
