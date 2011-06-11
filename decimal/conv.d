@@ -37,6 +37,17 @@ unittest {
 //  conversions
 //--------------------------------
 
+T to(T:string)(const int n) {
+    return format("%d", n);
+}
+
+T to(T:string)(const BigInt num) {
+    string outbuff="";
+    void sink(const(char)[] s) { outbuff ~= s; }
+    num.toString(&sink, "d");
+    return outbuff;
+}
+
 /**
  * Converts an encoded decimal to a Decimal
  */
@@ -99,7 +110,7 @@ unittest {
  * Detect whether T is a decimal type.
  */
 template isDecimal(T) {
-    enum bool isDecimal = is(T: Dec32) || is(T: Dec64);
+    enum bool isDecimal = is(T: Dec32) || is(T: Decimal);
 }
 
 unittest {
@@ -253,7 +264,7 @@ public string toEngString(T)(const T num) if (isDecimal!T) {
     int adjx = expo + clen - 1;
 
     // if exponent is small, don't use exponential notation
-    if (expo <= 0 && adjx >= -6) {
+    if (!num.isZero && expo <= 0 && adjx >= -6) {
         // if exponent is not zero, insert a decimal point
         if (expo != 0) {
             int point = std.math.abs(expo);
@@ -275,22 +286,43 @@ public string toEngString(T)(const T num) if (isDecimal!T) {
     }
 
     // use exponential notation
-    writeln("adjx = ", adjx);
-    int dot = adjx & 3;
-    writeln("dot = ", dot);
-    adjx -= dot;
-    writeln("adjx = ", adjx);
-    while (dot < clen) {
-        clen ~= '0';
+    if (num.isZero) {
+        adjx += 2;
+    }
+
+    int mod = adjx % 3;
+    // the % operator rounds down; we need it to round to floor.
+    if (mod < 0) {
+        mod = -(mod + 3);
+    }
+
+    int dot = std.math.abs(mod) + 1;
+    adjx = adjx - dot + 1;
+
+    if (num.isZero) {
+        dot = 1;
+        clen = 3 - std.math.abs(mod);
+        cstr.length = 0;
+        for (int i = 0; i < clen; i++) {
+            cstr ~= '0';
+        }
+    }
+
+    while (dot > clen) {
+        cstr ~= '0';
+        clen++;
     }
     if (clen > dot) {
         insertInPlace(cstr, dot, ".");
     }
-    string xstr = to!string(adjx);
-    if (adjx >= 0) {
-        xstr = "+" ~ xstr;
+    string str = cstr.idup;
+    if (adjx != 0) {
+        string xstr = to!string(adjx);
+        if (adjx > 0) {
+            xstr = '+' ~ xstr;
+        }
+        str = str ~ "E" ~ xstr;
     }
-    string str = (cstr ~ "E" ~ xstr).idup;
     return signed ? "-" ~ str : str;
 
 };    // end toEngString()

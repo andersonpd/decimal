@@ -51,72 +51,12 @@ unittest {
 // conversion to/from strings
 //--------------------------------
 
-// UNREADY: toSciString. Description. Unit Tests.
+// UNREADY: toSciString.
 /**
- * Converts a Dec32 to a string representation.
+ * Converts a Decimal to a string representation.
  */
 public string toSciString(const Decimal num) {
-
-    // string representation of special values
-    if (num.isSpecial) {
-        string str;
-        if (num.isInfinite) {
-            str = "Infinity";
-        }
-        else if (num.isSignaling) {
-            str = "sNaN";
-        }
-        else {
-            str = "NaN";
-        }
-        // add payload to NaN, if present
-        if (num.isNaN && num.coefficient != 0) {
-            str ~= toDecString(num.coefficient);
-//            str ~= to!string(num.coefficient);
-        }
-        // add sign, if present
-        return num.isSigned ? "-" ~ str : str;
-    }
-
-    // string representation of finite numbers
-    string temp = toDecString(num.coefficient);
-//    string temp = to!string(coefficient);
-    char[] cstr = temp.dup;
-    int clen = cstr.length;
-    int adjx = num.exponent + clen - 1;
-
-    // if exponent is small, don't use exponential notation
-    if (num.exponent <= 0 && adjx >= -6) {
-        // if exponent is not zero, insert a decimal point
-        if (num.exponent != 0) {
-            int point = std.math.abs(num.exponent);
-            // if coefficient is too small, pad with zeroes
-            if (point > clen) {
-                cstr = zfill(cstr, point);
-                clen = cstr.length;
-            }
-            // if no chars precede the decimal point, prefix a zero
-            if (point == clen) {
-                cstr = "0." ~ cstr;
-            }
-            // otherwise insert a decimal point
-            else {
-                insertInPlace(cstr, cstr.length - point, ".");
-            }
-        }
-        return num.isSigned ? ("-" ~ cstr).idup : cstr.idup;
-    }
-    // use exponential notation
-    if (clen > 1) {
-        insertInPlace(cstr, 1, ".");
-    }
-    string xstr = to!string(adjx);
-    if (adjx >= 0) {
-        xstr = "+" ~ xstr;
-    }
-    string str = (cstr ~ "E" ~ xstr).idup;
-    return (num.isSigned) ? "-" ~ str : str;
-
+    return decimal.conv.toSciString!Decimal(num);
 };    // end toSciString()
 
 unittest {
@@ -185,119 +125,13 @@ unittest {
     writeln("passed");
 }
 
-// UNREADY: toEngString. Not implemented: returns toSciString
+// READY: toEngString.
 /**
  * Converts a Decimal to an engineering string representation.
  */
-// UNREADY: toEngString. Description. Unit Tests.
-/**
- * Converts a Dec32 to a string representation.
- */
 public string toEngString(const Decimal num) {
-
-    // string representation of special values
-    if (num.isSpecial) {
-        string str;
-        if (num.isInfinite) {
-            str = "Infinity";
-        }
-        else if (num.isSignaling) {
-            str = "sNaN";
-        }
-        else {
-            str = "NaN";
-        }
-        // add payload to NaN, if present
-        if (num.isNaN && num.coefficient != 0) {
-            str ~= toDecString(num.coefficient);
-//            str ~= to!string(num.coefficient);
-        }
-        // add sign, if present
-        return num.isSigned ? "-" ~ str : str;
-    }
-
-    // string representation of finite numbers
-    string temp = toDecString(num.coefficient);
-//    string temp = to!string(coefficient);
-    char[] cstr = temp.dup;
-    int clen = cstr.length;
-    int adjx = num.exponent + clen - 1;
-
-    // if exponent is small, don't use exponential notation
-    if (/*num.isZero ||*/ num.exponent <= 0 && adjx >= -6) {
-        // if exponent is not zero, insert a decimal point
-        if (num.exponent != 0) {
-            int point = std.math.abs(num.exponent);
-            // if coefficient is too small, pad with zeroes
-            if (point > clen) {
-                cstr = zfill(cstr, point);
-                clen = cstr.length;
-            }
-            // if no chars precede the decimal point, prefix a zero
-            if (point == clen) {
-                cstr = "0." ~ cstr;
-            }
-            // otherwise insert a decimal point
-            else {
-                insertInPlace(cstr, cstr.length - point, ".");
-            }
-        }
-        if (!num.isZero) {
-            return num.isSigned ? ("-" ~ cstr).idup : cstr.idup;
-        }
-    }
-
-    // use exponential notation
-    if (num.isZero) {
-        adjx += 2;
-    }
-    int mod = adjx % 3;
-
-    // the % operator rounds down; we need it to round to floor.
-    if (mod < 0) {
-        mod = -(mod + 3);
-    }
-
-    int dot = std.math.abs(mod) + 1;
-    adjx = adjx - dot + 1;
-
-    if (num.isZero) {
-        dot = 1;
-    }
-
-    if (num.isZero) {
-/*        writeln("mod = ", mod);
-        writeln("dot = ", dot);
-        writeln("cstr = ", cstr);
-        writeln("clen = ", clen);*/
-        clen = 3 - std.math.abs(mod);
-        cstr.length = 0;
-        for (int i = 0; i < clen; i++) {
-            cstr ~= '0';
-        }
-/*        writeln("clen = ", clen);
-        writeln("cstr = ", cstr);*/
-    }
-
-    while (dot > clen) {
-        cstr ~= '0';
-        clen++;
-    }
-    if (clen > dot) {
-        insertInPlace(cstr, dot, ".");
-    }
-
-    string str = cstr.idup;
-    if (adjx != 0) { // || num.isZero) {
-        string xstr = to!string(adjx);
-        if (adjx > 0) {
-            xstr = '+' ~ xstr;
-        }
-        str = str ~ "E" ~ xstr;
-    }
-    return num.isSigned ? "-" ~ str : str;
-
-};    // end toEngString()
+   return decimal.conv.toEngString!Decimal(num);
+}; // end toEngString()
 
 
 unittest {
