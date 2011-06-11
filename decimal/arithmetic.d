@@ -123,9 +123,6 @@ unittest {
     writeln("-------------------");
     write("to-sci-str...");
     Decimal dec = Decimal(123); //(false, 123, 0);
-//    writeln("dec = ", dec);
-//    writeln("dec = ", dec.toAbstract);
-    assert(dec.toString() == "123");
     assert(dec.toString() == "123");
     assert(dec.toAbstract() == "[0,123,0]");
     dec = Decimal(-123, 0);
@@ -192,14 +189,127 @@ unittest {
 /**
  * Converts a Decimal to an engineering string representation.
  */
+// UNREADY: toEngString. Description. Unit Tests.
+/**
+ * Converts a Dec32 to a string representation.
+ */
 public string toEngString(const Decimal num) {
-    // TODO: implement this.
-    return toSciString(num);
-};
+
+    // string representation of special values
+    if (num.isSpecial) {
+        string str;
+        if (num.isInfinite) {
+            str = "Infinity";
+        }
+        else if (num.isSignaling) {
+            str = "sNaN";
+        }
+        else {
+            str = "NaN";
+        }
+        // add payload to NaN, if present
+        if (num.isNaN && num.coefficient != 0) {
+            str ~= toDecString(num.coefficient);
+//            str ~= to!string(num.coefficient);
+        }
+        // add sign, if present
+        return num.isSigned ? "-" ~ str : str;
+    }
+
+    // string representation of finite numbers
+    string temp = toDecString(num.coefficient);
+//    string temp = to!string(coefficient);
+    char[] cstr = temp.dup;
+    int clen = cstr.length;
+    int adjx = num.exponent + clen - 1;
+
+    // if exponent is small, don't use exponential notation
+    if (num.isZero || num.exponent <= 0 && adjx >= -6) {
+        // if exponent is not zero, insert a decimal point
+        if (num.exponent != 0) {
+            int point = std.math.abs(num.exponent);
+            // if coefficient is too small, pad with zeroes
+            if (point > clen) {
+                cstr = zfill(cstr, point);
+                clen = cstr.length;
+            }
+            // if no chars precede the decimal point, prefix a zero
+            if (point == clen) {
+                cstr = "0." ~ cstr;
+            }
+            // otherwise insert a decimal point
+            else {
+                insertInPlace(cstr, cstr.length - point, ".");
+            }
+        }
+        if (!num.isZero) {
+            return num.isSigned ? ("-" ~ cstr).idup : cstr.idup;
+        }
+    }
+
+    if (num.isZero) {
+    }
+
+
+    // use exponential notation
+    int mod = adjx % 3;
+
+    // the % operator rounds down; we need it to round to floor.
+    if (mod < 0) {
+        mod = -(mod + 3);
+    }
+
+    int dot = std.math.abs(mod) + 1;
+    adjx = adjx - dot + 1;
+    while (dot > clen) {
+        cstr ~= '0';
+        clen++;
+    }
+    if (clen > dot) {
+        insertInPlace(cstr, dot, ".");
+    }
+
+    string str = cstr.idup;
+    if (adjx != 0 || num.isZero) {
+        string xstr = to!string(adjx);
+        if (adjx > 0) {
+            xstr = '+' ~ xstr;
+        }
+        str = str ~ "E" ~ xstr;
+    }
+    return num.isSigned ? "-" ~ str : str;
+
+};    // end toEngString()
+
 
 unittest {
     write("toEngString..");
-    writeln("test missing");
+    writeln();
+    Decimal dec = Decimal(123, 1); //(false, 123, 0);
+    assert(dec.toAbstract() == "[0,123,1]");
+    assert(toEngString(dec) == "1.23E+3");
+    dec = Decimal(123, 3);
+    assert(dec.toAbstract() == "[0,123,3]");
+    assert(toEngString(dec) == "123E+3");
+    dec = Decimal(123, -10);
+    assert(dec.toAbstract() == "[0,123,-10]");
+    assert(toEngString(dec) == "12.3E-9");
+    dec = Decimal(-123, -12);
+    assert(dec.toAbstract() == "[1,123,-12]");
+    assert(toEngString(dec) == "-123E-12");
+    dec = Decimal(7, -7);
+    assert(dec.toAbstract() == "[0,7,-7]");
+    assert(toEngString(dec) == "700E-9");
+    dec = Decimal(7, 1);
+    assert(dec.toAbstract() == "[0,7,1]");
+    assert(toEngString(dec) == "70");
+    dec = Decimal(0, 1);
+    writeln("dec.toAbstract() = ", dec.toAbstract());
+    writeln("toEngString(dec) = ", toEngString(dec));
+//    assert(dec.toAbstract() == "[0,0,1]");
+//    assert(toEngString(dec) == "70");
+    writeln("passed");
+    writeln("====================================");
 }
 
 // UNREADY: toNumber. Description. Corner Cases.
@@ -867,7 +977,7 @@ public Decimal logb(const Decimal num) {
 }
 
 unittest {
-	write("logb.........");
+    write("logb.........");
     Decimal num;
     Decimal expd;
     num = Decimal("250");
@@ -916,7 +1026,7 @@ public Decimal scaleb(const Decimal op1, const Decimal op2) {
 }
 
 unittest {
-	write("scaleb.......");
+    write("scaleb.......");
     Decimal op1, op2, expd;
     op1 = Decimal("7.50");
     op2 = Decimal("-2");
@@ -2745,11 +2855,6 @@ package void setDigits(ref Decimal num) {
     if (diff > 0) {
         round(num, context);
     }
-    else if (diff < 0) {
-        num.mant = decShl(num.mant, -diff);
-        num.expo += diff;
-    }
-    num.digits = context.precision;
 }
 
 unittest {

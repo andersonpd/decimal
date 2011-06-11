@@ -28,72 +28,130 @@ import std.string;
 
 struct Dec32 {
 
+    /// The number of bits in the signed value of the decimal number.
+    /// This is equal to the number of bits in the underlying integer;
+    /// (must be 32, 64, or 128).
     immutable uint svalBits = 32;
-    immutable uint signBits = 1;
-    immutable uint uvalBits = svalBits - signBits;
-    immutable uint testBits = 2;
-    immutable uint expoBits = 8;
-    immutable uint mantBits = 23;;
-    immutable uint normBits = mantBits - testBits;
 
+    /// the number of bits in the sign bit (1, obviously)
+    immutable uint signBits = 1;
+
+    /// The number of bits in the unsigned value of the decimal number.
+    immutable uint unsignedBits = 31; // = svalBits - signBits;
+
+    /// The number of bits in the (biased) exponent.
+    immutable uint expoBits = 8;
+
+    /// The number of bits in the coefficient when the value is
+    /// explicitly represented.
+    immutable uint explicitBits = 23;
+
+    /// The number of bits used to indicate special values and implicit
+    /// representation
+    immutable uint testBits = 2;
+
+    /// The number of bits in the coefficient when the value is implicitly
+    /// represented. The three missing bits (the most significant bits)
+    /// are always '100'.
+    immutable uint implicitBits = 21; // = explicitBits - testBits;
+
+    /// The number of bits in the payload of a NaN.
+    immutable uint payloadBits = 21; // = implicitBits;
+
+    /// The number of special bits.
+    /// These bits are used to indicate infinities and NaNs.
+    immutable uint specialBits = 4;
+
+    /// The number of bits that follow the special bits in infinities or NaNs.
+    /// These bits are always set to zero in special values.
+    /// Their number is simply the remaining number of bits
+    /// when all others are accounted for.
+    immutable uint anonBits = 4;
+            // = svalBits - payloadBits - specialBits - testBits - signBits;
+
+    /// The exponent bias. The exponent is stored as an unsigned number and
+    /// the bias is subtracted from the unsigned value to give the true
+    /// (signed) exponent.
     immutable uint bias = 101;
 
-    immutable uint snan_val = 0x7E;
-    immutable uint max_snan = 0x7F;
-    immutable uint qnan_val = 0x7C;
-    immutable uint max_qnan = 0x7D;
-    immutable uint inf_val  = 0x78;
-    immutable uint max_inf  = 0x7B;
+    // The value of the special bits when the number is a signaling NaN.
+    immutable uint sv_snan = 0xE;
+    // The value corresponding to a (positive) signaling NaN.
+    immutable uint snan_val = 0x7E000000;
+    // The value of the special bits when the number is a quiet NaN.
+    immutable uint sv_qnan = 0xC;
+    // The value corresponding to a (positive) quiet NaN.
+    immutable uint qnan_val = 0x7C000000;
+    // The value of the special bits when the number is infinity.
+    immutable uint sv_inf  = 0x8;
+    // The value corresponding to (positive) infinity.
+    immutable uint inf_val = 0x78000000;
 
-    immutable uint max_norm = (1 << normBits) - 1;
-    immutable uint max_mant = (1 << mantBits) - 1;
+    // The maximum coefficient that fits in an explicit number.
+    immutable uint max_impl = 0x7FFFFF; // = 8388607;
+    // The maximum coefficient that fits in an explicit number.
+    immutable uint max_mant = 9999999;  // = 0x98967F;
+    // The maximum exponent allowed in this representation.
     immutable int max_expo  =   90;
+    // The minimum exponent allowed in this representation.
     immutable int min_expo  = -101;
+    // The min and max exponents aren't symmetrical.
 
+    // union providing different views of the number representation.
     private union {
+
+        // entire 32-bit integer
         uint value = qnan_val;
 
+        // A = unsigned value and sign bit
         mixin (bitfields!(
-            uint, "unsigned", uvalBits,
-            bool, "signbit", signBits)
+            uint, "uValue", unsignedBits,
+            bool, "signed", signBits)
         );
+        // B = explicit finite number:
+        //     full coefficient, exponent and sign
         mixin (bitfields!(
-            uint, "mant1", mantBits,
-            uint, "expo1", expoBits,
-            bool, "sign1", signBits)
+            uint, "mantEx", explicitBits,
+            uint, "expoEx", expoBits,
+            bool, "signEx", signBits)
         );
+        // C = implicit finite number:
+        //      partial coefficient, exponent, test bits and sign bit.
         mixin (bitfields!(
-            uint, "mant2", normBits,
-            uint, "expo2", expoBits,
-            uint, "test" , testBits,
-            bool, "sign2", signBits)
+            uint, "mantIm", implicitBits,
+            uint, "expoIm", expoBits,
+            uint, "testIm", testBits,
+            bool, "signIm", signBits)
         );
+        // D = special values: infinities, qNaN and sNan:
+        //
         mixin (bitfields!(
-            uint, "payload", normBits,
-            uint, "space3", 32 - normBits - signBits - 7,
-            uint, "sval" , 7,
-            bool, "sign3", signBits)
+            uint, "pyldSv", payloadBits,
+            uint, "anonSv", anonBits,
+            uint, "spclSv", specialBits,
+            uint, "testSv", testBits,
+            bool, "signSv", signBits)
         );
     }
 
     public:
 
     @property bool sign() {
-        return signbit;
+        return signed;
     }
 
     @property bool sign(bool value) {
-        signbit = value;
-        return signbit;
+        signed = value;
+        return signed;
     }
 
     @property
     const int exponent() {
         if (this.isExplicit) {
-            return expo1;
+            return expoEx;
         }
         else {
-            return expo2;
+            return expoIm;
         }
     }
 
@@ -102,10 +160,10 @@ struct Dec32 {
     @property
      int exponent(int expo) {
         if (this.isExplicit) {
-            expo1 = expo;
+            expoEx = expo;
         }
         else {
-            expo2 = expo;
+            expoIm = expo;
         }
         return expo;
     }
@@ -113,13 +171,13 @@ struct Dec32 {
     @property
     const uint coefficient() {
         if (this.isExplicit) {
-            return mant1;
+            return mantEx;
         }
         else if (isSpecial) {
-            return mant2;
+            return mantIm;
         }
         else {
-            return mant2 | 0x7FFFFFFF;
+            return mantIm | 0x7FFFFFFF;
         }
     }
 
@@ -165,23 +223,21 @@ struct Dec32 {
 //--------------------------------
 
     const bool isExplicit() {
-        return test != 0b11;
+        return testIm != 0b11;
     }
 
     /**
      * Returns true if this number's representation is canonical.
      */
     const bool isCanonical() {
-        return isInfinite  && unsigned == inf_val  ||
-               isQuiet     && unsigned == qnan_val ||
-               isSignaling && unsigned == snan_val;
+        return true;
     }
 
     /**
      * Returns true if this number is +\- zero.
      */
     const bool isZero() {
-        return unsigned == 0;
+        return uValue == 0;
     }
 
     /**
@@ -195,22 +251,21 @@ struct Dec32 {
      * Returns true if this number is a signaling NaN.
      */
     const bool isSignaling() {
-        return unsigned == snan_val ||
-            unsigned > snan_val && unsigned <= max_snan;
+        return uValue == snan_val;
     }
 
     /**
      * Returns true if this number is a quiet NaN.
      */
     const bool isQuiet() {
-        return unsigned == qnan_val || unsigned > qnan_val && unsigned <= max_qnan;
+        return uValue == qnan_val;
     }
 
     /**
      * Returns true if this number is +\- infinity.
      */
     const bool isInfinite() {
-        return unsigned == inf_val || unsigned > inf_val && unsigned <= max_inf;
+        return uValue == inf_val;
     }
 
     /**
@@ -231,18 +286,18 @@ struct Dec32 {
      * Returns true if this number is negative. (Includes -0)
      */
     const bool isSigned() {
-        return signbit;
+        return signed;
     }
 
     const bool isNegative() {
-        return signbit;
+        return signed;
     }
 
     /**
      * Returns true if this number is subnormal.
      */
 /*    const bool isSubnormal() {
-        if (sval != SV.CLEAR) return false;
+        if (uValue != SV.CLEAR) return false;
         return adjustedExponent < context.eMin;
     }*/
 
@@ -250,14 +305,22 @@ struct Dec32 {
      * Returns true if this number is normal.
      */
 /*    const bool isNormal() {
-        if (sval != SV.CLEAR) return false;
+        if (uValue != SV.CLEAR) return false;
         return adjustedExponent >= context.eMin;
     }*/
 
+    // TODO: this is where the "digits" come into play.
+    /**
+     * Returns the value of the adjusted exponent.
+     */
+     const int adjustedExponent() {
+        return exponent + 6;
+     }
 //--------------------------------
 //  constructors
 //--------------------------------
 
+    // TODO: canonicalize
     /**
      * Creates a Dec32 from an unsigned integer.
      */
@@ -269,9 +332,9 @@ struct Dec32 {
      * Creates a Dec32 from a long integer.
      */
     public this(const long n) {
-        signbit = n < 0;
-        expo1 = 0;
-        mant1 = cast(uint) std.math.abs(n);
+        signed = n < 0;
+        expoEx = 0;
+        mantEx = cast(uint) std.math.abs(n);
     }
 
     /**
@@ -281,22 +344,22 @@ struct Dec32 {
         // check for special values
         if (num.isInfinite) {
             value = inf_val;
-            signbit = num.sign;
+            signed = num.sign;
             return;
         }
         if (num.isQuiet) {
             value = qnan_val;
-            signbit = num.sign;
+            signed = num.sign;
             return;
         }
         if (num.isSignaling) {
             value = snan_val;
-            signbit = num.sign;
+            signed = num.sign;
             return;
         }
         if (num.isZero) {
             value = 0;
-            signbit = num.sign;
+            signed = num.sign;
             return;
         }
 
@@ -308,18 +371,18 @@ struct Dec32 {
         }
 
         uint mant = cast(uint)num.mant.toInt;
-        if (mant > max_norm) {
+        if (mant > max_impl) {
             // set the test bits
-            test = 0b11;
-            signbit = num.sign;
-            expo2 = num.expo;
+            testIm = 0b11;
+            signed = num.sign;
+            expoIm = num.expo;
             // TODO: this can be done with a mask.
-            mant2 = mant % max_norm;
+            mantIm = mant % max_impl;
         }
         else {
-            signbit = num.sign;
-            expo1 = num.expo;
-            mant1 = mant;
+            signed = num.sign;
+            expoEx = num.expo;
+            mantEx = mant;
         }
     }
 
@@ -341,13 +404,13 @@ struct Dec32 {
         bool sign;
 
         if (isExplicit) {
-            mant = mant1;
-            sign = signbit;
-            expo = expo1 - bias;
+            mant = mantEx;
+            sign = signed;
+            expo = expoEx - bias;
         }
         else {
             // check for special values
-            if (signbit) {
+            if (signed) {
                 sign = true;
                 mant = value & 0x7FFFFFFF;
             }
@@ -355,19 +418,19 @@ struct Dec32 {
                 sign = false;
                 mant = value;
             }
-            if (sval >= inf_val && sval <= max_inf) {
+            if (uValue == inf_val) {
                 return Decimal(sign, "Inf", 0);
             }
-            if (sval >= qnan_val && sval <= max_qnan) {
+            if (uValue == qnan_val) {
                 return Decimal(sign, "qNaN", 0);
             }
-            if (sval >= snan_val && sval <= max_snan) {
+            if (uValue == snan_val) {
                 return Decimal(sign, "sNan", 0);
             }
             // number is finite, set msbs
-            mant = mant2 | (0b100 << normBits);
-            expo = expo2 - bias;
-            sign = signbit;
+            mant = mantIm | (0b100 << implicitBits);
+            expo = expoIm - bias;
+            sign = signed;
         }
         return Decimal(sign, BigInt(mant), expo);
     }
@@ -385,9 +448,8 @@ struct Dec32 {
     }
 
     unittest {
-        writeln("toHexString...");
+        write("toHexString...");
         writeln("test missing");
-        writeln("failed");
     }
 
     /**
@@ -507,7 +569,7 @@ unittest {
 unittest {
 //    writefln("num.mant = 0x%08X", num.mant);
     writefln("max_mant = 0x%08X", Dec32.max_mant);
-    writefln("max_norm = 0x%08X", Dec32.max_norm);
+    writefln("max_impl = 0x%08X", Dec32.max_impl);
     writeln("max_expo = ", Dec32.max_expo);
     writeln("min_expo = ", Dec32.min_expo);
 
@@ -516,7 +578,7 @@ unittest {
 
     Dec32 dec = Dec32();
     writeln("dec = ", dec);
-    writeln("dec.mant1 = ", dec.mant1);
+    writeln("dec.mantEx = ", dec.mantEx);
 
     Decimal num = Decimal(0);
     dec = Dec32(num);

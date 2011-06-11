@@ -216,6 +216,90 @@ unittest {
     writeln("test missing");
 }
 
+// UNREADY: toEngString. Description. Unit Tests.
+/**
+    * Converts a Decimal number to a string representation.
+    */
+public string toEngString(T)(const T num) if (isDecimal!T) {
+
+    auto mant = num.coefficient;
+    int  expo = num.exponent;
+    bool signed = num.isSigned;
+
+    // string representation of special values
+    if (num.isSpecial) {
+        string str;
+        if (num.isInfinite) {
+            str = "Infinity";
+        }
+        else if (num.isSignaling) {
+            str = "sNaN";
+        }
+        else {
+            str = "NaN";
+        }
+        // add payload to NaN, if present
+        if (num.isNaN && mant != 0) {
+            str ~= to!string(mant);
+        }
+        // add sign, if present
+        return signed ? "-" ~ str : str;
+    }
+
+    // string representation of finite numbers
+    string temp = to!string(mant);
+    char[] cstr = temp.dup;
+    int clen = cstr.length;
+    int adjx = expo + clen - 1;
+
+    // if exponent is small, don't use exponential notation
+    if (expo <= 0 && adjx >= -6) {
+        // if exponent is not zero, insert a decimal point
+        if (expo != 0) {
+            int point = std.math.abs(expo);
+            // if coefficient is too small, pad with zeroes
+            if (point > clen) {
+                cstr = zfill(cstr, point);
+                clen = cstr.length;
+            }
+            // if no chars precede the decimal point, prefix a zero
+            if (point == clen) {
+                cstr = "0." ~ cstr;
+            }
+            // otherwise insert a decimal point
+            else {
+                insertInPlace(cstr, cstr.length - point, ".");
+            }
+        }
+        return signed ? ("-" ~ cstr).idup : cstr.idup;
+    }
+
+    // use exponential notation
+    writeln("adjx = ", adjx);
+    int dot = adjx & 3;
+    writeln("dot = ", dot);
+    adjx -= dot;
+    writeln("adjx = ", adjx);
+    while (dot < clen) {
+        clen ~= '0';
+    }
+    if (clen > dot) {
+        insertInPlace(cstr, dot, ".");
+    }
+    string xstr = to!string(adjx);
+    if (adjx >= 0) {
+        xstr = "+" ~ xstr;
+    }
+    string str = (cstr ~ "E" ~ xstr).idup;
+    return signed ? "-" ~ str : str;
+
+};    // end toEngString()
+
+unittest {
+    write("toEngString...");
+    writeln("test missing");
+}
+
 unittest {
 /*    writefln("num.mant = 0x%08X", num.mant);
     writefln("max_mant = 0x%08X", Dec32.max_mant);

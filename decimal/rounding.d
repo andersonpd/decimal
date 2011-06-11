@@ -52,7 +52,7 @@ public void round(ref Decimal num, DecimalContext context) {
     }
 
     // check for overflow
-    if (willOverflow(num, context)) {
+    if (num.adjustedExponent > context.eMax) {
         context.setFlag(OVERFLOW);
         switch (context.mode) {
             case Rounding.HALF_UP:
@@ -254,7 +254,7 @@ unittest {
     writeln("test missing");
 }
 
-// UNREADY: increment. Unit tests. Order.
+// UNREADY: increment. Order.
 /**
  * Increments the coefficient by 1. If this causes an overflow, divides by 10.
  */
@@ -268,7 +268,10 @@ private void increment(ref Decimal num) {
     int comp = decimal.arithmetic.compare(test1, test2, false);
     if (comp == 0) {
         num.digits++;
-        setDigits(num);
+        // check if there are now too many digits...
+        if (num.digits > context.precision) {
+            round(num, context);
+        }
     }
 }
 
@@ -337,29 +340,6 @@ template isDecimal(T) {
 unittest {
     write("isDecimal(T)..");
     writeln("test missing");
-}
-
-// TODO: All decimal numbers must have an adjusted exponent routine.
-// NOTE: This function is only called within the rounding processing.
-/**
- * Tests whether the number is too large to be represented
- * in the specified context.
- */
-private bool willOverflow(T)(const T num, DecimalContext context) if (isDecimal!T) {
-    return num.adjustedExponent > context.eMax;
-}
-
-unittest{
-    write("willOverflow..");
-    Decimal dec = Decimal(123, 99);
-    assert(willOverflow!Decimal(dec, Decimal.context));
-    dec = Decimal(12, 99);
-    assert(willOverflow!Decimal(dec, Decimal.context));
-    dec = Decimal(1, 99);
-    assert(!willOverflow!Decimal(dec, Decimal.context));
-    dec = Decimal(9, 99);
-    assert(!willOverflow!Decimal(dec, Decimal.context));
-    writeln("passed");
 }
 
 // UNREADY: roundByMode. Description. Order.
@@ -498,23 +478,6 @@ private void roundByMode(bool sign, ref ulong num, ref uint digits, const uint p
 
 unittest {
     write("roundByMode2..");
-    writeln("test missing");
-}
-
-// UNREADY: setDigits. Description. Ordering.
-// TODO: check if flags are set (or not) incorrectly.
-/**
- * Sets the number of digits to (no more than) the current precision.
- */
-package void setDigits(ref Decimal num) {
-    int diff = num.digits - context.precision;
-    if (diff > 0) {
-        round(num, context);
-    }
-}
-
-unittest {
-    write("setDigits.....");
     writeln("test missing");
 }
 
