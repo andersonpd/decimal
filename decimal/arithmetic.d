@@ -224,7 +224,7 @@ public string toEngString(const Decimal num) {
     int adjx = num.exponent + clen - 1;
 
     // if exponent is small, don't use exponential notation
-    if (num.isZero || num.exponent <= 0 && adjx >= -6) {
+    if (/*num.isZero ||*/ num.exponent <= 0 && adjx >= -6) {
         // if exponent is not zero, insert a decimal point
         if (num.exponent != 0) {
             int point = std.math.abs(num.exponent);
@@ -247,11 +247,10 @@ public string toEngString(const Decimal num) {
         }
     }
 
-    if (num.isZero) {
-    }
-
-
     // use exponential notation
+    if (num.isZero) {
+        adjx += 2;
+    }
     int mod = adjx % 3;
 
     // the % operator rounds down; we need it to round to floor.
@@ -261,6 +260,25 @@ public string toEngString(const Decimal num) {
 
     int dot = std.math.abs(mod) + 1;
     adjx = adjx - dot + 1;
+
+    if (num.isZero) {
+        dot = 1;
+    }
+
+    if (num.isZero) {
+/*        writeln("mod = ", mod);
+        writeln("dot = ", dot);
+        writeln("cstr = ", cstr);
+        writeln("clen = ", clen);*/
+        clen = 3 - std.math.abs(mod);
+        cstr.length = 0;
+        for (int i = 0; i < clen; i++) {
+            cstr ~= '0';
+        }
+/*        writeln("clen = ", clen);
+        writeln("cstr = ", cstr);*/
+    }
+
     while (dot > clen) {
         cstr ~= '0';
         clen++;
@@ -270,7 +288,7 @@ public string toEngString(const Decimal num) {
     }
 
     string str = cstr.idup;
-    if (adjx != 0 || num.isZero) {
+    if (adjx != 0) { // || num.isZero) {
         string xstr = to!string(adjx);
         if (adjx > 0) {
             xstr = '+' ~ xstr;
@@ -283,33 +301,68 @@ public string toEngString(const Decimal num) {
 
 
 unittest {
-    write("toEngString..");
-    writeln();
-    Decimal dec = Decimal(123, 1); //(false, 123, 0);
-    assert(dec.toAbstract() == "[0,123,1]");
-    assert(toEngString(dec) == "1.23E+3");
-    dec = Decimal(123, 3);
-    assert(dec.toAbstract() == "[0,123,3]");
-    assert(toEngString(dec) == "123E+3");
-    dec = Decimal(123, -10);
-    assert(dec.toAbstract() == "[0,123,-10]");
-    assert(toEngString(dec) == "12.3E-9");
-    dec = Decimal(-123, -12);
-    assert(dec.toAbstract() == "[1,123,-12]");
-    assert(toEngString(dec) == "-123E-12");
-    dec = Decimal(7, -7);
-    assert(dec.toAbstract() == "[0,7,-7]");
-    assert(toEngString(dec) == "700E-9");
-    dec = Decimal(7, 1);
-    assert(dec.toAbstract() == "[0,7,1]");
-    assert(toEngString(dec) == "70");
-    dec = Decimal(0, 1);
-    writeln("dec.toAbstract() = ", dec.toAbstract());
-    writeln("toEngString(dec) = ", toEngString(dec));
-//    assert(dec.toAbstract() == "[0,0,1]");
-//    assert(toEngString(dec) == "70");
+    write("to-eng-str...");
+    string str = "1.23E+3";
+    Decimal dec = Decimal(str);
+    assert(toEngString(dec) == str);
+    str = "123E+3";
+    dec = Decimal(str);
+    assert(toEngString(dec) == str);
+    str = "12.3E-9";
+    dec = Decimal(str);
+    assert(toEngString(dec) == str);
+    str = "-123E-12";
+    dec = Decimal(str);
+    assert(toEngString(dec) == str);
+    str = "700E-9";
+    dec = Decimal(str);
+    assert(toEngString(dec) == str);
+    str = "70";
+    dec = Decimal(str);
+    assert(toEngString(dec) == str);
+    str = "0E-6";
+    dec = Decimal(str);
+    assert(toEngString(dec) == str);
+    str = "0.00E-3";
+    dec = Decimal(str);
+    assert(toEngString(dec) == str);
+    str = "0.0E-3";
+    dec = Decimal(str);
+    assert(toEngString(dec) == str);
+    str = "0E-3";
+    dec = Decimal(str);
+    assert(toEngString(dec) == str);
+    str = "0.00";
+    dec = Decimal(str);
+    assert(toEngString(dec) == str);
+    str = "0.0";
+    dec = Decimal(str);
+    assert(toEngString(dec) == str);
+    str = "0";
+    dec = Decimal(str);
+    assert(toEngString(dec) == str);
+    str = "0.00E+3";
+    dec = Decimal(str);
+    assert(toEngString(dec) == str);
+    str = "0.0E+3";
+    dec = Decimal(str);
+    assert(toEngString(dec) == str);
+    str = "0E+3";
+    dec = Decimal(str);
+    assert(toEngString(dec) == str);
+    str = "0.00E+6";
+    dec = Decimal(str);
+    assert(toEngString(dec) == str);
+    str = "0.0E+6";
+    dec = Decimal(str);
+    assert(toEngString(dec) == str);
+    str = "0E+6";
+    dec = Decimal(str);
+    assert(toEngString(dec) == str);
+    str = "0.00E+9";
+    dec = Decimal(str);
+    assert(toEngString(dec) == str);
     writeln("passed");
-    writeln("====================================");
 }
 
 // UNREADY: toNumber. Description. Corner Cases.
