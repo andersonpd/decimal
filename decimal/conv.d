@@ -264,7 +264,7 @@ public string toEngString(T)(const T num) if (isDecimal!T) {
     int adjx = expo + clen - 1;
 
     // if exponent is small, don't use exponential notation
-    if (!num.isZero && expo <= 0 && adjx >= -6) {
+    if (expo <= 0 && adjx >= -6) {
         // if exponent is not zero, insert a decimal point
         if (expo != 0) {
             int point = std.math.abs(expo);

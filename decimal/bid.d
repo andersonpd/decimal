@@ -1,7 +1,6 @@
 ﻿// Written in the D programming language
 
 /**
- *
  * A D programming language implementation of the
  * General Decimal Arithmetic Specification,
  * Version 1.70, (25 March 2009).
@@ -60,41 +59,47 @@ struct Dec32 {
 
     /// The number of special bits.
     /// These bits are used to indicate infinities and NaNs.
-    immutable uint specialBits = 4;
+    /// The number includes the two test bits.
+    immutable uint specialBits = 6;
 
     /// The number of bits that follow the special bits in infinities or NaNs.
     /// These bits are always set to zero in special values.
     /// Their number is simply the remaining number of bits
     /// when all others are accounted for.
     immutable uint anonBits = 4;
-            // = svalBits - payloadBits - specialBits - testBits - signBits;
+            // = svalBits - payloadBits - specialBits - signBits;
 
     /// The exponent bias. The exponent is stored as an unsigned number and
     /// the bias is subtracted from the unsigned value to give the true
     /// (signed) exponent.
-    immutable uint bias = 101;
+    immutable int BIAS = 101;
+
+    /// The maximum biased exponent.
+    /// The largest binary number that can fit in the width of the
+    /// exponent without setting the first to bits to 11.
+    immutable uint MAX_BSXP = 0xBF;
 
     // The value of the special bits when the number is a signaling NaN.
-    immutable uint sv_snan = 0xE;
+    immutable uint SV_SNAN = 0x3E;
     // The value corresponding to a (positive) signaling NaN.
     immutable uint snan_val = 0x7E000000;
     // The value of the special bits when the number is a quiet NaN.
-    immutable uint sv_qnan = 0xC;
+    immutable uint SV_QNAN = 0x3C;
     // The value corresponding to a (positive) quiet NaN.
     immutable uint qnan_val = 0x7C000000;
     // The value of the special bits when the number is infinity.
-    immutable uint sv_inf  = 0x8;
+    immutable uint SV_INF  = 0x38;
     // The value corresponding to (positive) infinity.
     immutable uint inf_val = 0x78000000;
 
     // The maximum coefficient that fits in an explicit number.
-    immutable uint max_impl = 0x7FFFFF; // = 8388607;
-    // The maximum coefficient that fits in an explicit number.
-    immutable uint max_mant = 9999999;  // = 0x98967F;
+    immutable uint MAX_XPLC = 0x7FFFFF; // = 8388607;
+    // The maximum coefficient allowed in an implicit number.
+    immutable uint MAX_IMPL = 9999999;  // = 0x98967F;
     // The maximum exponent allowed in this representation.
-    immutable int max_expo  =   90;
+    immutable int  MAX_EXPO  =   90;    // = MAX_BSXP - BIAS;
     // The minimum exponent allowed in this representation.
-    immutable int min_expo  = -101;
+    immutable int  MIN_EXPO  = -101;    // = 0 - BIAS.
     // The min and max exponents aren't symmetrical.
 
     // union providing different views of the number representation.
@@ -108,14 +113,14 @@ struct Dec32 {
             uint, "uValue", unsignedBits,
             bool, "signed", signBits)
         );
-        // B = explicit finite number:
+        // Ex = explicit finite number:
         //     full coefficient, exponent and sign
         mixin (bitfields!(
             uint, "mantEx", explicitBits,
             uint, "expoEx", expoBits,
             bool, "signEx", signBits)
         );
-        // C = implicit finite number:
+        // Im = implicit finite number:
         //      partial coefficient, exponent, test bits and sign bit.
         mixin (bitfields!(
             uint, "mantIm", implicitBits,
@@ -123,13 +128,12 @@ struct Dec32 {
             uint, "testIm", testBits,
             bool, "signIm", signBits)
         );
-        // D = special values: infinities, qNaN and sNan:
-        //
+        // Sv = special values: infinities, qNaN and sNan:
+        //      payload, unused bits, special bits and sign bit.
         mixin (bitfields!(
             uint, "pyldSv", payloadBits,
             uint, "anonSv", anonBits,
             uint, "spclSv", specialBits,
-            uint, "testSv", testBits,
             bool, "signSv", signBits)
         );
     }
@@ -162,8 +166,11 @@ struct Dec32 {
         if (this.isExplicit) {
             expoEx = expo;
         }
-        else {
+        else if (this.isFinite) {
             expoIm = expo;
+        }
+        else {
+            expo = 0;
         }
         return expo;
     }
@@ -173,16 +180,28 @@ struct Dec32 {
         if (this.isExplicit) {
             return mantEx;
         }
-        else if (isSpecial) {
-            return mantIm;
+        else if (this.isFinite) {
+            return mantIm | (0B100 << implicitBits);
+        }
+        else if (this.isSpecial) {
+            return mantIm;  // the "coefficient" of a NaN is the payload.
         }
         else {
-            return mantIm | 0x7FFFFFFF;
+            return 0;       // infinities have a zero coefficient.
         }
     }
 
+    // If the new coefficient is > MAX_XPLC this could cause an
+    // explicit number to become an implicit number, and vice versa.
     @property
     uint coefficient(uint mant) {
+        if (mant > MAX_XPLC) {
+            mant &= 0x7FFFFFF;  // only store the last 21 bits.
+        }
+        else {
+            mantEx = mant;
+            testIm = 0B00;
+        }
         if (this.isExplicit) {
             mant = value;
         }
@@ -197,26 +216,29 @@ struct Dec32 {
         return 7;
     }
 
+
     immutable Dec32 qNaN = Dec32(qnan_val);
     immutable Dec32 sNaN = Dec32(snan_val);
     immutable Dec32 Infinity = Dec32(inf_val);
     immutable Dec32 Zero = Dec32(0);
 
-//--------------------------------
-//  floating point properties
-//--------------------------------
+    // floating point properties
+    static Dec32 init()       { return nan; }
+    static Dec32 infinity()   { return Dec32(inf_val ); }
+    static Dec32 nan()        { return Dec32(qnan_val); }
+    static Dec32 epsilon()    { return qNaN; }
+    static Dec32 max()        { return qNaN; } // 9999999E+90;
+    static Dec32 min_normal() { return qNaN; } // 1E-101;
+    static Dec32 im()         { return Zero; }
+    const  Dec32 re()         { return this; }
 
-    static Dec32 init() {
-        return qNaN;
-    }
+    static int dig()        { return 7; }
+    static int mant_dig()   { return 24; }
+    static int max_10_exp() { return MAX_EXPO; }
+    static int max_exp()    { return -1; }
+    static int min_10_exp() { return MIN_EXPO; }
+    static int min_exp()    { return -1; }
 
-    static Dec32 nan() {
-        return qNaN;
-    }
-
-    static int dig() {
-        return 7;
-    }
 
 //--------------------------------
 //  classification properties
@@ -251,21 +273,21 @@ struct Dec32 {
      * Returns true if this number is a signaling NaN.
      */
     const bool isSignaling() {
-        return uValue == snan_val;
+        return spclSv == SV_SNAN;
     }
 
     /**
      * Returns true if this number is a quiet NaN.
      */
     const bool isQuiet() {
-        return uValue == qnan_val;
+        return spclSv == SV_QNAN;
     }
 
     /**
      * Returns true if this number is +\- infinity.
      */
     const bool isInfinite() {
-        return uValue == inf_val;
+        return spclSv == SV_INF;
     }
 
     /**
@@ -296,18 +318,18 @@ struct Dec32 {
     /**
      * Returns true if this number is subnormal.
      */
-/*    const bool isSubnormal() {
-        if (uValue != SV.CLEAR) return false;
-        return adjustedExponent < context.eMin;
-    }*/
+    const bool isSubnormal() {
+        if (isSpecial) return false;
+        return adjustedExponent < MIN_EXPO;
+    }
 
     /**
      * Returns true if this number is normal.
      */
-/*    const bool isNormal() {
-        if (uValue != SV.CLEAR) return false;
-        return adjustedExponent >= context.eMin;
-    }*/
+    const bool isNormal() {
+        if (isSpecial) return false;
+        return adjustedExponent >= MIN_EXPO;
+    }
 
     // TODO: this is where the "digits" come into play.
     /**
@@ -366,18 +388,18 @@ struct Dec32 {
         // number is finite
         writefln("num.mant = %d", num.mant);
         writeln("num.expo = ", num.expo);
-        if (num.mant > max_mant || num.expo > max_expo || num.expo < min_expo) {
+        if (num.mant > MAX_IMPL || num.expo > MAX_EXPO || num.expo < MIN_EXPO) {
             throw new Exception("Can't fit in this struct!");
         }
 
         uint mant = cast(uint)num.mant.toInt;
-        if (mant > max_impl) {
+        if (mant > MAX_XPLC) {
             // set the test bits
             testIm = 0b11;
             signed = num.sign;
             expoIm = num.expo;
             // TODO: this can be done with a mask.
-            mantIm = mant % max_impl;
+            mantIm = mant % MAX_XPLC;
         }
         else {
             signed = num.sign;
@@ -406,7 +428,7 @@ struct Dec32 {
         if (isExplicit) {
             mant = mantEx;
             sign = signed;
-            expo = expoEx - bias;
+            expo = expoEx - BIAS;
         }
         else {
             // check for special values
@@ -429,7 +451,7 @@ struct Dec32 {
             }
             // number is finite, set msbs
             mant = mantIm | (0b100 << implicitBits);
-            expo = expoIm - bias;
+            expo = expoIm - BIAS;
             sign = signed;
         }
         return Decimal(sign, BigInt(mant), expo);
@@ -456,7 +478,7 @@ struct Dec32 {
      * Converts a Dec32 to a string
      */
     const public string toString() {
-         return toSciString!Dec32(this);
+         return toSciString(this);
     }
 
     unittest {
@@ -493,85 +515,36 @@ unittest {
 
 // UNREADY: toSciString. Description. Unit Tests.
 /**
-    * Converts a Decimal number to a string representation.
-    */
-public string toSciString(T)(const T num) if (isDecimal!T) {
-
-    auto mant = num.coefficient;
-    int  expo = num.exponent;
-    bool signed = num.isSigned;
-
-    // string representation of special values
-    if (num.isSpecial) {
-        string str;
-        if (num.isInfinite) {
-            str = "Infinity";
-        }
-        else if (num.isSignaling) {
-            str = "sNaN";
-        }
-        else {
-            str = "NaN";
-        }
-        // add payload to NaN, if present
-        if (num.isNaN && mant != 0) {
-            str ~= to!string(mant);
-        }
-        // add sign, if present
-        return signed ? "-" ~ str : str;
-    }
-
-    // string representation of finite numbers
-    string temp = to!string(mant);
-    char[] cstr = temp.dup;
-    int clen = cstr.length;
-    int adjx = expo + clen - 1;
-
-    // if exponent is small, don't use exponential notation
-    if (expo <= 0 && adjx >= -6) {
-        // if exponent is not zero, insert a decimal point
-        if (expo != 0) {
-            int point = std.math.abs(expo);
-            // if coefficient is too small, pad with zeroes
-            if (point > clen) {
-                cstr = zfill(cstr, point);
-                clen = cstr.length;
-            }
-            // if no chars precede the decimal point, prefix a zero
-            if (point == clen) {
-                cstr = "0." ~ cstr;
-            }
-            // otherwise insert a decimal point
-            else {
-                insertInPlace(cstr, cstr.length - point, ".");
-            }
-        }
-        return signed ? ("-" ~ cstr).idup : cstr.idup;
-    }
-    // use exponential notation
-    if (clen > 1) {
-        insertInPlace(cstr, 1, ".");
-    }
-    string xstr = to!string(adjx);
-    if (adjx >= 0) {
-        xstr = "+" ~ xstr;
-    }
-    string str = (cstr ~ "E" ~ xstr).idup;
-    return signed ? "-" ~ str : str;
-
-};    // end toSciString()
+ * Converts a Decimal number to a string representation.
+ */
+public string toSciString(const Dec32 num) {
+    return decimal.conv.toSciString!Dec32(num);
+}
 
 unittest {
     write("toSciString...");
     writeln("tests missing");
 }
 
+// UNREADY: toEngString. Description. Unit Tests.
+/**
+ * Converts a Decimal number to a string representation.
+ */
+public string toEngString(const Dec32 num) {
+    return decimal.conv.toEngString!Dec32(num);
+}
+
+unittest {
+    write("toEngString...");
+    writeln("tests missing");
+}
+
 unittest {
 //    writefln("num.mant = 0x%08X", num.mant);
-    writefln("max_mant = 0x%08X", Dec32.max_mant);
-    writefln("max_impl = 0x%08X", Dec32.max_impl);
-    writeln("max_expo = ", Dec32.max_expo);
-    writeln("min_expo = ", Dec32.min_expo);
+    writefln("MAX_IMPL = 0x%08X", Dec32.MAX_IMPL);
+    writefln("MAX_XPLC = 0x%08X", Dec32.MAX_XPLC);
+    writeln("MAX_EXPO = ", Dec32.MAX_EXPO);
+    writeln("MIN_EXPO = ", Dec32.MIN_EXPO);
 
     writefln("qnan_val = 0x%08X", Dec32.qnan_val);
     writeln("Dec32.qNaN = ", Dec32.qNaN);
