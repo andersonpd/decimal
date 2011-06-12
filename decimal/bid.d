@@ -362,7 +362,7 @@ struct Dec32 {
     /**
      * Creates a Dec32 from a Decimal
      */
-    public this(Decimal num) {
+    public this(const Decimal num) {
         // check for special values
         if (num.isInfinite) {
             value = inf_val;
@@ -388,7 +388,10 @@ struct Dec32 {
         // number is finite
         writefln("num.mant = %d", num.mant);
         writeln("num.expo = ", num.expo);
-        if (num.mant > MAX_IMPL || num.expo > MAX_EXPO || num.expo < MIN_EXPO) {
+        // TODO: may need to reduce and/or round decimal!!
+        // TODO: can't do this until the context is defined.
+
+        if (num.expo > MAX_EXPO || num.expo < MIN_EXPO) {
             throw new Exception("Can't fit in this struct!");
         }
 

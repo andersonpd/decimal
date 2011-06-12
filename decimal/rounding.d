@@ -35,7 +35,6 @@ unittest {
 }
 
 //TODO: add ref context flags to parameters.
-
 // UNREADY: round. Description. Private or public?
 public void round(ref Decimal num, DecimalContext context) {
 
@@ -215,8 +214,18 @@ private Decimal shorten(ref Decimal num, DecimalContext context) {
 }
 
 unittest {
-    write("shorten1......");
-    writeln("test missing");
+    writeln("shorten1......");
+    Decimal num, acrem, exnum, exrem;
+    num = Decimal(1234567890123456L);
+    writeln("num = ", num);
+    acrem = shorten(num, context);
+    writeln("quo = ", num);
+    writeln("rem = ", acrem);
+    exnum = Decimal("1.2345E+15");
+    assert(num == exnum);
+    exrem = 67890123456;
+    assert(acrem == exrem);
+    writeln("passed");
 }
 
 // UNREADY: shorten. Order. Unit tests.
@@ -241,6 +250,7 @@ private ulong shorten(ref ulong num, ref uint digits, uint precision) {
         ulong divisor = 10L^^diff;
         ulong dividend = num;
         ulong quotient = dividend / divisor;
+        num = quotient;
         remainder = dividend - quotient*divisor;
         digits = precision;
     }
@@ -250,7 +260,20 @@ private ulong shorten(ref ulong num, ref uint digits, uint precision) {
 }
 
 unittest {
-    write("shorten2......");
+    writeln("shorten2......");
+    ulong num, acrem, exnum, exrem;
+    uint digits, precision;
+    num = 1234567890123456L;
+    digits = 16; precision = 5;
+    writeln("num = ", num);
+    acrem = shorten(num, digits, precision);
+    writeln("quo = ", num);
+    writeln("rem = ", acrem);
+    exnum = 12345L;
+//    assert(num == exnum);
+    exrem = 67890123456L;
+//    assert(acrem == exrem);
+    writeln("passed");
     writeln("test missing");
 }
 
@@ -408,76 +431,111 @@ unittest {
 }
 
 // UNREADY: roundByMode. Description. Order.
-private void roundByMode(bool sign, ref ulong num, ref uint digits, const uint precision, const Rounding mode) {
-    ulong remainder = shorten(num, digits, precision);
+private uint roundByMode(ref long num, DecimalContext context) {
+
+    uint digits = numDigits(num);
+    ulong unum = std.math.abs(num);
+    bool sign = num < 0;
+    ulong remainder = shorten(unum, digits, context.precision);
+
+//    writeln("remainder = ", remainder);
 
     // if the remainder is zero, return
     if (remainder == 0) {
-        return;
+        num = sign ? -unum : unum;
+        return digits;
     }
 
-    switch (mode) {
+    switch (context.mode) {
         case Rounding.DOWN:
-            return;
+            break;
         case Rounding.HALF_UP:
             if (firstDigit(remainder) >= 5) {
-                if (increment(num)) {
-                    digits++;
-                }
+                if (increment(unum)) digits++;
             }
-            return;
+            break;
         case Rounding.HALF_EVEN:
             ulong first = firstDigit(remainder);
             if (first > 5) {
-                if (increment(num)) {
-                    digits++;
-                }
-                return;
+                if (increment(unum)) digits++;
             }
             if (first < 5) {
-                return;
+                break;
             }
             // remainder == 5
             // if last digit is odd...
             if (lastDigit(num) % 2) {
-                if (increment(num)) {
-                    digits++;
-                }
+                if (increment(unum)) digits++;
             }
-            return;
+            break;
         case Rounding.CEILING:
             if (!sign && remainder != 0) {
-                if (increment(num)) {
-                    digits++;
-                }
+                if (increment(unum)) digits++;
             }
-            return;
+            break;
         case Rounding.FLOOR:
             if (sign && remainder != 0) {
-                if (increment(num)) {
-                    digits++;
-                }
+                if (increment(unum)) digits++;
             }
-            return;
+            break;
         case Rounding.HALF_DOWN:
             if (firstDigit(remainder) > 5) {
-                if (increment(num)) {
-                    digits++;
-                }
+                if (increment(unum)) digits++;
             }
-            return;
+            break;
         case Rounding.UP:
             if (remainder != 0) {
-                if (increment(num)) {
-                    digits++;
-                }
+                if (increment(unum)) digits++;
             }
-            return;
+            break;
     }    // end switch(mode)
+
+    num = sign ? -unum : unum;
+    return digits;
+
 } // end roundByMode()
 
 unittest {
-    write("roundByMode2..");
+    writeln("roundByMode2..");
+    DecimalContext context;
+    context.precision = 5;
+    context.mode = Rounding.DOWN;
+    long num; uint digits;
+    num = 1000;
+    context.mode = Rounding.DOWN;
+    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
+    digits = roundByMode(num, context);
+    writeln("num = ", num, ", digits = ", digits);
+    num = 1000000;
+    context.mode = Rounding.DOWN;
+    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
+    digits = roundByMode(num, context);
+    writeln("num = ", num, ", digits = ", digits);
+    num = 1234550;
+    context.mode = Rounding.DOWN;
+    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
+    digits = roundByMode(num, context);
+    writeln("num = ", num, ", digits = ", digits);
+    num = 1234550;
+    context.mode = Rounding.UP;
+    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
+    digits = roundByMode(num, context);
+    writeln("num = ", num, ", digits = ", digits);
+    num = 1234550;
+    context.mode = Rounding.FLOOR;
+    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
+    digits = roundByMode(num, context);
+    writeln("num = ", num, ", digits = ", digits);
+    num = 1234550;
+    context.mode = Rounding.CEILING;
+    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
+    digits = roundByMode(num, context);
+    writeln("num = ", num, ", digits = ", digits);
+    num = 19999999;
+    context.mode = Rounding.DOWN;
+    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
+    digits = roundByMode(num, context);
+    writeln("num = ", num, ", digits = ", digits);
     writeln("test missing");
 }
 

@@ -223,19 +223,52 @@ unittest {
     writeln("test missing");
 }
 
+
 public int numDigits(const long num) {
-    long n = num;
+
+    static ulong pow(ulong n) { return 10UL^^n; }
+
+    immutable ulong[6] pwrs = [    18,      16,      8,     4,       2,      1];
+    immutable ulong[6] tens = [pow(18), pow(16), pow(8), pow(4), pow(2), pow(1)];
+    ulong n = std.math.abs(num);
     int count = 1;
-    while (n >= 10) {
-        n /= 10;
-        count++;
+    for(int i = 0; i < 6; i++) {
+        while (n >= tens[i]) {
+            n /= tens[i];
+            count += pwrs[i];
+        }
     }
     return count;
 }
 
 unittest {
     write("numDigits......");
-    writeln("test missing");
+    long n;
+    n = 7;
+    assert(numDigits(n) ==  1);
+    n = -13;
+    assert(numDigits(n) ==  2);
+    n = 999;
+    assert(numDigits(n) ==  3);
+    n = -9999;
+    assert(numDigits(n) ==  4);
+    n = 25987;
+    assert(numDigits(n) ==  5);
+    n = -2008617;
+    assert(numDigits(n) ==  7);
+    n = 1234567890;
+    assert(numDigits(n) == 10);
+    n = -10000000000;
+    assert(numDigits(n) == 11);
+    n = 123456789012345;
+    assert(numDigits(n) == 15);
+    n = 1234567890123456;
+    assert(numDigits(n) == 16);
+    n = 123456789012345678;
+    assert(numDigits(n) == 18);
+    n = long.max;
+    assert(numDigits(n) == 19);
+    writeln("passed");
 }
 
 /*
