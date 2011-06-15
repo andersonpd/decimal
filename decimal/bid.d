@@ -140,11 +140,13 @@ struct Dec32 {
 
     public:
 
-    @property bool sign() {
+    @property
+    const bool sign() {
         return signed;
     }
 
-    @property bool sign(bool value) {
+    @property
+    bool sign(bool value) {
         signed = value;
         return signed;
     }
@@ -360,9 +362,9 @@ struct Dec32 {
     }
 
     /**
-     * Creates a Dec32 from a Decimal
+     * Creates a Dec32 from a BigDecimal
      */
-    public this(const Decimal num) {
+    public this(const BigDecimal num) {
         // check for special values
         if (num.isInfinite) {
             value = inf_val;
@@ -412,7 +414,7 @@ struct Dec32 {
     }
 
     unittest {
-        write("this(Decimal)...");
+        write("this(BigDecimal)...");
         writeln("test missing");
     }
 
@@ -421,9 +423,9 @@ struct Dec32 {
 //--------------------------------
 
     /**
-     * Converts a Dec32 to a Decimal
+     * Converts a Dec32 to a BigDecimal
      */
-    public Decimal toDecimal() {
+    public BigDecimal toDecimal() {
         uint mant;
         int  expo;
         bool sign;
@@ -444,20 +446,20 @@ struct Dec32 {
                 mant = value;
             }
             if (uValue == inf_val) {
-                return Decimal(sign, "Inf", 0);
+                return BigDecimal(sign, "Inf", 0);
             }
             if (uValue == qnan_val) {
-                return Decimal(sign, "qNaN", 0);
+                return BigDecimal(sign, "qNaN", 0);
             }
             if (uValue == snan_val) {
-                return Decimal(sign, "sNan", 0);
+                return BigDecimal(sign, "sNan", 0);
             }
             // number is finite, set msbs
             mant = mantIm | (0b100 << implicitBits);
             expo = expoIm - BIAS;
             sign = signed;
         }
-        return Decimal(sign, BigInt(mant), expo);
+        return BigDecimal(sign, BigInt(mant), expo);
     }
 
     unittest {
@@ -518,7 +520,7 @@ unittest {
 
 // UNREADY: toSciString. Description. Unit Tests.
 /**
- * Converts a Decimal number to a string representation.
+ * Converts a BigDecimal number to a string representation.
  */
 public string toSciString(const Dec32 num) {
     return decimal.conv.toSciString!Dec32(num);
@@ -531,7 +533,7 @@ unittest {
 
 // UNREADY: toEngString. Description. Unit Tests.
 /**
- * Converts a Decimal number to a string representation.
+ * Converts a BigDecimal number to a string representation.
  */
 public string toEngString(const Dec32 num) {
     return decimal.conv.toEngString!Dec32(num);
@@ -556,27 +558,27 @@ unittest {
     writeln("dec = ", dec);
     writeln("dec.mantEx = ", dec.mantEx);
 
-    Decimal num = Decimal(0);
+    BigDecimal num = BigDecimal(0);
     dec = Dec32(num);
     writeln("num = ", num);
     writeln("dec = ", dec);
 
-    num = Decimal(1);
+    num = BigDecimal(1);
     dec = Dec32(num);
     writeln("num = ", num);
     writeln("dec = ", dec);
 
-    num = Decimal(-1);
+    num = BigDecimal(-1);
     dec = Dec32(num);
     writeln("num = ", num);
     writeln("dec = ", dec);
 
-    num = Decimal(-16000);
+    num = BigDecimal(-16000);
     dec = Dec32(num);
     writeln("num = ", num);
     writeln("dec = ", dec);
 
-    num = Decimal(uint.max);
+    num = BigDecimal(uint.max);
     dec = Dec32(num);
     writeln("num = ", num);
     writeln("dec = ", dec);

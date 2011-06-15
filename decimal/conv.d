@@ -37,10 +37,16 @@ unittest {
 //  conversions
 //--------------------------------
 
+/**
+ * Temporary hack to allow to!string(BigInt).
+ */
 T to(T:string)(const int n) {
     return format("%d", n);
 }
 
+/**
+ * Temporary hack to allow to!string(BigInt).
+ */
 T to(T:string)(const BigInt num) {
     string outbuff="";
     void sink(const(char)[] s) { outbuff ~= s; }
@@ -49,47 +55,38 @@ T to(T:string)(const BigInt num) {
 }
 
 /**
- * Converts an encoded decimal to a Decimal
+ * Converts a small decimal to a big decimal
  */
-public Decimal toDecimal(T)(const T num) if (isSmallDecimal!T) {
+public BigDecimal toDecimal(T)(const T num) if (isSmallDecimal!T) {
+    bool sign = num.sign;
     auto mant = num.coefficient;
     int  expo = num.exponent;
-    bool sign = num.sign;
 
-    if (num.isExplicit) {
-        mant = mant1;
-        sign = signbit;
-        expo = expo1 - bias;
+    if (num.isFinite) {
+        return BigDecimal(sign, BigInt(mant), expo);
     }
-    else {
-        // check for special values
-        if (signbit) {
-            sign = true;
-            mant = value & 0x7FFFFFFF;
-        }
-        else {
-            sign = false;
-            mant = value;
-        }
-        if (mant == inf_val || value > inf_val && value <= max_inf) {
-            return Decimal(sign, "Inf", 0);
-        }
-        if (mant == qnan_val || value > qnan_val && value <= max_qnan) {
-            return Decimal(sign, "qNaN", 0);
-        }
-        if (mant == snan_val || value > snan_val && value <= max_snan) {
-            return Decimal(sign, "sNan", 0);
-        }
-        // number is finite, set msbs
-        mant = mant2 | (0b100 << normBits);
-        expo = expo2 - bias;
-        sign = signbit;
+    else if (num.isInfinite) {
+        return BigDecimal(sign, "Inf", 0);
     }
-    return Decimal(sign, BigInt(mant), expo);
+    else if (num.isQuiet) {
+        return BigDecimal(sign, "qNaN", mant);
+    }
+    else if (num.isSignaling) {
+        return BigDecimal(sign, "sNaN", mant);
+    }
+
+    // NOTE: Should never reach here.
+    throw (new Exception("Invalid conversion"));
+
 }
 
 unittest {
     write("toDecimal...");
+    Dec32 small;
+    BigDecimal big;
+    big = toDecimal!Dec32(small);
+    writeln();
+    writeln("big = ", big);
     writeln("test missing");
 }
 
@@ -110,7 +107,7 @@ unittest {
  * Detect whether T is a decimal type.
  */
 template isDecimal(T) {
-    enum bool isDecimal = is(T: Dec32) || is(T: Decimal);
+    enum bool isDecimal = is(T: Dec32) || is(T: BigDecimal);
 }
 
 unittest {
@@ -122,7 +119,7 @@ unittest {
  * Detect whether T is a decimal type.
  */
 template isBigDecimal(T) {
-    enum bool isBigDecimal = is(T: Decimal);
+    enum bool isBigDecimal = is(T: BigDecimal);
 }
 
 unittest {
@@ -134,7 +131,7 @@ unittest {
  * Detect whether T is a decimal type.
  */
 template isSmallDecimal(T) {
-    enum bool isSmallDecimal = is(T: Dec32) || is(T: Dec64);
+    enum bool isSmallDecimal = is(T: Dec32); // || is(T: Dec64);
 }
 
 unittest {
@@ -154,7 +151,7 @@ unittest {
 
 // UNREADY: toSciString. Description. Unit Tests.
 /**
-    * Converts a Decimal number to a string representation.
+    * Converts a BigDecimal number to a string representation.
     */
 public string toSciString(T)(const T num) if (isDecimal!T) {
 
@@ -224,12 +221,72 @@ public string toSciString(T)(const T num) if (isDecimal!T) {
 
 unittest {
     write("toSciString...");
-    writeln("test missing");
+    BigDecimal num = BigDecimal(123); //(false, 123, 0);
+    assert(toSciString!BigDecimal(num) == "123");
+    assert(num.toAbstract() == "[0,123,0]");
+    num = BigDecimal(-123, 0);
+    assert(toSciString!BigDecimal(num) == "-123");
+    assert(num.toAbstract() == "[1,123,0]");
+    num = BigDecimal(123, 1);
+    assert(toSciString!BigDecimal(num) == "1.23E+3");
+    assert(num.toAbstract() == "[0,123,1]");
+    num = BigDecimal(123, 3);
+    assert(toSciString!BigDecimal(num) == "1.23E+5");
+    assert(num.toAbstract() == "[0,123,3]");
+    num = BigDecimal(123, -1);
+    assert(toSciString!BigDecimal(num) == "12.3");
+    assert(num.toAbstract() == "[0,123,-1]");
+    num = BigDecimal(123, -5);
+    assert(toSciString!BigDecimal(num) == "0.00123");
+    assert(num.toAbstract() == "[0,123,-5]");
+    num = BigDecimal(123, -10);
+    assert(toSciString!BigDecimal(num) == "1.23E-8");
+    assert(num.toAbstract() == "[0,123,-10]");
+    num = BigDecimal(-123, -12);
+    assert(toSciString!BigDecimal(num) == "-1.23E-10");
+    assert(num.toAbstract() == "[1,123,-12]");
+    num = BigDecimal(0, 0);
+    assert(toSciString!BigDecimal(num) == "0");
+    assert(num.toAbstract() == "[0,0,0]");
+    num = BigDecimal(0, -2);
+    assert(toSciString!BigDecimal(num) == "0.00");
+    assert(num.toAbstract() == "[0,0,-2]");
+    num = BigDecimal(0, 2);
+    assert(toSciString!BigDecimal(num) == "0E+2");
+    assert(num.toAbstract() == "[0,0,2]");
+    num = -BigDecimal(0, 0);
+    assert(toSciString!BigDecimal(num) == "-0");
+    assert(num.toAbstract() == "[1,0,0]");
+    num = BigDecimal(5, -6);
+    assert(toSciString!BigDecimal(num) == "0.000005");
+    assert(num.toAbstract() == "[0,5,-6]");
+    num = BigDecimal(50,-7);
+    assert(toSciString!BigDecimal(num) == "0.0000050");
+    assert(num.toAbstract() == "[0,50,-7]");
+    num = BigDecimal(5, -7);
+    assert(toSciString!BigDecimal(num) == "5E-7");
+    assert(num.toAbstract() == "[0,5,-7]");
+    num = BigDecimal("inf");
+    assert(toSciString!BigDecimal(num) == "Infinity");
+    assert(num.toAbstract() == "[0,inf]");
+    num = BigDecimal(true, "inf");
+    assert(toSciString!BigDecimal(num) == "-Infinity");
+    assert(num.toAbstract() == "[1,inf]");
+    num = BigDecimal(false, "NaN");
+    assert(toSciString!BigDecimal(num) == "NaN");
+    assert(num.toAbstract() == "[0,qNaN]");
+    num = BigDecimal(false, "NaN", 123);
+    assert(toSciString!BigDecimal(num) == "NaN123");
+    assert(num.toAbstract() == "[0,qNaN,123]");
+    num = BigDecimal(true, "sNaN");
+    assert(toSciString!BigDecimal(num) == "-sNaN");
+    assert(num.toAbstract() == "[1,sNaN]");
+    writeln("passed");
 }
 
 // UNREADY: toEngString. Description. Unit Tests.
 /**
-    * Converts a Decimal number to a string representation.
+    * Converts a BigDecimal number to a string representation.
     */
 public string toEngString(T)(const T num) if (isDecimal!T) {
 
@@ -329,7 +386,76 @@ public string toEngString(T)(const T num) if (isDecimal!T) {
 
 unittest {
     write("toEngString...");
-    writeln("test missing");
+    string str = "1.23E+3";
+    BigDecimal num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "123E+3";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "12.3E-9";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "-123E-12";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "700E-9";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "70";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "0E-9";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "0.00E-6";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "0.0E-6";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "0.000000";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+/*    str = "0.00E-3";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "0.0E-3";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);*/
+    str = "0.000";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "0.00";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "0.0";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "0";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "0.00E+3";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "0.0E+3";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "0E+3";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "0.00E+6";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "0.0E+6";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "0E+6";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    str = "0.00E+9";
+    num = BigDecimal(str);
+    assert(toEngString!BigDecimal(num) == str);
+    writeln("passed");
 }
 
 unittest {
@@ -346,36 +472,36 @@ unittest {
     writeln("dec = ", dec);
     writeln("dec.mant1 = ", dec.mant1);
 
-    Decimal num = Decimal(0);
+    BigDecimal num = BigDecimal(0);
     dec = Dec32(num);
     writeln("num = ", num);
     writeln("dec = ", dec);
 
-    num = Decimal(1);
+    num = BigDecimal(1);
     dec = Dec32(num);
     writeln("num = ", num);
     writeln("dec = ", dec);
 
-    num = Decimal(-1);
+    num = BigDecimal(-1);
     dec = Dec32(num);
     writeln("num = ", num);
     writeln("dec = ", dec);
 
-    num = Decimal(-16000);
+    num = BigDecimal(-16000);
     dec = Dec32(num);
     writeln("num = ", num);
     writeln("dec = ", dec);
 
-    num = Decimal(uint.max);
+    num = BigDecimal(uint.max);
     dec = Dec32(num);
     writeln("num = ", num);
     writeln("dec = ", dec);*/
 }
 
 unittest {
-    writeln("---------------------");
-    writeln("conv.........finished");
-    writeln("---------------------");
+    writeln("----------------------");
+    writeln("conv..........finished");
+    writeln("----------------------");
 }
 
 

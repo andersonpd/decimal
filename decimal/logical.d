@@ -26,7 +26,7 @@ import decimal.arithmetic;
 /**
  * isLogical.
  */
-bool isLogical(const Decimal num) {
+bool isLogical(const BigDecimal num) {
     return false;
 }
 
@@ -37,11 +37,11 @@ unittest {
 
 
 /**
- * Decimal version of and.
+ * BigDecimal version of and.
  * Required by General Decimal Arithmetic Specification
  */
-Decimal and(Decimal op1, Decimal op2) {
-    Decimal result;
+BigDecimal and(BigDecimal op1, BigDecimal op2) {
+    BigDecimal result;
     return result;
 }
 
@@ -51,11 +51,11 @@ unittest {
 }
 
 /**
- * Decimal version of invert.
+ * BigDecimal version of invert.
  * Required by General Decimal Arithmetic Specification
  */
-Decimal invert(Decimal op1) {
-    Decimal result;
+BigDecimal invert(BigDecimal op1) {
+    BigDecimal result;
     return result;
 }
 
@@ -65,11 +65,11 @@ unittest {
 }
 
 /**
- * Decimal version of or.
+ * BigDecimal version of or.
  * Required by General Decimal Arithmetic Specification
  */
-Decimal or(Decimal op1, Decimal op2) {
-    Decimal result;
+BigDecimal or(BigDecimal op1, BigDecimal op2) {
+    BigDecimal result;
     return result;
 }
 
@@ -79,11 +79,11 @@ unittest {
 }
 
 /**
- * Decimal version of xor.
+ * BigDecimal version of xor.
  * Required by General Decimal Arithmetic Specification
  */
-Decimal xor(Decimal op1, Decimal op2) {
-    Decimal result;
+BigDecimal xor(BigDecimal op1, BigDecimal op2) {
+    BigDecimal result;
     return result;
 }
 

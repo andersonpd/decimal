@@ -36,7 +36,7 @@ unittest {
 
 //TODO: add ref context flags to parameters.
 // UNREADY: round. Description. Private or public?
-public void round(ref Decimal num, DecimalContext context) {
+public void round(ref BigDecimal num, ref DecimalContext context) {
 
     if (!num.isFinite) return;
 
@@ -52,6 +52,8 @@ public void round(ref Decimal num, DecimalContext context) {
 
     // check for overflow
     if (num.adjustedExponent > context.eMax) {
+        writeln("num.adjustedExponent = ", num.adjustedExponent);
+        writeln("context.eMax = ", context.eMax);
         context.setFlag(OVERFLOW);
         switch (context.mode) {
             case Rounding.HALF_UP:
@@ -59,28 +61,28 @@ public void round(ref Decimal num, DecimalContext context) {
             case Rounding.HALF_DOWN:
             case Rounding.UP:
                 bool sign = num.sign;
-                num = Decimal.POS_INF;
+                num = BigDecimal.POS_INF;
                 num.sign = sign;
                 break;
             case Rounding.DOWN:
                 bool sign = num.sign;
-                num = Decimal.max;
+                num = BigDecimal.max;
                 num.sign = sign;
                 break;
             case Rounding.CEILING:
                 if (num.sign) {
-                    num = Decimal.max;
+                    num = BigDecimal.max;
                     num.sign = true;
                 }
                 else {
-                    num = Decimal.POS_INF;
+                    num = BigDecimal.POS_INF;
                 }
                 break;
             case Rounding.FLOOR:
                 if (num.sign) {
-                    num = Decimal.NEG_INF;
+                    num = BigDecimal.NEG_INF;
                 } else {
-                    num = Decimal.max;
+                    num = BigDecimal.max;
                 }
                 break;
         }
@@ -102,8 +104,8 @@ public void round(ref Decimal num, DecimalContext context) {
         }
     }
     // check for zero
-    if (num.sval == Decimal.SV.CLEAR && num.mant == BigInt(0)) {
-        num.sval = Decimal.SV.ZERO;
+    if (num.sval == BigDecimal.SV.CLEAR && num.mant == BigInt(0)) {
+        num.sval = BigDecimal.SV.ZERO;
         // subnormal rounding to zero == clamped
         // Spec. p. 51
         if (subnormal) {
@@ -115,13 +117,13 @@ public void round(ref Decimal num, DecimalContext context) {
 
 unittest {
     write("round.........");
-    Decimal before = Decimal(9999);
-    Decimal after = before;
+    BigDecimal before = BigDecimal(9999);
+    BigDecimal after = before;
     pushPrecision;
     context.precision = 3;
     round(after, context);
     assert(after.toString() == "1.00E+4");
-    before = Decimal(1234567890);
+    before = BigDecimal(1234567890);
     after = before;
     context.precision = 3;
     round(after, context);;
@@ -180,8 +182,8 @@ unittest {
  * Returns the (unsigned) remainder for adjustments based on rounding mode.
  * Sets the ROUNDED and INEXACT flags.
  */
-private Decimal shorten(ref Decimal num, DecimalContext context) {
-    Decimal remainder = Decimal.ZERO.dup;
+private BigDecimal shorten(ref BigDecimal num, ref DecimalContext context) {
+    BigDecimal remainder = BigDecimal.ZERO.dup;
     int diff = num.digits - context.precision;
     if (diff <= 0) {
         return remainder;
@@ -190,7 +192,7 @@ private Decimal shorten(ref Decimal num, DecimalContext context) {
 
     // the context can be zero when...??
     if (context.precision == 0) {
-        num = num.sign ? Decimal.NEG_ZERO : Decimal.ZERO;
+        num = num.sign ? BigDecimal.NEG_ZERO : BigDecimal.ZERO;
     } else {
         BigInt divisor = pow10(diff);
         BigInt dividend = num.mant;
@@ -200,13 +202,13 @@ private Decimal shorten(ref Decimal num, DecimalContext context) {
             remainder.digits = diff;
             remainder.expo = num.expo;
             remainder.mant = modulo;
-            remainder.sval = Decimal.SV.CLEAR;
+            remainder.sval = BigDecimal.SV.CLEAR;
         }
         num.mant = quotient;
         num.digits = context.precision;
         num.expo += diff;
     }
-    if (remainder != Decimal.ZERO) {
+    if (remainder != BigDecimal.ZERO) {
         context.setFlag(INEXACT);
     }
 
@@ -214,14 +216,11 @@ private Decimal shorten(ref Decimal num, DecimalContext context) {
 }
 
 unittest {
-    writeln("shorten1......");
-    Decimal num, acrem, exnum, exrem;
-    num = Decimal(1234567890123456L);
-    writeln("num = ", num);
+    write("shorten1......");
+    BigDecimal num, acrem, exnum, exrem;
+    num = BigDecimal(1234567890123456L);
     acrem = shorten(num, context);
-    writeln("quo = ", num);
-    writeln("rem = ", acrem);
-    exnum = Decimal("1.2345E+15");
+    exnum = BigDecimal("1.2345E+15");
     assert(num == exnum);
     exrem = 67890123456;
     assert(acrem == exrem);
@@ -260,20 +259,20 @@ private ulong shorten(ref ulong num, ref uint digits, uint precision) {
 }
 
 unittest {
-    writeln("shorten2......");
+    write("shorten2......");
     ulong num, acrem, exnum, exrem;
     uint digits, precision;
     num = 1234567890123456L;
     digits = 16; precision = 5;
-    writeln("num = ", num);
+//    writeln("num = ", num);
     acrem = shorten(num, digits, precision);
-    writeln("quo = ", num);
-    writeln("rem = ", acrem);
+//    writeln("quo = ", num);
+//    writeln("rem = ", acrem);
     exnum = 12345L;
 //    assert(num == exnum);
     exrem = 67890123456L;
 //    assert(acrem == exrem);
-    writeln("passed");
+//    writeln("passed");
     writeln("test missing");
 }
 
@@ -281,14 +280,14 @@ unittest {
 /**
  * Increments the coefficient by 1. If this causes an overflow, divides by 10.
  */
-private void increment(ref Decimal num) {
+private void increment(ref BigDecimal num) {
     num.mant += 1;
     // check if the num was all nines --
     // did the coefficient roll over to 1000...?
-    Decimal test1 = Decimal(1, num.digits + num.expo);
-    Decimal test2 = num;
+    BigDecimal test1 = BigDecimal(1, num.digits + num.expo);
+    BigDecimal test2 = num;
     test2.digits++;
-    int comp = decimal.arithmetic.compare(test1, test2, false);
+    int comp = decimal.arithmetic.compare(test1, test2, context, false);
     if (comp == 0) {
         num.digits++;
         // check if there are now too many digits...
@@ -300,8 +299,8 @@ private void increment(ref Decimal num) {
 
 unittest {
     write("increment1....");
-    Decimal num;
-    Decimal expd;
+    BigDecimal num;
+    BigDecimal expd;
     num = 10;
     expd = 11;
     increment(num);
@@ -316,7 +315,6 @@ unittest {
     assert(num == expd);
     writeln("passed");
 }
-
 
 /**
  * Increments the coefficient by 1.
@@ -357,7 +355,7 @@ unittest {
  * Detect whether T is a decimal type.
  */
 template isDecimal(T) {
-    enum bool isDecimal = is(T: Decimal);
+    enum bool isDecimal = is(T: BigDecimal);
 }
 
 unittest {
@@ -366,8 +364,8 @@ unittest {
 }
 
 // UNREADY: roundByMode. Description. Order.
-private void roundByMode(ref Decimal num, DecimalContext context) {
-    Decimal remainder = shorten(num, context);
+private void roundByMode(ref BigDecimal num, ref DecimalContext context) {
+        BigDecimal remainder = shorten(num, context);
 
     // if the rounded flag is not set by the shorten operation, return
     if (!context.getFlag(ROUNDED)) {
@@ -387,8 +385,8 @@ private void roundByMode(ref Decimal num, DecimalContext context) {
             }
             return;
         case Rounding.HALF_EVEN:
-            Decimal five = Decimal(5, remainder.digits + remainder.expo - 1);
-            int result = decimal.arithmetic.compare(remainder, five, false);
+            BigDecimal five = BigDecimal(5, remainder.digits + remainder.expo - 1);
+            int result = decimal.arithmetic.compare(remainder, five, context, false);
             if (result > 0) {
                 increment(num);
                 return;
@@ -403,12 +401,12 @@ private void roundByMode(ref Decimal num, DecimalContext context) {
             }
             return;
         case Rounding.CEILING:
-            if (!num.sign && remainder != Decimal.ZERO) {
+            if (!num.sign && remainder != BigDecimal.ZERO) {
                 increment(num);
             }
             return;
         case Rounding.FLOOR:
-            if (num.sign && remainder != Decimal.ZERO) {
+            if (num.sign && remainder != BigDecimal.ZERO) {
                 increment(num);
             }
             return;
@@ -418,7 +416,7 @@ private void roundByMode(ref Decimal num, DecimalContext context) {
             }
             return;
         case Rounding.UP:
-            if (remainder != Decimal.ZERO) {
+            if (remainder != BigDecimal.ZERO) {
                 increment(num);
             }
             return;
@@ -431,14 +429,14 @@ unittest {
 }
 
 // UNREADY: roundByMode. Description. Order.
-private uint roundByMode(ref long num, DecimalContext context) {
+private uint roundByMode(ref long num, ref DecimalContext context) {
 
     uint digits = numDigits(num);
+//    NumInfo info = numberInfo(num);
+//    uint digits = inf.count;
     ulong unum = std.math.abs(num);
     bool sign = num < 0;
     ulong remainder = shorten(unum, digits, context.precision);
-
-//    writeln("remainder = ", remainder);
 
     // if the remainder is zero, return
     if (remainder == 0) {
@@ -464,7 +462,7 @@ private uint roundByMode(ref long num, DecimalContext context) {
             }
             // remainder == 5
             // if last digit is odd...
-            if (lastDigit(num) % 2) {
+            if (num & 1) {
                 if (increment(unum)) digits++;
             }
             break;
@@ -496,46 +494,46 @@ private uint roundByMode(ref long num, DecimalContext context) {
 } // end roundByMode()
 
 unittest {
-    writeln("roundByMode2..");
+    write("roundByMode2..");
     DecimalContext context;
     context.precision = 5;
     context.mode = Rounding.DOWN;
     long num; uint digits;
     num = 1000;
     context.mode = Rounding.DOWN;
-    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
+//    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
     digits = roundByMode(num, context);
-    writeln("num = ", num, ", digits = ", digits);
+//    writeln("num = ", num, ", digits = ", digits);
     num = 1000000;
     context.mode = Rounding.DOWN;
-    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
+//    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
     digits = roundByMode(num, context);
-    writeln("num = ", num, ", digits = ", digits);
+//    writeln("num = ", num, ", digits = ", digits);
     num = 1234550;
     context.mode = Rounding.DOWN;
-    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
+//    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
     digits = roundByMode(num, context);
-    writeln("num = ", num, ", digits = ", digits);
+//    writeln("num = ", num, ", digits = ", digits);
     num = 1234550;
     context.mode = Rounding.UP;
-    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
+//    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
     digits = roundByMode(num, context);
-    writeln("num = ", num, ", digits = ", digits);
+//    writeln("num = ", num, ", digits = ", digits);
     num = 1234550;
     context.mode = Rounding.FLOOR;
-    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
+//    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
     digits = roundByMode(num, context);
-    writeln("num = ", num, ", digits = ", digits);
+//    writeln("num = ", num, ", digits = ", digits);
     num = 1234550;
     context.mode = Rounding.CEILING;
-    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
+//    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
     digits = roundByMode(num, context);
-    writeln("num = ", num, ", digits = ", digits);
+//    writeln("num = ", num, ", digits = ", digits);
     num = 19999999;
     context.mode = Rounding.DOWN;
-    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
+//    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
     digits = roundByMode(num, context);
-    writeln("num = ", num, ", digits = ", digits);
+//    writeln("num = ", num, ", digits = ", digits);
     writeln("test missing");
 }
 

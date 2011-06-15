@@ -27,6 +27,6 @@ import std.bigint;
 import std.stdio: write, writeln;
 import std.string;
 
-alias Decimal.context.precision precision;*/
+alias BigDecimal.context.precision precision;*/
 
 
