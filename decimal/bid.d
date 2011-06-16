@@ -17,7 +17,6 @@
 
 module decimal.bid;
 
-import decimal.decimal;
 import std.array: insertInPlace;
 import std.bigint;
 import std.bitmanip;
@@ -25,7 +24,13 @@ import std.conv;
 import std.stdio;
 import std.string;
 
+import decimal.context;
+import decimal.decimal;
+import decimal.rounding;
+
 struct Dec32 {
+
+    private static context = DEFAULT_CONTEXT.dup;
 
     /// The number of bits in the signed value of the decimal number.
     /// This is equal to the number of bits in the underlying integer;
@@ -357,8 +362,13 @@ struct Dec32 {
      */
     public this(const long n) {
         signed = n < 0;
-        expoEx = 0;
-        mantEx = cast(uint) std.math.abs(n);
+        int expo = 0;
+        long mant = std.math.abs(n);
+        if (mant > MAX_IMPL) {
+            expo = setExponent(mant, context);
+        }
+        expoEx = expo;
+        mantEx = cast(uint) mant;
     }
 
     /**

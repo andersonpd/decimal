@@ -20,7 +20,7 @@ module decimal.math;
 
 import decimal.decimal;
 import decimal.context;
-import decimal.digits;
+//import decimal.digits;
 import decimal.rounding;
 import decimal.arithmetic;
 //import std.math;

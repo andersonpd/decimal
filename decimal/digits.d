@@ -18,6 +18,7 @@
 
 module decimal.digits;
 
+/+
 import std.bigint;
 import std.conv;
 import std.stdio: write, writeln;
@@ -579,5 +580,5 @@ unittest {
     writeln("-------------------");
     writeln();
 }
-
++/
 

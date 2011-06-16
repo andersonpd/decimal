@@ -29,7 +29,7 @@
 module decimal.arithmetic;
 
 import decimal.context;
-import decimal.digits;
+//import decimal.digits;
 import decimal.decimal;
 import decimal.rounding;
 import std.array: insertInPlace;
