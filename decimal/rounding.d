@@ -180,15 +180,16 @@ unittest {
 // TODO: Move into round routine.
 // UNREADY: roundByMode. Description. Order.
 private void roundByMode(ref BigDecimal num, ref DecimalContext context) {
-        BigDecimal remainder = getRemainder(num, context);
 
-    // FIXTHIS: Don't rely on the flags -- check the value.
-    // if the rounded flag is not set by the getRemainder operation, return
-    if (!context.getFlag(ROUNDED)) {
+    uint digits = num.digits;
+    BigDecimal remainder = getRemainder(num, context);
+
+    // if the number wasn't rounded...
+    if (num.digits == digits) {
         return;
     }
-    // if the remainder is zero, return
-    if (!context.getFlag(INEXACT)) {
+    // if the remainder is zero...
+    if (remainder.isZero) {
         return;
     }
 
@@ -213,6 +214,8 @@ private void roundByMode(ref BigDecimal num, ref DecimalContext context) {
             // remainder == 5
             // if last digit is odd...
             if (lastDigit(num.mant) % 2) {
+            // TODO: isn't this just num.mant % 2?
+            // I can't imagine the other is more efficient
                 increment(num);
             }
             return;
@@ -240,8 +243,32 @@ private void roundByMode(ref BigDecimal num, ref DecimalContext context) {
 } // end roundByMode()
 
 unittest {
-    write("roundByMode1..");
-    writeln("test missing");
+    write("roundByMode...");
+    DecimalContext context;
+    context.precision = 5;
+    context.mode = Rounding.HALF_EVEN;
+    BigDecimal num;
+    num = 1000;
+    roundByMode(num, context);
+    assert(num.mant == 1000 && num.expo == 0 && num.digits == 4);
+    num = 1000000;
+    roundByMode(num, context);
+    assert(num.mant == 10000 && num.expo == 2 && num.digits == 5);
+    num = 99999;
+    roundByMode(num, context);
+    assert(num.mant == 99999 && num.expo == 0 && num.digits == 5);
+    num = 1234550;
+    roundByMode(num, context);
+    assert(num.mant == 12346 && num.expo == 2 && num.digits == 5);
+    context.mode = Rounding.DOWN;
+    num = 1234550;
+    roundByMode(num, context);
+    assert(num.mant == 12345 && num.expo == 2 && num.digits == 5);
+    context.mode = Rounding.UP;
+    num = 1234550;
+    roundByMode(num, context);
+    assert(num.mant == 12346 && num.expo == 2 && num.digits == 5);
+    writeln("passed");
 }
 
 // UNREADY: getRemainder. Order. Unit tests.
@@ -284,7 +311,7 @@ private BigDecimal getRemainder(ref BigDecimal num, ref DecimalContext context) 
 }
 
 unittest {
-    write("shorten1......");
+    write("getRemainder..");
     BigDecimal num, acrem, exnum, exrem;
     num = BigDecimal(1234567890123456L);
     acrem = getRemainder(num, context);
@@ -317,7 +344,7 @@ private void increment(ref BigDecimal num) {
 }
 
 unittest {
-    write("increment1....");
+    write("increment.....");
     BigDecimal num;
     BigDecimal expd;
     num = 10;
@@ -333,21 +360,22 @@ unittest {
     increment(num);
     assert(num == expd);
     writeln("passed");
+    writeln("---------------------");
 }
 
 // UNREADY: setExponent. Description. Order.
-// TODO: Modify this routine so that it returns the exponent.
-public uint setExponent(ref long num, const DecimalContext context) {
+public uint setExponent(ref long num, ref uint digits, const DecimalContext context) {
 
-    uint digits = numDigits(num);
+    uint inDigits = digits;
     ulong unum = std.math.abs(num);
     bool sign = num < 0;
     ulong remainder = getRemainder(unum, digits, context.precision);
+    int expo = inDigits - digits;
 
     // if the remainder is zero, return
     if (remainder == 0) {
         num = sign ? -unum : unum;
-        return digits;
+        return expo;
     }
 
     switch (context.mode) {
@@ -355,92 +383,83 @@ public uint setExponent(ref long num, const DecimalContext context) {
             break;
         case Rounding.HALF_UP:
             if (firstDigit(remainder) >= 5) {
-                if (increment(unum)) digits++;
+                increment(unum, digits);
             }
             break;
         case Rounding.HALF_EVEN:
             ulong first = firstDigit(remainder);
             if (first > 5) {
-                if (increment(unum)) digits++;
+                increment(unum, digits);
             }
             if (first < 5) {
                 break;
             }
             // remainder == 5
             // if last digit is odd...
-            if (num & 1) {
-                if (increment(unum)) digits++;
+            if (unum & 1) {
+                increment(unum, digits);
             }
             break;
         case Rounding.CEILING:
             if (!sign && remainder != 0) {
-                if (increment(unum)) digits++;
+                increment(unum, digits);
             }
             break;
         case Rounding.FLOOR:
             if (sign && remainder != 0) {
-                if (increment(unum)) digits++;
+                increment(unum, digits);
             }
             break;
         case Rounding.HALF_DOWN:
             if (firstDigit(remainder) > 5) {
-                if (increment(unum)) digits++;
+                increment(unum, digits);
             }
             break;
         case Rounding.UP:
             if (remainder != 0) {
-                if (increment(unum)) digits++;
+                increment(unum, digits);
             }
             break;
     }    // end switch(mode)
 
     num = sign ? -unum : unum;
-    return digits;
+    return expo;
 
 } // end setExponent()
 
 unittest {
-    write("roundByMode2..");
+    write("setExponent...");
     DecimalContext context;
     context.precision = 5;
-    context.mode = Rounding.DOWN;
-    long num; uint digits;
+    context.mode = Rounding.HALF_EVEN;
+    long num; uint digits; int expo;
     num = 1000;
-    context.mode = Rounding.DOWN;
-//    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
-    digits = setExponent(num, context);
-//    writeln("num = ", num, ", digits = ", digits);
+    digits = numDigits(num);
+    expo = setExponent(num, digits, context);
+    assert(num == 1000 && expo == 0 && digits == 4);
     num = 1000000;
-    context.mode = Rounding.DOWN;
-//    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
-    digits = setExponent(num, context);
-//    writeln("num = ", num, ", digits = ", digits);
+    digits = numDigits(num);
+    expo = setExponent(num, digits, context);
+    assert(num == 10000 && expo == 2 && digits == 5);
+    num = 99999;
+    digits = numDigits(num);
+    expo = setExponent(num, digits, context);
+    assert(num == 99999 && expo == 0 && digits == 5);
     num = 1234550;
+    digits = numDigits(num);
+    expo = setExponent(num, digits, context);
+    assert(num == 12346 && expo == 2 && digits == 5);
     context.mode = Rounding.DOWN;
-//    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
-    digits = setExponent(num, context);
-//    writeln("num = ", num, ", digits = ", digits);
     num = 1234550;
+    digits = numDigits(num);
+    expo = setExponent(num, digits, context);
+    assert(num == 12345 && expo == 2 && digits == 5);
     context.mode = Rounding.UP;
-//    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
-    digits = setExponent(num, context);
-//    writeln("num = ", num, ", digits = ", digits);
     num = 1234550;
-    context.mode = Rounding.FLOOR;
-//    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
-    digits = setExponent(num, context);
-//    writeln("num = ", num, ", digits = ", digits);
-    num = 1234550;
-    context.mode = Rounding.CEILING;
-//    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
-    digits = setExponent(num, context);
-//    writeln("num = ", num, ", digits = ", digits);
-    num = 19999999;
-    context.mode = Rounding.DOWN;
-//    writeln("num = ", num, ", precision = ", context.precision, ", mode = ", context.mode.stringof);
-    digits = setExponent(num, context);
-//    writeln("num = ", num, ", digits = ", digits);
-    writeln("test missing");
+    digits = numDigits(num);
+    expo = setExponent(num, digits, context);
+    assert(num == 12346 && expo == 2 && digits == 5);
+    writeln("passed");
 }
 
 // UNREADY: getRemainder. Order. Unit tests.
@@ -475,55 +494,52 @@ private ulong getRemainder(ref ulong num, ref uint digits, uint precision) {
 }
 
 unittest {
-    write("shorten2......");
+    write("getRemainder..");
     ulong num, acrem, exnum, exrem;
     uint digits, precision;
     num = 1234567890123456L;
     digits = 16; precision = 5;
-//    writeln("num = ", num);
     acrem = getRemainder(num, digits, precision);
-//    writeln("quo = ", num);
-//    writeln("rem = ", acrem);
     exnum = 12345L;
-//    assert(num == exnum);
+    assert(num == exnum);
     exrem = 67890123456L;
-//    assert(acrem == exrem);
-//    writeln("passed");
-    writeln("test missing");
+    assert(acrem == exrem);
+    writeln("passed");
 }
 
 /**
- * Increments the coefficient by 1.
- * Returns true if the increment resulted in
- * an increase in the number of digits;  i.e. input number was all 9s.
+ * Increments the number by 1.
+ * Re-calculates the number of digits--the increment may have caused
+ * an increase in the number of digits, i.e., input number was all 9s.
  */
-private bool increment(ref ulong num) {
-    uint digits = numDigits(num);
+private void increment(ref ulong num, ref uint digits) {
     num++;
-    if (numDigits(num) > digits) {
-        return true;
-    }
-    else {
-        return false;
-    }
+    digits = numDigits(num);
 }
 
 unittest {
-    write("increment2....");
+    write("increment.....");
     ulong num;
+    uint digits;
     ulong expd;
     num = 10;
     expd = 11;
-    assert(!increment(num));
+    digits = numDigits(num);
+    increment(num, digits);
     assert(num == expd);
+    assert(digits == 2);
     num = 19;
     expd = 20;
-    assert(!increment(num));
+    digits = numDigits(num);
+    increment(num, digits);
     assert(num == expd);
+    assert(digits == 2);
     num = 999;
     expd = 1000;
-    assert(increment(num));
+    digits = numDigits(num);
+    increment(num, digits);
     assert(num == expd);
+    assert(digits == 4);
     writeln("passed");
 }
 
@@ -550,9 +566,6 @@ unittest {
 // TODO: compare benchmarks for division by powers of 10 vs. 2s * 5s.
 
 // BigInt versions
-unittest {
-    writeln(" -- BigInt functions --");
-}
 
 /**
  * Returns the number of digits in the number.
@@ -781,7 +794,7 @@ unittest {
 
 //    long integer versions
 unittest {
-    writeln(" -- long integer functions --");
+    writeln("---------------------");
 }
 
 /**
@@ -1047,41 +1060,6 @@ public long decShl(ref long num, uint n) {
 }
 */
 
-//--------------------------------
-// unit test methods
-//--------------------------------
-
-template Test(T) {
-    bool isEqual(T)(T actual, T expected, string label, string message = "") {
-        bool equal = (expected == actual);
-        if (!equal) {
-            writeln("Test ", label, ": Expected [", expected, "] but found [", actual, "]. ", message);
-        }
-        return equal;
-    }
-}
-
-
-//--------------------------------
-// unit tests
-//--------------------------------
-
-unittest {
-    bool passed = true;
-    long n = 12345;
-    Test!(long).isEqual(lastDigit(n), 5, "digits 1");
-    Test!(long).isEqual(numDigits(n), 5, "digits 2");
-    Test!(long).isEqual(firstDigit(n), 1, "digits 3");
-    Test!(long).isEqual(firstDigit(n), 8, "digits 4");
-    BigInt big = BigInt("12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678905");
-    Test!(long).isEqual(lastDigit(big), 5, "digits 5");
-    Test!(long).isEqual(numDigits(big), 101, "digits 6");
-    Test!(long).isEqual(numDigits(big), 22, "digits 7");
-    Test!(long).isEqual(firstDigit(n), 1, "digits 8");
-//    assert(lastDigit(big) == 5);
-//    assert(numDigits(big) == 101);
-//    assert(firstDigit(big) == 1);
-}
 
 unittest {
     writeln("-------------------");

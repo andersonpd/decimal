@@ -18,6 +18,45 @@
 
 module decimal.test;
 
+import std.bigint;
+import decimal.rounding;
+
+//--------------------------------
+// unit test methods
+//--------------------------------
+
+template Test(T) {
+    bool isEqual(T)(T actual, T expected, string label, string message = "") {
+        bool equal = (expected == actual);
+        if (!equal) {
+            writeln("Test ", label, ": Expected [", expected, "] but found [", actual, "]. ", message);
+        }
+        return equal;
+    }
+}
+
+
+//--------------------------------
+// unit tests
+//--------------------------------
+
+unittest {
+    bool passed = true;
+    long n = 12345;
+    Test!(long).isEqual(lastDigit(n), 5, "digits 1");
+    Test!(long).isEqual(numDigits(n), 5, "digits 2");
+    Test!(long).isEqual(firstDigit(n), 1, "digits 3");
+    Test!(long).isEqual(firstDigit(n), 8, "digits 4");
+    BigInt big = BigInt("12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678905");
+    Test!(long).isEqual(lastDigit(big), 5, "digits 5");
+    Test!(long).isEqual(numDigits(big), 101, "digits 6");
+    Test!(long).isEqual(numDigits(big), 22, "digits 7");
+    Test!(long).isEqual(firstDigit(n), 1, "digits 8");
+//    assert(lastDigit(big) == 5);
+//    assert(numDigits(big) == 101);
+//    assert(firstDigit(big) == 1);
+}
+
 /*import decimal.context: INVALID_OPERATION;
 import decimal.digits;
 import decimal.decimal;

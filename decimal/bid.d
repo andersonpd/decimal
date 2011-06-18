@@ -364,8 +364,9 @@ struct Dec32 {
         signed = n < 0;
         int expo = 0;
         long mant = std.math.abs(n);
+        uint digits = numDigits(n);
         if (mant > MAX_IMPL) {
-            expo = setExponent(mant, context);
+            expo = setExponent(mant, digits, context);
         }
         expoEx = expo;
         mantEx = cast(uint) mant;
