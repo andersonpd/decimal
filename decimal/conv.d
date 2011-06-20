@@ -18,7 +18,7 @@
 
 module decimal.conv;
 
-import decimal.bid;
+import decimal.dec32;
 import decimal.decimal;
 import std.array: insertInPlace;
 import std.bigint;

@@ -10,6 +10,7 @@
  * License: <a href="http://www.boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
  * Authors: Paul D. Anderson
  */
+
 /*          Copyright Paul D. Anderson 2009 - 2011.
  * Distributed under the Boost Software License, Version 1.0.
  *    (See accompanying file LICENSE_1_0.txt or copy at
@@ -17,8 +18,6 @@
  */
 
 module decimal.context;
-
-import std.container;
 
 //--------------------------
 // DecimalContext struct
@@ -56,25 +55,23 @@ public enum : ubyte {
  */
 public struct DecimalContext {
 
-    private ubyte traps;
-    private ubyte flags;
+    public static ubyte traps = 0;
+    public static ubyte flags = 0;
+
     Rounding mode = Rounding.HALF_EVEN;
     uint precision = 9;
+    int eMin = -98;     // smallest normalized exponent
+    int eMax =  99;     // largest normalized exponent
+
 
     const DecimalContext dup() {
         DecimalContext copy;
-        copy.traps = traps;
-        copy.flags = flags;
         copy.mode = mode;
         copy.precision = precision;
+        copy.eMin = eMin;
+        copy.eMax = eMax;
         return copy;
     }
-
-    /// smallest normalized exponent
-    int eMin = -98;
-
-    /// largest normalized exponent
-    int eMax = 99;
 
     /// smallest non-normalized exponent
     const int eTiny() {
@@ -143,25 +140,41 @@ public struct DecimalContext {
 public immutable DecimalContext DEFAULT_CONTEXT = DecimalContext();
 
 //  stack
-public struct Stack(T) {
+public struct ContextStack {
 
-    private    T[] stack;
+    private DecimalContext[] stack;
 
-    @property bool isEmpty() {
+    @property
+    bool isEmpty() {
         return stack.length == 0;
     }
-    @property ref T top() {
+
+    @property
+    ref DecimalContext top() {
         return stack[$ - 1];
     }
-    void push(T value) {
+
+    void push(DecimalContext value) {
         stack ~= value;
     }
-    T pop() {
-        T value = top;
+
+    DecimalContext pop() {
+        DecimalContext value = top;
         stack.length = stack.length - 1;
         return value;
     }
 }
+
+private static ContextStack contextStack;
+
+public static void pushContext(DecimalContext context) {
+     contextStack.push(context);
+}
+
+public static DecimalContext popContext() {
+    return contextStack.pop;
+}
+
 
 //--------------------------
 // End of DecimalContext struct

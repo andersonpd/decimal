@@ -32,6 +32,16 @@ struct Dec32 {
 
     private static context = DEFAULT_CONTEXT.dup;
 
+/*    private static ContextStack contextStack;
+
+    private static void pushContext(DecimalContext context) {
+         contextStack.push(context);
+    }
+
+    private static DecimalContext popContext() {
+        return contextStack.pop;
+    }*/
+
     /// The number of bits in the signed value of the decimal number.
     /// This is equal to the number of bits in the underlying integer;
     /// (must be 32, 64, or 128).

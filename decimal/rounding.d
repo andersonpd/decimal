@@ -29,527 +29,6 @@ import std.stdio: write, writeln;
 import std.string;
 import std.typecons: Tuple;
 
-unittest {
-    writeln("---------------------");
-    writeln("rounding......testing");
-    writeln("---------------------");
-}
-
-//TODO: add ref context flags to parameters.
-// UNREADY: round. Description. Private or public?
-public void round(ref BigDecimal num, ref DecimalContext context) {
-
-    if (!num.isFinite) return;
-
-    // TODO: No! don't clear the flags!!! That's for the user to do.
-    // context.clearFlags();
-    // check for subnormal
-
-    bool subnormal = false;
-    if (num.isSubnormal()) {
-        context.setFlag(SUBNORMAL);
-        subnormal = true;
-    }
-
-    // check for overflow
-    if (num.adjustedExponent > context.eMax) {
-        writeln("num.adjustedExponent = ", num.adjustedExponent);
-        writeln("context.eMax = ", context.eMax);
-        context.setFlag(OVERFLOW);
-        switch (context.mode) {
-            case Rounding.HALF_UP:
-            case Rounding.HALF_EVEN:
-            case Rounding.HALF_DOWN:
-            case Rounding.UP:
-                bool sign = num.sign;
-                num = BigDecimal.POS_INF;
-                num.sign = sign;
-                break;
-            case Rounding.DOWN:
-                bool sign = num.sign;
-                num = BigDecimal.max;
-                num.sign = sign;
-                break;
-            case Rounding.CEILING:
-                if (num.sign) {
-                    num = BigDecimal.max;
-                    num.sign = true;
-                }
-                else {
-                    num = BigDecimal.POS_INF;
-                }
-                break;
-            case Rounding.FLOOR:
-                if (num.sign) {
-                    num = BigDecimal.NEG_INF;
-                } else {
-                    num = BigDecimal.max;
-                }
-                break;
-        }
-        context.setFlag(INEXACT);
-        context.setFlag(ROUNDED);
-        return;
-    }
-    roundByMode(num, context);
-    // check for underflow
-    if (num.isSubnormal /*&& num.isInexact*/) {
-        context.setFlag(SUBNORMAL);
-        int diff = context.eTiny - num.adjustedExponent;
-        if (diff > num.digits) {
-            num.mant = 0;
-            num.expo = context.eTiny;
-        } else if (diff > 0) {
-            // TODO: do something about this
-            writeln("We got a tiny one!");
-        }
-    }
-    // check for zero
-    if (num.sval == BigDecimal.SV.CLEAR && num.mant == BigInt(0)) {
-        num.sval = BigDecimal.SV.ZERO;
-        // subnormal rounding to zero == clamped
-        // Spec. p. 51
-        if (subnormal) {
-            context.setFlag(CLAMPED);
-        }
-        return;
-    }
-} // end round()
-
-unittest {
-    write("round.........");
-    BigDecimal before = BigDecimal(9999);
-    BigDecimal after = before;
-    pushPrecision;
-    context.precision = 3;
-    round(after, context);
-    assert(after.toString() == "1.00E+4");
-    before = BigDecimal(1234567890);
-    after = before;
-    context.precision = 3;
-    round(after, context);;
-    assert(after.toString() == "1.23E+9");
-    after = before;
-    context.precision = 4;
-    round(after, context);;
-    assert(after.toString() == "1.235E+9");
-    after = before;
-    context.precision = 5;
-    round(after, context);;
-    assert(after.toString() == "1.2346E+9");
-    after = before;
-    context.precision = 6;
-    round(after, context);;
-    assert(after.toString() == "1.23457E+9");
-    after = before;
-    context.precision = 7;
-    round(after, context);;
-    assert(after.toString() == "1.234568E+9");
-    after = before;
-    context.precision = 8;
-    round(after, context);;
-    assert(after.toString() == "1.2345679E+9");
-    before = "1235";
-    after = before;
-    context.precision = 3;
-    round(after, context);;
-    assert(after.toAbstract() == "[0,124,1]");
-    before = "12359";
-    after = before;
-    context.precision = 3;
-    round(after, context);;
-    assert(after.toAbstract() == "[0,124,2]");
-    before = "1245";
-    after = before;
-    context.precision = 3;
-    round(after, context);;
-    assert(after.toAbstract() == "[0,124,1]");
-    before = "12459";
-    after = before;
-    context.precision = 3;
-    round(after, context);;
-    assert(after.toAbstract() == "[0,125,2]");
-    popPrecision;
-    writeln("passed");
-}
-
-//--------------------------------
-// private rounding routines
-//--------------------------------
-
-// TODO: Move into round routine.
-// UNREADY: roundByMode. Description. Order.
-private void roundByMode(ref BigDecimal num, ref DecimalContext context) {
-
-    uint digits = num.digits;
-    BigDecimal remainder = getRemainder(num, context);
-
-    // if the number wasn't rounded...
-    if (num.digits == digits) {
-        return;
-    }
-    // if the remainder is zero...
-    if (remainder.isZero) {
-        return;
-    }
-
-    switch (context.mode) {
-        case Rounding.DOWN:
-            return;
-        case Rounding.HALF_UP:
-            if (firstDigit(remainder.mant) >= 5) {
-                increment(num);
-            }
-            return;
-        case Rounding.HALF_EVEN:
-            BigDecimal five = BigDecimal(5, remainder.digits + remainder.expo - 1);
-            int result = decimal.arithmetic.compare(remainder, five, context, false);
-            if (result > 0) {
-                increment(num);
-                return;
-            }
-            if (result < 0) {
-                return;
-            }
-            // remainder == 5
-            // if last digit is odd...
-            if (lastDigit(num.mant) % 2) {
-            // TODO: isn't this just num.mant % 2?
-            // I can't imagine the other is more efficient
-                increment(num);
-            }
-            return;
-        case Rounding.CEILING:
-            if (!num.sign && remainder != BigDecimal.ZERO) {
-                increment(num);
-            }
-            return;
-        case Rounding.FLOOR:
-            if (num.sign && remainder != BigDecimal.ZERO) {
-                increment(num);
-            }
-            return;
-        case Rounding.HALF_DOWN:
-            if (firstDigit(remainder.mant) > 5) {
-                increment(num);
-            }
-            return;
-        case Rounding.UP:
-            if (remainder != BigDecimal.ZERO) {
-                increment(num);
-            }
-            return;
-    }    // end switch(mode)
-} // end roundByMode()
-
-unittest {
-    write("roundByMode...");
-    DecimalContext context;
-    context.precision = 5;
-    context.mode = Rounding.HALF_EVEN;
-    BigDecimal num;
-    num = 1000;
-    roundByMode(num, context);
-    assert(num.mant == 1000 && num.expo == 0 && num.digits == 4);
-    num = 1000000;
-    roundByMode(num, context);
-    assert(num.mant == 10000 && num.expo == 2 && num.digits == 5);
-    num = 99999;
-    roundByMode(num, context);
-    assert(num.mant == 99999 && num.expo == 0 && num.digits == 5);
-    num = 1234550;
-    roundByMode(num, context);
-    assert(num.mant == 12346 && num.expo == 2 && num.digits == 5);
-    context.mode = Rounding.DOWN;
-    num = 1234550;
-    roundByMode(num, context);
-    assert(num.mant == 12345 && num.expo == 2 && num.digits == 5);
-    context.mode = Rounding.UP;
-    num = 1234550;
-    roundByMode(num, context);
-    assert(num.mant == 12346 && num.expo == 2 && num.digits == 5);
-    writeln("passed");
-}
-
-// UNREADY: getRemainder. Order. Unit tests.
-/**
- * Clips the coefficient of the number to the specified precision.
- * Returns the (unsigned) remainder for adjustments based on rounding mode.
- * Sets the ROUNDED and INEXACT flags.
- */
-private BigDecimal getRemainder(ref BigDecimal num, ref DecimalContext context) {
-    BigDecimal remainder = BigDecimal.ZERO.dup;
-    int diff = num.digits - context.precision;
-    if (diff <= 0) {
-        return remainder;
-    }
-    context.setFlag(ROUNDED);
-
-    // the context can be zero when...??
-    if (context.precision == 0) {
-        num = num.sign ? BigDecimal.NEG_ZERO : BigDecimal.ZERO;
-    } else {
-        BigInt divisor = pow10(diff);
-        BigInt dividend = num.mant;
-        BigInt quotient = dividend/divisor;
-        BigInt modulo = dividend - quotient*divisor;
-        if (modulo != BigInt(0)) {
-            remainder.digits = diff;
-            remainder.expo = num.expo;
-            remainder.mant = modulo;
-            remainder.sval = BigDecimal.SV.CLEAR;
-        }
-        num.mant = quotient;
-        num.digits = context.precision;
-        num.expo += diff;
-    }
-    if (remainder != BigDecimal.ZERO) {
-        context.setFlag(INEXACT);
-    }
-
-    return remainder;
-}
-
-unittest {
-    write("getRemainder..");
-    BigDecimal num, acrem, exnum, exrem;
-    num = BigDecimal(1234567890123456L);
-    acrem = getRemainder(num, context);
-    exnum = BigDecimal("1.2345E+15");
-    assert(num == exnum);
-    exrem = 67890123456;
-    assert(acrem == exrem);
-    writeln("passed");
-}
-
-// UNREADY: increment. Order.
-/**
- * Increments the coefficient by 1. If this causes an overflow, divides by 10.
- */
-private void increment(ref BigDecimal num) {
-    num.mant += 1;
-    // check if the num was all nines --
-    // did the coefficient roll over to 1000...?
-    BigDecimal test1 = BigDecimal(1, num.digits + num.expo);
-    BigDecimal test2 = num;
-    test2.digits++;
-    int comp = decimal.arithmetic.compare(test1, test2, context, false);
-    if (comp == 0) {
-        num.digits++;
-        // check if there are now too many digits...
-        if (num.digits > context.precision) {
-            round(num, context);
-        }
-    }
-}
-
-unittest {
-    write("increment.....");
-    BigDecimal num;
-    BigDecimal expd;
-    num = 10;
-    expd = 11;
-    increment(num);
-    assert(num == expd);
-    num = 19;
-    expd = 20;
-    increment(num);
-    assert(num == expd);
-    num = 999;
-    expd = 1000;
-    increment(num);
-    assert(num == expd);
-    writeln("passed");
-    writeln("---------------------");
-}
-
-// UNREADY: setExponent. Description. Order.
-public uint setExponent(ref long num, ref uint digits, const DecimalContext context) {
-
-    uint inDigits = digits;
-    ulong unum = std.math.abs(num);
-    bool sign = num < 0;
-    ulong remainder = getRemainder(unum, digits, context.precision);
-    int expo = inDigits - digits;
-
-    // if the remainder is zero, return
-    if (remainder == 0) {
-        num = sign ? -unum : unum;
-        return expo;
-    }
-
-    switch (context.mode) {
-        case Rounding.DOWN:
-            break;
-        case Rounding.HALF_UP:
-            if (firstDigit(remainder) >= 5) {
-                increment(unum, digits);
-            }
-            break;
-        case Rounding.HALF_EVEN:
-            ulong first = firstDigit(remainder);
-            if (first > 5) {
-                increment(unum, digits);
-            }
-            if (first < 5) {
-                break;
-            }
-            // remainder == 5
-            // if last digit is odd...
-            if (unum & 1) {
-                increment(unum, digits);
-            }
-            break;
-        case Rounding.CEILING:
-            if (!sign && remainder != 0) {
-                increment(unum, digits);
-            }
-            break;
-        case Rounding.FLOOR:
-            if (sign && remainder != 0) {
-                increment(unum, digits);
-            }
-            break;
-        case Rounding.HALF_DOWN:
-            if (firstDigit(remainder) > 5) {
-                increment(unum, digits);
-            }
-            break;
-        case Rounding.UP:
-            if (remainder != 0) {
-                increment(unum, digits);
-            }
-            break;
-    }    // end switch(mode)
-
-    num = sign ? -unum : unum;
-    return expo;
-
-} // end setExponent()
-
-unittest {
-    write("setExponent...");
-    DecimalContext context;
-    context.precision = 5;
-    context.mode = Rounding.HALF_EVEN;
-    long num; uint digits; int expo;
-    num = 1000;
-    digits = numDigits(num);
-    expo = setExponent(num, digits, context);
-    assert(num == 1000 && expo == 0 && digits == 4);
-    num = 1000000;
-    digits = numDigits(num);
-    expo = setExponent(num, digits, context);
-    assert(num == 10000 && expo == 2 && digits == 5);
-    num = 99999;
-    digits = numDigits(num);
-    expo = setExponent(num, digits, context);
-    assert(num == 99999 && expo == 0 && digits == 5);
-    num = 1234550;
-    digits = numDigits(num);
-    expo = setExponent(num, digits, context);
-    assert(num == 12346 && expo == 2 && digits == 5);
-    context.mode = Rounding.DOWN;
-    num = 1234550;
-    digits = numDigits(num);
-    expo = setExponent(num, digits, context);
-    assert(num == 12345 && expo == 2 && digits == 5);
-    context.mode = Rounding.UP;
-    num = 1234550;
-    digits = numDigits(num);
-    expo = setExponent(num, digits, context);
-    assert(num == 12346 && expo == 2 && digits == 5);
-    writeln("passed");
-}
-
-// UNREADY: getRemainder. Order. Unit tests.
-/**
- * Clips the coefficient of the number to the specified precision.
- * Returns the (unsigned) remainder for adjustments based on rounding mode.
- * Sets the ROUNDED and INEXACT flags.
- */
-private ulong getRemainder(ref ulong num, ref uint digits, uint precision) {
-    ulong remainder = 0;
-    int diff = digits - precision;
-    if (diff <= 0) {
-        return remainder;
-    }
-    // if (remainder != 0) {...} ?
-    //context.setFlag(ROUNDED);
-
-    // TODO: This is a fictitious case .. the context can be zero when...??
-    if (precision == 0) {
-        num = 0;
-    } else {
-        ulong divisor = 10L^^diff;
-        ulong dividend = num;
-        ulong quotient = dividend / divisor;
-        num = quotient;
-        remainder = dividend - quotient*divisor;
-        digits = precision;
-    }
-    // TODO: num.digits == precision.
-    // TODO: num.expo == diff;
-    return remainder;
-}
-
-unittest {
-    write("getRemainder..");
-    ulong num, acrem, exnum, exrem;
-    uint digits, precision;
-    num = 1234567890123456L;
-    digits = 16; precision = 5;
-    acrem = getRemainder(num, digits, precision);
-    exnum = 12345L;
-    assert(num == exnum);
-    exrem = 67890123456L;
-    assert(acrem == exrem);
-    writeln("passed");
-}
-
-/**
- * Increments the number by 1.
- * Re-calculates the number of digits--the increment may have caused
- * an increase in the number of digits, i.e., input number was all 9s.
- */
-private void increment(ref ulong num, ref uint digits) {
-    num++;
-    digits = numDigits(num);
-}
-
-unittest {
-    write("increment.....");
-    ulong num;
-    uint digits;
-    ulong expd;
-    num = 10;
-    expd = 11;
-    digits = numDigits(num);
-    increment(num, digits);
-    assert(num == expd);
-    assert(digits == 2);
-    num = 19;
-    expd = 20;
-    digits = numDigits(num);
-    increment(num, digits);
-    assert(num == expd);
-    assert(digits == 2);
-    num = 999;
-    expd = 1000;
-    digits = numDigits(num);
-    increment(num, digits);
-    assert(num == expd);
-    assert(digits == 4);
-    writeln("passed");
-}
-
-unittest {
-    writeln("---------------------");
-    writeln("rounding.....finished");
-    writeln("---------------------");
-    writeln();
-}
-
 private BigInt tens[18];
 private BigInt fives[18];
 
@@ -557,6 +36,8 @@ unittest {
     writeln("---------------------");
     writeln("digits........testing");
     writeln("---------------------");
+    DecimalContext context;
+    context.precision = 5;
 }
 
 //public static ZERO = BigInt();
@@ -1062,9 +543,543 @@ public long decShl(ref long num, uint n) {
 
 
 unittest {
-    writeln("-------------------");
-    writeln("digits...end testing");
-    writeln("-------------------");
+    writeln("---------------------");
+    writeln("digits.......finished");
+    writeln("---------------------");
+}
+
+unittest {
+    writeln("rounding......testing");
+    writeln("---------------------");
+}
+
+/*private static context = DEFAULT_CONTEXT.dup;
+
+private static ContextStack contextStack;
+
+private static void pushContext(DecimalContext context) {
+     contextStack.push(context);
+}
+
+private static DecimalContext popContext() {
+    return contextStack.pop;
+}
+*/
+//TODO: add ref context flags to parameters.
+// UNREADY: round. Description. Private or public?
+public void round(ref BigDecimal num, ref DecimalContext context) {
+
+    if (!num.isFinite) return;
+
+    // TODO: No! don't clear the flags!!! That's for the user to do.
+    // context.clearFlags();
+    // check for subnormal
+
+    bool subnormal = false;
+    if (num.isSubnormal()) {
+        context.setFlag(SUBNORMAL);
+        subnormal = true;
+    }
+
+    // check for overflow
+    if (num.adjustedExponent > context.eMax) {
+//        writeln("num.adjustedExponent = ", num.adjustedExponent);
+//        writeln("context.eMax = ", context.eMax);
+        context.setFlag(OVERFLOW);
+        switch (context.mode) {
+            case Rounding.HALF_UP:
+            case Rounding.HALF_EVEN:
+            case Rounding.HALF_DOWN:
+            case Rounding.UP:
+                bool sign = num.sign;
+                num = BigDecimal.POS_INF;
+                num.sign = sign;
+                break;
+            case Rounding.DOWN:
+                bool sign = num.sign;
+                num = BigDecimal.max;
+                num.sign = sign;
+                break;
+            case Rounding.CEILING:
+                if (num.sign) {
+                    num = BigDecimal.max;
+                    num.sign = true;
+                }
+                else {
+                    num = BigDecimal.POS_INF;
+                }
+                break;
+            case Rounding.FLOOR:
+                if (num.sign) {
+                    num = BigDecimal.NEG_INF;
+                } else {
+                    num = BigDecimal.max;
+                }
+                break;
+        }
+        context.setFlag(INEXACT);
+        context.setFlag(ROUNDED);
+        return;
+    }
+    roundByMode(num, context);
+    // check for underflow
+    if (num.isSubnormal /*&& num.isInexact*/) {
+        context.setFlag(SUBNORMAL);
+        int diff = context.eTiny - num.adjustedExponent;
+        if (diff > num.digits) {
+            num.mant = 0;
+            num.expo = context.eTiny;
+        } else if (diff > 0) {
+            // TODO: do something about this
+            writeln("We got a tiny one!");
+        }
+    }
+    // check for zero
+    if (num.sval == BigDecimal.SV.CLEAR && num.mant == BigInt(0)) {
+        num.sval = BigDecimal.SV.ZERO;
+        // subnormal rounding to zero == clamped
+        // Spec. p. 51
+        if (subnormal) {
+            context.setFlag(CLAMPED);
+        }
+        return;
+    }
+} // end round()
+
+unittest {
+    write("round..........");
+    BigDecimal before = BigDecimal(9999);
+    BigDecimal after = before;
+    pushContext(context);
+    context.precision = 3;
+    round(after, context);
+    assert(after.toString() == "1.00E+4");
+    before = BigDecimal(1234567890);
+    after = before;
+    context.precision = 3;
+    round(after, context);;
+    assert(after.toString() == "1.23E+9");
+    after = before;
+    context.precision = 4;
+    round(after, context);;
+    assert(after.toString() == "1.235E+9");
+    after = before;
+    context.precision = 5;
+    round(after, context);;
+    assert(after.toString() == "1.2346E+9");
+    after = before;
+    context.precision = 6;
+    round(after, context);;
+    assert(after.toString() == "1.23457E+9");
+    after = before;
+    context.precision = 7;
+    round(after, context);;
+    assert(after.toString() == "1.234568E+9");
+    after = before;
+    context.precision = 8;
+    round(after, context);;
+    assert(after.toString() == "1.2345679E+9");
+    before = "1235";
+    after = before;
+    context.precision = 3;
+    round(after, context);;
+    assert(after.toAbstract() == "[0,124,1]");
+    before = "12359";
+    after = before;
+    context.precision = 3;
+    round(after, context);;
+    assert(after.toAbstract() == "[0,124,2]");
+    before = "1245";
+    after = before;
+    context.precision = 3;
+    round(after, context);;
+    assert(after.toAbstract() == "[0,124,1]");
+    before = "12459";
+    after = before;
+    context.precision = 3;
+    round(after, context);;
+    assert(after.toAbstract() == "[0,125,2]");
+    context = popContext();
+    writeln("passed");
+}
+
+//--------------------------------
+// private rounding routines
+//--------------------------------
+
+// TODO: Move into round routine.
+// UNREADY: roundByMode. Description. Order.
+private void roundByMode(ref BigDecimal num, ref DecimalContext context) {
+
+    uint digits = num.digits;
+    BigDecimal remainder = getRemainder(num, context);
+
+    // if the number wasn't rounded...
+    if (num.digits == digits) {
+        return;
+    }
+    // if the remainder is zero...
+    if (remainder.isZero) {
+        return;
+    }
+
+    switch (context.mode) {
+        case Rounding.DOWN:
+            return;
+        case Rounding.HALF_UP:
+            if (firstDigit(remainder.mant) >= 5) {
+                increment(num);
+            }
+            return;
+        case Rounding.HALF_EVEN:
+            BigDecimal five = BigDecimal(5, remainder.digits + remainder.expo - 1);
+            int result = decimal.arithmetic.compare(remainder, five, context, false);
+            if (result > 0) {
+                increment(num);
+                return;
+            }
+            if (result < 0) {
+                return;
+            }
+            // remainder == 5
+            // if last digit is odd...
+            if (lastDigit(num.mant) % 2) {
+            // TODO: isn't this just num.mant % 2?
+            // I can't imagine the other is more efficient
+                increment(num);
+            }
+            return;
+        case Rounding.CEILING:
+            if (!num.sign && remainder != BigDecimal.ZERO) {
+                increment(num);
+            }
+            return;
+        case Rounding.FLOOR:
+            if (num.sign && remainder != BigDecimal.ZERO) {
+                increment(num);
+            }
+            return;
+        case Rounding.HALF_DOWN:
+            if (firstDigit(remainder.mant) > 5) {
+                increment(num);
+            }
+            return;
+        case Rounding.UP:
+            if (remainder != BigDecimal.ZERO) {
+                increment(num);
+            }
+            return;
+    }    // end switch(mode)
+} // end roundByMode()
+
+unittest {
+    write("roundByMode....");
+//    DecimalContext context;
+    context.precision = 5;
+    context.mode = Rounding.HALF_EVEN;
+    BigDecimal num;
+    num = 1000;
+    roundByMode(num, context);
+    assert(num.mant == 1000 && num.expo == 0 && num.digits == 4);
+    num = 1000000;
+    roundByMode(num, context);
+    assert(num.mant == 10000 && num.expo == 2 && num.digits == 5);
+    num = 99999;
+    roundByMode(num, context);
+    assert(num.mant == 99999 && num.expo == 0 && num.digits == 5);
+    num = 1234550;
+    roundByMode(num, context);
+    assert(num.mant == 12346 && num.expo == 2 && num.digits == 5);
+    context.mode = Rounding.DOWN;
+    num = 1234550;
+    roundByMode(num, context);
+    assert(num.mant == 12345 && num.expo == 2 && num.digits == 5);
+    context.mode = Rounding.UP;
+    num = 1234550;
+    roundByMode(num, context);
+    assert(num.mant == 12346 && num.expo == 2 && num.digits == 5);
+    writeln("passed");
+}
+
+// UNREADY: getRemainder. Order. Unit tests.
+/**
+ * Clips the coefficient of the number to the specified precision.
+ * Returns the (unsigned) remainder for adjustments based on rounding mode.
+ * Sets the ROUNDED and INEXACT flags.
+ */
+private BigDecimal getRemainder(ref BigDecimal num, ref DecimalContext context) {
+    BigDecimal remainder = BigDecimal.ZERO.dup;
+    int diff = num.digits - context.precision;
+    if (diff <= 0) {
+        return remainder;
+    }
+    context.setFlag(ROUNDED);
+
+    // the context can be zero when...??
+    if (context.precision == 0) {
+        num = num.sign ? BigDecimal.NEG_ZERO : BigDecimal.ZERO;
+    } else {
+        BigInt divisor = pow10(diff);
+        BigInt dividend = num.mant;
+        BigInt quotient = dividend/divisor;
+        BigInt modulo = dividend - quotient*divisor;
+        if (modulo != BigInt(0)) {
+            remainder.digits = diff;
+            remainder.expo = num.expo;
+            remainder.mant = modulo;
+            remainder.sval = BigDecimal.SV.CLEAR;
+        }
+        num.mant = quotient;
+        num.digits = context.precision;
+        num.expo += diff;
+    }
+    if (remainder != BigDecimal.ZERO) {
+        context.setFlag(INEXACT);
+    }
+
+    return remainder;
+}
+
+unittest {
+    write("getRemainder...");
+    pushContext(context);
+    context.precision = 5;
+    BigDecimal num, acrem, exnum, exrem;
+    num = BigDecimal(1234567890123456L);
+    acrem = getRemainder(num, context);
+    exnum = BigDecimal("1.2345E+15");
+    assert(num == exnum);
+    exrem = 67890123456;
+    assert(acrem == exrem);
+    context = popContext();
+    writeln("passed");
+}
+
+// UNREADY: increment. Order.
+/**
+ * Increments the coefficient by 1. If this causes an overflow, divides by 10.
+ */
+private void increment(ref BigDecimal num) {
+    num.mant += 1;
+    // check if the num was all nines --
+    // did the coefficient roll over to 1000...?
+    BigDecimal test1 = BigDecimal(1, num.digits + num.expo);
+    BigDecimal test2 = num;
+    test2.digits++;
+    int comp = decimal.arithmetic.compare(test1, test2, context, false);
+    if (comp == 0) {
+        num.digits++;
+        // check if there are now too many digits...
+        if (num.digits > context.precision) {
+            round(num, context);
+        }
+    }
+}
+
+unittest {
+    write("increment......");
+    BigDecimal num;
+    BigDecimal expd;
+    num = 10;
+    expd = 11;
+    increment(num);
+    assert(num == expd);
+    num = 19;
+    expd = 20;
+    increment(num);
+    assert(num == expd);
+    num = 999;
+    expd = 1000;
+    increment(num);
+    assert(num == expd);
+    writeln("passed");
+    writeln("---------------------");
+}
+
+// UNREADY: setExponent. Description. Order.
+public uint setExponent(ref long num, ref uint digits, const DecimalContext context) {
+
+    uint inDigits = digits;
+    ulong unum = std.math.abs(num);
+    bool sign = num < 0;
+    ulong remainder = getRemainder(unum, digits, context.precision);
+    int expo = inDigits - digits;
+
+    // if the remainder is zero, return
+    if (remainder == 0) {
+        num = sign ? -unum : unum;
+        return expo;
+    }
+
+    switch (context.mode) {
+        case Rounding.DOWN:
+            break;
+        case Rounding.HALF_UP:
+            if (firstDigit(remainder) >= 5) {
+                increment(unum, digits);
+            }
+            break;
+        case Rounding.HALF_EVEN:
+            ulong first = firstDigit(remainder);
+            if (first > 5) {
+                increment(unum, digits);
+            }
+            if (first < 5) {
+                break;
+            }
+            // remainder == 5
+            // if last digit is odd...
+            if (unum & 1) {
+                increment(unum, digits);
+            }
+            break;
+        case Rounding.CEILING:
+            if (!sign && remainder != 0) {
+                increment(unum, digits);
+            }
+            break;
+        case Rounding.FLOOR:
+            if (sign && remainder != 0) {
+                increment(unum, digits);
+            }
+            break;
+        case Rounding.HALF_DOWN:
+            if (firstDigit(remainder) > 5) {
+                increment(unum, digits);
+            }
+            break;
+        case Rounding.UP:
+            if (remainder != 0) {
+                increment(unum, digits);
+            }
+            break;
+    }    // end switch(mode)
+
+    num = sign ? -unum : unum;
+    return expo;
+
+} // end setExponent()
+
+unittest {
+    write("setExponent....");
+    DecimalContext context;
+    context.precision = 5;
+    context.mode = Rounding.HALF_EVEN;
+    long num; uint digits; int expo;
+    num = 1000;
+    digits = numDigits(num);
+    expo = setExponent(num, digits, context);
+    assert(num == 1000 && expo == 0 && digits == 4);
+    num = 1000000;
+    digits = numDigits(num);
+    expo = setExponent(num, digits, context);
+    assert(num == 10000 && expo == 2 && digits == 5);
+    num = 99999;
+    digits = numDigits(num);
+    expo = setExponent(num, digits, context);
+    assert(num == 99999 && expo == 0 && digits == 5);
+    num = 1234550;
+    digits = numDigits(num);
+    expo = setExponent(num, digits, context);
+    assert(num == 12346 && expo == 2 && digits == 5);
+    context.mode = Rounding.DOWN;
+    num = 1234550;
+    digits = numDigits(num);
+    expo = setExponent(num, digits, context);
+    assert(num == 12345 && expo == 2 && digits == 5);
+    context.mode = Rounding.UP;
+    num = 1234550;
+    digits = numDigits(num);
+    expo = setExponent(num, digits, context);
+    assert(num == 12346 && expo == 2 && digits == 5);
+    writeln("passed");
+}
+
+// UNREADY: getRemainder. Order. Unit tests.
+/**
+ * Clips the coefficient of the number to the specified precision.
+ * Returns the (unsigned) remainder for adjustments based on rounding mode.
+ * Sets the ROUNDED and INEXACT flags.
+ */
+private ulong getRemainder(ref ulong num, ref uint digits, uint precision) {
+    ulong remainder = 0;
+    int diff = digits - precision;
+    if (diff <= 0) {
+        return remainder;
+    }
+    // if (remainder != 0) {...} ?
+    //context.setFlag(ROUNDED);
+
+    // TODO: This is a fictitious case .. the context can be zero when...??
+    if (precision == 0) {
+        num = 0;
+    } else {
+        ulong divisor = 10L^^diff;
+        ulong dividend = num;
+        ulong quotient = dividend / divisor;
+        num = quotient;
+        remainder = dividend - quotient*divisor;
+        digits = precision;
+    }
+    // TODO: num.digits == precision.
+    // TODO: num.expo == diff;
+    return remainder;
+}
+
+unittest {
+    write("getRemainder...");
+    ulong num, acrem, exnum, exrem;
+    uint digits, precision;
+    num = 1234567890123456L;
+    digits = 16; precision = 5;
+    acrem = getRemainder(num, digits, precision);
+    exnum = 12345L;
+    assert(num == exnum);
+    exrem = 67890123456L;
+    assert(acrem == exrem);
+    writeln("passed");
+}
+
+/**
+ * Increments the number by 1.
+ * Re-calculates the number of digits--the increment may have caused
+ * an increase in the number of digits, i.e., input number was all 9s.
+ */
+private void increment(ref ulong num, ref uint digits) {
+    num++;
+    digits = numDigits(num);
+}
+
+unittest {
+    write("increment......");
+    ulong num;
+    uint digits;
+    ulong expd;
+    num = 10;
+    expd = 11;
+    digits = numDigits(num);
+    increment(num, digits);
+    assert(num == expd);
+    assert(digits == 2);
+    num = 19;
+    expd = 20;
+    digits = numDigits(num);
+    increment(num, digits);
+    assert(num == expd);
+    assert(digits == 2);
+    num = 999;
+    expd = 1000;
+    digits = numDigits(num);
+    increment(num, digits);
+    assert(num == expd);
+    assert(digits == 4);
+    writeln("passed");
+}
+
+unittest {
+    writeln("---------------------");
+    writeln("rounding.....finished");
+    writeln("---------------------");
     writeln();
 }
 

@@ -31,6 +31,7 @@ module decimal.decimal;
 import decimal.context;
 import decimal.rounding;
 import decimal.arithmetic;
+
 import std.bigint;
 import std.exception: assumeUnique;
 import std.conv;
@@ -48,16 +49,16 @@ unittest {
 alias BigDecimal.context context;
 // alias BigDecimal.context.precision precision;
 
-/// precision stack
+/*/// precision stack
 private static Stack!(uint) precisionStack;
 
-/// saves the current precision
-package static void pushPrecision() {
+/// saves the current context
+package static void pushContext() {
     precisionStack.push(context.precision);
 }
 
 unittest {
-    write("pushPrecision...");
+    write("pushContext...");
     writeln("test missing");
 }
 
@@ -70,7 +71,7 @@ unittest {
     write("popPrecision...");
     writeln("test missing");
 }
-
+*/
 /**
  * A struct representing an arbitrary-precision floating-point number.
  *
@@ -93,7 +94,16 @@ public @property void expo(int value) { m_expo = value; };
 public @property int digits() { return m_digits; };
 public @property void digits(int value) { m_digits = value; };*/
 
-    private static context = DEFAULT_CONTEXT.dup;
+    private static DecimalContext context = DEFAULT_CONTEXT.dup;
+
+/*    private static ContextStack contextStack;
+    public static void pushContext(DecimalContext context) {
+        DecimalContext copy = context;
+        contextStack.push(copy);
+    }
+    public static DecimalContext popContext() {
+        return contextStack.pop;
+    }*/
 
     package SV sval = SV.QNAN;        // special values: default value is quiet NaN
     private bool signed = false;        // true if the value is negative, false otherwise.
@@ -296,7 +306,7 @@ public:
      // TODO: should this set flags? probably not.
     this(const long coefficient, const int exponent, const int precision) {
 //        writeln("calling this(7)");
-//        pushPrecision;
+//        pushContext;
         this(coefficient, exponent);
         context.precision = precision;
         setDigits(this);
@@ -315,7 +325,7 @@ public:
      // TODO: should this set flags? probably not.
 /*    this(const bool sign, const ulong coefficient, const int exponent) {
         writeln("calling this(7)");
-//        pushPrecision;
+//        pushContext;
         this(coefficient, exponent);
         context.precision = precision;
         setDigits(this);

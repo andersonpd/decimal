@@ -39,12 +39,6 @@ import std.ctype: isdigit;
 import std.stdio: write, writeln;
 import std.string;
 
-unittest {
-    writeln("---------------------");
-    writeln("arithmetic....testing");
-    writeln("---------------------");
-}
-
 // BigInt BIG_ONE = BigInt(1);
 // TODO: BIG_ONE, BIG_ZERO
 
@@ -60,13 +54,6 @@ public string toSciString(const BigDecimal num) {
     return decimal.conv.toSciString!BigDecimal(num);
 };    // end toSciString()
 
-unittest {
-    writeln("-------------------");
-    write("to-sci-str...");
-    // test moved to decimal.conv
-    writeln("passed");
-}
-
 // READY: toEngString.
 /**
  * Converts a BigDecimal to an engineering string representation.
@@ -74,13 +61,6 @@ unittest {
 public string toEngString(const BigDecimal num) {
    return decimal.conv.toEngString!BigDecimal(num);
 }; // end toEngString()
-
-
-unittest {
-    write("to-eng-str...");
-    // test moved to decimal.conv
-    writeln("passed");
-}
 
 // UNREADY: toNumber. Description. Corner Cases. Context.
 /**
@@ -264,88 +244,16 @@ public BigDecimal toNumber(const string inStr) {
 }
 
 unittest {
-    write("to-number....");
-    BigDecimal f;
-    string str = "0";
-    f = str;
-    assert(f.toString() == str);
-    assert(f.toAbstract() == "[0,0,0]");
-    str = "0.00";
-    f = str;
-    assert(f.toString() == str);
-    assert(f.toAbstract() == "[0,0,-2]");
-    str = "0.0";
-    f = str;
-    assert(f.toString() == str);
-    assert(f.toAbstract() == "[0,0,-1]");
-    f = "0.";
-    assert(f.toString() == "0");
-    assert(f.toAbstract() == "[0,0,0]");
-    f = ".0";
-    assert(f.toString() == "0.0");
-    assert(f.toAbstract() == "[0,0,-1]");
-    str = "1.0";
-    f = str;
-    assert(f.toString() == str);
-    assert(f.toAbstract() == "[0,10,-1]");
-    str = "1.";
-    f = str;
-    assert(f.toString() == "1");
-    assert(f.toAbstract() == "[0,1,0]");
-    str = ".1";
-    f = str;
+    BigDecimal f = BigDecimal("1.0");
+    assert(f.toString() == "1.0");
+    f = BigDecimal(".1");
     assert(f.toString() == "0.1");
-    assert(f.toAbstract() == "[0,1,-1]");
-    f = BigDecimal("123");
-    assert(f.toString() == "123");
     f = BigDecimal("-123");
     assert(f.toString() == "-123");
     f = BigDecimal("1.23E3");
     assert(f.toString() == "1.23E+3");
-    f = BigDecimal("1.23E");
-    assert(f.toString() == "NaN");
-    f = BigDecimal("1.23E-");
-    assert(f.toString() == "NaN");
-    f = BigDecimal("1.23E+");
-    assert(f.toString() == "NaN");
-    f = BigDecimal("1.23E+3");
-    assert(f.toString() == "1.23E+3");
-    f = BigDecimal("1.23E3B");
-    assert(f.toString() == "NaN");
-    f = BigDecimal("12.3E+007");
-    assert(f.toString() == "1.23E+8");
-    f = BigDecimal("12.3E+70000000000");
-    assert(f.toString() == "NaN");
-    f = BigDecimal("12.3E+7000000000");
-    assert(f.toString() == "NaN");
-    f = BigDecimal("12.3E+700000000");
-    assert(f.toString() == "1.23E+700000001");
-    f = BigDecimal("12.3E-700000000");
-    assert(f.toString() == "1.23E-699999999");
-    // NOTE: since there will still be adjustments -- maybe limit to 99999999?
-    f = BigDecimal("12.0");
-    assert(f.toString() == "12.0");
-    f = BigDecimal("12.3");
-    assert(f.toString() == "12.3");
     f = BigDecimal("1.23E-3");
     assert(f.toString() == "0.00123");
-    f = BigDecimal("0.00123");
-    assert(f.toString() == "0.00123");
-    f = BigDecimal("-1.23E-12");
-    assert(f.toString() == "-1.23E-12");
-    f = BigDecimal("-0");
-    assert(f.toString() == "-0");
-    f = BigDecimal("inf");
-    assert(f.toString() == "Infinity");
-    f = BigDecimal("NaN");
-    assert(f.toString() == "NaN");
-    f = BigDecimal("-NaN");
-    assert(f.toString() == "-NaN");
-    f = BigDecimal("sNaN");
-    assert(f.toString() == "sNaN");
-    f = BigDecimal("Fred");
-    assert(f.toString() == "NaN");
-    writeln("passed");
 }
 
 //--------------------------------
@@ -361,9 +269,7 @@ public int radix() {
 }
 
 unittest {
-    write("radix........");
     assert(radix() == 10);
-    writeln("passed");
 }
 
 // READY: classify
@@ -391,37 +297,21 @@ public string classify(const BigDecimal num) {
 }
 
 unittest {
-    write("class........");
-    BigDecimal dcm;
-    dcm = "Infinity";
-    assert(classify(dcm) == "+Infinity");
-    dcm = "1E-10";
-    assert(classify(dcm) == "+Normal");
-    dcm = "2.50";
-    assert(classify(dcm) == "+Normal");
-    dcm = "0.1E-99";
-    assert(classify(dcm) == "+Subnormal");
-    dcm = "0";
-    assert(classify(dcm) == "+Zero");
-    dcm = "-0";
-    assert(classify(dcm) == "-Zero");
-    dcm = "-0.1E-99";
-    assert(classify(dcm) == "-Subnormal");
-    dcm = "-1E-10";
-    assert(classify(dcm) == "-Normal");
-    dcm = "-2.50";
-    assert(classify(dcm) == "-Normal");
-    dcm = "-Infinity";
-    assert(classify(dcm) == "-Infinity");
-    dcm = "NaN";
-    assert(classify(dcm) == "NaN");
-    dcm = "-NaN";
-    assert(classify(dcm) == "NaN");
-    dcm = "sNaN";
-    assert(classify(dcm) == "sNaN");
+    BigDecimal num;
+    num = "Inf";
+    assert(classify(num) == "+Infinity");
+    num = "1E-10";
+    assert(classify(num) == "+Normal");
+    num = "-0";
+    assert(classify(num) == "-Zero");
+    num = "-0.1E-99";
+    assert(classify(num) == "-Subnormal");
+    num = "NaN";
+    assert(classify(num) == "NaN");
+    num = "sNaN";
+    assert(classify(num) == "sNaN");
     writeln("passed");
 }
-
 
 //--------------------------------
 // copy functions
@@ -439,52 +329,13 @@ public BigDecimal copy(const BigDecimal num) {
 // TODO: these should actually be compare-total assertions
 // This is probably true of other unit tests as well
 unittest {
-    write("copy.........");
-    BigDecimal dcm;
-    BigDecimal expd;
-    dcm  = "2.1";
+    BigDecimal num, expd;
+    num  = "2.1";
     expd = "2.1";
-    assert(copy(dcm) == expd);
-    dcm  = "-1.00";
+    assert(copy(num) == expd);
+    num  = "-1.00";
     expd = "-1.00";
-    assert(copy(dcm) == expd);
-    writeln("passed");
-
-    dcm  = "2.1";
-    expd = "2.1";
-    write("copy-abs.....");
-    assert(copyAbs(dcm) == expd);
-    dcm  = "-1.00";
-    expd = "1.00";
-    assert(copyAbs(dcm) == expd);
-    writeln("passed");
-
-    dcm  = "101.5";
-    expd = "-101.5";
-    write("copy-negate..");
-    assert(copyNegate(dcm) == expd);
-    BigDecimal dcm1;
-    BigDecimal dcm2;
-    dcm1 = "1.50";
-    dcm2 = "7.33";
-    expd = "1.50";
-    writeln("passed");
-
-    write("copy-sign....");
-    assert(copySign(dcm1, dcm2) == expd);
-    dcm1 = "-1.50";
-    dcm2 = "7.33";
-    expd = "1.50";
-    assert(copySign(dcm1, dcm2) == expd);
-    dcm1 = "1.50";
-    dcm2 = "-7.33";
-    expd = "-1.50";
-    assert(copySign(dcm1, dcm2) == expd);
-    dcm1 = "-1.50";
-    dcm2 = "-7.33";
-    expd = "-1.50";
-    assert(copySign(dcm1, dcm2) == expd);
-    writeln("passed");
+    assert(copy(num) == expd);
 }
 
 // READY: copyAbs
@@ -501,16 +352,13 @@ public BigDecimal copyAbs(const BigDecimal num) {
 // TODO: these should actually be compare-total assertions
 // This is probably true of other unit tests as well
 unittest {
-    write("copy-abs.....");
-    BigDecimal dcm;
-    BigDecimal expd;
-    dcm  = "2.1";
+    BigDecimal num, expd;
+    num  = BigDecimal("2.1");
     expd = "2.1";
-    assert(copyAbs(dcm) == expd);
-    dcm  = "-1.00";
+    assert(copyAbs(num) == expd);
+    num  = "-1.00";
     expd = "1.00";
-    assert(copyAbs(dcm) == expd);
-    writeln("passed");
+    assert(copyAbs(num) == expd);
 }
 
 // READY: copyNegate
@@ -527,17 +375,9 @@ public BigDecimal copyNegate(const BigDecimal num) {
 // TODO: these should actually be compare-total assertions
 // This is probably true of other unit tests as well
 unittest {
-    write("copy-negate..");
-    BigDecimal dcm, expd;
-    dcm  = "101.5";
-    expd = "-101.5";
-    assert(copyNegate(dcm) == expd);
-    BigDecimal dcm1;
-    BigDecimal dcm2;
-    dcm1 = "1.50";
-    dcm2 = "7.33";
-    expd = "1.50";
-    writeln("passed");
+    BigDecimal num  = BigDecimal("101.5");
+    BigDecimal expd = BigDecimal("-101.5");
+    assert(copyNegate(num) == expd);
 }
 
 // READY: copySign
@@ -554,25 +394,15 @@ public BigDecimal copySign(const BigDecimal op1, const BigDecimal op2) {
 // TODO: these should actually be compare-total assertions
 // This is probably true of other unit tests as well
 unittest {
-    write("copy-sign....");
-    BigDecimal dcm1, dcm2, expd;
-    dcm1 = "1.50";
-    dcm2 = "7.33";
+    BigDecimal num1, num2, expd;
+    num1 = "1.50";
+    num2 = "7.33";
     expd = "1.50";
-    assert(copySign(dcm1, dcm2) == expd);
-    dcm1 = "-1.50";
-    dcm2 = "7.33";
-    expd = "1.50";
-    assert(copySign(dcm1, dcm2) == expd);
-    dcm1 = "1.50";
-    dcm2 = "-7.33";
+    assert(copySign(num1, num2) == expd);
+    num1 = "1.50";
+    num2 = "-7.33";
     expd = "-1.50";
-    assert(copySign(dcm1, dcm2) == expd);
-    dcm1 = "-1.50";
-    dcm2 = "-7.33";
-    expd = "-1.50";
-    assert(copySign(dcm1, dcm2) == expd);
-    writeln("passed");
+    assert(copySign(num1, num2) == expd);
 }
 
 // UNREADY: quantize. Logic.
@@ -582,7 +412,7 @@ unittest {
  * to be equal to the exponent of the second operand.
  */
 public BigDecimal quantize(const BigDecimal op1, const BigDecimal op2,
-        ref DecimalContext context) {
+        DecimalContext context) {
     BigDecimal result;
     if (isInvalidBinaryOp(op1, op2, result, context)) {
         return result;
@@ -611,20 +441,19 @@ public BigDecimal quantize(const BigDecimal op1, const BigDecimal op2,
         return result;
     }
     else {
-        pushPrecision;
+//        pushContext(context);
         context.precision = (-diff > op1.digits) ? 0 : op1.digits + diff;
         round(result, context);
         result.expo = op2.expo;
         if (result.isZero && op1.isSigned) {
             result.sign = true;
         }
-        popPrecision;
+//        context = popContext;
         return result;
     }
 }
 
 unittest {
-    write("quantize.....");
     BigDecimal op1, op2, result, expd;
     string str;
     op1 = "2.17";
@@ -703,7 +532,6 @@ unittest {
     result = quantize(op1, op2, context);
     assert(result.toString() == expd.toString());
     assert(result == expd);
-    writeln("passed");
 }
 
 /**
@@ -714,7 +542,7 @@ unittest {
  * limiting the resulting exponent).
  */
 // NOTE: flags only
-public BigDecimal logb(const BigDecimal num, ref DecimalContext context) {
+public BigDecimal logb(const BigDecimal num, DecimalContext context) {
 
     BigDecimal result;
 
@@ -736,22 +564,10 @@ public BigDecimal logb(const BigDecimal num, ref DecimalContext context) {
 }
 
 unittest {
-    write("logb.........");
-    BigDecimal num;
-    BigDecimal expd;
+    BigDecimal num, expd;
     num = BigDecimal("250");
     expd = BigDecimal("2");
     assert(logb(num, context) == expd);
-    num = BigDecimal("2.50");
-    expd = BigDecimal("0");
-    assert(logb(num, context) == expd);
-    num = BigDecimal("0.03");
-    expd = BigDecimal("-2");
-    assert(logb(num, context) == expd);
-    num = BigDecimal("0");
-    expd = BigDecimal("-Infinity");
-    assert(logb(num, context) == expd);
-    writeln("passed");
 }
 
 /**
@@ -762,7 +578,7 @@ unittest {
  */
 // NOTE: flags only
 public BigDecimal scaleb(const BigDecimal op1, const BigDecimal op2,
-        ref DecimalContext context) {
+        DecimalContext context) {
     BigDecimal result;
     if (isInvalidBinaryOp(op1, op2, result, context)) {
         return result;
@@ -785,25 +601,10 @@ public BigDecimal scaleb(const BigDecimal op1, const BigDecimal op2,
 }
 
 unittest {
-    write("scaleb.......");
-    BigDecimal op1, op2, expd;
-    op1 = BigDecimal("7.50");
-    op2 = BigDecimal("-2");
-    expd = BigDecimal("0.0750");
-    assert(scaleb(op1, op2, context) == expd);
-    op1 = BigDecimal("7.50");
-    op2 = BigDecimal("0");
-    expd = BigDecimal("7.50");
-    assert(scaleb(op1, op2, context) == expd);
-    op1 = BigDecimal("7.50");
-    op2 = BigDecimal("3");
-    expd = BigDecimal("7.50E+3");
-    assert(scaleb(op1, op2, context) == expd);
-    op1 = BigDecimal("-Infinity");
-    op2 = BigDecimal("4.5");
-    expd = BigDecimal("-Infinity");
-    assert(scaleb(op1, op2, context) == expd);
-    writeln("passed");
+    auto num1 = BigDecimal("7.50");
+    auto num2 = BigDecimal("-2");
+    auto expd = BigDecimal("0.0750");
+    assert(scaleb(num1, num2, context) == expd);
 }
 
 //--------------------------------
@@ -815,7 +616,8 @@ unittest {
  * Reduces operand to simplest form. Trailing zeros are removed.
  */
 // NOTE: flags only
-public BigDecimal reduce(const BigDecimal num, ref DecimalContext context) {
+public BigDecimal reduce(const BigDecimal num,
+DecimalContext context) {
     BigDecimal result;
     if (invalidOperand(num, result, context)) {
         return result;
@@ -880,7 +682,8 @@ unittest {
  */
 /// Returns a new BigDecimal equal to the absolute value of this BigDecimal.
 // NOTE: flags only
-public BigDecimal abs(const BigDecimal op1, ref DecimalContext context) {
+public BigDecimal abs(const BigDecimal op1,
+DecimalContext context) {
     BigDecimal result;
     if(invalidOperand(op1, result, context)) {
         return result;
@@ -936,7 +739,7 @@ unittest {
  *    Result is equivalent to add('0', number).
  *    To copy without rounding or setting flags use the "copy" function.
  */
-public BigDecimal plus(const BigDecimal op1, ref DecimalContext context) {
+public BigDecimal plus(const BigDecimal op1, DecimalContext context) {
     BigDecimal result;
     if(invalidOperand(op1, result, context)) {
         return result;
@@ -969,7 +772,7 @@ unittest {
  *    Result is equivalent to subtract('0', number).
  *    To copy without rounding or setting flags use the "copyNegate" function.
  */
-public BigDecimal minus(const BigDecimal op1, ref DecimalContext context) {
+public BigDecimal minus(const BigDecimal op1, DecimalContext context) {
     BigDecimal result;
     if(invalidOperand(op1, result, context)) {
         return result;
@@ -1000,7 +803,7 @@ unittest {
 //-----------------------------------
 
 // UNREADY: nextPlus. Description. Unit Tests.
-public BigDecimal nextPlus(const BigDecimal op1, ref DecimalContext context) {
+public BigDecimal nextPlus(const BigDecimal op1, DecimalContext context) {
     BigDecimal result;
     if (invalidOperand(op1, result, context)) {
         return result;
@@ -1027,9 +830,9 @@ public BigDecimal nextPlus(const BigDecimal op1, ref DecimalContext context) {
 
 unittest {
     write("next-plus....");
-    pushPrecision;
-    int savedMin = context.eMin;
-    int savedMax = context.eMax;
+    pushContext(context);
+/*    int savedMin = context.eMin;
+    int savedMax = context.eMax;*/
     context.eMax = 999;
     context.eMin = -999;
     BigDecimal num;
@@ -1068,14 +871,14 @@ unittest {
     expd = "-9.99999999E+999";
 //    writeln("expd = ", expd);
     assert(nextPlus(num, context) == expd);
-    popPrecision;
-    context.eMin = savedMin;
-    context.eMax = savedMax;
+    context = popContext;
+/*    context.eMin = savedMin;
+    context.eMax = savedMax;*/
     writeln("passed");
 }
 
 // UNREADY: nextMinus. Description. Unit Tests.
-public BigDecimal nextMinus(const BigDecimal op1, ref DecimalContext context) {
+public BigDecimal nextMinus(const BigDecimal op1, DecimalContext context) {
     BigDecimal result;
     if (invalidOperand(op1, result, context)) {
         return result;
@@ -1134,7 +937,7 @@ unittest {
 // UNREADY: nextToward. Description. Unit Tests.
 // NOTE: rounds
 public BigDecimal nextToward(const BigDecimal op1, const BigDecimal op2,
-        ref DecimalContext context) {
+        DecimalContext context) {
     BigDecimal result;
     if (isInvalidBinaryOp(op1, op2, result, context)) {
         return result;
@@ -1229,7 +1032,7 @@ unittest {
 
 // UNREADY: compare
 public int compare(const BigDecimal op1, const BigDecimal op2,
-        ref DecimalContext context, bool rounded = true) {
+        DecimalContext context, bool rounded = true) {
 
     // any operation with a signaling NaN is invalid.
     // if both are signaling, return as if op1 > op2.
@@ -1332,7 +1135,7 @@ unittest {
  * A BigDecimal is not equal to itself (this != this) if it is a NaN.
  */
 public bool equals(const BigDecimal op1, const BigDecimal op2,
-            ref DecimalContext context, const bool rounded = true) {
+            DecimalContext context, const bool rounded = true) {
 
     // any operation with a signaling NaN is invalid.
     // NaN is never equal to anything, not even another NaN
@@ -1405,7 +1208,7 @@ unittest {
  * compare except that quiet NaNs are treated as if they were signaling.
  */
 public int compareSignal(const BigDecimal op1, const BigDecimal op2,
-        ref DecimalContext context, bool rounded = true) {
+        DecimalContext context, bool rounded = true) {
 
     // any operation with NaN is invalid.
     // if both are NaN, return as if op1 > op2.
@@ -1509,7 +1312,7 @@ unittest {
  */
 // NOTE: flags only
 const(BigDecimal) max(const BigDecimal op1, const BigDecimal op2,
-        ref DecimalContext context) {
+        DecimalContext context) {
     // if both are NaNs or either is an sNan, return NaN.
     if (op1.isNaN && op2.isNaN || op1.isSignaling || op2.isSignaling) {
         return BigDecimal.NaN;
@@ -1559,7 +1362,7 @@ unittest {
 
 // UNREADY: maxMagnitude. Flags.
 const(BigDecimal) maxMagnitude(const BigDecimal op1, const BigDecimal op2,
-        ref DecimalContext context) {
+        DecimalContext context) {
     return max(copyAbs(op1), copyAbs(op2), context);
 }
 
@@ -1581,7 +1384,7 @@ unittest {
  * 4) Otherwise, they are indistinguishable; the first is returned.
  */
 const(BigDecimal) min(const BigDecimal op1, const BigDecimal op2,
-        ref DecimalContext context) {
+        DecimalContext context) {
     // if both are NaNs or either is an sNan, return NaN.
     if (op1.isNaN && op2.isNaN || op1.isSignaling || op2.isSignaling) {
 /*        BigDecimal result;
@@ -1633,7 +1436,7 @@ unittest {
 
 // UNREADY: minMagnitude. Flags.
 const(BigDecimal) minMagnitude(const BigDecimal op1, const BigDecimal op2,
-        ref DecimalContext context) {
+        DecimalContext context) {
     return min(copyAbs(op1), copyAbs(op2), context);
 }
 
@@ -1655,7 +1458,7 @@ unittest {
  * An infinite number is returned unchanged.
  */
 public BigDecimal shift(const BigDecimal op1, const int op2,
-        ref DecimalContext context) {
+        DecimalContext context) {
 
     BigDecimal result;
     // check for NaN operand
@@ -1717,7 +1520,7 @@ unittest {
  * An infinite number is returned unchanged.
  */
 public BigDecimal rotate(const BigDecimal op1, const int op2,
-        ref DecimalContext context) {
+        DecimalContext context) {
 
     BigDecimal result;
     // check for NaN operand
@@ -1773,7 +1576,7 @@ unittest {
  * for the opAdd and opSub functions for the BigDecimal struct.
  */
 public BigDecimal add(const BigDecimal op1, const BigDecimal op2,
-        ref DecimalContext context, bool rounded = true) {
+        DecimalContext context, bool rounded = true) {
     BigDecimal augend = op1.dup;
     BigDecimal addend = op2.dup;
     BigDecimal sum;    // sum is initialized to quiet NaN
@@ -1896,7 +1699,7 @@ unittest {
  */
 public BigDecimal subtract(
         const BigDecimal minuend, const BigDecimal subtrahend,
-        ref DecimalContext context, const bool rounded = true) {
+        DecimalContext context, const bool rounded = true) {
     return add(minuend, copyNegate(subtrahend), context , rounded);
 }    // end subtract(minuend, subtrahend)
 
@@ -1914,7 +1717,7 @@ unittest {
  * for the opMul function for the BigDecimal struct.
  */
 public BigDecimal multiply(const BigDecimal op1, const BigDecimal op2,
-        ref DecimalContext context, const bool rounded = true) {
+        DecimalContext context, const bool rounded = true) {
 
     BigDecimal product;
     // if invalid, return NaN
@@ -1982,7 +1785,7 @@ unittest {
  * in the General Decimal Arithmetic Specification.
  */
 public BigDecimal fma(const BigDecimal op1, const BigDecimal op2,
-        const BigDecimal op3, ref DecimalContext context) {
+        const BigDecimal op3, DecimalContext context) {
 
     BigDecimal product = multiply(op1, op2, context, false);
     return add(product, op3, context);
@@ -2015,7 +1818,7 @@ unittest {
  * for the opDiv function for the BigDecimal struct.
  */
 public BigDecimal divide(const BigDecimal op1, const BigDecimal op2,
-        ref DecimalContext context, bool rounded = true) {
+        DecimalContext context, bool rounded = true) {
 
     BigDecimal quotient;
     // check for NaN and divide by zero
@@ -2060,11 +1863,12 @@ public BigDecimal divide(const BigDecimal op1, const BigDecimal op2,
 
 unittest {
     write("divide.......");
+    pushContext(context);
+    context.precision = 9;
     BigDecimal op1, op2;
     BigDecimal expd;
     op1 = 1;
     op2 = 3;
-    context.precision = 9;
     BigDecimal quotient = divide(op1, op2, context);
     expd = "0.333333333";
     assert(quotient == expd);
@@ -2115,6 +1919,7 @@ unittest {
     quotient = divide(op1, op2, context);
     assert(quotient == expd);
     assert(quotient.toString() == expd.toString());
+    context = popContext();
     writeln("passed");
 }
 
@@ -2127,7 +1932,7 @@ unittest {
  * in the General Decimal Arithmetic Specification.
  */
 public BigDecimal divideInteger(const BigDecimal op1, const BigDecimal op2,
-        ref DecimalContext context) {
+        DecimalContext context) {
 
     BigDecimal quotient;
     if (isInvalidDivision(op1, op2, quotient, context)) {
@@ -2189,7 +1994,7 @@ unittest {
  * in the General Decimal Arithmetic Specification.
  */
 public BigDecimal remainder(const BigDecimal op1, const BigDecimal op2,
-        ref DecimalContext context) {
+        DecimalContext context) {
     BigDecimal quotient;
     if (isInvalidDivision(op1, op2, quotient, context)) {
         return quotient;
@@ -2249,7 +2054,7 @@ unittest {
  * in the General Decimal Arithmetic Specification.
  */
 public BigDecimal remainderNear(const BigDecimal dividend,
-        const BigDecimal divisor, ref DecimalContext context) {
+        const BigDecimal divisor, DecimalContext context) {
     BigDecimal quotient;
     if (isInvalidDivision(dividend, divisor, quotient, context)) {
         return quotient;
@@ -2274,15 +2079,15 @@ unittest {
 // UNREADY: roundToIntegralExact. Description. Name. Order.
 // could set flags and then pop the context??
 public BigDecimal roundToIntegralExact(const BigDecimal num,
-        ref DecimalContext context){
+        DecimalContext context){
     if (num.isSignaling) return flagInvalid(context);
     if (num.isSpecial) return num.dup;
     if (num.expo >= 0) return num.dup;
-    pushPrecision();
+//    pushContext(context);
     context.precision = num.digits;
     const BigDecimal ONE = BigDecimal(1);
     BigDecimal result = quantize(num, ONE, context);
-    popPrecision;
+//    context = popContext;
     return result;
 }
 
@@ -2325,7 +2130,7 @@ unittest {
 
 // UNREADY: roundToIntegralValue. Description. Name. Order. Logic.
 public BigDecimal roundToIntegralValue(const BigDecimal num,
-        ref DecimalContext context){
+        DecimalContext context){
     // this operation shouldn't affect the inexact or rounded flags
     // so we'll save them in case they were already set.
     bool inexact = context.getFlag(INEXACT);
@@ -2366,7 +2171,7 @@ unittest {
  // TODO: has non-standard flag setting
 // NOTE: flags only
 private BigDecimal reduceToIdeal(const BigDecimal num, int ideal,
-        ref DecimalContext context) {
+        DecimalContext context) {
     BigDecimal result;
     if (invalidOperand(num, result, context)) {
         return result;
@@ -2399,7 +2204,7 @@ unittest {
  * Sets the invalid-operation flag and
  * returns a quiet NaN.
  */
-private BigDecimal flagInvalid(ref DecimalContext context, ulong payload = 0) {
+private BigDecimal flagInvalid(DecimalContext context, ulong payload = 0) {
     context.setFlag(INVALID_OPERATION);
     BigDecimal result = BigDecimal.NaN.dup;
     if (payload != 0) {
@@ -2474,7 +2279,7 @@ unittest {
  * -- General Decimal Arithmetic Specification, p. 24
  */
 private bool isInvalidBinaryOp(const BigDecimal op1, const BigDecimal op2,
-        ref BigDecimal result, ref DecimalContext context) {
+        ref BigDecimal result, DecimalContext context) {
     // if either operand is a signaling NaN...
     if (op1.isSignaling || op2.isSignaling) {
         // flag the invalid operation
@@ -2512,7 +2317,7 @@ unittest {
  * -- General Decimal Arithmetic Specification, p. 24
  */
 private bool invalidOperand(const BigDecimal op1,
-    ref BigDecimal result, ref DecimalContext context) {
+    ref BigDecimal result, DecimalContext context) {
     // if the operand is a signaling NaN...
     if (op1.isSignaling) {
         // flag the invalid operation
@@ -2575,7 +2380,7 @@ unittest {
  *    -- General Decimal Arithmetic Specification, p. 52, "Invalid operation"
  */
 private bool isInvalidMultiplication(const BigDecimal op1, const BigDecimal op2,
-        ref BigDecimal result, ref DecimalContext context) {
+        ref BigDecimal result, DecimalContext context) {
 
     if (isInvalidBinaryOp(op1, op2, result, context)) {
         return true;
@@ -2603,7 +2408,7 @@ unittest {
  */
 private bool isInvalidDivision(
         const BigDecimal dividend, const BigDecimal divisor,
-        ref BigDecimal quotient, ref DecimalContext context) {
+        ref BigDecimal quotient, DecimalContext context) {
 
     if (isInvalidBinaryOp(dividend, divisor, quotient, context)) {
         return true;
@@ -2634,7 +2439,7 @@ unittest {
  */
 // NOTE: is this used?
 private bool isZeroDividend(const BigDecimal dividend, const BigDecimal divisor,
-        ref BigDecimal quotient, ref DecimalContext context) {
+        ref BigDecimal quotient, DecimalContext context) {
     if (dividend.isZero()) {
         quotient.sval = BigDecimal.SV.ZERO;
         quotient.mant = BigInt(0);
@@ -2649,13 +2454,6 @@ private bool isZeroDividend(const BigDecimal dividend, const BigDecimal divisor,
 unittest {
     write("isZeroDividend...");
     writeln("test missing");
-}
-
-unittest {
-    writeln("---------------------");
-    writeln("arithmetic...finished");
-    writeln("---------------------");
-    writeln();
 }
 
 //--------------------------------
