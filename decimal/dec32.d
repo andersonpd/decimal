@@ -35,6 +35,9 @@ unittest {
     writeln("---------------------");
 }
 
+public enum SpecialValue : uint {NONE, ZERO, INF, QNAN, SNAN};
+
+
 struct Dec32 {
 
     private static DecimalContext context = {
@@ -188,11 +191,11 @@ struct Dec32 {
     }
 
     /**
-     * Creates a Dec32 from a BigDecimal
+     * Creates a Dec32 from a Decimal
      */
-    public this(const BigDecimal num) {
+    public this(const Decimal num) {
 
-        BigDecimal big = plus(num, context);
+        Decimal big = plus!Decimal(num, context);
 //        writeln("big = ", big);
         if (big.isFinite) {
 
@@ -235,32 +238,32 @@ struct Dec32 {
         }
     }
 
-    unittest {
-        write("this(BigDecimal)...");
-    BigDecimal num = BigDecimal(0);
-    Dec32 dec = Dec32(num);
-    writeln("num = ", num);
-    writeln("dec = ", dec);
+   unittest {
+       write("this(Decimal)...");
+        Decimal num = Decimal(0);
+        Dec32 dec = Dec32(num);
+        writeln("num = ", num);
+        writeln("dec = ", dec);
 
-    num = BigDecimal(1);
-    dec = Dec32(num);
-    writeln("num = ", num);
-    writeln("dec = ", dec);
+        num = Decimal(1);
+        dec = Dec32(num);
+        writeln("num = ", num);
+        writeln("dec = ", dec);
 
-    num = BigDecimal(-1);
-    dec = Dec32(num);
-    writeln("num = ", num);
-    writeln("dec = ", dec);
+        num = Decimal(-1);
+        dec = Dec32(num);
+        writeln("num = ", num);
+        writeln("dec = ", dec);
 
-    num = BigDecimal(-16000);
-    dec = Dec32(num);
-    writeln("num = ", num);
-    writeln("dec = ", dec);
+        num = Decimal(-16000);
+        dec = Dec32(num);
+        writeln("num = ", num);
+        writeln("dec = ", dec);
 
-    num = BigDecimal(uint.max);
-    dec = Dec32(num);
-    writeln("num = ", num);
-    writeln("dec = ", dec);
+        num = Decimal(uint.max);
+        dec = Dec32(num);
+        writeln("num = ", num);
+        writeln("dec = ", dec);
         writeln("test missing");
     }
 
@@ -268,13 +271,34 @@ struct Dec32 {
      * Creates a Dec32 from a string.
      */
     public this(const string str) {
-        BigDecimal big = BigDecimal(str);
+        Decimal big = Decimal(str);
         this(big);
     }
 
     unittest {
         Dec32 num = Dec32("1.234568E+9");
         assert(num.toString == "1.234568E+9");
+    }
+
+    /**
+     *    Constructs a number from a real value.
+     */
+    this(const real r) {
+        string str = format("%.*G", cast(int)context.precision, r);
+        this(str);
+    }
+
+    unittest {
+        write("this(real)...");
+        real r = 1.2345E+16;
+        Dec32 actual = Dec32(r);
+        Dec32 expect = Dec32("1.2345E+16");
+        assert(expect == actual);
+        writeln("passed");
+    }
+
+    this(bool signed, SpecialValue sval, uint payload = 0) {
+
     }
 
 //--------------------------------
@@ -384,7 +408,6 @@ struct Dec32 {
     static int min_10_exp() { return MIN_EXPO; }
     static int min_exp()    { return -1; }
 
-
 //--------------------------------
 //  classification properties
 //--------------------------------
@@ -489,20 +512,25 @@ struct Dec32 {
 //--------------------------------
 
     /**
-     * Converts a Dec32 to a BigDecimal
+     * Converts a Dec32 to a Decimal
      */
-    public const BigDecimal toDecimal() {
+    public const Decimal toDecimal() {
         uint mant;
         int  expo;
         bool sign;
 
         if (isExplicit) {
             mant = mantEx;
-            sign = signed;
             expo = expoEx - BIAS;
+            sign = signed;
+        }
+        else if (isFinite) {
+            mant = mantIm | (0b100 << implicitBits); // is this always right?
+            expo = expoIm - BIAS;
+            sign = signed;
         }
         else {
-            // check for special values
+            // special values
             if (signed) {
                 sign = true;
                 mant = value & 0x7FFFFFFF;
@@ -512,20 +540,16 @@ struct Dec32 {
                 mant = value;
             }
             if (uValue == inf_val) {
-                return BigDecimal(sign, "Inf", 0);
+                return Decimal(sign, SV.INF, 0);
             }
             if (uValue == qnan_val) {
-                return BigDecimal(sign, "qNaN", 0);
+                return Decimal(sign, SV.QNAN, 0);
             }
             if (uValue == snan_val) {
-                return BigDecimal(sign, "sNan", 0);
+                return Decimal(sign, SV.SNAN, 0);
             }
-            // number is finite, set msbs
-            mant = mantIm | (0b100 << implicitBits);
-            expo = expoIm - BIAS;
-            sign = signed;
         }
-        return BigDecimal(sign, BigInt(mant), expo);
+        return Decimal(sign, BigInt(mant), expo);
     }
 
     unittest {
@@ -619,7 +643,7 @@ unittest {
 
 // UNREADY: toSciString. Description. Unit Tests.
 /**
- * Converts a BigDecimal number to a string representation.
+ * Converts a Decimal number to a string representation.
  */
 public string toSciString(const Dec32 num) {
     return decimal.conv.toSciString!Dec32(num);
@@ -627,7 +651,7 @@ public string toSciString(const Dec32 num) {
 
 // UNREADY: toEngString. Description. Unit Tests.
 /**
- * Converts a BigDecimal number to a string representation.
+ * Converts a Decimal number to a string representation.
  */
 public string toEngString(const Dec32 num) {
     return decimal.conv.toEngString!Dec32(num);

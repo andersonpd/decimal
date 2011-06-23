@@ -46,8 +46,8 @@ unittest {
     writeln("-------------------");
 }
 
-alias BigDecimal.context context;
-// alias BigDecimal.context.precision precision;
+alias Decimal.context context;
+// alias Decimal.context.precision precision;
 
 /*/// precision stack
 private static Stack!(uint) precisionStack;
@@ -72,6 +72,10 @@ unittest {
     writeln("test missing");
 }
 */
+
+// special values for NaN, Inf, etc.
+public static enum SV {NONE, ZERO, INF, QNAN, SNAN};
+
 /**
  * A struct representing an arbitrary-precision floating-point number.
  *
@@ -80,10 +84,7 @@ unittest {
  * http://www.speleotrove.com/decimal. This specification conforms with
  * IEEE standard 754-2008.
  */
-struct BigDecimal {
-
-// special values for NaN, Inf, etc.
-private static enum SV {CLEAR, ZERO, INF, QNAN, SNAN};
+struct Decimal {
 
 /*public @property bool sign() { return m_sign; };
 public @property void sign(bool value) { m_sign = value; };
@@ -107,8 +108,8 @@ public @property void digits(int value) { m_digits = value; };*/
 
     package SV sval = SV.QNAN;        // special values: default value is quiet NaN
     private bool signed = false;        // true if the value is negative, false otherwise.
-    package int expo = 0;            // the exponent of the BigDecimal value
-    package BigInt mant;            // the coefficient of the BigDecimal value
+    package int expo = 0;            // the exponent of the Decimal value
+    package BigInt mant;            // the coefficient of the Decimal value
     // NOTE: not a uint -- causes math problems down the line.
     package int digits;                 // the number of decimal digits in this number.
                                      // (unless the number is a special value)
@@ -117,42 +118,58 @@ public @property void digits(int value) { m_digits = value; };*/
      * clears the special value flags
      */
     public void clear() {
-        sval = SV.CLEAR;
+        sval = SV.NONE;
     }
 
 public:
 
 // common decimal "numbers"
-    static immutable BigDecimal NaN      = cast(immutable)BigDecimal(SV.QNAN);
-    static immutable BigDecimal POS_INF  = cast(immutable)BigDecimal(SV.INF);
-    static immutable BigDecimal NEG_INF  = cast(immutable)BigDecimal(true, SV.INF);
-    static immutable BigDecimal ZERO     = cast(immutable)BigDecimal(SV.ZERO);
-    static immutable BigDecimal NEG_ZERO = cast(immutable)BigDecimal(true, SV.ZERO);
+    static immutable Decimal NaN      = cast(immutable)Decimal(SV.QNAN);
+    static immutable Decimal POS_INF  = cast(immutable)Decimal(SV.INF);
+    static immutable Decimal NEG_INF  = cast(immutable)Decimal(true, SV.INF);
+    static immutable Decimal ZERO     = cast(immutable)Decimal(SV.ZERO);
+    static immutable Decimal NEG_ZERO = cast(immutable)Decimal(true, SV.ZERO);
 
 //    static immutable BigInt BIG_ZERO  = cast(immutable)BigInt(0);
 
-/*    static immutable BigDecimal ONE  = cast(immutable)BigDecimal(1);
-    static immutable BigDecimal TWO  = cast(immutable)BigDecimal(2);
-    static immutable BigDecimal FIVE = cast(immutable)BigDecimal(5);
-    static immutable BigDecimal TEN  = cast(immutable)BigDecimal(10);*/
+/*    static immutable Decimal ONE  = cast(immutable)Decimal(1);
+    static immutable Decimal TWO  = cast(immutable)Decimal(2);
+    static immutable Decimal FIVE = cast(immutable)Decimal(5);
+    static immutable Decimal TEN  = cast(immutable)Decimal(10);*/
 
 
 //--------------------------------
 // construction
 //--------------------------------
 
-    // UNREADY: this(bool, SV). Flags. Unit Tests.
-    private this(bool sign, SV sv) {
-        this.signed = signed;
-        sval = sv;
+    // special value constructors:
+
+    // UNREADY: Unit Tests.
+    /**
+     * Constructs a new number, given the sign, the special value and the payload.
+     */
+    public this(const bool sign, const SV sv, const uint payload = 0) {
+        this.signed = sign;
+        this.sval = sv;
+        // FIXTHIS: This line hangs the compiler.
+        //this.mant = BigInt(payload);
     }
 
     unittest {
-        write("this(bool, SV)...");
-        writeln("test missing");
+        write("this(bool, SV, payload)...");
+        Decimal num = Decimal(true, SV.INF);
+        writeln("toSciString(num) = ", toSciString(num));
+        writeln("num.toAbstract() = ", num.toAbstract());
+//        assert(toSciString!Decimal(num) == "-Infinity");
+//        assert(num.toAbstract() == "[1,inf]");
+        writeln("failed");
     }
 
-    // UNREADY: this(SV). Flags. Unit Tests.
+    // UNREADY: Unit Tests.
+    /**
+     * Constructs a new number, given the special value.
+     * The sign is set to true (positive), and the payload is set to zero.
+     */
     private this(SV sv) {
         sval = sv;
     }
@@ -162,39 +179,33 @@ public:
         writeln("test missing");
     }
 
-    // UNREADY: this(bool, const BigInt, const int). Flags. Unit Tests.
+    // BigInt constructors:
+
+    // UNREADY: Unit Tests.
     /**
      * Constructs a number from a sign, a BigInt coefficient and
-     * an integer exponent.
-     * The precision of the number is deduced from the number of decimal
+     * an optional integer exponent.
+     * The intial precision of the number is deduced from the number of decimal
      * digits in the coefficient.
      */
     this(const bool sign, const BigInt coefficient, const int exponent) {
-//        writeln("calling this(1)");
+        // TODO: clarify the sign and coefficient relationship:
+        // the actual call is to sign, abs(coefficient).
         BigInt big = cast(BigInt) coefficient;
-//        writeln("1");
         this.clear();
-//        writeln("2");
         if (big < BigInt(0)) {
             this.signed = !sign;
-//        writeln("3");
             this.mant = -big;
-//        writeln("4");
         }
         else {
             this.signed = sign;
-//        writeln("5");
             this.mant = big;
-//        writeln("6");
             if (big == BigInt(0)) {
                 this.sval = SV.ZERO;
-//        writeln("7");
             }
         }
         this.expo = exponent;
-//        writeln("8");
         this.digits = numDigits(this.mant);
-//        writeln("0");
     }
 
     unittest {
@@ -202,60 +213,18 @@ public:
         writeln("test missing");
     }
 
-/*    /// Assign a BigInt
-    void opAssign(const BigInt big) {
-        BigInt _big = cast(BigInt) big;
-        sval = (_big == BigInt(0)) ? SV.ZERO : SV.CLEAR;
-        sign = _big < 0;
-        mant = sign ? -_big : _big;
-        expo = 0;
-        digits = numDigits(mant);
-    }*/
-
-    // UNREADY: this(bool, const int, const int). Flags. Unit Tests.
-    /**
-     * Constructs a number from a sign, an integer coefficient and
-     * an integer exponent.
-     */
-/*    this(const bool sign, const long coefficient, const int exponent) {
-        this(sign, BigInt(coefficient), exponent);
-    }*/
-
-    // UNREADY: this(bool, string, uint = 0). Flags. Unit Tests.
-    /**
-     * Constructs a number from a sign, a special value string and
-     * an optional payload.
-     */
-    this(const bool sign, string str, const uint payload = 0) {
-//        writeln("calling this(2)");
-        this.clear();;
-        this.sign = sign;
-        if (icmp(str, "inf") == 0 || icmp(str, "infinity") == 0) {
-            sval = SV.INF;
-            return;
-        }
-        if (icmp(str, "snan") == 0) {
-            sval = SV.SNAN;
-        }
-        else {
-            sval = SV.QNAN;
-        }
-        mant = payload;
-    }
-
-    unittest {
-        write("this(bool, string, uint)...");
-        writeln("test missing");
-    }
-
     // UNREADY: this(const BigInt, const int). Flags. Unit Tests.
     /**
-     * Constructs a BigDecimal from a BigInt coefficient and an int exponent.
-     * The sign of the number is the sign of the coefficient.
+     * Constructs a Decimal from a BigInt coefficient and an
+     * optional integer exponent. The sign of the number is the sign
+     * of the coefficient. The initial precision is determined by the number
+     * of digits in the coefficient.
      */
-    this(const BigInt coefficient, const int exponent = 0) {
-//        writeln("calling this(3)");
-        this(false, coefficient, exponent);
+    this(const BigInt coefficient, const int exponent) {
+        BigInt big = cast(BigInt) coefficient;
+        bool sign = big < BigInt(0);
+        if (sign) big = -big;
+        this(sign, big, exponent);
     };
 
     unittest {
@@ -263,20 +232,42 @@ public:
         writeln("test missing");
     }
 
-    // UNREADY: this(const BigInt). Flags. Unit Tests.
+    // UNREADY: this(const BigInt, const int). Flags. Unit Tests.
     /**
-     * Constructs a number from a BigInt.
+     * Constructs a Decimal from a BigInt coefficient and an
+     * optional integer exponent. The sign of the number is the sign
+     * of the coefficient. The initial precision is determined by the number
+     * of digits in the coefficient.
      */
-/*    this(const BigInt coefficient) {
-        this(coefficient, 0);
+    this(const BigInt coefficient) {
+        BigInt big = cast(BigInt) coefficient;
+        bool sign = big < BigInt(0);
+        if (sign) big = -big;
+        this(sign, big, 0);
     };
-*/
+
+    unittest {
+        write("this(BigInt, int)...");
+        writeln("test missing");
+    }
+
+    // long constructors:
+
+    // UNREADY: this(bool, const int, const int). Flags. Unit Tests.
+    /**
+     * Constructs a number from a sign, a long integer coefficient and
+     * an integer exponent.
+     */
+    this(const bool sign, const long coefficient, const int exponent) {
+        this(sign, BigInt(coefficient), exponent);
+    }
+
     // UNREADY: this(const long, const int). Flags. Unit Tests.
     /**
-     * Constructs a number from an long coefficient and an integer exponent.
+     * Constructs a number from an long coefficient
+     * and an optional integer exponent.
      */
     this(const long coefficient, const int exponent) {
-//        writeln("calling this(5)");
         this(BigInt(coefficient), exponent);
     }
 
@@ -285,57 +276,27 @@ public:
         writeln("test missing");
     }
 
-    // UNREADY: this(const long). Flags. Unit Tests.
+    // UNREADY: this(const long, const int). Flags. Unit Tests.
     /**
-     * Constructs a number from an integer value.
+     * Constructs a number from an long coefficient
+     * and an optional integer exponent.
      */
     this(const long coefficient) {
-//        writeln("calling this(6)");
-        this(BigInt(coefficient));
+        this(BigInt(coefficient), 0);
     }
 
     unittest {
-        write("this(long)...");
+        write("this(long, int..");
         writeln("test missing");
     }
 
-    // UNREADY: this(const long, const int, const int). Flags. Unit Tests.
-    /**
-     * Constructs a number from an integer coefficient, exponent and precision.
-     */
-     // TODO: should this set flags? probably not.
-    this(const long coefficient, const int exponent, const int precision) {
-//        writeln("calling this(7)");
-//        pushContext;
-        this(coefficient, exponent);
-        context.precision = precision;
-        setDigits(this);
-//        popPrecision;
-    }
+    // string constructors:
 
-    unittest {
-        write("this(long, int, int)...");
-        writeln("test missing");
-    }
-
-    // UNREADY: this(const long, const int, const int). Flags. Unit Tests.
-    /**
-     * Constructs a number from an integer coefficient, exponent and precision.
-     */
-     // TODO: should this set flags? probably not.
-/*    this(const bool sign, const ulong coefficient, const int exponent) {
-        writeln("calling this(7)");
-//        pushContext;
-        this(coefficient, exponent);
-        context.precision = precision;
-        setDigits(this);
-//        popPrecision;
-    }
-*/
     // UNREADY: this(const string). Flags. Unit Tests.
     // construct from string representation
     this(const string str) {
-        this = str;
+        this = toNumber(str);
+        //this = str;
     };
 
     unittest {
@@ -343,13 +304,15 @@ public:
         writeln("test missing");
     }
 
+    // floating point constructors:
+
     // UNREADY: this(const real). Flags. Unit Tests.
     /**
      *    Constructs a number from a real value.
      */
     this(const real r) {
         string str = format("%.*G", cast(int)context.precision, r);
-        this = str;
+        this(str);
     }
 
     unittest {
@@ -362,7 +325,7 @@ public:
      * Constructs a number from a double value.
      * Set to the specified precision
      */
-    this(const real r, const int precision) {
+/*    this(const real r, const int precision) {
         string str = format("%.*E", precision, r);
         this = str;
     }
@@ -370,16 +333,19 @@ public:
     unittest {
         write("this(real, int..");
         writeln("test missing");
-    }
+    }*/
 
-    // UNREADY: this(BigDecimal). Flags. Unit Tests.
+    // copy constructor:
+
+
+    // UNREADY: this(Decimal). Flags. Unit Tests.
     // copy constructor
-    this(const BigDecimal that) {
+    this(const Decimal that) {
         this = that;
     };
 
     unittest {
-        write("this(BigDecimal)...");
+        write("this(Decimal)...");
         writeln("test missing");
     }
 
@@ -387,8 +353,8 @@ public:
     /**
      * dup property
      */
-    const BigDecimal dup() {
-        BigDecimal copy;
+    const Decimal dup() {
+        Decimal copy;
         copy.sval = sval;
         copy.signed = signed;
         copy.expo = expo;
@@ -404,28 +370,30 @@ public:
 
 unittest {
     write("construction.");
-    BigDecimal f = BigDecimal(1234L, 567);
-    f = BigDecimal(1234, 567);
+    Decimal f = Decimal(1234L, 567);
+    f = Decimal(1234, 567);
     assert(f.toString() == "1.234E+570");
-    f = BigDecimal(1234L);
+    f = Decimal(1234L);
     assert(f.toString() == "1234");
-    f = BigDecimal(123400L);
+    f = Decimal(123400L);
     assert(f.toString() == "123400");
-    f = BigDecimal(1234L);
+    f = Decimal(1234L);
     assert(f.toString() == "1234");
-    f = BigDecimal(1234, 0, 9);
+    // TODO: these tests are checks of this(x, x, precision) which is
+    // deprecated. But we should add a routine to setPrecision
+/*    f = Decimal(1234);
     writeln("f.toString() = ", f.toString());
 //    assert(f.toString() == "1234.00000");
-    f = BigDecimal(1234, 1, 9);
+    f = Decimal(1234, 1, 9);
 //    assert(f.toString() == "12340.0000");
-    f = BigDecimal(12, 1, 9);
+    f = Decimal(12, 1, 9);
 //    assert(f.toString() == "120.000000");
-    f = BigDecimal(int.max, -4, 9);
+    f = Decimal(int.max, -4, 9);
     assert(f.toString() == "214748.365");
-    f = BigDecimal(int.max, -4);
+    f = Decimal(int.max, -4);
     assert(f.toString() == "214748.3647");
-    f = BigDecimal(1234567, -2, 5);
-    assert(f.toString() == "12346");
+    f = Decimal(1234567, -2, 5);
+    assert(f.toString() == "12346");*/
     writeln("passed");
 }
 
@@ -433,9 +401,9 @@ unittest {
 // assignment
 //--------------------------------
 
-    // UNREADY: opAssign(T: BigDecimal)(const BigDecimal). Flags. Unit Tests.
-    /// Assigns a BigDecimal (makes a copy)
-    void opAssign/*(T:BigDecimal)*/(const BigDecimal that) {
+    // UNREADY: opAssign(T: Decimal)(const Decimal). Flags. Unit Tests.
+    /// Assigns a Decimal (makes a copy)
+    void opAssign/*(T:Decimal)*/(const Decimal that) {
         this.signed = that.signed;
         this.sval = that.sval;
         this.digits = that.digits;
@@ -444,14 +412,14 @@ unittest {
     }
 
     unittest {
-        write("opAssign(BigDecimal)...");
+        write("opAssign(Decimal)...");
         writeln("test missing");
     }
 
     // UNREADY: opAssign(T)(const T). Flags.
     ///    Assigns a floating point value.
     void opAssign/*(T)*/(const long that) {
-        this = BigDecimal(that);
+        this = Decimal(that);
     }
 
     unittest {
@@ -462,7 +430,7 @@ unittest {
     // UNREADY: opAssign(T)(const T). Flags. Unit Tests.
     ///    Assigns a floating point value.
     void opAssign/*(T)*/(const real that) {
-        this = BigDecimal(that);
+        this = Decimal(that);
     }
 
     unittest {
@@ -472,14 +440,14 @@ unittest {
 
     // TODO: Don says this implicit cast is "disgusting"!!
     /// Assigns a string
-    void opAssign/*(T:string)*/(const string numeric_string) {
-        this = toNumber(numeric_string);
-    }
-
-    unittest {
-        write("opAssign(string)...");
-        writeln("test missing");
-    }
+//    void opAssign/*(T:string)*/(const string numeric_string) {
+//        this = toNumber(numeric_string);
+//    }
+//
+//    unittest {
+//        write("opAssign(string)...");
+//        writeln("test missing");
+//    }
 
 //--------------------------------
 // string representations
@@ -587,8 +555,8 @@ unittest {
 
     /// returns a number with the same exponent as this number
     /// and a coefficient of 1.
-    const BigDecimal quantum() {
-        return BigDecimal(1, this.expo);
+    const Decimal quantum() {
+        return Decimal(1, this.expo);
     }
 
 unittest {
@@ -638,7 +606,7 @@ unittest {
 }
 
     /// returns the default value for this type (NaN)
-    static BigDecimal init() {
+    static Decimal init() {
         return NaN.dup;
     }
 
@@ -648,7 +616,7 @@ unittest {
 }
 
     /// Returns NaN
-    static BigDecimal nan() {
+    static Decimal nan() {
         return NaN.dup;
     }
 
@@ -658,7 +626,7 @@ unittest {
     }
 
     /// Returns positive infinity.
-    static BigDecimal infinity() {
+    static Decimal infinity() {
         return POS_INF.dup;
     }
 
@@ -667,7 +635,7 @@ unittest {
         writeln("test missing");
     }
 
-    /// Returns the number of decimal digits in this context.
+    /// Returns the maximum number of decimal digits in this context.
     static uint dig() {
         return context.precision;
     }
@@ -706,10 +674,10 @@ unittest {
     }
 
     // Returns the maximum representable normal value in the current context.
-    static BigDecimal max() {
+    static Decimal max() {
         string cstr = "9." ~ repeat("9", context.precision-1)
             ~ "E" ~ format("%d", context.eMax);
-        return BigDecimal(cstr);
+        return Decimal(cstr);
     }
 
     unittest {
@@ -718,8 +686,8 @@ unittest {
     }
 
     // Returns the minimum representable normal value in the current context.
-    static BigDecimal min_normal() {
-        return BigDecimal(1, context.eMin);
+    static Decimal min_normal() {
+        return Decimal(1, context.eMin);
     }
 
     unittest {
@@ -728,8 +696,8 @@ unittest {
     }
 
     // Returns the minimum representable subnormal value in the current context.
-    static BigDecimal min() {
-        return BigDecimal(1, context.eTiny);
+    static Decimal min() {
+        return Decimal(1, context.eTiny);
     }
 
     unittest {
@@ -738,8 +706,8 @@ unittest {
     }
 
     // returns the smallest available increment to 1.0 in this context
-    static BigDecimal epsilon() {
-        return BigDecimal(1, -context.precision);
+    static Decimal epsilon() {
+        return Decimal(1, -context.precision);
     }
 
     unittest {
@@ -765,6 +733,23 @@ unittest {
         writeln("test missing");
     }
 
+/*    // floating point properties
+    static Dec32 init()       { return nan; }
+    static Dec32 infinity()   { return Dec32(inf_val ); }
+    static Dec32 nan()        { return Dec32(qnan_val); }
+    static Dec32 epsilon()    { return qNaN; }
+    static Dec32 max()        { return qNaN; } // 9999999E+90;
+    static Dec32 min_normal() { return qNaN; } // 1E-101;
+    static Dec32 im()         { return Zero; }
+    const  Dec32 re()         { return this; }
+
+    static int dig()        { return 7; }
+    static int mant_dig()   { return 24; }
+    static int max_10_exp() { return MAX_EXPO; }
+    static int max_exp()    { return -1; }
+    static int min_10_exp() { return MIN_EXPO; }
+    static int min_exp()    { return -1; }*/
+
 //--------------------------------
 //  classification properties
 //--------------------------------
@@ -784,13 +769,13 @@ unittest {
     /**
      * Returns the canonical form of the number.
      */
-    const BigDecimal canonical() {
+    const Decimal canonical() {
         return this.dup;
     }
 
     unittest {
         write("canonical....");
-        BigDecimal num = BigDecimal("2.50");
+        Decimal num = Decimal("2.50");
         assert(num.isCanonical);
         writeln("passed");
     }
@@ -804,12 +789,12 @@ unittest {
 
     unittest {
         write("isZero.......");
-        BigDecimal num;
-        num = BigDecimal("0");
+        Decimal num;
+        num = Decimal("0");
         assert(num.isZero);
-        num = BigDecimal("2.50");
+        num = Decimal("2.50");
         assert(!num.isZero);
-        num = BigDecimal("-0E+2");
+        num = Decimal("-0E+2");
         assert(num.isZero);
         writeln("passed");
     }
@@ -823,12 +808,12 @@ unittest {
 
     unittest {
         write("isNaN........");
-        BigDecimal num;
-        num = BigDecimal("2.50");
+        Decimal num;
+        num = Decimal("2.50");
         assert(!num.isNaN);
-        num = BigDecimal("NaN");
+        num = Decimal("NaN");
         assert(num.isNaN);
-        num = BigDecimal("-sNaN");
+        num = Decimal("-sNaN");
         assert(num.isNaN);
         writeln("passed");
     }
@@ -842,12 +827,12 @@ unittest {
 
     unittest {
         write("isSignaling..");
-        BigDecimal num;
-        num = BigDecimal("2.50");
+        Decimal num;
+        num = Decimal("2.50");
         assert(!num.isSignaling);
-        num = BigDecimal("NaN");
+        num = Decimal("NaN");
         assert(!num.isSignaling);
-        num = BigDecimal("sNaN");
+        num = Decimal("sNaN");
         assert(num.isSignaling);
         writeln("passed");
     }
@@ -861,12 +846,12 @@ unittest {
 
     unittest {
         write("isQuiet......");
-        BigDecimal num;
-        num = BigDecimal("2.50");
+        Decimal num;
+        num = Decimal("2.50");
         assert(!num.isQuiet);
-        num = BigDecimal("NaN");
+        num = Decimal("NaN");
         assert(num.isQuiet);
-        num = BigDecimal("sNaN");
+        num = Decimal("sNaN");
         assert(!num.isQuiet);
         writeln("passed");
     }
@@ -880,12 +865,12 @@ unittest {
 
     unittest {
         write("isInfinite...");
-        BigDecimal num;
-        num = BigDecimal("2.50");
+        Decimal num;
+        num = Decimal("2.50");
         assert(!num.isInfinite);
-        num = BigDecimal("-Inf");
+        num = Decimal("-Inf");
         assert(num.isInfinite);
-        num = BigDecimal("NaN");
+        num = Decimal("NaN");
         assert(!num.isInfinite);
         writeln("passed");
     }
@@ -901,18 +886,18 @@ unittest {
 
     unittest {
         write("isFinite.....");
-        BigDecimal num;
-        num = BigDecimal("2.50");
+        Decimal num;
+        num = Decimal("2.50");
         assert(num.isFinite);
-        num = BigDecimal("-0.3");
+        num = Decimal("-0.3");
         assert(num.isFinite);
         num = 0;
         assert(num.isFinite);
-        num = BigDecimal("Inf");
+        num = Decimal("Inf");
         assert(!num.isFinite);
-        num = BigDecimal("-Inf");
+        num = Decimal("-Inf");
         assert(!num.isFinite);
-        num = BigDecimal("NaN");
+        num = Decimal("NaN");
         assert(!num.isFinite);
         writeln("passed");
     }
@@ -940,12 +925,12 @@ unittest {
 
     unittest {
         write("isSigned.....");
-        BigDecimal num;
-        num = BigDecimal("2.50");
+        Decimal num;
+        num = Decimal("2.50");
         assert(!num.isSigned);
-        num = BigDecimal("-12");
+        num = Decimal("-12");
         assert(num.isSigned);
-        num = BigDecimal("-0");
+        num = Decimal("-0");
         assert(num.isSigned);
         writeln("passed");
     }
@@ -956,12 +941,12 @@ unittest {
 
     unittest {
         write("isNegative...");
-        BigDecimal num;
-        num = BigDecimal("2.50");
+        Decimal num;
+        num = Decimal("2.50");
         assert(!num.isNegative);
-        num = BigDecimal("-12");
+        num = Decimal("-12");
         assert(num.isNegative);
-        num = BigDecimal("-0");
+        num = Decimal("-0");
         assert(num.isNegative);
         writeln("passed");
     }
@@ -970,22 +955,22 @@ unittest {
      * Returns true if this number is subnormal.
      */
     const bool isSubnormal() {
-        if (sval != SV.CLEAR) return false;
+        if (sval != SV.NONE) return false;
         return adjustedExponent < context.eMin;
     }
 
     unittest {
         write("isSubnormal..");
-        BigDecimal num;
-        num = BigDecimal("2.50");
+        Decimal num;
+        num = Decimal("2.50");
         assert(!num.isSubnormal);
-        num = BigDecimal("0.1E-99");
+        num = Decimal("0.1E-99");
         assert(num.isSubnormal);
-        num = BigDecimal("0.00");
+        num = Decimal("0.00");
         assert(!num.isSubnormal);
-        num = BigDecimal("-Inf");
+        num = Decimal("-Inf");
         assert(!num.isSubnormal);
-        num = BigDecimal("NaN");
+        num = Decimal("NaN");
         assert(!num.isSubnormal);
         writeln("passed");
     }
@@ -994,22 +979,22 @@ unittest {
      * Returns true if this number is normal.
      */
     const bool isNormal() {
-        if (sval != SV.CLEAR) return false;
+        if (sval != SV.NONE) return false;
         return adjustedExponent >= context.eMin;
     }
 
     unittest {
         write("isNormal.....");
-        BigDecimal num;
-        num = BigDecimal("2.50");
+        Decimal num;
+        num = Decimal("2.50");
         assert(num.isNormal);
-        num = BigDecimal("0.1E-99");
+        num = Decimal("0.1E-99");
         assert(!num.isNormal);
-        num = BigDecimal("0.00");
+        num = Decimal("0.00");
         assert(!num.isNormal);
-        num = BigDecimal("-Inf");
+        num = Decimal("-Inf");
         assert(!num.isNormal);
-        num = BigDecimal("NaN");
+        num = Decimal("NaN");
         assert(!num.isNormal);
         writeln("passed");
     }
@@ -1035,8 +1020,8 @@ unittest {
      * Returns -1, 0 or 1, if this number is less than, equal to or
      * greater than the argument, respectively.
      */
-    const int opCmp(const BigDecimal that) {
-        return compare(this, that, context);
+    const int opCmp(const Decimal that) {
+        return compare!Decimal(this, that, context);
     }
 
 unittest {
@@ -1045,15 +1030,15 @@ unittest {
 }
 
     /**
-     * Returns true if this number is equal to the specified BigDecimal.
+     * Returns true if this number is equal to the specified Decimal.
      * A NaN is not equal to any number, not even to another NaN.
      * Infinities are equal if they have the same sign.
      * Zeros are equal regardless of sign.
      * Finite numbers are equal if they are numerically equal to the current precision.
-     * A BigDecimal may not be equal to itself (this != this) if it is a NaN.
+     * A Decimal may not be equal to itself (this != this) if it is a NaN.
      */
-    const bool opEquals(ref const BigDecimal that) {
-        return equals(this, that, context);
+    const bool opEquals (ref const Decimal that) {
+        return equals!Decimal(this, that, context);
     }
 
 unittest {
@@ -1070,8 +1055,8 @@ unittest {
      * This operation may set flags -- equivalent to
      * subtract('0', b);
      */
-    const BigDecimal opNeg() {
-        return minus(this, context);
+    const Decimal opNeg() {
+        return minus!Decimal(this, context);
     }
 
     unittest {
@@ -1084,8 +1069,8 @@ unittest {
      * This operation may set flags -- equivalent to
      * add('0', a);
      */
-    const BigDecimal opPos() {
-        return plus(this, context);
+    const Decimal opPos() {
+        return plus!Decimal(this, context);
     }
 
     unittest {
@@ -1096,7 +1081,7 @@ unittest {
     /**
      * Returns this + 1.
      */
-    BigDecimal opPostInc() {
+    Decimal opPostInc() {
         this += 1;
         return this;
     }
@@ -1109,7 +1094,7 @@ unittest {
     /**
      * Returns this - 1.
      */
-    BigDecimal opPostDec() {
+    Decimal opPostDec() {
         this -= 1;
         return this;
     }
@@ -1126,31 +1111,31 @@ unittest {
     //TODO: these should be converted to opBinary, etc.
 
     /**
-     * If the operand is a BigDecimal, act directly on it.
+     * If the operand is a Decimal, act directly on it.
      */
-/*    const BigDecimal opBinary(string op, T:BigDecimal)(const T operand) {
+/*    const Decimal opBinary(string op, T:Decimal)(const T operand) {
         return opBinary!op(this, operand);
     }*/
 
     // TODO: is there some sort of compile time check we can do here?
-    // i.e., if T convertible to BigDecimal?
+    // i.e., if T convertible to Decimal?
     /**
-     * If the operand is a type that can be converted to BigDecimal,
-     * make the conversion and call the BigDecimal version.
+     * If the operand is a type that can be converted to Decimal,
+     * make the conversion and call the Decimal version.
      */
-/*    const BigDecimal opBinary(string op, T)(const T operand) {
-        return opBinary!op(this, BigDecimal(operand));
+/*    const Decimal opBinary(string op, T)(const T operand) {
+        return opBinary!op(this, Decimal(operand));
     }*/
 
     /**
      * Adds a number to this and returns the result.
      */
-/*    const BigDecimal opBinary(string op)(const BigDecimal addend) if (op == "+") {
+/*    const Decimal opBinary(string op)(const Decimal addend) if (op == "+") {
         return add(this, addend);
     }*/
 
-    /// Adds a BigDecimal to this and returns the BigDecimal result
-    const BigDecimal opAdd(T:BigDecimal)(const T addend) {
+    /// Adds a Decimal to this and returns the Decimal result
+    const Decimal opAdd(T:Decimal)(const T addend) {
         return add(this, addend, context);
     }
 
@@ -1160,8 +1145,8 @@ unittest {
     }
 
     // Adds a number to this and returns the result.
-    const BigDecimal opAdd(T)(const T addend) {
-        return add(this, BigDecimal(addend), context);
+    const Decimal opAdd(T)(const T addend) {
+        return add(this, Decimal(BigInt(addend)), context);
     }
 
     unittest {
@@ -1169,8 +1154,8 @@ unittest {
         writeln("test missing");
     }
 
-    const BigDecimal opSub(T:BigDecimal)(const T subtrahend) {
-        return subtract(this, subtrahend, context);
+    const Decimal opSub(T:Decimal)(const T subtrahend) {
+        return subtract!Decimal(this, subtrahend, context);
     }
 
     unittest {
@@ -1178,8 +1163,8 @@ unittest {
         writeln("test missing");
     }
 
-    const BigDecimal opSub(T)(const T subtrahend) {
-        return subtract(this, BigDecimal(subtrahend), context);
+    const Decimal opSub(T)(const T subtrahend) {
+        return subtract!Decimal(this, Decimal(BigInt(subtrahend)), context);
     }
 
     unittest {
@@ -1187,7 +1172,7 @@ unittest {
         writeln("test missing");
     }
 
-    const BigDecimal opMul(T:BigDecimal)(const T multiplier) {
+    const Decimal opMul(T:Decimal)(const T multiplier) {
         return multiply(this, multiplier, context);
     }
 
@@ -1196,8 +1181,8 @@ unittest {
         writeln("test missing");
     }
 
-    const BigDecimal opMul(T)(const T multiplier) {
-        return multiply(this, BigDecimal(multiplier), context);
+    const Decimal opMul(T:long)(const T multiplier) {
+        return multiply(this, Decimal(BigInt(multiplier)), context);
     }
 
     unittest {
@@ -1205,7 +1190,7 @@ unittest {
         writeln("test missing");
     }
 
-    const BigDecimal opDiv(T:BigDecimal)(const T divisor) {
+    const Decimal opDiv(T:Decimal)(const T divisor) {
         return divide(this, divisor, context);
     }
 
@@ -1214,8 +1199,8 @@ unittest {
         writeln("test missing");
     }
 
-    const BigDecimal opDiv(T)(const T divisor) {
-        return divide(this, BigDecimal(divisor), context);
+    const Decimal opDiv(T)(const T divisor) {
+        return divide(this, Decimal(divisor), context);
     }
 
     unittest {
@@ -1223,7 +1208,7 @@ unittest {
         writeln("test missing");
     }
 
-    const BigDecimal opMod(T:BigDecimal)(const T divisor) {
+    const Decimal opMod(T:Decimal)(const T divisor) {
         return remainder(this, divisor, context);
     }
 
@@ -1232,8 +1217,8 @@ unittest {
         writeln("test missing");
     }
 
-    const BigDecimal opMod(T)(const T divisor) {
-        return remainder(this, BigDecimal(divisor), context);
+    const Decimal opMod(T)(const T divisor) {
+        return remainder(this, Decimal(divisor), context);
     }
 
     unittest {
@@ -1245,7 +1230,7 @@ unittest {
 //  arithmetic assignment operators
 //--------------------------------
 
-    BigDecimal opAddAssign(T)(const T addend) {
+    Decimal opAddAssign(T)(const T addend) {
         this = this + addend;
         return this;
     }
@@ -1255,7 +1240,7 @@ unittest {
         writeln("test missing");
     }
 
-/*    ref BigDecimal opOpAssign(string op, T)(const T operand) {
+/*    ref Decimal opOpAssign(string op, T)(const T operand) {
         return opBinary!op(this, operand);
     }*/
 
@@ -1264,7 +1249,7 @@ unittest {
         writeln("test missing");
     }
 
-    BigDecimal opSubAssign(T)(const T subtrahend) {
+    Decimal opSubAssign(T)(const T subtrahend) {
         this = this - subtrahend;
         return this;
     }
@@ -1274,7 +1259,7 @@ unittest {
         writeln("test missing");
     }
 
-    BigDecimal opMulAssign(T)(const T factor) {
+    Decimal opMulAssign(T)(const T factor) {
         this = this * factor;
         return this;
     }
@@ -1284,7 +1269,7 @@ unittest {
         writeln("test missing");
     }
 
-    BigDecimal opDivAssign(T)(const T divisor) {
+    Decimal opDivAssign(T)(const T divisor) {
         this = this / divisor;
         return this;
     }
@@ -1294,7 +1279,7 @@ unittest {
         writeln("test missing");
     }
 
-    BigDecimal opModAssign(T)(const T divisor) {
+    Decimal opModAssign(T)(const T divisor) {
         this = this % divisor;
         return this;
     }
@@ -1308,26 +1293,26 @@ unittest {
 // nextUp, nextDown, nextAfter
 //-----------------------------
 
-    const BigDecimal nextUp() {
-        return nextPlus(this, context);
+    const Decimal nextUp() {
+        return nextPlus!Decimal(this, context);
     }
 
-unittest {
-    write("nextUp...");
-    writeln("test missing");
-}
-
-    const BigDecimal nextDown() {
-        return nextMinus(this, context);
+    unittest {
+        write("nextUp...");
+        writeln("test missing");
     }
 
-unittest {
-    write("nextMinus...");
-    writeln("test missing");
-}
+    const Decimal nextDown() {
+        return nextMinus!Decimal(this, context);
+    }
 
-    const BigDecimal nextAfter(const BigDecimal num) {
-        return nextToward(this, num, context);
+    unittest {
+        write("nextMinus...");
+        writeln("test missing");
+    }
+
+    const Decimal nextAfter(const Decimal num) {
+        return nextToward!Decimal(this, num, context);
     }
 
 unittest {
@@ -1339,12 +1324,12 @@ unittest {
 // helper functions
 //-----------------------------
 
-}    // end struct BigDecimal
+}    // end struct Decimal
 
 unittest {
     writeln();
     writeln("-------------------");
-    writeln("BigDecimal......tested");
+    writeln("Decimal......tested");
     writeln("-------------------");
     writeln();
 }
