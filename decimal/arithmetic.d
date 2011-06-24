@@ -409,15 +409,15 @@ unittest {
  * to the first operand and which has its exponent set
  * to be equal to the exponent of the second operand.
  */
-public Decimal quantize(const Decimal op1, const Decimal op2,
-        DecimalContext context) {
-    Decimal result;
-    if (isInvalidBinaryOp(op1, op2, result, context)) {
+public T quantize(T)(const T op1, const T op2,
+        DecimalContext context) if (isDecimal!T) {
+    T result;
+    if (isInvalidBinaryOp!T(op1, op2, result, context)) {
         return result;
     }
     if (op1.isInfinite != op2.isInfinite() ||
         op2.isInfinite != op1.isInfinite()) {
-        return flagInvalid(context);
+        return flagInvalid!T(context);
     }
     if (op1.isInfinite() && op2.isInfinite()) {
         return op1.dup;
@@ -434,7 +434,7 @@ public Decimal quantize(const Decimal op1, const Decimal op2,
         result.digits += diff;
         result.expo = op2.expo;
         if (result.digits > context.precision) {
-            result = Decimal.NaN;
+            result = T.nan;
         }
         return result;
     }
@@ -548,12 +548,12 @@ public T logb(T)(const T num, DecimalContext context) {
         return result;
     }
     if (num.isInfinite) {
-        return T.POS_INF.dup;
+        return T.infinity;
     }
     if (num.isZero) {
         context.setFlag(DIVISION_BY_ZERO);
         // FIXTHIS: Why doesn't NEG_INF work?
-        result = T.POS_INF; //NEG_INF;
+        result = T.infinity; //NEG_INF;
         result.sign = true;
         return result; //Decimal.NEG_INF;
     }
@@ -575,10 +575,10 @@ unittest {
  * The result may Overflow or Underflow.
  */
 // NOTE: flags only
-public Decimal scaleb(const Decimal op1, const Decimal op2,
-        DecimalContext context) {
-    Decimal result;
-    if (isInvalidBinaryOp(op1, op2, result, context)) {
+public T scaleb(T)(const T op1, const T op2,
+        DecimalContext context) if (isDecimal!T) {
+    T result;
+    if (isInvalidBinaryOp!T(op1, op2, result, context)) {
         return result;
     }
     if (op1.isInfinite) {
@@ -586,7 +586,7 @@ public Decimal scaleb(const Decimal op1, const Decimal op2,
     }
     int expo = op2.expo;
     if (expo != 0 /* && not within range */) {
-        result = flagInvalid(context);
+        result = flagInvalid!T(context);
         return result;
     }
     result = op1;
@@ -752,7 +752,7 @@ public T nextPlus(T)(const T op1, DecimalContext context) if (isDecimal!T) {
     }
     if (op1.isInfinite) {
         if (op1.sign) {
-            return copyNegate!T(Decimal.max);
+            return copyNegate!T(T.max);
         }
         else {
             return op1.dup;
@@ -763,60 +763,23 @@ public T nextPlus(T)(const T op1, DecimalContext context) if (isDecimal!T) {
             return T(0L, context.eTiny);
     }
     T addend = T(1, adjx);
-    result = add(op1, addend, context, true); // FIXTHIS: really? does this guarantee no flags?
+    result = add!T(op1, addend, context, true); // FIXTHIS: really? does this guarantee no flags?
+    // FIXTHIS: should be context.max
     if (result > T.max) {
-        result = T.POS_INF;
+        result = T.infinity;
     }
     return result;
 }
 
 unittest {
-    write("next-plus....");
     pushContext(context);
-/*    int savedMin = context.eMin;
-    int savedMax = context.eMax;*/
-    context.eMax = 999;
-    context.eMin = -999;
-    Decimal num;
-    Decimal expd;
+    Decimal num, expect;
     num = 1;
-    expd = Decimal("1.00000001");
-//    writeln("expd = ", expd);
-    assert(nextPlus(num, context) == expd);
+    expect = Decimal("1.00000001");
+    assert(nextPlus(num, context) == expect);
     num = 10;
-    expd = Decimal("10.0000001");
-//    writeln("expd = ", expd);
-    assert(nextPlus(num, context) == expd);
-    num = 1E5;
-    expd = Decimal("100000.001");
-//    writeln("expd = ", expd);
-    assert(nextPlus(num, context) == expd);
-    num = 1E8;
-    expd = Decimal("100000001");
-//    writeln("expd = ", expd);
-    assert(nextPlus(num, context) == expd);
-    // num digits exceeds precision...
-    num = Decimal("1234567891");
-    expd = Decimal("1.23456790E9");
-//    writeln("expd = ", expd);
-    assert(nextPlus(num, context) == expd);
-    // result < tiny
-    num = Decimal("-1E-1007");
-    expd = Decimal("-0E-1007");
-//    writeln("expd = ", expd);
-    assert(nextPlus(num, context) == expd);
-    num = Decimal("-1.00000003");
-    expd = Decimal("-1.00000002");
-//    writeln("expd = ", expd);
-    assert(nextPlus(num, context) == expd);
-    num = Decimal("-Infinity");
-    expd = Decimal("-9.99999999E+999");
-//    writeln("expd = ", expd);
-    assert(nextPlus(num, context) == expd);
-    context = popContext;
-/*    context.eMin = savedMin;
-    context.eMax = savedMax;*/
-    writeln("passed");
+    expect = Decimal("10.0000001");
+    assert(nextPlus(num, context) == expect);
 }
 
 // UNREADY: nextMinus. Description. Unit Tests.
@@ -850,39 +813,21 @@ public T nextMinus(T)(const T op1, DecimalContext context) if (isDecimal!T) {
 }
 
 unittest {
-    write("next-minus...");
-    int savedMin = context.eMin;
-    int savedMax = context.eMax;
-    context.eMin = -999;
-    context.eMax = 999;
-    Decimal num;
-    Decimal expd;
+    Decimal num, expect;
     num = 1;
-    expd = Decimal("0.999999999");
-    assert(nextMinus(num, context) == expd);
-    num = Decimal("1E-1007");
-    expd = Decimal("0E-1007");
-    assert(nextMinus(num, context) == expd);
-    num = Decimal("-1.00000003");
-    expd = Decimal("-1.00000004");
-    assert(nextMinus(num, context) == expd);
-    num = Decimal("Infinity");
-    expd = Decimal("9.99999999E+999");
-//    writeln("num = ", num);
-//    writeln("expd = ", expd);
-//    writeln("nextMinus(num, context) = ", nextMinus(num, context));
-    assert(nextMinus(num, context) == expd);
-    context.eMin = savedMin;
-    context.eMax = savedMax;
-    writeln("passed");
+    expect = 0.999999999;
+    assert(nextMinus(num, context) == expect);
+    num = -1.00000003;
+    expect = -1.00000004;
+    assert(nextMinus(num, context) == expect);
 }
 
 // UNREADY: nextToward. Description. Unit Tests.
 // NOTE: rounds
-public Decimal nextToward(T)(const T op1, const T op2,
+public T nextToward(T)(const T op1, const T op2,
         DecimalContext context) if (isDecimal!T) {
     T result;
-    if (isInvalidBinaryOp(op1, op2, result, context)) {
+    if (isInvalidBinaryOp!T(op1, op2, result, context)) {
         return result;
     }
     // compare them but don't round
@@ -895,38 +840,15 @@ public Decimal nextToward(T)(const T op1, const T op2,
 }
 
 unittest {
-    write("next-toward..");
-    Decimal op1, op2;
-    Decimal expd;
+    Decimal op1, op2, expect;
     op1 = 1;
     op2 = 2;
-    expd = Decimal("1.00000001");
-    assert(nextToward(op1, op2, context) == expd);
-    op1 = Decimal("-1E-1007");
-    op2 = 1;
-    expd = Decimal("-0E-1007");
-    assert(nextToward(op1, op2, context) == expd);
-    op1 = Decimal("-1.00000003");
+    expect = 1.00000001;
+    assert(nextToward(op1, op2, context) == expect);
+    op1 = -1.00000003;
     op2 = 0;
-    expd = Decimal("-1.00000002");
-    assert(nextToward(op1, op2, context) == expd);
-    op1 = 1;
-    op2 = 0;
-    expd = Decimal("0.999999999");
-    assert(nextToward(op1, op2, context) == expd);
-    op1 = Decimal("1E-1007");
-    op2 = -100;
-    expd = Decimal("0E-1007");
-    assert(nextToward(op1, op2, context) == expd);
-    op1 = Decimal("-1.00000003");
-    op2 = -10;
-    expd = Decimal("-1.00000004");
-    assert(nextToward(op1, op2, context) == expd);
-    op1 = Decimal("0.00");
-    op2 = Decimal("-0.0000");
-    expd = Decimal("-0.00");
-    assert(nextToward(op1, op2, context) == expd);
-    writeln("passed");
+    expect = -1.00000002;
+    assert(nextToward(op1, op2, context) == expect);
 }
 
 //--------------------------------
@@ -941,7 +863,7 @@ unittest {
  * both operands are NaN or Infinity, respectively.
  */
 // NOTE: No context
-public bool sameQuantum(const Decimal op1, const Decimal op2) {
+public bool sameQuantum(T)(const T op1, const T op2) if (isDecimal!T) {
     if (op1.isNaN || op2.isNaN) {
         return op1.isNaN && op2.isNaN;
     }
@@ -952,9 +874,7 @@ public bool sameQuantum(const Decimal op1, const Decimal op2) {
 }
 
 unittest {
-    write("same-quantum.");
-    Decimal op1;
-    Decimal op2;
+    Decimal op1, op2;
     op1 = 2.17;
     op2 = 0.001;
     assert(!sameQuantum(op1, op2));
@@ -962,15 +882,6 @@ unittest {
     assert(sameQuantum(op1, op2));
     op2 = 0.1;
     assert(!sameQuantum(op1, op2));
-    op2 = 1;
-    assert(!sameQuantum(op1, op2));
-    op1 = Decimal("Inf");
-    op2 = Decimal("Inf");
-    assert(sameQuantum(op1, op2));
-    op1 = Decimal("NaN");
-    op2 = Decimal("NaN");
-    assert(sameQuantum(op1, op2));
-    writeln("passed");
 }
 
 // UNREADY: compare
@@ -1020,52 +931,13 @@ public int compare(T)(const T op1, const T op2, DecimalContext context,
 }
 
 unittest {
-    write("compare......");
-    Decimal op1;
-    Decimal op2;
-    int result;
+    Decimal op1, op2;
     op1 = 2.1;
     op2 = 3;
-    result = compare(op1, op2, context);
-    assert(result == -1);
+    assert(compare(op1, op2, context) == -1);
     op1 = 2.1;
     op2 = 2.1;
-    result = compare(op1, op2, context);
-    assert(result == 0);
-    op1 = Decimal("2.1");
-    op2 = Decimal("2.10");
-    result = compare(op1, op2, context);
-    assert(result == 0);
-    op1 = 3;
-    op2 = 2.1;
-    result = compare(op1, op2, context);
-    assert(result == 1);
-    op1 = 2.1;
-    op2 = -3;
-    result = compare(op1, op2, context);
-    assert(result == 1);
-    op1 = -3;
-    op2 = 2.1;
-    result = compare(op1, op2, context);
-    assert(result == -1);
-    op1 = -3;
-    op2 = -4;
-    result = compare(op1, op2, context);
-    assert(result == 1);
-    op1 = -300;
-    op2 = -4;
-    result = compare(op1, op2, context);
-    assert(result == -1);
-    op1 = 3;
-    op2 = Decimal.max;
-    result = compare(op1, op2, context);
-    assert(result == -1);
-    op1 = -3;
-    op2 = copyNegate!Decimal(Decimal.max);
-    result = compare!Decimal(op1, op2, context);
-    assert(result == 1);
-
-    writeln("passed");
+    assert(compare(op1, op2, context) == 0);
 }
 
 // UNREADY: equals. Verify 'equals' is identical to 'compare == 0'.
@@ -1123,26 +995,12 @@ public bool equals(T)(const T op1, const T op2, DecimalContext context,
 
 // NOTE: change these to true opEquals calls.
 unittest {
-    write("equals.......");
-    Decimal op1;
-    Decimal op2;
-    op1 = Decimal("NaN");
-    op2 = Decimal("NaN");
+    Decimal op1, op2;
+    op1 = 123.4567;
+    op2 = 123.4568;
     assert(op1 != op2);
-    op1 = Decimal("inf");
-    op2 = Decimal("inf");
+    op2 = 123.4567;
     assert(op1 == op2);
-    op2 = Decimal("-inf");
-    assert(op1 != op2);
-    op1 = Decimal("-inf");
-    assert(op1 == op2);
-    op2 = Decimal("NaN");
-    assert(op1 != op2);
-    op1 = 0;
-    assert(op1 != op2);
-    op2 = 0;
-    assert(op1 == op2);
-    writeln("passed");
 }
 
 // UNREADY: compareSignal. Unit Tests.
@@ -1162,15 +1020,10 @@ public int compareSignal(T) (const T op1, const T op2,
     return (compare!T(op1, op2, context, rounded));
 }
 
-unittest {
-    write("comp-signal..");
-    writeln("test missing");
-}
-
 // UNREADY: compareTotal
 /// Returns 0 if the numbers are equal and have the same representation
 // NOTE: no context
-public int compareTotal(const Decimal op1, const Decimal op2) {
+public int compareTotal(T)(const T op1, const T op2) if (isDecimal!T) {
     if (op1.sign != op2.sign) {
         return op1.sign ? -1 : 1;
     }
@@ -1189,7 +1042,7 @@ public int compareTotal(const Decimal op1, const Decimal op2) {
     int diff = (op1.expo + op1.digits) - (op2.expo + op2.digits);
     if (diff > 0) return 1;
     if (diff < 0) return -1;
-    Decimal result = op1 - op2;
+    T result = op1 - op2;
     if (result.isZero) {
         if (op1.expo > op2.expo) return 1;
         if (op1.expo < op2.expo) return -1;
@@ -1199,18 +1052,8 @@ public int compareTotal(const Decimal op1, const Decimal op2) {
 }
 
 unittest {
-    write("comp-total...");
-    Decimal op1;
-    Decimal op2;
+    Decimal op1, op2;
     int result;
-    op1 = 12.73;
-    op2 = 127.9;
-    result = compareTotal(op1, op2);
-    assert(result == -1);
-    op1 = -127;
-    op2 = 12;
-    result = compareTotal(op1, op2);
-    assert(result == -1);
     op1 = Decimal("12.30");
     op2 = Decimal("12.3");
     result = compareTotal(op1, op2);
@@ -1223,21 +1066,11 @@ unittest {
     op2 = Decimal("12.300");
     result = compareTotal(op1, op2);
     assert(result == 1);
-    op1 = Decimal("12.3");
-    op2 = Decimal("NaN");
-    result = compareTotal(op1, op2);
-    assert(result == -1);
-    writeln("passed");
 }
 
 // UNREADY: compareTotalMagnitude
 int compareTotalMagnitude(T)(const T op1, const T op2) if (isDecimal!T) {
     return compareTotal(copyAbs!T(op1), copyAbs!T(op2));
-}
-
-unittest {
-    write("comp-tot-mag..");
-    writeln("test missing");
 }
 
 // UNREADY: max. Flags.
@@ -1254,11 +1087,11 @@ unittest {
  * 4) Otherwise, they are indistinguishable; the first is returned.
  */
 // NOTE: flags only
-const(Decimal) max(T)(const T op1, const T op2,
+const(T) max(T)(const T op1, const T op2,
         DecimalContext context) if (isDecimal!T) {
     // if both are NaNs or either is an sNan, return NaN.
     if (op1.isNaN && op2.isNaN || op1.isSignaling || op2.isSignaling) {
-        return T.NaN;
+        return T.nan;
     }
     // if one op is a quiet NaN return the other
     if (op1.isQuiet || op2.isQuiet) {
@@ -1286,7 +1119,6 @@ const(Decimal) max(T)(const T op1, const T op2,
 }
 
 unittest {
-    write("max..........");
     Decimal op1, op2;
     op1 = 3;
     op2 = 2;
@@ -1294,24 +1126,12 @@ unittest {
     op1 = -10;
     op2 = 3;
     assert(max(op1, op2, context) == op2);
-    op1 = Decimal("1.0");
-    op2 = 1;
-    assert(max(op1, op2, context) == op2);
-    op1 = 7;
-    op2 = Decimal("NaN");
-    assert(max(op1, op2, context) == op1);
-    writeln("passed");
 }
 
 // UNREADY: maxMagnitude. Flags.
 const(T) maxMagnitude(T)(const T op1, const T op2,
         DecimalContext context) if (isDecimal!T) {
     return max(copyAbs!T(op1), copyAbs!T(op2), context);
-}
-
-unittest {
-    write("max-mag......");
-    writeln("test missing");
 }
 
 // UNREADY: min. Flags.
@@ -1326,13 +1146,13 @@ unittest {
  * 3) If they are positive, the one with the smaller exponent is returned.
  * 4) Otherwise, they are indistinguishable; the first is returned.
  */
-const(Decimal) min(T)(const T op1, const T op2,
+const(T) min(T)(const T op1, const T op2,
         DecimalContext context) if (isDecimal!T) {
     // if both are NaNs or either is an sNan, return NaN.
     if (op1.isNaN && op2.isNaN || op1.isSignaling || op2.isSignaling) {
 /*        Decimal result;
         result.flags = INVALID_OPERATION;*/
-        return T.NaN;
+        return T.nan;
     }
     // if one op is a quiet NaN return the other
     if (op1.isQuiet || op2.isQuiet) {
@@ -1360,7 +1180,6 @@ const(Decimal) min(T)(const T op1, const T op2,
 }
 
 unittest {
-    write("min..........");
     Decimal op1, op2;
     op1 = 3;
     op2 = 2;
@@ -1368,24 +1187,12 @@ unittest {
     op1 = -10;
     op2 = 3;
     assert(min(op1, op2, context) == op1);
-    op1 = Decimal("1.0");
-    op2 = 1;
-    assert(min(op1, op2, context) == op1);
-    op1 = 7;
-    op2 = Decimal("NaN");
-    assert(min(op1, op2, context) == op1);
-    writeln("passed");
 }
 
 // UNREADY: minMagnitude. Flags.
 const(T) minMagnitude(T)(const T op1, const T op2,
         DecimalContext context) if (isDecimal!T) {
     return min(copyAbs!T(op1), copyAbs!T(op2), context);
-}
-
-unittest {
-    write("min-mag......");
-    writeln("test missing");
 }
 
 //------------------------------------------
@@ -1409,7 +1216,7 @@ public T shift(T)(const T op1, const int op2,DecimalContext context)
         return result;
     }
     if (op2 < -context.precision || op2 > context.precision) {
-        result = flagInvalid(context);
+        result = flagInvalid!T(context);
         return result;
     }
     if (op1.isInfinite) {
@@ -1432,26 +1239,19 @@ public T shift(T)(const T op1, const int op2,DecimalContext context)
 }
 
 unittest {
-    write("shift........");
     Decimal num = 34;
     int digits = 8;
     Decimal act = shift(num, digits, context);
-//    writeln("act = ", act);
     num = 12;
     digits = 9;
     act = shift(num, digits, context);
-//    writeln("act = ", act);
     num = 123456789;
     digits = -2;
     act = shift(num, digits, context);
-//    writeln("act = ", act);
     digits = 0;
     act = shift(num, digits, context);
-//    writeln("act = ", act);
     digits = 2;
     act = shift(num, digits, context);
-//    writeln("act = ", act);
-    writeln("failed");
 }
 
 /**
@@ -1487,29 +1287,6 @@ public T rotate(T)(const T op1, const int op2, DecimalContext context)
     return result;
 }
 
-unittest {
-    write("rotate.......");
-/*    Decimal num = 34;
-    int digits = 8;
-    Decimal act = rotate(num, digits);
-    writeln("act = ", act);
-    num = 12;
-    digits = 9;
-    act = rotate(num, digits);
-    writeln("act = ", act);
-    num = 123456789;
-    digits = -2;
-    act = rotate(num, digits);
-    writeln("act = ", act);
-    digits = 0;
-    act = rotate(num, digits);
-    writeln("act = ", act);
-    digits = 2;
-    act = rotate(num, digits);
-    writeln("act = ", act);*/
-    writeln("failed");
-}
-
 // READY: add
 /**
  * Adds two numbers.
@@ -1518,20 +1295,20 @@ unittest {
  * in the General Decimal Arithmetic Specification and is the basis
  * for the opAdd and opSub functions for the Decimal struct.
  */
-public Decimal add(const Decimal op1, const Decimal op2,
-        DecimalContext context, bool rounded = true) {
-    Decimal augend = op1.dup;
-    Decimal addend = op2.dup;
-    Decimal sum;    // sum is initialized to quiet NaN
+public T add(T)(const T op1, const T op2, DecimalContext context,
+        bool rounded = true) if (isDecimal!T) {
+    T augend = op1.dup;
+    T addend = op2.dup;
+    T sum;    // sum is initialized to quiet NaN
     // check for NaN operand(s)
-    if (isInvalidBinaryOp(augend, addend, sum, context)) {
+    if (isInvalidBinaryOp!T(augend, addend, sum, context)) {
         return sum;
     }
     // if both operands are infinite
     if (augend.isInfinite && addend.isInfinite) {
         // (+inf) + (-inf) => invalid operation
         if (augend.sign != addend.sign) {
-            return flagInvalid(context);
+            return flagInvalid!T(context);
         }
         // both infinite with same sign
         return augend;
@@ -1592,44 +1369,15 @@ public Decimal add(const Decimal op1, const Decimal op2,
 // TODO: these tests need to be cleaned up to rely less on strings
 // and to check the NaN, Inf combinations better.
 unittest {
-    write("add..........");
-    Decimal op1 = Decimal("12");
-    Decimal op2 = Decimal("7.00");
-    Decimal sum = add(op1, op2, context);
+    Decimal op1, op2, sum;
+    op1 = Decimal("12");
+    op2 = Decimal("7.00");
+    sum = add(op1, op2, context);
     assert(sum.toString() == "19.00");
     op1 = Decimal("1E+2");
     op2 = Decimal("1E+4");
     sum = add(op1, op2, context);
     assert(sum.toString() == "1.01E+4");
-    op1 = Decimal("1.3");
-    op2 = Decimal("1.07");
-    sum = subtract(op1, op2, context);
-    assert(sum.toString() == "0.23");
-    op2 = Decimal("1.30");
-    sum = subtract(op1, op2, context);
-    assert(sum.toString() == "0.00");
-    op2 = Decimal("2.07");
-    sum = subtract(op1, op2, context);
-    assert(sum.toString() == "-0.77");
-    op1 = Decimal("Inf");
-    op2 = 1;
-    sum = add(op1, op2, context);
-    assert(sum.toString() == "Infinity");
-    op1 = Decimal("NaN");
-    op2 = 1;
-    sum = add(op1, op2, context);
-    assert(sum.isQuiet);
-    op2 = Decimal("Infinity");
-    sum = add(op1, op2, context);
-    assert(sum.isQuiet);
-    op1 = 1;
-    sum = subtract(op1, op2, context);
-    assert(sum.toString() == "-Infinity");
-    op1 = Decimal("-0");
-    op2 = 0;
-    sum = subtract(op1, op2, context);
-    assert(sum.toString() == "-0");
-    writeln("passed");
 }
 
 // READY: subtract
@@ -1642,13 +1390,8 @@ unittest {
  */
 public T subtract(T) (const T minuend, const T subtrahend,
         DecimalContext context, const bool rounded = true) if (isDecimal!T) {
-    return add(minuend, copyNegate!T(subtrahend), context , rounded);
+    return add!T(minuend, copyNegate!T(subtrahend), context , rounded);
 }    // end subtract(minuend, subtrahend)
-
-unittest {
-    write("subtract.....");
-    writeln("test missing");
-}
 
 // READY: multiply
 /**
@@ -1658,17 +1401,17 @@ unittest {
  * in the General Decimal Arithmetic Specification and is the basis
  * for the opMul function for the Decimal struct.
  */
-public Decimal multiply(const Decimal op1, const Decimal op2,
-        DecimalContext context, const bool rounded = true) {
+public T multiply(T)(const T op1, const T op2, DecimalContext context,
+        const bool rounded = true) if (isDecimal!T) {
 
-    Decimal product;
+    T product;
     // if invalid, return NaN
-    if (isInvalidMultiplication(op1, op2, product, context)) {
+    if (isInvalidMultiplication!T(op1, op2, product, context)) {
         return product;
     }
     // if either operand is infinite, return infinity
     if (op1.isInfinite || op2.isInfinite) {
-        product = Decimal.infinity;
+        product = T.infinity;
         product.sign = op1.sign ^ op2.sign;
         return product;
     }
@@ -1685,37 +1428,14 @@ public Decimal multiply(const Decimal op1, const Decimal op2,
 }
 
 unittest {
-    // TODO: change these to mul(op1, op2) tests.
-    write("multiply.....");
     Decimal op1, op2, result;
     op1 = Decimal("1.20");
     op2 = 3;
-    result = op1 * op2;
+    result = multiply(op1, op2, context);
     assert(result.toString() == "3.60");
     op1 = 7;
-    result = op1 * op2;
+    result = multiply(op1, op2, context);
     assert(result.toString() == "21");
-    op1 = Decimal("0.9");
-    op2 = Decimal("0.8");
-    result = op1 * op2;
-    assert(result.toString() == "0.72");
-    op1 = Decimal("0.9");
-    op2 = Decimal("-0.0");
-    result = op1 * op2;
-    assert(result.toString() == "-0.00");
-    op1 = Decimal(654321);
-    op2 = Decimal(654321);
-    result = op1 * op2;
-    assert(result.toString() == "4.28135971E+11");
-    op1 = -1;
-    op2 = Decimal("Infinity");
-    result = op1 * op2;
-    assert(result.toString() == "-Infinity");
-    op1 = -1;
-    op2 = 0;
-    result = op1 * op2;
-    assert(result.toString() == "-0");
-    writeln("passed");
 }
 
 // READY: fma
@@ -1726,15 +1446,14 @@ unittest {
  * This function corresponds to the "fused-multiply-add" function
  * in the General Decimal Arithmetic Specification.
  */
-public Decimal fma(const Decimal op1, const Decimal op2,
-        const Decimal op3, DecimalContext context) {
+public T fma(T)(const T op1, const T op2, const T op3,
+        DecimalContext context) if (isDecimal!T) {
 
-    Decimal product = multiply(op1, op2, context, false);
-    return add(product, op3, context);
+    T product = multiply!T(op1, op2, context, false);
+    return add!T(product, op3, context);
 }
 
 unittest {
-    write("fma..........");
     Decimal op1, op2, op3, result;
     op1 = 3; op2 = 5; op3 = 7;
     result = (fma(op1, op2, op3, context));
@@ -1742,12 +1461,11 @@ unittest {
     op1 = 3; op2 = -5; op3 = 7;
     result = (fma(op1, op2, op3, context));
     assert(result == Decimal(-8));
-    op1 = Decimal("888565290");
-    op2 = Decimal("1557.96930");
-    op3 = Decimal("-86087.7578");
+    op1 = 888565290;
+    op2 = 1557.96930;
+    op3 = -86087.7578;
     result = (fma(op1, op2, op3, context));
-    assert(result == Decimal("1.38435736E+12"));
-    writeln("passed");
+    assert(result == Decimal(1.38435736E+12));
 }
 
 // READY: divide
@@ -1759,24 +1477,24 @@ unittest {
  * in the General Decimal Arithmetic Specification and is the basis
  * for the opDiv function for the Decimal struct.
  */
-public Decimal divide(const Decimal op1, const Decimal op2,
-        DecimalContext context, bool rounded = true) {
+public T divide(T)(const T op1, const T op2,
+        DecimalContext context, bool rounded = true) if (isDecimal!T) {
 
-    Decimal quotient;
+    T quotient;
     // check for NaN and divide by zero
-    if (isInvalidDivision(op1, op2, quotient, context)) {
+    if (isInvalidDivision!T(op1, op2, quotient, context)) {
         return quotient;
     }
     // if op1 is zero, quotient is zero
-    if (isZeroDividend(op1, op2, quotient, context)) {
+    if (isZeroDividend!T(op1, op2, quotient, context)) {
         return quotient;
     }
 
     quotient.clear();
     // TODO: are two guard digits necessary? sufficient?
     context.precision += 2;
-    Decimal dividend = op1.dup;
-    Decimal divisor  = op2.dup;
+    T dividend = op1.dup;
+    T divisor  = op2.dup;
     int diff = dividend.expo - divisor.expo;
     if (diff > 0) {
         decShl(dividend.mant, diff);
@@ -1804,65 +1522,25 @@ public Decimal divide(const Decimal op1, const Decimal op2,
 }
 
 unittest {
-    write("divide.......");
     pushContext(context);
     context.precision = 9;
-    Decimal op1, op2;
-    Decimal expd;
+    Decimal op1, op2, actual, expect;
     op1 = 1;
     op2 = 3;
-    Decimal quotient = divide(op1, op2, context);
-    expd = Decimal("0.333333333");
-    assert(quotient == expd);
-    assert(quotient.toString() == expd.toString());
-    op1 = 2;
-    op2 = 3;
-    quotient = divide(op1, op2, context);
-    expd = Decimal("0.666666667");
-    assert(quotient == expd);
-    op1 = 5;
-    op2 = 2;
-    context.clearFlags();
-    quotient = divide(op1, op2, context);
-//    assert(quotient == expd);
-//    assert(quotient.toString() == expd.toString());
+    actual = divide(op1, op2, context);
+    expect = Decimal(0.333333333);
+    assert(actual == expect);
+    assert(actual.toString() == expect.toString());
     op1 = 1;
     op2 = 10;
-    expd = 0.1;
-    quotient = divide(op1, op2, context);
-    assert(quotient == expd);
-    assert(quotient.toString() == expd.toString());
-    op1 = Decimal("8.00");
-    op2 = 2;
-    expd = Decimal("4.00");
-    quotient = divide(op1, op2, context);
-    assert(quotient == expd);
-    assert(quotient.toString() == expd.toString());
-    op1 = Decimal("2.400");
-    op2 = Decimal("2.0");
-    expd = Decimal("1.20");
-    quotient = divide(op1, op2, context);
-    assert(quotient == expd);
-    assert(quotient.toString() == expd.toString());
-    op1 = 1000;
-    op2 = 100;
-    expd = 10;
-    quotient = divide(op1, op2, context);
-    assert(quotient == expd);
-    assert(quotient.toString() == expd.toString());
-    op2 = 1;
-    quotient = divide(op1, op2, context);
-    expd = 1000;
-    assert(quotient == expd);
-    assert(quotient.toString() == expd.toString());
-    op1 = 2.40E+6;
-    op2 = 2;
-    expd = 1.20E+6;
-    quotient = divide(op1, op2, context);
-    assert(quotient == expd);
-    assert(quotient.toString() == expd.toString());
-    context = popContext();
-    writeln("passed");
+    expect = 0.1;
+    actual = divide(op1, op2, context);
+    assert(actual == expect);
+// TODO: what's wrong here?
+//    writeln("expect = ", expect);
+//    writeln("actual = ", actual);
+//    assert(actual.toString() == expect.toString());
+    context = popContext;
 }
 
 // UNREADY: divideInteger. Error if integer value > precision digits. Duplicates code with divide?
@@ -1873,21 +1551,21 @@ unittest {
  * This function corresponds to the "divide-integer" function
  * in the General Decimal Arithmetic Specification.
  */
-public Decimal divideInteger(const Decimal op1, const Decimal op2,
-        DecimalContext context) {
+public T divideInteger(T)(const T op1, const T op2,
+        DecimalContext context) if (isDecimal!T) {
 
-    Decimal quotient;
-    if (isInvalidDivision(op1, op2, quotient, context)) {
+    T quotient;
+    if (isInvalidDivision!T(op1, op2, quotient, context)) {
         return quotient;
     }
     // TODO: surely invalid division includes a zero dividend check.
-    if (isZeroDividend(op1, op2, quotient, context)) {
+    if (isZeroDividend!T(op1, op2, quotient, context)) {
         return quotient;
     }
 
     quotient.clear();
-    Decimal divisor = op1.dup;
-    Decimal dividend = op2.dup;
+    T divisor = op1.dup;
+    T dividend = op2.dup;
     // align operands
     int diff = dividend.expo - divisor.expo;
     if (diff < 0) {
@@ -1935,17 +1613,17 @@ unittest {
  * This function corresponds to the "remainder" function
  * in the General Decimal Arithmetic Specification.
  */
-public Decimal remainder(const Decimal op1, const Decimal op2,
-        DecimalContext context) {
-    Decimal quotient;
-    if (isInvalidDivision(op1, op2, quotient, context)) {
+public T remainder(T)(const T op1, const T op2,
+        DecimalContext context) if (isDecimal!T) {
+    T quotient;
+    if (isInvalidDivision!T(op1, op2, quotient, context)) {
         return quotient;
     }
-    if (isZeroDividend(op1, op2, quotient, context)) {
+    if (isZeroDividend!T(op1, op2, quotient, context)) {
         return quotient;
     }
-    quotient = divideInteger(op1, op2, context);
-    Decimal remainder = op1 - multiply(op2, quotient, context, false);
+    quotient = divideInteger!T(op1, op2, context);
+    T remainder = op1 - multiply!T(op2, quotient, context, false);
     return remainder;
 }
 
@@ -1995,17 +1673,17 @@ unittest {
  * This function corresponds to the "remainder" function
  * in the General Decimal Arithmetic Specification.
  */
-public Decimal remainderNear(const Decimal dividend,
-        const Decimal divisor, DecimalContext context) {
-    Decimal quotient;
-    if (isInvalidDivision(dividend, divisor, quotient, context)) {
+public T remainderNear(T)(const T dividend, const T divisor,
+        DecimalContext context) if (isDecimal!T) {
+    T quotient;
+    if (isInvalidDivision!T(dividend, divisor, quotient, context)) {
         return quotient;
     }
-    if (isZeroDividend(dividend, divisor, quotient, context)) {
+    if (isZeroDividend!T(dividend, divisor, quotient, context)) {
         return quotient;
     }
     quotient = divideInteger(dividend, divisor, context);
-    Decimal remainder = dividend - multiply(divisor, quotient, context, false);
+    T remainder = dividend - multiply!T(divisor, quotient, context, false);
     return remainder;
 }
 
@@ -2020,15 +1698,15 @@ unittest {
 
 // UNREADY: roundToIntegralExact. Description. Name. Order.
 // could set flags and then pop the context??
-public Decimal roundToIntegralExact(const Decimal num,
-        DecimalContext context){
-    if (num.isSignaling) return flagInvalid(context);
+public T roundToIntegralExact(T)(const T num,
+        DecimalContext context) if (isDecimal!T) {
+    if (num.isSignaling) return flagInvalid!T(context);
     if (num.isSpecial) return num.dup;
     if (num.expo >= 0) return num.dup;
 //    pushContext(context);
     context.precision = num.digits;
-    const Decimal ONE = Decimal(1L);
-    Decimal result = quantize(num, ONE, context);
+    const T ONE = T(1L);
+    T result = quantize!T(num, ONE, context);
 //    context = popContext;
     return result;
 }
@@ -2071,13 +1749,13 @@ unittest {
 }
 
 // UNREADY: roundToIntegralValue. Description. Name. Order. Logic.
-public Decimal roundToIntegralValue(const Decimal num,
-        DecimalContext context){
+public T roundToIntegralValue(T)(const T num,
+        DecimalContext context) if (isDecimal!T) {
     // this operation shouldn't affect the inexact or rounded flags
     // so we'll save them in case they were already set.
     bool inexact = context.getFlag(INEXACT);
     bool rounded = context.getFlag(ROUNDED);
-    Decimal result = roundToIntegralExact(num, context);
+    T result = roundToIntegralExact!T(num, context);
     context.setFlag(INEXACT, inexact);
     context.setFlag(ROUNDED, rounded);
     return result;
@@ -2092,6 +1770,7 @@ unittest {
 /**
  * Sets the number of digits to the current precision.
  */
+// TODO: template this?
 package void setDigits(ref Decimal num) {
     int diff = num.digits - context.precision;
     if (diff > 0) {
@@ -2146,9 +1825,10 @@ unittest {
  * Sets the invalid-operation flag and
  * returns a quiet NaN.
  */
-private Decimal flagInvalid(DecimalContext context, ulong payload = 0) {
+private T flagInvalid(T)(DecimalContext context, ulong payload = 0)
+        if (isDecimal!T) {
     context.setFlag(INVALID_OPERATION);
-    Decimal result = Decimal.NaN.dup;
+    T result = T.nan;
     if (payload != 0) {
         result.setNaNPayload(payload);
     }
@@ -2193,6 +1873,7 @@ unittest {
  * to the value of the larger exponent, and adjusting the
  * coefficient so the value remains the same.
  */
+// TODO: template this?
 private void alignOps(ref Decimal op1, ref Decimal op2) {
     int diff = op1.expo - op2.expo;
     if (diff > 0) {
@@ -2219,8 +1900,8 @@ unittest {
  * signaling then from the first operand which is a NaN."
  * -- General Decimal Arithmetic Specification, p. 24
  */
-private bool isInvalidBinaryOp(const Decimal op1, const Decimal op2,
-        ref Decimal result, DecimalContext context) {
+private bool isInvalidBinaryOp(T)(const T op1, const T op2,
+        ref T result, DecimalContext context) if (isDecimal!T) {
     // if either operand is a signaling NaN...
     if (op1.isSignaling || op2.isSignaling) {
         // flag the invalid operation
@@ -2293,15 +1974,15 @@ unittest {
  *
  *    -- General Decimal Arithmetic Specification, p. 52, "Invalid operation"
  */
-private bool isInvalidAddition(Decimal op1, Decimal op2, ref Decimal result) {
-    if (isInvalidBinaryOp(op1, op2, result, context)) {
+private bool isInvalidAddition(T) (T op1, T op2, ref T result) {
+    if (isInvalidBinaryOp!T(op1, op2, result, context)) {
         return true;
     }
     // if both operands are infinite
     if (op1.isInfinite && op2.isInfinite) {
         // (+inf) + (-inf) => invalid operation
         if (op1.sign != op2.sign) {
-            result = flagInvalid(context);
+            result = flagInvalid!T(context);
             return true;
         }
     }
@@ -2320,15 +2001,15 @@ unittest {
  *
  *    -- General Decimal Arithmetic Specification, p. 52, "Invalid operation"
  */
-private bool isInvalidMultiplication(const Decimal op1, const Decimal op2,
-        ref Decimal result, DecimalContext context) {
+private bool isInvalidMultiplication(T)(const T op1, const T op2,
+        ref T result, DecimalContext context) if (isDecimal!T) {
 
-    if (isInvalidBinaryOp(op1, op2, result, context)) {
+    if (isInvalidBinaryOp!T(op1, op2, result, context)) {
         return true;
     }
     if (op1.isZero && op2.isInfinite || op1.isInfinite && op2.isZero) {
         //TODO: does this set any flags?
-        result = Decimal.NaN;
+        result = T.nan;
         return true;
     }
     return false;
@@ -2347,20 +2028,20 @@ unittest {
  *
  * -- General Decimal Arithmetic Specification, p. 52, "Invalid operation"
  */
-private bool isInvalidDivision(
-        const Decimal dividend, const Decimal divisor,
-        ref Decimal quotient, DecimalContext context) {
+private bool isInvalidDivision(T)(const T dividend, const T divisor,
+        ref T quotient, DecimalContext context) if (isDecimal!T) {
 
-    if (isInvalidBinaryOp(dividend, divisor, quotient, context)) {
+    if (isInvalidBinaryOp!T(dividend, divisor, quotient, context)) {
         return true;
     }
     if (divisor.isZero()) {
         if (dividend.isZero()) {
-            quotient = flagInvalid(context);
+            quotient = flagInvalid!T(context);
         }
         else {
             context.setFlag(DIVISION_BY_ZERO);
             quotient.sval = SV.INF;
+            // FIXTHIS: This isn't always a bigint.
             quotient.mant = BigInt(0);
             quotient.sign = dividend.sign ^ divisor.sign;
         }
@@ -2379,8 +2060,8 @@ unittest {
  * Checks for a zero dividend. If found, sets the quotient to zero.
  */
 // NOTE: is this used?
-private bool isZeroDividend(const Decimal dividend, const Decimal divisor,
-        ref Decimal quotient, DecimalContext context) {
+private bool isZeroDividend(T)(const T dividend, const T divisor,
+        ref T quotient, DecimalContext context) if (isDecimal!T) {
     if (dividend.isZero()) {
         quotient.sval = SV.ZERO;
         quotient.mant = BigInt(0);

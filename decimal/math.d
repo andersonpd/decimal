@@ -244,7 +244,7 @@ unittest {
     Decimal sqrt(const Decimal arg, uint precision) {
         // NOTE: check for negative numbers.
         if (arg.isNegative) {
-            return Decimal.NaN.dup;
+            return Decimal.nan;
         }
         uint savedPrecision = context.precision;
         precision += 2;

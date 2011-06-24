@@ -124,7 +124,8 @@ public @property void digits(int value) { m_digits = value; };*/
 public:
 
 // common decimal "numbers"
-    static immutable Decimal NaN      = cast(immutable)Decimal(SV.QNAN);
+    static immutable Decimal NAN      = cast(immutable)Decimal(SV.QNAN);
+    static immutable Decimal SNAN     = cast(immutable)Decimal(SV.SNAN);
     static immutable Decimal POS_INF  = cast(immutable)Decimal(SV.INF);
     static immutable Decimal NEG_INF  = cast(immutable)Decimal(true, SV.INF);
     static immutable Decimal ZERO     = cast(immutable)Decimal(SV.ZERO);
@@ -607,7 +608,7 @@ unittest {
 
     /// returns the default value for this type (NaN)
     static Decimal init() {
-        return NaN.dup;
+        return NAN.dup;
     }
 
 unittest {
@@ -616,8 +617,18 @@ unittest {
 }
 
     /// Returns NaN
+    static Decimal snan() {
+        return SNAN.dup;
+    }
+
+    unittest {
+        write("snan...");
+        writeln("test missing");
+    }
+
+    /// Returns NaN
     static Decimal nan() {
-        return NaN.dup;
+        return NAN.dup;
     }
 
     unittest {
@@ -674,6 +685,7 @@ unittest {
     }
 
     // Returns the maximum representable normal value in the current context.
+    // FIXTHIS: this doesn't always access the current context. Move it to context?
     static Decimal max() {
         string cstr = "9." ~ repeat("9", context.precision-1)
             ~ "E" ~ format("%d", context.eMax);
@@ -1136,7 +1148,7 @@ unittest {
 
     /// Adds a Decimal to this and returns the Decimal result
     const Decimal opAdd(T:Decimal)(const T addend) {
-        return add(this, addend, context);
+        return add!Decimal(this, addend, context);
     }
 
     unittest {
@@ -1146,7 +1158,7 @@ unittest {
 
     // Adds a number to this and returns the result.
     const Decimal opAdd(T)(const T addend) {
-        return add(this, Decimal(BigInt(addend)), context);
+        return add!Decimal(this, Decimal(BigInt(addend)), context);
     }
 
     unittest {
@@ -1173,7 +1185,7 @@ unittest {
     }
 
     const Decimal opMul(T:Decimal)(const T multiplier) {
-        return multiply(this, multiplier, context);
+        return multiply!Decimal(this, multiplier, context);
     }
 
     unittest {
@@ -1182,7 +1194,7 @@ unittest {
     }
 
     const Decimal opMul(T:long)(const T multiplier) {
-        return multiply(this, Decimal(BigInt(multiplier)), context);
+        return multiply!Decimal(this, Decimal(BigInt(multiplier)), context);
     }
 
     unittest {
@@ -1191,7 +1203,7 @@ unittest {
     }
 
     const Decimal opDiv(T:Decimal)(const T divisor) {
-        return divide(this, divisor, context);
+        return divide!Decimal(this, divisor, context);
     }
 
     unittest {
@@ -1200,7 +1212,7 @@ unittest {
     }
 
     const Decimal opDiv(T)(const T divisor) {
-        return divide(this, Decimal(divisor), context);
+        return divide!Decimal(this, Decimal(divisor), context);
     }
 
     unittest {
@@ -1209,7 +1221,7 @@ unittest {
     }
 
     const Decimal opMod(T:Decimal)(const T divisor) {
-        return remainder(this, divisor, context);
+        return remainder!Decimal(this, divisor, context);
     }
 
     unittest {
