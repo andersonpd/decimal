@@ -192,7 +192,7 @@ public string toSciString(T)(const T num) if (isDecimal!T) {
             int point = std.math.abs(expo);
             // if coefficient is too small, pad with zeroes
             if (point > clen) {
-                cstr = zfill(cstr, point);
+                cstr = rightJustify(cstr, point, '0');
                 clen = cstr.length;
             }
             // if no chars precede the decimal point, prefix a zero
@@ -221,67 +221,74 @@ public string toSciString(T)(const T num) if (isDecimal!T) {
 
 unittest {
     write("toSciString...");
-    Decimal num = Decimal(123); //(false, 123, 0);
-    assert(toSciString!Decimal(num) == "123");
+    Dec32 num = Dec32(123); //(false, 123, 0);
+    assert(toSciString!Dec32(num) == "123");
     assert(num.toAbstract() == "[0,123,0]");
-    num = Decimal(-123, 0);
-    assert(toSciString!Decimal(num) == "-123");
+    writeln("num = ", num);
+    writeln("num.toAbstract = ", num.toAbstract);
+    num = Dec32(-123, 0);
+    writeln("num = ", num);
+    writeln("num.toAbstract = ", num.toAbstract);
+    assert(toSciString!Dec32(num) == "-123");
     assert(num.toAbstract() == "[1,123,0]");
-    num = Decimal(123, 1);
-    assert(toSciString!Decimal(num) == "1.23E+3");
+    num = Dec32(123, 1);
+    assert(toSciString!Dec32(num) == "1.23E+3");
     assert(num.toAbstract() == "[0,123,1]");
-    num = Decimal(123, 3);
-    assert(toSciString!Decimal(num) == "1.23E+5");
+    num = Dec32(123, 3);
+    assert(toSciString!Dec32(num) == "1.23E+5");
     assert(num.toAbstract() == "[0,123,3]");
-    num = Decimal(123, -1);
-    assert(toSciString!Decimal(num) == "12.3");
+    num = Dec32(123, -1);
+    assert(toSciString!Dec32(num) == "12.3");
     assert(num.toAbstract() == "[0,123,-1]");
-    num = Decimal(123, -5);
-    assert(toSciString!Decimal(num) == "0.00123");
+    num = Dec32(123, -5);
+    assert(toSciString!Dec32(num) == "0.00123");
     assert(num.toAbstract() == "[0,123,-5]");
-    num = Decimal(123, -10);
-    assert(toSciString!Decimal(num) == "1.23E-8");
+    num = Dec32(123, -10);
+    assert(toSciString!Dec32(num) == "1.23E-8");
     assert(num.toAbstract() == "[0,123,-10]");
-    num = Decimal(-123, -12);
-    assert(toSciString!Decimal(num) == "-1.23E-10");
+    num = Dec32(-123, -12);
+    assert(toSciString!Dec32(num) == "-1.23E-10");
     assert(num.toAbstract() == "[1,123,-12]");
-    num = Decimal(0, 0);
-    assert(toSciString!Decimal(num) == "0");
+    num = Dec32(0, 0);
+    assert(toSciString!Dec32(num) == "0");
     assert(num.toAbstract() == "[0,0,0]");
-    num = Decimal(0, -2);
-    assert(toSciString!Decimal(num) == "0.00");
+    num = Dec32(0, -2);
+    assert(toSciString!Dec32(num) == "0.00");
     assert(num.toAbstract() == "[0,0,-2]");
-    num = Decimal(0, 2);
-    assert(toSciString!Decimal(num) == "0E+2");
+    num = Dec32(0, 2);
+    assert(toSciString!Dec32(num) == "0E+2");
     assert(num.toAbstract() == "[0,0,2]");
-    num = -Decimal(0, 0);
-    assert(toSciString!Decimal(num) == "-0");
-    assert(num.toAbstract() == "[1,0,0]");
-    num = Decimal(5, -6);
-    assert(toSciString!Decimal(num) == "0.000005");
+/*    num = -Dec32(0, 0);
+    assert(toSciString!Dec32(num) == "-0");
+    assert(num.toAbstract() == "[1,0,0]");*/
+    num = Dec32(5, -6);
+    assert(toSciString!Dec32(num) == "0.000005");
     assert(num.toAbstract() == "[0,5,-6]");
-    num = Decimal(50,-7);
-    assert(toSciString!Decimal(num) == "0.0000050");
+    num = Dec32(50,-7);
+    assert(toSciString!Dec32(num) == "0.0000050");
     assert(num.toAbstract() == "[0,50,-7]");
-    num = Decimal(5, -7);
-    assert(toSciString!Decimal(num) == "5E-7");
+    num = Dec32(5, -7);
+    assert(toSciString!Dec32(num) == "5E-7");
     assert(num.toAbstract() == "[0,5,-7]");
-    num = Decimal("inf");
-    assert(toSciString!Decimal(num) == "Infinity");
+    writeln("-------");
+    num = Dec32("inf");
+    writeln("num = ", num);
+    writeln("num.toAbstract = ", num.toAbstract);
+    assert(toSciString!Dec32(num) == "Infinity");
     assert(num.toAbstract() == "[0,inf]");
-    num = Decimal(true, SV.INF);
-    assert(toSciString!Decimal(num) == "-Infinity");
+/*    num = Dec32(true, SV.INF);
+    assert(toSciString!Dec32(num) == "-Infinity");
     assert(num.toAbstract() == "[1,inf]");
-    num = Decimal(false, SV.QNAN);
-    assert(toSciString!Decimal(num) == "NaN");
-    assert(num.toAbstract() == "[0,qNaN]");
+    num = Dec32(false, SV.QNAN);
+    assert(toSciString!Dec32(num) == "NaN");
+    assert(num.toAbstract() == "[0,qNaN]");*/
     // TODO: This test doesn't pass because we the payload setter won't compile.
-//    num = Decimal(false, SV.QNAN, 123);
-//    assert(toSciString!Decimal(num) == "NaN123");
+//    num = Dec32(false, SV.QNAN, 123);
+//    assert(toSciString!Dec32(num) == "NaN123");
 //    assert(num.toAbstract() == "[0,qNaN,123]");
-    num = Decimal(true, SV.SNAN);
-    assert(toSciString!Decimal(num) == "-sNaN");
-    assert(num.toAbstract() == "[1,sNaN]");
+/*    num = Dec32(true, SV.SNAN);
+    assert(toSciString!Dec32(num) == "-sNaN");
+    assert(num.toAbstract() == "[1,sNaN]");*/
     writeln("passed");
 }
 
@@ -328,7 +335,7 @@ public string toEngString(T)(const T num) if (isDecimal!T) {
             int point = std.math.abs(expo);
             // if coefficient is too small, pad with zeroes
             if (point > clen) {
-                cstr = zfill(cstr, point);
+                cstr = rightJustify(cstr, point, '0');
                 clen = cstr.length;
             }
             // if no chars precede the decimal point, prefix a zero

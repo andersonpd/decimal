@@ -31,11 +31,12 @@ module decimal.arithmetic;
 import decimal.context;
 import decimal.conv : isDecimal;
 import decimal.decimal;
+import decimal.dec32;
 import decimal.rounding;
 import std.array: insertInPlace;
 import std.bigint;
 import std.conv;
-import std.ctype: isdigit;
+import std.ascii: isDigit;
 import std.stdio: write, writeln;
 import std.string;
 
@@ -50,17 +51,17 @@ import std.string;
 /**
  * Converts a Decimal to a string representation.
  */
-public string toSciString(const Decimal num) {
+/*public string toSciString(const Decimal num) {
     return decimal.conv.toSciString!Decimal(num);
-};    // end toSciString()
+};    // end toSciString()*/
 
 // READY: toEngString.
 /**
  * Converts a Decimal to an engineering string representation.
  */
-public string toEngString(const Decimal num) {
+/*public string toEngString(const Decimal num) {
    return decimal.conv.toEngString!Decimal(num);
-}; // end toEngString()
+}; // end toEngString()*/
 
 // UNREADY: toNumber. Description. Corner Cases. Context.
 /**
@@ -68,13 +69,14 @@ public string toEngString(const Decimal num) {
  */
 public Decimal toNumber(const string inStr) {
 
+//writeln("inStr = ", inStr);
     Decimal num;
-    num.clear;
     num.sign = false;
+//writeln("num = ", num);
 
     // strip, copy, tolower
     char[] str = strip(inStr).dup;
-    tolowerInPlace(str);
+    toLowerInPlace(str);
 
     // get sign, if any
     if (startsWith(str,"-")) {
@@ -84,61 +86,63 @@ public Decimal toNumber(const string inStr) {
     else if (startsWith(str,"+")) {
         str = str[1..$];
     }
+//writeln("num.sign = ", num.sign);
 
     // check for NaN
     if (startsWith(str,"nan")) {
-        num.sval = SV.QNAN;
+        num = Decimal.nan;
         if (str == "nan") {
-            num.mant = BigInt(0);
+            num.coefficient = 0; // BigInt(0);
             return num;
         }
         // set payload
         str = str[3..$];
         // ensure string is all digits
         foreach(char c; str) {
-            if (!isdigit(c)) {
+            if (!isDigit(c)) {
                 return num;
             }
         }
         // convert string to payload
-        num.mant = BigInt(str.idup);
+        num.coefficient = BigInt(str.idup);
         return num;
     };
 
     // check for sNaN
     if (startsWith(str,"snan")) {
-        num.sval = SV.SNAN;
+        num = Decimal.snan;
         if (str == "snan") {
-            num.mant = BigInt(0);
+            num.coefficient = 0; // BigInt(0);
             return num;
         }
         // set payload
         str = str[4..$];
         // ensure string is all digits
         foreach(char c; str) {
-            if (!isdigit(c)) {
+            if (!isDigit(c)) {
                 return num;
             }
         }
         // convert string to payload
-        num.mant = BigInt(str.idup);
+        num.coefficient = BigInt(str.idup);
         return num;
     };
 
     // check for infinity
     if (str == "inf" || str == "infinity") {
-        num.sval = SV.INF;
+//        bool signed = num.sign;
+        num = Decimal.infinity(num.sign);
         return num;
     };
 
-    // up to this point, num has been qNaN
+    // at this point, num is a qNaN
     num.clear();
     // check for exponent
     int pos = indexOf(str, 'e');
     if (pos > 0) {
         // if it's just a trailing 'e', return NaN
         if (pos == str.length - 1) {
-            num.sval = SV.QNAN;
+            num = Decimal.nan;
             return num;
         }
         // split the string into coefficient and exponent
@@ -158,14 +162,14 @@ public Decimal toNumber(const string inStr) {
 
         // ensure it's not now empty
         if (xstr.length < 1) {
-            num.sval = SV.QNAN;
+            num = Decimal.nan;
             return num;
         }
 
         // ensure exponent is all digits
         foreach(char c; xstr) {
-            if (!isdigit(c)) {
-                num.sval = SV.QNAN;
+            if (!isDigit(c)) {
+                num = Decimal.nan;
             return num;
             }
         }
@@ -177,7 +181,7 @@ public Decimal toNumber(const string inStr) {
 
         // make sure it will fit into an int
         if (xstr.length > 10) {
-            num.sval = SV.QNAN;
+            num = Decimal.nan;
             return num;
         }
         if (xstr.length == 10) {
@@ -185,21 +189,21 @@ public Decimal toNumber(const string inStr) {
             // then see if the long value is too big (or small)
             long lex = to!long(xstr);
             if ((xneg && (-lex < int.min)) || lex > int.max) {
-                num.sval = SV.QNAN;
+            num = Decimal.nan;
         return num;
             }
-            num.expo = cast(int) lex;
+            num.exponent = cast(int) lex;
         }
         else {
             // everything should be copacetic at this point
-            num.expo = to!int(xstr);
+            num.exponent = to!int(xstr);
         }
         if (xneg) {
-            num.expo = -num.expo;
+            num.exponent = -num.exponent;
         }
     }
     else {
-        num.expo = 0;
+        num.exponent = 0;
     }
 
     // remove trailing decimal point
@@ -217,27 +221,27 @@ public Decimal toNumber(const string inStr) {
         // excise the point and adjust exponent
         str = str[0..point] ~ str[point+1..$];
         int diff = str.length - point;
-        num.expo -= diff;
+        num.exponent = num.exponent - diff;
     }
 
     // ensure string is not empty
     if (str.length < 1) {
-        num.sval = SV.QNAN;
+        num = Decimal.nan;
         return num;
     }
 
     // ensure string is all digits
     foreach(char c; str) {
-        if (!isdigit(c)) {
-            num.sval = SV.QNAN;
+        if (!isDigit(c)) {
+            num = Decimal.nan;
             return num;
         }
     }
     // convert coefficient string to BigInt
-    num.mant = BigInt(str.idup);
-    num.digits = numDigits(num.mant);
-    if (num.mant == BigInt(0)) {
-         num.sval = SV.ZERO;
+    num.coefficient = BigInt(str.idup);
+    num.digits = numDigits(num.coefficient);
+    if (num.coefficient == 0) { // BigInt(0)) {
+        num.setZero; //  = Decimal.zero(num.sign);
     }
 
     return num;
@@ -342,7 +346,7 @@ unittest {
  * Returns a copy of the operand with a positive sign.
  * The copy is unaffected by context; no flags are changed.
  */
-public T copyAbs(T)(const Decimal num) if (isDecimal!T) {
+public T copyAbs(T)(const T num) if (isDecimal!T) {
     T copy = num.dup;
     copy.sign = false;
     return copy;
@@ -365,7 +369,7 @@ unittest {
  * Returns a copy of the operand with the sign inverted.
  * The copy is unaffected by context; no flags are changed.
  */
-public T copyNegate(T)(const Decimal num) if (isDecimal!T) {
+public T copyNegate(T)(const T num) if (isDecimal!T) {
     T copy = num.dup;
     copy.sign = !num.sign;
     return copy;
@@ -423,113 +427,114 @@ public T quantize(T)(const T op1, const T op2,
         return op1.dup;
     }
     result = op1;
-    int diff = op1.expo - op2.expo;
+    int diff = op1.exponent - op2.exponent;
+
     if (diff == 0) {
         return result;
     }
-    // need to add a check where the result is zero and op1 is negative --
+    // FIXTHIS: need to add a check where the result is zero and op1 is negative --
     // then the result is -zero.
     if (diff > 0) {
-        decShl(result.mant, diff);
-        result.digits += diff;
-        result.expo = op2.expo;
+        result.coefficient = decShl(result.coefficient, diff);
+        result.digits = result.digits + diff;
+        result.exponent = op2.exponent;
         if (result.digits > context.precision) {
             result = T.nan;
         }
         return result;
     }
     else {
-//        pushContext(context);
+        pushContext(context);
         context.precision = (-diff > op1.digits) ? 0 : op1.digits + diff;
-        round(result, context);
-        result.expo = op2.expo;
+        round!T(result, context);
+        result.exponent = op2.exponent;
         if (result.isZero && op1.isSigned) {
             result.sign = true;
         }
-//        context = popContext;
+        context = popContext;
         return result;
     }
 }
 
 unittest {
-    Decimal op1, op2, result, expd;
+    Decimal op1, op2, actual, expect;
     string str;
     op1 = Decimal("2.17");
     op2 = Decimal("0.001");
-    expd = Decimal("2.170");
-    result = quantize(op1, op2, context);
-    assert(result == expd);
+    expect = Decimal("2.170");
+    actual = quantize!Decimal(op1, op2, context);
+    assert(actual == expect);
     op1 = Decimal("2.17");
     op2 = Decimal("0.01");
-    expd = Decimal("2.17");
-    result = quantize(op1, op2, context);
-    assert(result == expd);
+    expect = Decimal("2.17");
+    actual = quantize(op1, op2, context);
+    assert(actual == expect);
     op1 = Decimal("2.17");
     op2 = Decimal("0.1");
-    expd = Decimal("2.2");
-    result = quantize(op1, op2, context);
-    assert(result == expd);
+    expect = Decimal("2.2");
+    actual = quantize(op1, op2, context);
+    assert(actual == expect);
     op1 = Decimal("2.17");
     op2 = Decimal("1e+0");
-    expd = Decimal("2");
-    result = quantize(op1, op2, context);
-    assert(result == expd);
+    expect = Decimal("2");
+    actual = quantize(op1, op2, context);
+    assert(actual == expect);
     op1 = Decimal("2.17");
     op2 = Decimal("1e+1");
-    expd = Decimal("0E+1");
-    result = quantize(op1, op2, context);
-    assert(result.toString() == expd.toString());
+    expect = Decimal("0E+1");
+    actual = quantize(op1, op2, context);
+    assert(actual.toString() == expect.toString());
     op1 = Decimal("-Inf");
     op2 = Decimal("Infinity");
-    expd = Decimal("-Infinity");
-    result = quantize(op1, op2, context);
-    assert(result == expd);
+    expect = Decimal("-Infinity");
+    actual = quantize(op1, op2, context);
+    assert(actual == expect);
     op1 = Decimal("2");
     op2 = Decimal("Infinity");
-    expd = Decimal("NaN");
-    result = quantize(op1, op2, context);
-    assert(result.toString() == expd.toString());
+    expect = Decimal("NaN");
+    actual = quantize(op1, op2, context);
+    assert(actual.toString() == expect.toString());
     op1 = Decimal("-0.1");
     op2 = Decimal("1");
-    expd = Decimal("-0");
-    result = quantize(op1, op2, context);
-    assert(result.toString() == expd.toString());
+    expect = Decimal("-0");
+    actual = quantize(op1, op2, context);
+    assert(actual.toString() == expect.toString());
     op1 = Decimal("-0");
     op2 = Decimal("1e+5");
-    expd = Decimal("-0E+5");
-    result = quantize(op1, op2, context);
-    assert(result.toString() == expd.toString());
+    expect = Decimal("-0E+5");
+    actual = quantize(op1, op2, context);
+    assert(actual.toString() == expect.toString());
     op1 = Decimal("+35236450.6");
     op2 = Decimal("1e-2");
-    expd = Decimal("NaN");
-    result = quantize(op1, op2, context);
-    assert(result.toString() == expd.toString());
+    expect = Decimal("NaN");
+    actual = quantize(op1, op2, context);
+    assert(actual.toString() == expect.toString());
     op1 = Decimal("-35236450.6");
     op2 = Decimal("1e-2");
-    expd = Decimal("NaN");
-    result = quantize(op1, op2, context);
-    assert(result.toString() == expd.toString());
+    expect = Decimal("NaN");
+    actual = quantize(op1, op2, context);
+    assert(actual.toString() == expect.toString());
     op1 = Decimal("217");
     op2 = Decimal("1e-1");
-    expd = Decimal( "217.0");
-    result = quantize(op1, op2, context);
-    assert(result.toString() == expd.toString());
+    expect = Decimal( "217.0");
+    actual = quantize(op1, op2, context);
+    assert(actual.toString() == expect.toString());
     op1 = Decimal("217");
     op2 = Decimal("1e+0");
-    expd = Decimal("217");
-    result = quantize(op1, op2, context);
-    assert(result.toString() == expd.toString());
+    expect = Decimal("217");
+    actual = quantize(op1, op2, context);
+    assert(actual.toString() == expect.toString());
     op1 = Decimal("217");
     op2 = Decimal("1e+1");
-    expd = Decimal("2.2E+2");
-    result = quantize(op1, op2, context);
-    assert(result.toString() == expd.toString());
+    expect = Decimal("2.2E+2");
+    actual = quantize(op1, op2, context);
+    assert(actual.toString() == expect.toString());
     op1 = Decimal("217");
     op2 = Decimal("1e+2");
-    expd = Decimal("2E+2");
-    result = quantize(op1, op2, context);
-    assert(result.toString() == expd.toString());
-    assert(result == expd);
+    expect = Decimal("2E+2");
+    actual = quantize(op1, op2, context);
+    assert(actual.toString() == expect.toString());
+    assert(actual == expect);
 }
 
 /**
@@ -552,10 +557,8 @@ public T logb(T)(const T num, DecimalContext context) {
     }
     if (num.isZero) {
         context.setFlag(DIVISION_BY_ZERO);
-        // FIXTHIS: Why doesn't NEG_INF work?
-        result = T.infinity; //NEG_INF;
-        result.sign = true;
-        return result; //Decimal.NEG_INF;
+        result = T.infinity(true);
+        return result;
     }
     int expo = num.digits + num.exponent - 1;
     return T(cast(long)expo);
@@ -584,17 +587,17 @@ public T scaleb(T)(const T op1, const T op2,
     if (op1.isInfinite) {
         return op1.dup;
     }
-    int expo = op2.expo;
+    int expo = op2.exponent;
     if (expo != 0 /* && not within range */) {
         result = flagInvalid!T(context);
         return result;
     }
     result = op1;
-    int scale = cast(int)op2.mant.toInt;
+    int scale = cast(int)op2.coefficient.toInt;
     if (op2.isSigned) {
         scale = -scale;
     }
-    result.expo += scale;
+    result.exponent = result.exponent + scale;
     return result;
 }
 
@@ -626,17 +629,22 @@ public T reduce(T)(const T num, DecimalContext context) if (isDecimal!T) {
 
     // TODO: is there a more efficient way to do this?
     // Is checking the coefficient for trailing zeros easier to compute?
-    BigInt temp = result.mant % 10;
-    while (result.mant != 0 && temp == 0) {
-        result.expo++;
-        result.mant = result.mant / 10;
-        temp = result.mant % 10;
+    BigInt temp = result.coefficient % 10;
+    while (result.coefficient != 0 && temp == 0) {
+        result.exponent = result.exponent + 1;
+        result.coefficient = result.coefficient / 10;
+        temp = result.coefficient % 10;
     }
-    if (result.mant == 0) {
-        result.sval = SV.ZERO;
-        result.expo = 0;
+    if (result.coefficient == 0) {
+        if (result.isSigned) {
+            result = copyNegate(T.zero);
+        }
+        else {
+            result = T.zero;
+        }
+        result.exponent = 0;
     }
-    result.digits = numDigits(result.mant);
+    result.digits = numDigits(result.coefficient);
     return result;
 }
 
@@ -702,10 +710,11 @@ public T plus(T)(const T op1, DecimalContext context) if (isDecimal!T) {
 }
 
 unittest {
-    Decimal zero = Decimal(0);
-    Decimal num, expect;
+    Decimal zero = Decimal.zero;
+    Decimal num, expect, actual;
     num = 1.3;
     expect = add(zero, num, context);
+    actual = plus(num,context);
     assert(plus(num, context) == expect);
     num = -1.3;
     expect = add(zero, num, context);
@@ -758,7 +767,7 @@ public T nextPlus(T)(const T op1, DecimalContext context) if (isDecimal!T) {
             return op1.dup;
         }
     }
-    int adjx = op1.expo + op1.digits - context.precision;
+    int adjx = op1.exponent + op1.digits - context.precision;
     if (adjx < context.eTiny) {
             return T(0L, context.eTiny);
     }
@@ -797,10 +806,10 @@ public T nextMinus(T)(const T op1, DecimalContext context) if (isDecimal!T) {
             return op1.dup;
         }
     }
-    // This is necessary to catch the special case where mant == 1
+    // This is necessary to catch the special case where coefficient == 1
     T red = reduce!T(op1, context);
-    int adjx = red.expo + red.digits - context.precision;
-    if (op1.mant == 1) adjx--;
+    int adjx = red.exponent + red.digits - context.precision;
+    if (op1.coefficient == 1) adjx--;
     if (adjx < context.eTiny) {
         return T(0L, context.eTiny);
     }
@@ -870,7 +879,7 @@ public bool sameQuantum(T)(const T op1, const T op2) if (isDecimal!T) {
     if (op1.isInfinite || op2.isInfinite) {
         return op1.isInfinite && op2.isInfinite;
     }
-    return op1.expo == op2.expo;
+    return op1.exponent == op2.exponent;
 }
 
 unittest {
@@ -911,7 +920,7 @@ public int compare(T)(const T op1, const T op2, DecimalContext context,
     }
 
     // otherwise, compare the numbers numerically
-    int diff = (op1.expo + op1.digits) - (op2.expo + op2.digits);
+    int diff = (op1.exponent + op1.digits) - (op2.exponent + op2.digits);
     if (!op1.sign) {
         if (diff > 0) return 1;
         if (diff < 0) return -1;
@@ -926,17 +935,17 @@ public int compare(T)(const T op1, const T op2, DecimalContext context,
 
     // test the coefficient
     // result.isZero may not be true if the result hasn't been rounded
-    if (result.mant == 0) return 0;
+    if (result.coefficient == 0) return 0;
     return result.sign ? -1 : 1;
 }
 
 unittest {
-    Decimal op1, op2;
-    op1 = 2.1;
-    op2 = 3;
+    Dec32 op1, op2;
+    op1 = Dec32(2.1);
+    op2 = Dec32("3");
     assert(compare(op1, op2, context) == -1);
-    op1 = 2.1;
-    op2 = 2.1;
+//    op1 = 2.1;
+    op2 = Dec32(2.1);
     assert(compare(op1, op2, context) == 0);
 }
 
@@ -964,7 +973,7 @@ public bool equals(T)(const T op1, const T op2, DecimalContext context,
 
     // if either is infinite...
     if (op1.isInfinite || op2.isInfinite) {
-        return (op1.sval == op2.sval && op1.sign == op2.sign);
+        return (op1.isInfinite && op2.isInfinite && op1.isSigned == op2.isSigned);
     }
 
     // if either is zero...
@@ -978,19 +987,21 @@ public bool equals(T)(const T op1, const T op2, DecimalContext context,
     }
 
     // compare the numbers numerically
-    int diff = (op1.expo + op1.digits) - (op2.expo + op2.digits);
+    int diff = (op1.exponent + op1.digits) - (op2.exponent + op2.digits);
     if (diff != 0) {
         return false;
     }
 
     // if they have the same representation, they are equal
-    if (op1.expo == op2.expo && op1.mant == op2.mant) {
+    auto op1c = op1.coefficient;
+    auto op2c = op2.coefficient;
+    if (op1.exponent == op2.exponent && op1c == op2c) { //op1.coefficient == op2.coefficient) {
         return true;
     }
 
     // otherwise they are equal if they represent the same value
     T result = subtract!T(op1, op2, context, rounded);
-    return result.mant == 0;
+    return result.coefficient == 0;
 }
 
 // NOTE: change these to true opEquals calls.
@@ -1024,31 +1035,71 @@ public int compareSignal(T) (const T op1, const T op2,
 /// Returns 0 if the numbers are equal and have the same representation
 // NOTE: no context
 public int compareTotal(T)(const T op1, const T op2) if (isDecimal!T) {
+
+    int ret1 =  1;
+    int ret2 = -1;
+
+    // if signs differ...
     if (op1.sign != op2.sign) {
-        return op1.sign ? -1 : 1;
+        return !op1.sign ? ret1 : ret2;
     }
+
+    // if numbers are signed swap the return values
+    if (op1.sign) {
+        ret1 = -1;
+        ret2 =  1;
+    }
+
+    // if either is quiet...
     if (op1.isQuiet || op2.isQuiet) {
         if (op1.isQuiet && op2.isQuiet) {
+            // TODO: should compare payloads
             return 0;
         }
-        return op1.isQuiet ? 1 : -1;
+        return op1.isQuiet ? ret1 : ret2;
     }
+
+    // if either is signaling...
     if (op1.isSignaling || op2.isSignaling) {
-        return 0;
+        if (op1.isSignaling && op2.isSignaling) {
+            // TODO: should compare payloads
+            return 0;
+        }
+        return op1.isSignaling ? ret1 : ret2;
     }
+
+    // if either is infinite...
     if (op1.isInfinite || op2.isInfinite) {
-        return 0;
+        if (op1.isInfinite && op2.isInfinite) {
+            return 0;
+        }
+        return op1.isInfinite ? ret1 : ret2;
     }
-    int diff = (op1.expo + op1.digits) - (op2.expo + op2.digits);
-    if (diff > 0) return 1;
-    if (diff < 0) return -1;
-    T result = op1 - op2;
-    if (result.isZero) {
-        if (op1.expo > op2.expo) return 1;
-        if (op1.expo < op2.expo) return -1;
-        return 0;
+
+    // if the (finite) numbers have different magnitudes...
+    int diff = (op1.exponent + op1.digits) - (op2.exponent + op2.digits);
+    if (diff > 0) return ret1;
+    if (diff < 0) return ret2;
+
+    // same exponent -- any difference is in the coefficient
+    if (op1.exponent == op2.exponent) {
+        auto result = op1.coefficient - op2.coefficient;
+        if (result == 0) return 0;
+        return (result > 0) ? ret1 : ret2;
     }
-    return result.sign ? -1 : 1;
+
+    // align the exponents for comparison
+    T copy1 = copyAbs!T(op1);
+    T copy2 = copyAbs!T(op2);
+    alignOps!T(copy1, copy2);
+    auto result = copy1.coefficient - copy2.coefficient;
+
+    // if equal after alignment, compare the original exponents
+    if (result == 0) {
+        return (op1.exponent > op2.exponent) ? ret1 : ret2;
+    }
+    // otherwise return the numerically larger
+    return (result > 0) ? ret1 : ret2;
 }
 
 unittest {
@@ -1107,15 +1158,15 @@ const(T) max(T)(const T op1, const T op2,
         return comp > 0 ? op1 : op2;
     }
     // if they have the same exponent they are identical, return either
-    if (op1.expo == op2.expo) {
+    if (op1.exponent == op2.exponent) {
         return op1;
     }
     // if they are non-negative, return the one with larger exponent.
     if (op1.sign == 0) {
-        return op1.expo > op2.expo ? op1 : op2;
+        return op1.exponent > op2.exponent ? op1 : op2;
     }
     // else they are negative; return the one with smaller exponent.
-    return op1.expo > op2.expo ? op2 : op1;
+    return op1.exponent > op2.exponent ? op2 : op1;
 }
 
 unittest {
@@ -1168,15 +1219,15 @@ const(T) min(T)(const T op1, const T op2,
         return comp < 0 ? op1 : op2;
     }
     // if they have the same exponent they are identical, return either
-    if (op1.expo == op2.expo) {
+    if (op1.exponent == op2.exponent) {
         return op1;
     }
     // if they are non-negative, return the one with smaller exponent.
     if (op1.sign == 0) {
-        return op1.expo < op2.expo ? op1 : op2;
+        return op1.exponent < op2.exponent ? op1 : op2;
     }
     // else they are negative; return the one with larger exponent.
-    return op1.expo < op2.expo ? op2 : op1;
+    return op1.exponent < op2.exponent ? op2 : op1;
 }
 
 unittest {
@@ -1207,7 +1258,7 @@ const(T) minMagnitude(T)(const T op1, const T op2,
  * than -precision or greater than precision, an INVALID_OPERATION is signaled.
  * An infinite number is returned unchanged.
  */
-public T shift(T)(const T op1, const int op2,DecimalContext context)
+public T shift(T)(const T op1, const int op2, DecimalContext context)
         if (isDecimal!T) {
 
     T result;
@@ -1227,13 +1278,13 @@ public T shift(T)(const T op1, const int op2,DecimalContext context)
     }
     result = op1.dup;
     if (op2 > 0) {
-        decShl(result.mant, op2);
+        decShl(result.coefficient, op2);
     }
     else {
-        decShr(result.mant, -op2);
+        decShr(result.coefficient, -op2);
     }
-    result.expo -= op2;
-    result.digits += op2;
+    result.exponent = result.exponent + op2;
+    result.digits = result.digits + op2;
 
     return result;
 }
@@ -1300,6 +1351,7 @@ public T add(T)(const T op1, const T op2, DecimalContext context,
     T augend = op1.dup;
     T addend = op2.dup;
     T sum;    // sum is initialized to quiet NaN
+
     // check for NaN operand(s)
     if (isInvalidBinaryOp!T(augend, addend, sum, context)) {
         return sum;
@@ -1313,7 +1365,7 @@ public T add(T)(const T op1, const T op2, DecimalContext context,
         // both infinite with same sign
         return augend;
     }
-
+    // TODO: is this check redundant?
     if (isInvalidAddition(augend, addend, sum)) {
         return sum;
     }
@@ -1325,39 +1377,41 @@ public T add(T)(const T op1, const T op2, DecimalContext context,
     if (addend.isInfinite) {
         return addend;
     }
-
     // add(0, 0)
     if (augend.isZero && addend.isZero) {
         sum = augend;
         sum.sign = augend.sign && addend.sign;
         return sum;
     }
-
     // TODO: this can never return zero, right?
     // align the operands
-    alignOps(augend, addend);
-
+    alignOps!T(augend, addend);
     // at this point, the result will be finite and not zero
     // (before rounding)
-    sum.clear();
+    sum = T.zero;
+    sum.clear;
 
     // if operands have the same sign...
     if (augend.sign == addend.sign) {
-        sum.mant = augend.mant + addend.mant;
+        sum.coefficient = augend.coefficient + addend.coefficient;
         sum.sign = augend.sign;
     }
     // ...else operands have different signs
     else {
-        sum.mant = augend.mant - addend.mant;
-        sum.sign = augend.sign;
-        if (sum.mant < BigInt(0)) {
-            sum.mant = -sum.mant;
-            sum.sign = !sum.sign;
+        if (augend.coefficient >= addend.coefficient)
+        {
+            sum.coefficient = augend.coefficient - addend.coefficient;
+            sum.sign = augend.sign;
+        }
+        else
+        {
+            sum.coefficient = addend.coefficient - augend.coefficient;
+            sum.sign = addend.sign;
         }
     }
     // set the number of digits and the exponent
-    sum.digits = numDigits(sum.mant);
-    sum.expo = augend.expo;
+    sum.digits = numDigits(sum.coefficient);
+    sum.exponent = augend.exponent;
 
     // round the result
     if (rounded) {
@@ -1369,13 +1423,13 @@ public T add(T)(const T op1, const T op2, DecimalContext context,
 // TODO: these tests need to be cleaned up to rely less on strings
 // and to check the NaN, Inf combinations better.
 unittest {
-    Decimal op1, op2, sum;
-    op1 = Decimal("12");
-    op2 = Decimal("7.00");
+    Dec32 op1, op2, sum;
+    op1 = Dec32("12");
+    op2 = Dec32("7.00");
     sum = add(op1, op2, context);
     assert(sum.toString() == "19.00");
-    op1 = Decimal("1E+2");
-    op2 = Decimal("1E+4");
+    op1 = Dec32("1E+2");
+    op2 = Dec32("1E+4");
     sum = add(op1, op2, context);
     assert(sum.toString() == "1.01E+4");
 }
@@ -1388,10 +1442,11 @@ unittest {
  * in the General Decimal Arithmetic Specification and is the basis
  * for the opAdd and opSub functions for the Decimal struct.
  */
-public T subtract(T) (const T minuend, const T subtrahend,
+public T subtract(T) (const T op1, const T op2,
         DecimalContext context, const bool rounded = true) if (isDecimal!T) {
-    return add!T(minuend, copyNegate!T(subtrahend), context , rounded);
-}    // end subtract(minuend, subtrahend)
+    T result = add!T(op1, copyNegate!T(op2), context , rounded);
+    return add!T(op1, copyNegate!T(op2), context , rounded);
+}    // end subtract(op1, op2)
 
 // READY: multiply
 /**
@@ -1417,10 +1472,10 @@ public T multiply(T)(const T op1, const T op2, DecimalContext context,
     }
     // product is finite
     product.clear();
-    product.mant = cast(BigInt)op1.mant * cast(BigInt)op2.mant;
-    product.expo = op1.expo + op2.expo;
+    product.coefficient = cast(BigInt)op1.coefficient * cast(BigInt)op2.coefficient;
+    product.exponent = op1.exponent + op2.exponent;
     product.sign = op1.sign ^ op2.sign;
-    product.digits = numDigits(product.mant);
+    product.digits = numDigits(product.coefficient);
     if (rounded) {
         round(product, context);
     }
@@ -1485,32 +1540,27 @@ public T divide(T)(const T op1, const T op2,
     if (isInvalidDivision!T(op1, op2, quotient, context)) {
         return quotient;
     }
-    // if op1 is zero, quotient is zero
-    if (isZeroDividend!T(op1, op2, quotient, context)) {
-        return quotient;
-    }
-
     quotient.clear();
     // TODO: are two guard digits necessary? sufficient?
     context.precision += 2;
-    T dividend = op1.dup;
-    T divisor  = op2.dup;
-    int diff = dividend.expo - divisor.expo;
+    T dividend = copy!T(op1);
+    T divisor  = copy!T(op2);
+    int diff = dividend.exponent - divisor.exponent;
     if (diff > 0) {
-        decShl(dividend.mant, diff);
-        dividend.expo -= diff;
-        dividend.digits += diff;
+        decShl(dividend.coefficient, diff);
+        dividend.exponent = dividend.exponent - diff;
+        dividend.digits = dividend.digits + diff;
     }
     int shift = 2 + context.precision + divisor.digits - dividend.digits;
     if (shift > 0) {
-        decShl(dividend.mant, shift);
-        dividend.expo -= shift;
-        dividend.digits += diff;
+        dividend.coefficient = decShl(dividend.coefficient, shift);
+        dividend.exponent = dividend.exponent - shift;
+        dividend.digits = dividend.digits + diff;
     }
-    quotient.mant = dividend.mant / divisor.mant;
-    quotient.expo = dividend.expo - divisor.expo;
+    quotient.coefficient = dividend.coefficient / divisor.coefficient;
+    quotient.exponent = dividend.exponent - divisor.exponent;
     quotient.sign = dividend.sign ^ divisor.sign;
-    quotient.digits = numDigits(quotient.mant);
+    quotient.digits = numDigits(quotient.coefficient);
     context.precision -= 2;
     if (rounded) {
         round(quotient, context);
@@ -1558,50 +1608,41 @@ public T divideInteger(T)(const T op1, const T op2,
     if (isInvalidDivision!T(op1, op2, quotient, context)) {
         return quotient;
     }
-    // TODO: surely invalid division includes a zero dividend check.
-    if (isZeroDividend!T(op1, op2, quotient, context)) {
-        return quotient;
-    }
 
     quotient.clear();
-    T divisor = op1.dup;
-    T dividend = op2.dup;
+    T divisor  = copy!T(op1);
+    T dividend = copy!T(op2);
     // align operands
-    int diff = dividend.expo - divisor.expo;
+    int diff = dividend.exponent - divisor.exponent;
     if (diff < 0) {
-        decShl(divisor.mant, -diff);
+        divisor.coefficient = decShl(divisor.coefficient, -diff);
     }
     if (diff > 0) {
-        decShl(dividend.mant, diff);
+        dividend.coefficient = decShl(dividend.coefficient, diff);
     }
-    quotient.mant = divisor.mant / dividend.mant;
-    quotient.expo = 0;
+    quotient.coefficient = divisor.coefficient / dividend.coefficient;
+    quotient.exponent = 0;
     quotient.sign = dividend.sign ^ divisor.sign;
-    quotient.digits = numDigits(quotient.mant);
-    if (quotient.mant == 0) quotient.sval = SV.ZERO;
+    quotient.digits = numDigits(quotient.coefficient);
+    if (quotient.coefficient == 0) quotient = T.zero;
     return quotient;
 }
 
 unittest {
-    write("div-int......");
-    Decimal dividend;
-    Decimal divisor;
-    Decimal quotient;
-    Decimal expd;
-    dividend = 2;
-    divisor = 3;
-    quotient = divideInteger(dividend, divisor, context);
-    expd = 0;
-    assert(quotient == expd);
-    dividend = 10;
-    quotient = divideInteger(dividend, divisor, context);
-    expd = 3;
-    assert(quotient == expd);
-    dividend = 1;
-    divisor = 0.3;
-    quotient = divideInteger(dividend, divisor, context);
-    assert(quotient == expd);
-    writeln("passed");
+    Decimal op1, op2, actual, expect;
+    op1 = 2;
+    op2 = 3;
+    actual = divideInteger(op1, op2, context);
+    expect = 0;
+    assert(actual == expect);
+    op1 = 10;
+    actual = divideInteger(op1, op2, context);
+    expect = 3;
+    assert(actual == expect);
+    op1 = 1;
+    op2 = 0.3;
+    actual = divideInteger(op1, op2, context);
+    assert(actual == expect);
 }
 
 // UNREADY: remainder. Unit tests. Logic?
@@ -1619,49 +1660,22 @@ public T remainder(T)(const T op1, const T op2,
     if (isInvalidDivision!T(op1, op2, quotient, context)) {
         return quotient;
     }
-    if (isZeroDividend!T(op1, op2, quotient, context)) {
-        return quotient;
-    }
     quotient = divideInteger!T(op1, op2, context);
     T remainder = op1 - multiply!T(op2, quotient, context, false);
     return remainder;
 }
 
 unittest {
-    write("remainder....");
-    Decimal dividend;
-    Decimal divisor;
-    Decimal quotient;
-    Decimal expected;
-    dividend = 2.1;
-    divisor = 3;
-    quotient = remainder(dividend, divisor, context);
-    expected = 2.1;
-    assert(quotient == expected);
-    dividend = 10;
-    quotient = remainder(dividend, divisor, context);
-    expected = 1;
-    assert(quotient == expected);
-    dividend = -10;
-    quotient = remainder(dividend, divisor, context);
-    expected = -1;
-    assert(quotient == expected);
-    dividend = 10.2;
-    divisor = 1;
-    quotient = remainder(dividend, divisor, context);
-    expected = 0.2;
-    assert(quotient == expected);
-    dividend = 10;
-    divisor = 0.3;
-    quotient = remainder(dividend, divisor, context);
-    expected = 0.1;
-    assert(quotient == expected);
-    dividend = 3.6;
-    divisor = 1.3;
-    quotient = remainder(dividend, divisor, context);
-    expected = 1.0;
-    assert(quotient == expected);
-    writeln("passed");
+    Decimal op1, op2, actual, expect;
+    op1 = 2.1;
+    op2 = 3;
+    actual = remainder(op1, op2, context);
+    expect = 2.1;
+    assert(actual == expect);
+    op1 = 10;
+    actual = remainder(op1, op2, context);
+    expect = 1;
+    assert(actual == expect);
 }
 
 // UNREADY: remainderNear. Unit tests. Logic?
@@ -1679,17 +1693,9 @@ public T remainderNear(T)(const T dividend, const T divisor,
     if (isInvalidDivision!T(dividend, divisor, quotient, context)) {
         return quotient;
     }
-    if (isZeroDividend!T(dividend, divisor, quotient, context)) {
-        return quotient;
-    }
     quotient = divideInteger(dividend, divisor, context);
     T remainder = dividend - multiply!T(divisor, quotient, context, false);
     return remainder;
-}
-
-unittest {
-    write("rem-near.....");
-    writeln("test missing");
 }
 
 //--------------------------------
@@ -1702,7 +1708,7 @@ public T roundToIntegralExact(T)(const T num,
         DecimalContext context) if (isDecimal!T) {
     if (num.isSignaling) return flagInvalid!T(context);
     if (num.isSpecial) return num.dup;
-    if (num.expo >= 0) return num.dup;
+    if (num.exponent >= 0) return num.dup;
 //    pushContext(context);
     context.precision = num.digits;
     const T ONE = T(1L);
@@ -1712,40 +1718,16 @@ public T roundToIntegralExact(T)(const T num,
 }
 
 unittest {
-    write("rnd-int-ex...");
-    Decimal num, expd, actual;
+    Decimal num, expect, actual;
     num = 2.1;
-    expd = 2;
+    expect = 2;
     actual = roundToIntegralExact(num, context);
-    assert(actual == expd);
+    assert(actual == expect);
     num = 100;
-    expd = 100;
-    assert(roundToIntegralExact(num, context) == expd);
-    assert(roundToIntegralExact(num, context).toString() == expd.toString());
-    num = Decimal("100.0");
-    assert(roundToIntegralExact(num, context) == expd);
-    assert(roundToIntegralExact(num, context).toString() == expd.toString());
-    num = Decimal("101.5");
-    expd = 102;
-    assert(roundToIntegralExact(num, context) == expd);
-    assert(roundToIntegralExact(num, context).toString() == expd.toString());
-    num = -101.5;
-    expd = -102;
-    assert(roundToIntegralExact(num, context) == expd);
-    assert(roundToIntegralExact(num, context).toString() == expd.toString());
-    num = Decimal("10E+5");
-    expd = Decimal("1.0E+6");
-    assert(roundToIntegralExact(num, context) == expd);
-    assert(roundToIntegralExact(num, context).toString() == expd.toString());
-    num = 7.89E+77;
-    expd = 7.89E+77;
-    assert(roundToIntegralExact(num, context) == expd);
-    assert(roundToIntegralExact(num, context).toString() == expd.toString());
-    num = Decimal("-Inf");
-    expd = Decimal("-Infinity");
-    assert(roundToIntegralExact(num, context) == expd);
-    assert(roundToIntegralExact(num, context).toString() == expd.toString());
-    writeln("passed");
+    expect = 100;
+    actual = roundToIntegralExact(num, context);
+    assert(actual == expect);
+    assert(actual.toString() == expect.toString());
 }
 
 // UNREADY: roundToIntegralValue. Description. Name. Order. Logic.
@@ -1761,17 +1743,12 @@ public T roundToIntegralValue(T)(const T num,
     return result;
 }
 
-unittest {
-    write("rnd-int-val..");
-    writeln("test missing");
-}
-
 // UNREADY: setDigits. Description. Ordering.
 /**
  * Sets the number of digits to the current precision.
  */
 // TODO: template this?
-package void setDigits(ref Decimal num) {
+/*package void setDigits(ref Decimal num) {
     int diff = num.digits - context.precision;
     if (diff > 0) {
         round(num, context);
@@ -1781,7 +1758,7 @@ package void setDigits(ref Decimal num) {
 unittest {
     write("setDigits...");
     writeln("test missing");
-}
+}*/
 
 
 // UNREADY: reduceToIdeal. Description. Flags.
@@ -1801,23 +1778,19 @@ private T reduceToIdeal(T)(const T num, int ideal,
     if (!result.isFinite()) {
         return result;
     }
-    BigInt temp = result.mant % 10;
-    while (result.mant != 0 && temp == 0 && result.expo < ideal) {
-        result.expo++;
-        result.mant = result.mant / 10;
-        temp = result.mant % 10;
+    BigInt temp = result.coefficient % 10;
+    while (result.coefficient != 0 && temp == 0 && result.exponent < ideal) {
+        result.exponent = result.exponent + 1;
+        result.coefficient = result.coefficient / 10;
+        temp = result.coefficient % 10;
     }
-    if (result.mant == 0) {
-        result.sval = SV.ZERO;
-        result.expo = 0;
+    if (result.coefficient == 0) {
+        result = T.zero;
+        // TODO: needed?
+        result.exponent = 0;
     }
-    result.digits = numDigits(result.mant);
+    result.digits = numDigits(result.coefficient);
     return result;
-}
-
-unittest {
-    write("reduceToIdeal...");
-    writeln("test missing");
 }
 
 // UNREADY: flagInvalid. Unit Tests.
@@ -1830,15 +1803,13 @@ private T flagInvalid(T)(DecimalContext context, ulong payload = 0)
     context.setFlag(INVALID_OPERATION);
     T result = T.nan;
     if (payload != 0) {
-        result.setNaNPayload(payload);
+        //result.setNaNPayload(payload);
     }
     return result;
 }
 
 unittest {
-    write("invalid......");
     Decimal num, expect, actual;
-
     // FIXTHIS: Can't actually test payloads at this point.
     num = Decimal("sNaN123");
     expect = Decimal("NaN123");
@@ -1846,49 +1817,24 @@ unittest {
     assert(actual.isQuiet);
     assert(context.getFlag(INVALID_OPERATION));
 //    assert(actual.toAbstract == expect.toAbstract);
-    num = Decimal("NaN123");
-    actual = abs(num, context);
-    assert(actual.isQuiet);
-    assert(context.getFlag(INVALID_OPERATION));
-//    assert(actual.toAbstract == expect.toAbstract);
-
-    num = Decimal("sNaN123");
-    expect = Decimal("NaN123");
-    actual = -num;
-    assert(actual.isQuiet);
-    assert(context.getFlag(INVALID_OPERATION));
-//    assert(actual.toAbstract == expect.toAbstract);
-    num = Decimal("NaN123");
-    actual = -num;
-    assert(actual.isQuiet);
-    assert(context.getFlag(INVALID_OPERATION));
-//    assert(actual.toAbstract == expect.toAbstract);*/
-    writeln("passed");
 }
 
 // UNREADY: alignOps. Unit tests. Todo.
-// TODO: can this be used in division as well as addition?
 /**
  * Aligns the two operands by raising the smaller exponent
  * to the value of the larger exponent, and adjusting the
  * coefficient so the value remains the same.
  */
-// TODO: template this?
-private void alignOps(ref Decimal op1, ref Decimal op2) {
-    int diff = op1.expo - op2.expo;
+private void alignOps(T)(ref T op1, ref T op2) if (isDecimal!T) {
+    int diff = op1.exponent - op2.exponent;
     if (diff > 0) {
-        op1.mant = decShl(op1.mant, diff);
-        op1.expo = op2.expo;
+        op1.coefficient = decShl(op1.coefficient, cast(uint)diff);
+        op1.exponent = op2.exponent;
     }
     else if (diff < 0) {
-        op2.mant = decShl(op2.mant, -diff);
-        op2.expo = op1.expo;
+        op2.coefficient = decShl(op2.coefficient, cast(uint)-diff);
+        op2.exponent = op1.exponent;
     }
-}
-
-unittest {
-    write("alignOps...");
-    writeln("test missing");
 }
 
 // UNREADY: isInvalidBinaryOp. Unit Tests. Payload.
@@ -1901,32 +1847,28 @@ unittest {
  * -- General Decimal Arithmetic Specification, p. 24
  */
 private bool isInvalidBinaryOp(T)(const T op1, const T op2,
-        ref T result, DecimalContext context) if (isDecimal!T) {
+        /*ref*/ T num, DecimalContext context) if (isDecimal!T) {
     // if either operand is a signaling NaN...
     if (op1.isSignaling || op2.isSignaling) {
         // flag the invalid operation
         context.setFlag(INVALID_OPERATION);
-        // set the result to the first sNaN operand
-        result = op1.isSignaling ? op1 : op2;
+        // set the num to the first sNaN operand
+
+        num = op1.isSignaling ? op1 : op2;
         // retain sign and payload; convert to qNaN
-        result.sval = SV.QNAN;
+        //num = T(num.sign, SV.QNAN, 0); // FIXTHIS: add payload, num.coefficient);
         return true;
     }
     // ...else if either operand is a quiet NaN...
     if (op1.isQuiet || op2.isQuiet) {
         // flag the invalid operation
         context.setFlag(INVALID_OPERATION);
-        // set the result to the first qNaN operand
-        result = op1.isQuiet ? op1 : op2;
+        // set the num to the first qNaN operand
+        num = op1.isQuiet ? op1 : op2;
         return true;
     }
-    // ...otherwise, no flags are set and result is unchanged
+    // ...otherwise, no flags are set and num is unchanged
     return false;
-}
-
-unittest {
-    write("isInvalidBinaryOp...");
-    writeln("test missing");
 }
 
 // UNREADY: invalidOperand. Unit Tests. Payload.
@@ -1962,11 +1904,6 @@ private bool invalidOperand(T)(const T op1, ref T result,
     return false;
 }
 
-unittest {
-    write("invalidOperand...");
-    writeln("test missing");
-}
-
 // UNREADY: isInvalidAddition. Description.
 /*
  *    Checks for NaN operands and +infinity added to -infinity.
@@ -1987,11 +1924,6 @@ private bool isInvalidAddition(T) (T op1, T op2, ref T result) {
         }
     }
     return false;
-}
-
-unittest {
-    write("isInvalidAddition...");
-    writeln("test missing");
 }
 
 // UNREADY: isInvalidMultiplication. Flags. Unit Tests.
@@ -2015,16 +1947,12 @@ private bool isInvalidMultiplication(T)(const T op1, const T op2,
     return false;
 }
 
-unittest {
-    write("isInvalidMultiplication...");
-    writeln("test missing");
-}
-
 // UNREADY: isInvalidDivision. Unit Tests.
 /*
  *    Checks for NaN operands and division by zero.
  *    If found, sets flags, sets the quotient to NaN or Infinity respectively
  *    and returns true.
+ *    Also checks for zero dividend and calculates the result as needed.
  *
  * -- General Decimal Arithmetic Specification, p. 52, "Invalid operation"
  */
@@ -2040,32 +1968,18 @@ private bool isInvalidDivision(T)(const T dividend, const T divisor,
         }
         else {
             context.setFlag(DIVISION_BY_ZERO);
-            quotient.sval = SV.INF;
+            quotient = T.infinity;
             // FIXTHIS: This isn't always a bigint.
-            quotient.mant = BigInt(0);
+            quotient.coefficient = 0; // BigInt(0);
             quotient.sign = dividend.sign ^ divisor.sign;
         }
         return true;
     }
-    return false;
-}
-
-unittest {
-    write("isInvalidDivision...");
-    writeln("test missing");
-}
-
-// UNREADY: isZeroDividend. Unit tests.
-/**
- * Checks for a zero dividend. If found, sets the quotient to zero.
- */
-// NOTE: is this used?
-private bool isZeroDividend(T)(const T dividend, const T divisor,
-        ref T quotient, DecimalContext context) if (isDecimal!T) {
     if (dividend.isZero()) {
-        quotient.sval = SV.ZERO;
-        quotient.mant = BigInt(0);
-        quotient.expo = 0;
+        quotient = T.zero;
+        // TODO: isn't this stuff all set by T.zero?
+        quotient.coefficient = 0; //BigInt(0);
+        quotient.exponent = 0;
         quotient.digits = dividend.digits; // TODO: ??? should be 1???
         quotient.sign = dividend.sign;
         return true;
@@ -2073,10 +1987,23 @@ private bool isZeroDividend(T)(const T dividend, const T divisor,
     return false;
 }
 
-unittest {
-    write("isZeroDividend...");
-    writeln("test missing");
-}
+// UNREADY: isZeroDividend. Unit tests.
+/**
+ * Checks for a zero dividend. If found, sets the quotient to zero.
+ */
+// NOTE: is this used?
+/*private bool isZeroDividend(T)(const T dividend, const T divisor,
+        ref T quotient, DecimalContext context) if (isDecimal!T) {
+    if (dividend.isZero()) {
+        quotient.sval = SV.ZERO;
+        quotient.coefficient = BigInt(0);
+        quotient.exponent = 0;
+        quotient.digits = dividend.digits; // TODO: ??? should be 1???
+        quotient.sign = dividend.sign;
+        return true;
+    }
+    return false;
+}*/
 
 //--------------------------------
 

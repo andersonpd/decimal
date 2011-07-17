@@ -18,13 +18,15 @@
 
 module decimal.rounding;
 
+import decimal.arithmetic: copyNegate, equals;
 import decimal.context;
 import decimal.conv;
+import decimal.dec32;
 import decimal.decimal;
 import std.array: insertInPlace;
 import std.bigint;
 import std.conv;
-import std.ctype: isdigit;
+import std.ascii: isDigit;
 import std.stdio: write, writeln;
 import std.string;
 import std.typecons: Tuple;
@@ -47,6 +49,8 @@ private static DecimalContext popContext() {
 //TODO: add ref context flags to parameters.
 // UNREADY: round. Description. Private or public?
 public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
+
+//    writeln("num = ", num);
 
     //writeln("context.precision = ", context.precision);
     // no rounding of special values
@@ -87,24 +91,28 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
                 break;
             case Rounding.FLOOR:
                 if (num.sign) {
-                    num = -T.infinity;
+                    num = T.infinity(true);
                 } else {
                     num = T.max;
                 }
+                break;
+            default:
                 break;
         }
         context.setFlag(INEXACT);
         context.setFlag(ROUNDED);
         return;
     }
+//    writeln("rounding by mode");
     roundByMode(num, context);
+//    writeln("num = ", num);
     // check for underflow
     if (num.isSubnormal /*&& num.isInexact*/) {
         context.setFlag(SUBNORMAL);
         int diff = context.eTiny - num.adjustedExponent;
         if (diff > num.digits) {
-            num.mant = 0;
-            num.expo = context.eTiny;
+            num.coefficient = 0;
+            num.exponent = context.eTiny;
         } else if (diff > 0) {
             // TODO: do something about this
             writeln("We got a tiny one!");
@@ -112,8 +120,9 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
     }
     // check for zero
     if (is(T : Decimal)) {
-        if (num.sval == SV.NONE && num.mant == BigInt(0)) {
-            num.sval = SV.ZERO;
+//        if (num.sval == SV.NONE && num.coefficient == BigInt(0)) {
+        if (num.coefficient == 0) {
+            num.clear;
         }
     }
     // subnormal rounding to zero == clamped
@@ -132,6 +141,7 @@ unittest {
     DecimalContext contextX;
     contextX.precision = 3;
     round(after, contextX);
+//    writeln("after.toString = ", after.toString);
     assert(after.toString() == "1.00E+4");
     before = Decimal(1234567890);
     after = before;
@@ -191,8 +201,11 @@ unittest {
 private void roundByMode(T)(ref T num, ref DecimalContext context)
         if (isDecimal!T) {
 
+//    writeln("roundByMode");
     uint digits = num.digits;
     T remainder = getRemainder(num, context);
+//    writeln("remainder = ", remainder);
+
 
     // if the number wasn't rounded...
     if (num.digits == digits) {
@@ -204,49 +217,67 @@ private void roundByMode(T)(ref T num, ref DecimalContext context)
     }
     switch (context.mode) {
         case Rounding.DOWN:
+//            writeln("DOWN");
             return;
         case Rounding.HALF_UP:
-            if (firstDigit(remainder.mant) >= 5) {
+//            writeln("HALF_UP");
+            if (firstDigit(remainder.coefficient) >= 5) {
                 increment(num, context);
             }
             return;
         case Rounding.HALF_EVEN:
-            T five = T(5, remainder.digits + remainder.expo - 1);
+//            writeln("HALF_EVEN");
+//            writeln("remainder = ", remainder);
+            T five = T(5, remainder.digits + remainder.exponent - 1);
+//            writeln("five = ", five);
             int result = decimal.arithmetic.compare(remainder, five, context, false);
+//            writeln("result = ", result);
             if (result > 0) {
+//                writeln("result > 0");
                 increment(num, context);
                 return;
             }
             if (result < 0) {
+//                writeln("result < 0");
                 return;
             }
+//            writeln("result == 0");
             // remainder == 5
             // if last digit is odd...
-            if (lastDigit(num.mant) % 2) {
-            // TODO: isn't this just num.mant % 2?
+            if (lastDigit(num.coefficient) % 2) {
+            // TODO: isn't this just num.coefficient % 2?
             // I can't imagine the other is more efficient
                 increment(num, context);
             }
             return;
         case Rounding.CEILING:
-            if (!num.sign && remainder != T.ZERO) {
+//            writeln("CEILING");
+            auto temp = T.zero;
+            if (!num.sign && (remainder != temp)) {
                 increment(num, context);
             }
             return;
         case Rounding.FLOOR:
-            if (num.sign && remainder != T.ZERO) {
+//            writeln("FLOOR");
+            auto temp = T.zero;
+            if (num.sign && remainder != temp) {
                 increment(num, context);
             }
             return;
         case Rounding.HALF_DOWN:
-            if (firstDigit(remainder.mant) > 5) {
+//            writeln("HALF_DOWN");
+            if (firstDigit(remainder.coefficient) > 5) {
                 increment(num, context);
             }
             return;
         case Rounding.UP:
-            if (remainder != T.ZERO) {
+//            writeln("UP");
+            auto temp = T.zero;
+            if (remainder != temp) {
                 increment(num, context);
             }
+            return;
+        default:
             return;
     }    // end switch(mode)
 } // end roundByMode()
@@ -259,24 +290,24 @@ unittest {
     Decimal num;
     num = 1000;
     roundByMode(num, ctxB);
-    assert(num.mant == 1000 && num.expo == 0 && num.digits == 4);
+    assert(num.coefficient == 1000 && num.exponent == 0 && num.digits == 4);
     num = 1000000;
     roundByMode(num, ctxB);
-    assert(num.mant == 10000 && num.expo == 2 && num.digits == 5);
+    assert(num.coefficient == 10000 && num.exponent == 2 && num.digits == 5);
     num = 99999;
     roundByMode(num, ctxB);
-    assert(num.mant == 99999 && num.expo == 0 && num.digits == 5);
+    assert(num.coefficient == 99999 && num.exponent == 0 && num.digits == 5);
     num = 1234550;
     roundByMode(num, ctxB);
-    assert(num.mant == 12346 && num.expo == 2 && num.digits == 5);
+    assert(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
     ctxB.mode = Rounding.DOWN;
     num = 1234550;
     roundByMode(num, ctxB);
-    assert(num.mant == 12345 && num.expo == 2 && num.digits == 5);
+    assert(num.coefficient == 12345 && num.exponent == 2 && num.digits == 5);
     ctxB.mode = Rounding.UP;
     num = 1234550;
     roundByMode(num, ctxB);
-    assert(num.mant == 12346 && num.expo == 2 && num.digits == 5);
+    assert(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
     writeln("passed");
 }
 
@@ -286,36 +317,51 @@ unittest {
  * Returns the (unsigned) remainder for adjustments based on rounding mode.
  * Sets the ROUNDED and INEXACT flags.
  */
-private Decimal getRemainder(ref Decimal num, ref DecimalContext context) {
-    Decimal remainder = Decimal.ZERO.dup;
+private T getRemainder(T)(ref T num, ref DecimalContext context)
+        if (isDecimal!T){
+//    writeln("getRemainder");
+    // TODO: should be setZero(remainder);
+    T remainder = T.zero;
+//    writeln("remainder = ", remainder);
+
     int diff = num.digits - context.precision;
     if (diff <= 0) {
         return remainder;
     }
     context.setFlag(ROUNDED);
-
+//    writeln("rounded");
     // the context can be zero when...??
+//    writeln("context.precision = ", context.precision);
+
     if (context.precision == 0) {
-        num = num.sign ? Decimal.NEG_ZERO : Decimal.ZERO;
+        num = T.zero(num.sign);
     } else {
-        BigInt divisor = pow10(diff);
-        BigInt dividend = num.mant;
-        BigInt quotient = dividend/divisor;
-        BigInt modulo = dividend - quotient*divisor;
-        if (modulo != BigInt(0)) {
+        auto divisor = T.pow10(diff);
+        auto dividend = num.coefficient;
+        auto quotient = dividend/divisor;
+        auto modulo = dividend - quotient*divisor;
+//        writeln("divisor = ", divisor);
+//        writeln("dividend = ", dividend);
+//        writeln("quotient = ", quotient);
+//        writeln("modulo = ", modulo);
+        if (modulo != 0) {
             remainder.digits = diff;
-            remainder.expo = num.expo;
-            remainder.mant = modulo;
-            remainder.sval = SV.NONE;
+            remainder.exponent = num.exponent;
+            remainder.coefficient = modulo;
+            remainder.clear;
         }
-        num.mant = quotient;
+        num.coefficient = quotient;
         num.digits = context.precision;
-        num.expo += diff;
+        num.exponent = num.exponent + diff;
     }
-    if (remainder != Decimal.ZERO) {
+    auto temp = T.zero;
+    if (remainder != temp) {
         context.setFlag(INEXACT);
     }
 
+//    writeln("num = ", num);
+//    writeln("remainder = ", remainder);
+//    writeln("exit getRemainder");
     return remainder;
 }
 
@@ -337,10 +383,10 @@ unittest {
  * Increments the coefficient by 1. If this causes an overflow, divides by 10.
  */
 private void increment(ref Decimal num, const DecimalContext context) {
-    num.mant += 1;
+    num.coefficient = num.coefficient + 1;
     // check if the num was all nines --
     // did the coefficient roll over to 1000...?
-    Decimal test1 = Decimal(1, num.digits + num.expo);
+    Decimal test1 = Decimal(1, num.digits + num.exponent);
     Decimal test2 = num;
     test2.digits++;
     int comp = decimal.arithmetic.compare(test1, test2, context, false);
@@ -375,7 +421,7 @@ public uint setExponent(ref long num, ref uint digits, const DecimalContext cont
     uint inDigits = digits;
     ulong unum = std.math.abs(num);
     bool sign = num < 0;
-    ulong remainder = getRemainder(unum, digits, context.precision);
+    ulong remainder = clipRemainder(unum, digits, context.precision);
     int expo = inDigits - digits;
 
     // if the remainder is zero, return
@@ -426,6 +472,8 @@ public uint setExponent(ref long num, ref uint digits, const DecimalContext cont
                 increment(unum, digits);
             }
             break;
+        default:
+            break;
     }    // end switch(mode)
 
     num = sign ? -unum : unum;
@@ -458,7 +506,7 @@ unittest {
  * Returns the (unsigned) remainder for adjustments based on rounding mode.
  * Sets the ROUNDED and INEXACT flags.
  */
-private ulong getRemainder(ref ulong num, ref uint digits, uint precision) {
+private ulong clipRemainder(ref ulong num, ref uint digits, uint precision) {
     ulong remainder = 0;
     int diff = digits - precision;
     if (diff <= 0) {
@@ -479,7 +527,7 @@ private ulong getRemainder(ref ulong num, ref uint digits, uint precision) {
         digits = precision;
     }
     // TODO: num.digits == precision.
-    // TODO: num.expo == diff;
+    // TODO: num.exponent == diff;
     return remainder;
 }
 
@@ -488,11 +536,21 @@ unittest {
     uint digits, precision;
     num = 1234567890123456L;
     digits = 16; precision = 5;
-    acrem = getRemainder(num, digits, precision);
+    acrem = clipRemainder(num, digits, precision);
     exnum = 12345L;
     assert(num == exnum);
     exrem = 67890123456L;
     assert(acrem == exrem);
+}
+
+/**
+ * Increments the number by 1.
+ * Re-calculates the number of digits -- the increment may have caused
+ * an increase in the number of digits, i.e., input number was all 9s.
+ */
+private void increment(ref Dec32 num, const DecimalContext context) {
+    num.coefficient = num.coefficient + 1;
+    num.digits = numDigits(num.coefficient);
 }
 
 /**
@@ -546,8 +604,8 @@ unittest {
  * Returns the number of digits in the number.
  */
 public int numDigits(const BigInt big) {
-    BigInt billion = pow10(9);
-    BigInt quintillion = pow10(18);
+    BigInt billion = Decimal.pow10(9);
+    BigInt quintillion = Decimal.pow10(18);
     BigInt dig = cast(BigInt)big;
     int count = 0;
     while (dig > quintillion) {
@@ -569,8 +627,8 @@ unittest {
  * Returns the first digit of the number.
  */
 public int firstDigit(const BigInt big) {
-    BigInt billion = pow10(9);
-    BigInt quintillion = pow10(18);
+    BigInt billion = Decimal.pow10(9);
+    BigInt quintillion = Decimal.pow10(18);
     BigInt dig = cast()big;
     while (dig > quintillion) {
         dig = decShr(dig, 18);
@@ -591,29 +649,11 @@ unittest {
 }
 
 /**
- * Returns ten raised to the specified power.
- */
-public BigInt pow10(const int n) {
-    BigInt big = BigInt(1);
-    return decShl(big, n);
-}
-
-unittest {
-    write("pow10..........");
-    int n;
-    BigInt pow;
-    n = 3;
-    assert(pow10(n) == 1000);
-    writeln("passed");
-}
-
-/**
  * Shifts the number left by the specified number of decimal digits.
  * If n <= 0 the number is returned unchanged.
  */
-public BigInt decShl(ref BigInt big, int n) {
+public BigInt decShl(BigInt big, const uint n) {
     if (n <= 0) { return big; }
-
     BigInt fives = 1;
     for (int i = 0; i < n; i++) {
         fives *= 5;
@@ -647,10 +687,9 @@ unittest {
  * Shifts the number right by the specified number of decimal digits.
  * If n <= 0 the number is returned unchanged.
  */
-public BigInt decShr(ref BigInt big, int n) {
+public BigInt decShr(BigInt big, const uint n) {
     if (n <= 0) { return big; }
 
-    BigInt twos;
     BigInt fives = 1;
     for (int i = 0; i < n; i++) {
         fives *= 5;
@@ -771,10 +810,10 @@ unittest {
  * Shifts the number right by the specified number of decimal digits.
  * If n <= 0 the number is returned unchanged. If n > 18 zero is returned.
  */
-public long decShr(ref long num, int n) {
+public ulong decShr(ulong num, int n) {
     if (n <= 0) { return num; }
     if (n > 18) { return 0; }
-    long scale = std.math.pow(10L,n);
+    long scale = 10UL^^n;
     num /= scale;
     return num;
 }
@@ -785,7 +824,6 @@ unittest {
     int n;
     m = 12345;
     n = 2;
-//    writeln("decShr(m,n) = ", decShr(m,n));
     assert(decShr(m,n) == 123);
     m = 12345678901234567;
     n = 7;
@@ -809,9 +847,9 @@ unittest {
  * Parameters: num :the number to shift.
  *             n   :the number of digits to shift.
  */
-public long decShl(ref long num, int n) {
+public ulong decShl(ulong num, int n) {
     if (n <= 0) { return num; }
-    long scale = std.math.pow(10L,n);
+    long scale = 10UL^^n;
     num *= scale;
     return num;
 }

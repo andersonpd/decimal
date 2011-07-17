@@ -35,12 +35,9 @@ unittest {
     writeln("---------------------");
 }
 
-public enum SpecialValue : uint {NONE, ZERO, INF, QNAN, SNAN};
-
-
 struct Dec32 {
 
-    private static DecimalContext context = {
+    private static decimal.context.DecimalContext context = {
         precision : 7,
         mode : Rounding.HALF_EVEN,
         eMin : -101,
@@ -78,7 +75,7 @@ struct Dec32 {
     immutable uint payloadBits = 21; // = implicitBits;
 
     /// The number of special bits.
-    /// These bits are used to indicate infinities and NaNs.
+    /// These bits are used to indicate NaNs.
     /// The number includes the two test bits.
     immutable uint specialBits = 6;
 
@@ -89,28 +86,27 @@ struct Dec32 {
     immutable uint anonBits = 4;
             // = svalBits - payloadBits - specialBits - signBits;
 
+    /// The number of infinity bits.
+    /// These bits are used to indicate Infinity.
+    /// The number includes the two test bits.
+    immutable uint infinityBits = 5;
+
+    /// The number of bits that follow the special bits in infinities.
+    /// These bits are always set to zero in canonical representations.
+    /// Their number is simply the remaining number of bits
+    /// when all others are accounted for.
+    immutable uint anonInfBits = 26;
+            // = svalBits - infinityBits - signBits;
+
     /// The exponent bias. The exponent is stored as an unsigned number and
     /// the bias is subtracted from the unsigned value to give the true
     /// (signed) exponent.
-    immutable int BIAS = 101;
+    immutable int BIAS = 101;   // = 0x65
 
     /// The maximum biased exponent.
     /// The largest binary number that can fit in the width of the
     /// exponent without setting the first to bits to 11.
-    immutable uint MAX_BSXP = 0xBF;
-
-    // The value of the special bits when the number is a signaling NaN.
-    immutable uint SV_SNAN = 0x3E;
-    // The value corresponding to a (positive) signaling NaN.
-    immutable uint snan_val = 0x7E000000;
-    // The value of the special bits when the number is a quiet NaN.
-    immutable uint SV_QNAN = 0x3C;
-    // The value corresponding to a (positive) quiet NaN.
-    immutable uint qnan_val = 0x7C000000;
-    // The value of the special bits when the number is infinity.
-    immutable uint SV_INF  = 0x38;
-    // The value corresponding to (positive) infinity.
-    immutable uint inf_val = 0x78000000;
+    immutable uint MAX_BSXP = 0xBF; // = 191
 
     // The maximum coefficient that fits in an explicit number.
     immutable uint MAX_XPLC = 0x7FFFFF; // = 8388607;
@@ -125,10 +121,10 @@ struct Dec32 {
     // union providing different views of the number representation.
     private union {
 
-        // entire 32-bit integer
-        uint value = qnan_val;
+        // entire 32-bit unsigned integer
+        uint value = SV.POS_NAN;
 
-        // A = unsigned value and sign bit
+        // unsigned value and sign bit
         mixin (bitfields!(
             uint, "uValue", unsignedBits,
             bool, "signed", signBits)
@@ -148,7 +144,14 @@ struct Dec32 {
             uint, "testIm", testBits,
             bool, "signIm", signBits)
         );
-        // Sv = special values: infinities, qNaN and sNan:
+        // Nf = infinities:
+        //      payload, unused bits, special bits and sign bit.
+        mixin (bitfields!(
+            uint, "anonNf", anonInfBits,
+            uint, "spclNf", infinityBits,
+            bool, "signNf", signBits)
+        );
+        // Sv = special values: qNaN and sNan:
         //      payload, unused bits, special bits and sign bit.
         mixin (bitfields!(
             uint, "pyldSv", payloadBits,
@@ -159,21 +162,101 @@ struct Dec32 {
     }
 
 //--------------------------------
+//  special values
+//--------------------------------
+
+    // The value of the (6) special bits when the number is a signaling NaN.
+    immutable uint SV_SIG = 0x3F;
+    // The value of the (6) special bits when the number is a quiet NaN.
+    immutable uint SV_NAN = 0x3E;
+    // The value of the (5) special bits when the number is infinity.
+    immutable uint SV_INF = 0x1E;
+
+    private static enum SV : uint
+    {
+        // The value corresponding to a positive signaling NaN.
+        POS_SIG = 0x7E000000,
+        // The value corresponding to a negative signaling NaN.
+        NEG_SIG = 0xFE000000,
+
+        // The value corresponding to a positive quiet NaN.
+        POS_NAN = 0x7C000000,
+        // The value corresponding to a negative quiet NaN.
+        NEG_NAN = 0xFC000000,
+
+        // The value corresponding to positive infinity.
+        POS_INF = 0x78000000,
+        // The value corresponding to negative infinity.
+        NEG_INF = 0xF8000000,
+
+        // The value corresponding to positive zero. (+0)
+        POS_ZRO = 0x32800000,
+        // The value corresponding to negative zero. (-0)
+        NEG_ZRO = 0xB2800000
+    }
+
+//--------------------------------
 //  constructors
 //--------------------------------
 
-    // TODO: canonicalize
     /**
      * Creates a Dec32 from an unsigned integer.
      */
-    private this(const uint u) {
-        value = u;
+    private this(const SV sv) {
+        value = sv;
+    }
+
+    unittest {
+	    write("this(sv)...");
+        Dec32 num;
+        num = Dec32(SV.POS_SIG);
+        assert(num.isSignaling);
+        assert(num.isNaN);
+        assert(!num.isNegative);
+        assert(!num.isNormal);
+        num = Dec32(SV.NEG_SIG);
+        assert(num.isSignaling);
+        assert(num.isNaN);
+        assert(num.isNegative);
+        assert(!num.isNormal);
+        num = Dec32(SV.POS_NAN);
+        assert(!num.isSignaling);
+        assert(num.isNaN);
+        assert(!num.isNegative);
+        assert(!num.isNormal);
+        num = Dec32(SV.NEG_NAN);
+        assert(!num.isSignaling);
+        assert(num.isNaN);
+        assert(num.isNegative);
+        assert(num.isQuiet);
+        num = Dec32(SV.POS_INF);
+        assert(num.isInfinite);
+        assert(!num.isNaN);
+        assert(!num.isNegative);
+        assert(!num.isNormal);
+        num = Dec32(SV.NEG_INF);
+        assert(!num.isSignaling);
+        assert(num.isInfinite);
+        assert(num.isNegative);
+        assert(!num.isFinite);
+        num = Dec32(SV.POS_ZRO);
+        assert(num.isFinite);
+        assert(num.isZero);
+        assert(!num.isNegative);
+        assert(num.isNormal);
+        num = Dec32(SV.NEG_ZRO);
+        assert(!num.isSignaling);
+        assert(num.isZero);
+        assert(num.isNegative);
+        assert(num.isFinite);
+	    writeln("passed");
     }
 
     /**
      * Creates a Dec32 from a long integer.
      */
-    public this(const long n) {
+    public this(const long n)
+    {
         signed = n < 0;
         int expo = 0;
         long mant = std.math.abs(n);
@@ -181,13 +264,48 @@ struct Dec32 {
         if (mant > MAX_IMPL) {
             expo = setExponent(mant, digits, context);
         }
-        expoEx = expo;
+        expoEx = expo + BIAS;
         mantEx = cast(uint) mant;
     }
 
     unittest {
-        Dec32 num = Dec32(1234567890L);
+	    write("this(long)...");
+        Dec32 num;
+        num = Dec32(1234567890L);
         assert(num.toString == "1.234568E+9");
+        num = Dec32(0);
+        assert(num.toString == "0");
+        num = Dec32(1);
+        assert(num.toString == "1");
+        num = Dec32(-1);
+        assert(num.toString == "-1");
+        num = Dec32(5);
+        assert(num.toString == "5");
+	    writeln("passed");
+    }
+
+    /**
+     * Creates a Dec32 from an unsigned integer and integer exponent.
+     */
+    public this(const long mant, const int expo) {
+        this(mant);
+        exponent = exponent + expo;
+    }
+
+    unittest {
+	    write("this(long, int)...");
+        Dec32 num;
+        num = Dec32(1234567890L, 5);
+        assert(num.toString == "1.234568E+14");
+        num = Dec32(0, 2);
+        assert(num.toString == "0E+2");
+        num = Dec32(1, 75);
+        assert(num.toString == "1E+75");
+        num = Dec32(-1, -75);
+        assert(num.toString == "-1E-75");
+        num = Dec32(5, -3);
+        assert(num.toString == "0.005");
+	    writeln("passed");
     }
 
     /**
@@ -202,69 +320,61 @@ struct Dec32 {
         }
         // check for special values
         if (big.isInfinite) {
-            value = inf_val;
+            value = SV.POS_INF;
             signed = big.sign;
             return;
         }
         if (big.isQuiet) {
-            value = qnan_val;
+            value = SV.POS_NAN;
             signed = big.sign;
             return;
         }
         if (big.isSignaling) {
-            value = snan_val;
+            value = SV.POS_SIG;
             signed = big.sign;
             return;
         }
         if (big.isZero) {
-            value = 0;
+            value = SV.POS_ZRO;
             signed = big.sign;
             return;
         }
 
-        uint mant = cast(uint)big.mant.toInt;
+        uint mant = cast(uint)big.coefficient.toInt;
         if (mant > MAX_XPLC) {
             // set the test bits
             testIm = 0b11;
             signed = big.sign;
-            expoIm = big.expo;
+            expoIm = big.exponent + BIAS;
             // TODO: this can be done with a mask.
             mantIm = mant % MAX_XPLC;
         }
         else {
             signed = big.sign;
-            expoEx = big.expo;
+            expoEx = big.exponent + BIAS;
             mantEx = mant;
         }
     }
 
    unittest {
        write("this(Decimal)...");
-        Decimal num = Decimal(0);
-        Dec32 dec = Dec32(num);
-        writeln("num = ", num);
-        writeln("dec = ", dec);
-
-        num = Decimal(1);
-        dec = Dec32(num);
-        writeln("num = ", num);
-        writeln("dec = ", dec);
-
-        num = Decimal(-1);
-        dec = Dec32(num);
-        writeln("num = ", num);
-        writeln("dec = ", dec);
-
-        num = Decimal(-16000);
-        dec = Dec32(num);
-        writeln("num = ", num);
-        writeln("dec = ", dec);
-
-        num = Decimal(uint.max);
-        dec = Dec32(num);
-        writeln("num = ", num);
-        writeln("dec = ", dec);
-        writeln("test missing");
+        Decimal dec = Decimal(0);
+        Dec32 num = Dec32(dec);
+        assert(dec.toString == num.toString);
+        dec = Decimal(1);
+        num = Dec32(dec);
+        assert(dec.toString == num.toString);
+        dec = Decimal(-1);
+        num = Dec32(dec);
+        assert(dec.toString == num.toString);
+        dec = Decimal(-16000);
+        num = Dec32(dec);
+        assert(dec.toString == num.toString);
+        dec = Decimal(uint.max);
+        num = Dec32(dec);
+        assert(num.toString == "4.294967E+9");
+        assert(dec.toString == "4294967295");
+        writeln("passed");
     }
 
     /**
@@ -276,8 +386,15 @@ struct Dec32 {
     }
 
     unittest {
-        Dec32 num = Dec32("1.234568E+9");
+        write("this(string)...");
+        Dec32 num;
+        num = Dec32("1.234568E+9");
         assert(num.toString == "1.234568E+9");
+        num = Dec32("NaN");
+        assert(num.isQuiet && num.isSpecial && num.isNaN);
+        num = Dec32("-inf");
+        assert(num.isInfinite && num.isSpecial && num.isNegative);
+        writeln("passed");
     }
 
     /**
@@ -297,15 +414,22 @@ struct Dec32 {
         writeln("passed");
     }
 
-    this(bool signed, SpecialValue sval, uint payload = 0) {
-
-    }
-
 //--------------------------------
 //  properties
 //--------------------------------
 
     public:
+
+    // TODO: maybe rename these to properties?
+    // raw value? coded value?
+    const uint getValue() {
+        return this.value;
+    }
+
+    uint setValue(const uint value) {
+        this.value = value;
+        return value;
+    }
 
     @property
     const bool sign() {
@@ -321,10 +445,10 @@ struct Dec32 {
     @property
     const int exponent() {
         if (this.isExplicit) {
-            return expoEx;
+            return expoEx - BIAS;
         }
         else {
-            return expoIm;
+            return expoIm - BIAS;
         }
     }
 
@@ -333,10 +457,10 @@ struct Dec32 {
     @property
      int exponent(int expo) {
         if (this.isExplicit) {
-            expoEx = expo;
+            expoEx = expo + BIAS;
         }
         else if (this.isFinite) {
-            expoIm = expo;
+            expoIm = expo + BIAS;
         }
         else {
             expo = 0;
@@ -363,6 +487,13 @@ struct Dec32 {
     // If the new coefficient is > MAX_XPLC this could cause an
     // explicit number to become an implicit number, and vice versa.
     @property
+        uint coefficient(ulong mant) {
+        return coefficient(cast(uint)mant);
+    }
+
+    // If the new coefficient is > MAX_XPLC this could cause an
+    // explicit number to become an implicit number, and vice versa.
+    @property
     uint coefficient(uint mant) {
         if (mant > MAX_XPLC) {
             mant &= 0x7FFFFFF;  // only store the last 21 bits.
@@ -381,20 +512,43 @@ struct Dec32 {
     }
 
     @property
-    int digits() {
-        return 7;
+    const int digits() {
+        return numDigits(this.coefficient);
     }
 
+    // TODO: this is a stopgap
+    @property
+    const int digits(int digs) {
+        return digs;
+    }
 
-    immutable Dec32 qNaN = Dec32(qnan_val);
-    immutable Dec32 sNaN = Dec32(snan_val);
-    immutable Dec32 Infinity = Dec32(inf_val);
-    immutable Dec32 Zero = Dec32(0);
+    const Dec32 dup() {
+        Dec32 copy;
+        copy.setValue(this.getValue);
+        return copy;
+    }
+
+    immutable Dec32 qNaN = Dec32(SV.POS_NAN);
+    immutable Dec32 sNaN = Dec32(SV.POS_SIG);
+    immutable Dec32 Infinity = Dec32(SV.POS_INF);
+    immutable Dec32 NegInfinity = Dec32(SV.NEG_INF);
+    immutable Dec32 Zero = Dec32(SV.POS_ZRO);
+    immutable Dec32 NegZero = Dec32(SV.NEG_ZRO);
+
+    static Dec32 zero(const bool signed = false) {
+        if (signed) return NegZero.dup;
+        else return Zero.dup;
+    }
+
+    static Dec32 infinity(const bool signed = false) {
+        if (signed) return NegInfinity.dup;
+        else return Infinity.dup;
+    }
 
     // floating point properties
-    static Dec32 init()       { return nan; }
-    static Dec32 infinity()   { return Dec32(inf_val ); }
-    static Dec32 nan()        { return Dec32(qnan_val); }
+    static Dec32 init()       { return qNaN; }
+    static Dec32 nan()        { return qNaN; }
+    static Dec32 snan()       { return sNaN; }
     static Dec32 epsilon()    { return qNaN; }
     static Dec32 max()        { return qNaN; } // 9999999E+90;
     static Dec32 min_normal() { return qNaN; } // 1E-101;
@@ -427,7 +581,7 @@ struct Dec32 {
      * Returns true if this number is +\- zero.
      */
     const bool isZero() {
-        return uValue == 0;
+        return isExplicit && mantEx == 0;
     }
 
     /**
@@ -441,21 +595,21 @@ struct Dec32 {
      * Returns true if this number is a signaling NaN.
      */
     const bool isSignaling() {
-        return spclSv == SV_SNAN;
+        return spclSv == SV_SIG;
     }
 
     /**
      * Returns true if this number is a quiet NaN.
      */
     const bool isQuiet() {
-        return spclSv == SV_QNAN;
+        return spclSv == SV_NAN;
     }
 
     /**
      * Returns true if this number is +\- infinity.
      */
     const bool isInfinite() {
-        return spclSv == SV_INF;
+        return spclNf == SV_INF;
     }
 
     /**
@@ -539,14 +693,14 @@ struct Dec32 {
                 sign = false;
                 mant = value;
             }
-            if (uValue == inf_val) {
-                return Decimal(sign, SV.INF, 0);
+            if (uValue == SV.POS_INF) {
+                return Decimal.infinity(sign);
             }
-            if (uValue == qnan_val) {
-                return Decimal(sign, SV.QNAN, 0);
+            if (uValue == SV.POS_NAN) {
+                return Decimal.nan;
             }
-            if (uValue == snan_val) {
-                return Decimal(sign, SV.SNAN, 0);
+            if (uValue == SV.POS_SIG) {
+                return Decimal.snan;
             }
         }
         return Decimal(sign, BigInt(mant), expo);
@@ -576,6 +730,29 @@ struct Dec32 {
          return toSciString(this);
     }
 
+    /**
+     * Converts a Dec32 to a string
+     */
+    public const string toAbstract() {
+//writeln("this = ", this);
+//writeln("this = ", this.toHexString);
+//writefln("spclSv = %X", spclSv);
+
+        if (this.isSignaling) {
+            if (coefficient) {
+                return format("[%d,%s,%d]", signed ? 1 : 0, "sNaN", coefficient);
+            }
+            return format("[%d,%s]", signed ? 1 : 0, "sNaN");
+        }
+        if (this.isQuiet) {
+            return format("[%d,%s%s]", signed ? 1 : 0, "qNaN", coefficient);
+        }
+        if (this.isInfinite) {
+            return format("[%d,%s]", signed ? 1 : 0, "inf");
+        }
+        return format("[%d,%s,%d]", signed ? 1 : 0, coefficient, exponent);
+    }
+
 //--------------------------------
 //  comparison
 //--------------------------------
@@ -585,14 +762,22 @@ struct Dec32 {
      * greater than the argument, respectively.
      */
     const int opCmp(const Dec32 that) {
-        return compare(this.toDecimal, that.toDecimal, context);
+//        return compare(this.toDecimal, that.toDecimal, context);
+        writeln("this = ", this);
+        writeln("that = ", that);
+        int result = compare!Dec32(this, that, context);
+        writeln("result = ", result);
+        return compare!Dec32(this, that, context);
     }
 
     unittest {
         write("opCmp........");
         Dec32 a, b;
-        a = Dec32(104);
-        b = Dec32(105);
+        a = Dec32(104.0);
+        b = Dec32(105.0);
+        writeln("a = ", a);
+        writeln("b = ", b);
+        writeln("a < b = ", a < b);
         assert(a < b);
         assert(b > a);
         writeln("passed");
@@ -614,19 +799,53 @@ struct Dec32 {
         writeln("passed");
     }
 
+//-----------------------------
+// helper functions
+//-----------------------------
+
+    /**
+     * Has no effect -- simplifies templates.
+     */
+    public void clear() { }
+
+     /**
+     * Returns uint ten raised to the specified power.
+     */
+    static uint pow10(const int n) {
+        return 10U^^n;
+    }
+
+    unittest {
+        write("pow10..........");
+        int n;
+        BigInt pow;
+        n = 3;
+        assert(pow10(n) == 1000);
+        writeln("passed");
+    }
+
 }   // end Dec32 struct
+
+    /**
+     * Returns special.
+     */
+/*    public static Dec32 special(const uint value) {
+        Dec32 num;
+        num.value = value;
+        return num;
+    }*/
 
 /**
  * Detect whether T is a decimal type.
  */
-template isDecimal(T) {
+/*template isDecimal(T) {
     enum bool isDecimal = is(T: Dec32);
 }
 
 unittest {
     write("isDecimal(T)...");
     writeln("test missing");
-}
+}*/
 
 /*    staticIndexOf!(Unqual!(T),
         Dec32) >= 0;*/
@@ -664,7 +883,7 @@ unittest {
     writeln("MAX_EXPO = ", Dec32.MAX_EXPO);
     writeln("MIN_EXPO = ", Dec32.MIN_EXPO);
 
-    writefln("qnan_val = 0x%08X", Dec32.qnan_val);
+    writefln("pos_nan_val = 0x%08X", Dec32.SV_NAN);
     writeln("Dec32.qNaN = ", Dec32.qNaN);
 
     Dec32 dec = Dec32();

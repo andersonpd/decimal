@@ -35,7 +35,8 @@ import decimal.arithmetic;
 import std.bigint;
 import std.exception: assumeUnique;
 import std.conv;
-import std.ctype: isdigit;
+import std.array: replicate;
+import std.ascii: isDigit;
 import std.math: PI, LOG2;
 import std.stdio: write, writeln;
 import std.string;
@@ -95,7 +96,7 @@ public @property void expo(int value) { m_expo = value; };
 public @property int digits() { return m_digits; };
 public @property void digits(int value) { m_digits = value; };*/
 
-    private static DecimalContext context = DEFAULT_CONTEXT.dup;
+    private static decimal.context.DecimalContext context = DEFAULT_CONTEXT.dup;
 
 /*    private static ContextStack contextStack;
     public static void pushContext(DecimalContext context) {
@@ -106,14 +107,14 @@ public @property void digits(int value) { m_digits = value; };*/
         return contextStack.pop;
     }*/
 
-    package SV sval = SV.QNAN;        // special values: default value is quiet NaN
+    // TODO: make these private
+    private SV sval = SV.QNAN;        // special values: default value is quiet NaN
     private bool signed = false;        // true if the value is negative, false otherwise.
-    package int expo = 0;            // the exponent of the Decimal value
-    package BigInt mant;            // the coefficient of the Decimal value
+    private int expo = 0;            // the exponent of the Decimal value
+    private BigInt mant;            // the coefficient of the Decimal value
     // NOTE: not a uint -- causes math problems down the line.
     package int digits;                 // the number of decimal digits in this number.
                                      // (unless the number is a special value)
-//private:
     /**
      * clears the special value flags
      */
@@ -124,12 +125,12 @@ public @property void digits(int value) { m_digits = value; };*/
 public:
 
 // common decimal "numbers"
-    static immutable Decimal NAN      = cast(immutable)Decimal(SV.QNAN);
-    static immutable Decimal SNAN     = cast(immutable)Decimal(SV.SNAN);
-    static immutable Decimal POS_INF  = cast(immutable)Decimal(SV.INF);
-    static immutable Decimal NEG_INF  = cast(immutable)Decimal(true, SV.INF);
-    static immutable Decimal ZERO     = cast(immutable)Decimal(SV.ZERO);
-    static immutable Decimal NEG_ZERO = cast(immutable)Decimal(true, SV.ZERO);
+    static Decimal NAN      = Decimal(SV.QNAN);
+    static Decimal SNAN     = Decimal(SV.SNAN);
+    static Decimal POS_INF  = Decimal(SV.INF);
+    static Decimal NEG_INF  = Decimal(true, SV.INF);
+    static Decimal ZERO     = Decimal(SV.ZERO);
+    static Decimal NEG_ZERO = Decimal(true, SV.ZERO);
 
 //    static immutable BigInt BIG_ZERO  = cast(immutable)BigInt(0);
 
@@ -137,6 +138,22 @@ public:
     static immutable Decimal TWO  = cast(immutable)Decimal(2);
     static immutable Decimal FIVE = cast(immutable)Decimal(5);
     static immutable Decimal TEN  = cast(immutable)Decimal(10);*/
+
+unittest {
+	write("special values...");
+    writeln("Decimal(SV.QNAN) = ", Decimal(SV.QNAN));
+    writeln("NAN.toAbstract = ", NAN.toAbstract);
+    writeln("SNAN.toAbstract = ", SNAN.toAbstract);
+
+/*    writeln("NAN = ", NAN);
+    assert(Decimal(SV.QNAN) == NAN);*/
+    writeln("Decimal(SV.SNAN) = ", Decimal(SV.SNAN));
+    writeln("Decimal(SV.INF) = ", Decimal(SV.INF));
+    writeln("Decimal(true, SV.INF) = ", Decimal(true, SV.INF));
+    writeln("Decimal(SV.ZERO) = ", Decimal(SV.ZERO));
+
+	writeln("test missing");
+}
 
 
 //--------------------------------
@@ -159,8 +176,8 @@ public:
     unittest {
         write("this(bool, SV, payload)...");
         Decimal num = Decimal(true, SV.INF);
-        writeln("toSciString(num) = ", toSciString(num));
-        writeln("num.toAbstract() = ", num.toAbstract());
+        writeln("num.toSciString = ", num.toSciString);
+        writeln("num.toAbstract = ", num.toAbstract);
 //        assert(toSciString!Decimal(num) == "-Infinity");
 //        assert(num.toAbstract() == "[1,inf]");
         writeln("failed");
@@ -296,7 +313,9 @@ public:
     // UNREADY: this(const string). Flags. Unit Tests.
     // construct from string representation
     this(const string str) {
+//        writeln("str = ", str);
         this = toNumber(str);
+//        writeln("this = ", this);
         //this = str;
     };
 
@@ -481,8 +500,25 @@ unittest {
  * Converts a number to its string representation.
  */
 const string toString() {
-    return toSciString(this);
+    return toSciString();
 };    // end toString()
+
+// READY: toSciString.
+/**
+ * Converts a Decimal to a string representation.
+ */
+const string toSciString() {
+    return decimal.conv.toSciString!Decimal(this);
+};    // end toSciString()
+
+// READY: toEngString.
+/**
+ * Converts a Decimal to an engineering string representation.
+ */
+const string toEngString() {
+   return decimal.conv.toEngString!Decimal(this);
+}; // end toEngString()
+
 
 unittest {
     write("toString...");
@@ -496,43 +532,63 @@ unittest {
 // TODO: make these true properties.
 
     /// returns the exponent of this number
+    @property
     const int exponent() {
         return this.expo;
     }
 
-unittest {
-    write("exponent...");
-    writeln("test missing");
-}
+    @property
+    int exponent(int expo) {
+        this.expo = expo;
+        return this.expo;
+    }
+
+    unittest {
+        write("exponent...");
+        writeln("test missing");
+    }
+
+    @property
+    const BigInt coefficient() {
+        return cast(BigInt)this.mant;
+    }
+
+    @property
+    BigInt coefficient(BigInt mant) {
+        this.mant = mant;
+        return this.mant;
+    }
+
+    @property
+    BigInt coefficient(long mant) {
+        this.mant = BigInt(mant);
+        return this.mant;
+    }
+
+    unittest {
+        write("coefficient.");
+        writeln("test missing");
+    }
+
     /// returns the adjusted exponent of this number
     const int adjustedExponent() {
         return expo + digits - 1;
     }
 
-unittest {
-    write("adjustedExponent...");
-    writeln("test missing");
-}
+    unittest {
+        write("adjustedExponent...");
+        writeln("test missing");
+    }
 
     /// returns the number of decimal digits in the coefficient of this number
     const int getDigits() {
         return this.digits;
     }
 
-unittest {
-    write("getDigits...");
-    writeln("test missing");
-}
-
-    /// returns the coefficient of this number
-    const const(BigInt) coefficient() {
-        return this.mant;
+    unittest {
+        write("getDigits...");
+        writeln("test missing");
     }
-
-unittest {
-    write("coefficient...");
-    writeln("test missing");
-}
 
     @property const bool sign() {
         return signed;
@@ -549,10 +605,10 @@ unittest {
         return signed ? -1 : 1;
     }
 
-unittest {
-    write("sgn...");
-    writeln("test missing");
-}
+    unittest {
+        write("sgn...");
+        writeln("test missing");
+    }
 
     /// returns a number with the same exponent as this number
     /// and a coefficient of 1.
@@ -560,10 +616,10 @@ unittest {
         return Decimal(1, this.expo);
     }
 
-unittest {
-    write("quantum...");
-    writeln("test missing");
-}
+    unittest {
+        write("quantum...");
+        writeln("test missing");
+    }
 
     // TODO: check for NaN? Is this the right thing to do here?
     const ulong getNaNPayload() {
@@ -571,10 +627,10 @@ unittest {
         return cast(ulong)this.mant.toLong;
     }
 
-unittest {
-    write("getNanPayload...");
-    writeln("test missing");
-}
+    unittest {
+        write("getNanPayload...");
+        writeln("test missing");
+    }
 
     // TODO: check for NaN? Is this the right thing to do here?
     void setNaNPayload(const ulong payload) {
@@ -582,10 +638,14 @@ unittest {
         this.mant = BigInt(payload);
     }
 
-unittest {
-    write("setNaNPayload...");
-    writeln("test missing");
-}
+    unittest {
+        write("setNaNPayload...");
+        writeln("test missing");
+    }
+
+    void setZero() {
+        this.sval = SV.ZERO;
+    }
 
 //--------------------------------
 // floating point properties
@@ -601,28 +661,18 @@ unittest {
         return context.precision;
     }
 
-unittest {
-    write("precision...");
-    writeln("test missing");
-}
+    unittest {
+        write("precision...");
+        writeln("test missing");
+    }
 
     /// returns the default value for this type (NaN)
     static Decimal init() {
         return NAN.dup;
     }
 
-unittest {
-    write("init...");
-    writeln("test missing");
-}
-
-    /// Returns NaN
-    static Decimal snan() {
-        return SNAN.dup;
-    }
-
     unittest {
-        write("snan...");
+        write("init...");
         writeln("test missing");
     }
 
@@ -636,13 +686,35 @@ unittest {
         writeln("test missing");
     }
 
+    /// Returns signalling NaN
+    static Decimal snan() {
+        return SNAN.dup;
+    }
+
+    unittest {
+        write("snan...");
+        writeln("test missing");
+    }
+
     /// Returns positive infinity.
-    static Decimal infinity() {
+    static Decimal infinity(bool signed = false) {
+        if (signed) return NEG_INF.dup;
         return POS_INF.dup;
     }
 
     unittest {
         write("infinity...");
+        writeln("test missing");
+    }
+
+    /// Returns positive zero.
+    static Decimal zero(bool signed = false) {
+        if (signed) return NEG_ZERO.dup;
+        return ZERO.dup;
+    }
+
+    unittest {
+        write("zero...");
         writeln("test missing");
     }
 
@@ -687,7 +759,7 @@ unittest {
     // Returns the maximum representable normal value in the current context.
     // FIXTHIS: this doesn't always access the current context. Move it to context?
     static Decimal max() {
-        string cstr = "9." ~ repeat("9", context.precision-1)
+        string cstr = "9." ~ replicate("9", context.precision-1)
             ~ "E" ~ format("%d", context.eMax);
         return Decimal(cstr);
     }
@@ -1335,6 +1407,23 @@ unittest {
 //-----------------------------
 // helper functions
 //-----------------------------
+
+     /**
+     * Returns (BigInt) ten raised to the specified power.
+     */
+    static BigInt pow10(const int n) {
+        BigInt big = BigInt(1);
+        return decShl(big, n);
+    }
+
+    unittest {
+        write("pow10..........");
+        int n;
+        BigInt pow;
+        n = 3;
+        assert(pow10(n) == 1000);
+        writeln("passed");
+    }
 
 }    // end struct Decimal
 

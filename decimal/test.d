@@ -24,6 +24,7 @@ import decimal.decimal;
 import decimal.dec32;
 import decimal.rounding;
 
+/+
 //--------------------------------
 // unit test methods
 //--------------------------------
@@ -97,6 +98,8 @@ unittest {
     Decimal f;
     string str = "0";
     f = Decimal(str);
+//    writeln("str = ", str);
+//    writeln("f = ", f);
     assert(f.toString() == str);
     assert(f.toAbstract() == "[0,0,0]");
     str = "0.00";
@@ -967,6 +970,177 @@ unittest {
 
 
 unittest {
+    write("div-int......");
+    Decimal op1, op2, actual, expect;
+    op1 = 2;
+    op2 = 3;
+    actual = divideInteger(op1, op2, testContext);
+    expect = 0;
+    assert(actual == expect);
+    op1 = 10;
+    actual = divideInteger(op1, op2, testContext);
+    expect = 3;
+    assert(actual == expect);
+    op1 = 1;
+    op2 = 0.3;
+    actual = divideInteger(op1, op2, testContext);
+    assert(actual == expect);
+    writeln("passed");
+}
+
+unittest {
+    write("remainder....");
+    Decimal op1, op2, actual, expect;
+    op1 = 2.1;
+    op2 = 3;
+    actual = remainder(op1, op2, testContext);
+    expect = 2.1;
+    assert(actual == expect);
+    op1 = 10;
+    actual = remainder(op1, op2, testContext);
+    expect = 1;
+    assert(actual == expect);
+    op1 = -10;
+    actual = remainder(op1, op2, testContext);
+    expect = -1;
+    assert(actual == expect);
+    op1 = 10.2;
+    op2 = 1;
+    actual = remainder(op1, op2, testContext);
+    expect = 0.2;
+    assert(actual == expect);
+    op1 = 10;
+    op2 = 0.3;
+    actual = remainder(op1, op2, testContext);
+    expect = 0.1;
+    assert(actual == expect);
+    op1 = 3.6;
+    op2 = 1.3;
+    actual = remainder(op1, op2, testContext);
+    expect = 1.0;
+    assert(actual == expect);
+    writeln("passed");
+}
+
+unittest {
+    write("rem-near.....");
+    writeln("test missing");
+}
+
+unittest {
+    write("rnd-int-ex...");
+    Decimal num, expect, actual;
+    num = 2.1;
+    expect = 2;
+    actual = roundToIntegralExact(num, testContext);
+    assert(actual == expect);
+    num = 100;
+    expect = 100;
+    assert(roundToIntegralExact(num, testContext) == expect);
+    assert(roundToIntegralExact(num, testContext).toString() == expect.toString());
+    num = Decimal("100.0");
+    assert(roundToIntegralExact(num, testContext) == expect);
+    assert(roundToIntegralExact(num, testContext).toString() == expect.toString());
+    num = Decimal("101.5");
+    expect = 102;
+    assert(roundToIntegralExact(num, testContext) == expect);
+    assert(roundToIntegralExact(num, testContext).toString() == expect.toString());
+    num = -101.5;
+    expect = -102;
+    assert(roundToIntegralExact(num, testContext) == expect);
+    assert(roundToIntegralExact(num, testContext).toString() == expect.toString());
+    num = Decimal("10E+5");
+    expect = Decimal("1.0E+6");
+    assert(roundToIntegralExact(num, testContext) == expect);
+    assert(roundToIntegralExact(num, testContext).toString() == expect.toString());
+    num = 7.89E+77;
+    expect = 7.89E+77;
+    assert(roundToIntegralExact(num, testContext) == expect);
+    assert(roundToIntegralExact(num, testContext).toString() == expect.toString());
+    num = Decimal("-Inf");
+    expect = Decimal("-Infinity");
+    assert(roundToIntegralExact(num, testContext) == expect);
+    assert(roundToIntegralExact(num, testContext).toString() == expect.toString());
+    writeln("passed");
+}
+
+unittest {
+    write("rnd-int-val..");
+    writeln("test missing");
+}
+
+unittest {
+    write("reduceToIdeal...");
+    writeln("test missing");
+}
+
+unittest {
+    write("invalid......");
+    Decimal num, expect, actual;
+
+    // FIXTHIS: Can't actually test payloads at this point.
+    num = Decimal("sNaN123");
+    expect = Decimal("NaN123");
+    actual = abs!Decimal(num, testContext);
+    assert(actual.isQuiet);
+    assert(testContext.getFlag(INVALID_OPERATION));
+//    assert(actual.toAbstract == expect.toAbstract);
+    num = Decimal("NaN123");
+    actual = abs(num, testContext);
+    assert(actual.isQuiet);
+    assert(testContext.getFlag(INVALID_OPERATION));
+//    assert(actual.toAbstract == expect.toAbstract);
+
+    num = Decimal("sNaN123");
+    expect = Decimal("NaN123");
+    actual = -num;
+    assert(actual.isQuiet);
+    assert(testContext.getFlag(INVALID_OPERATION));
+//    assert(actual.toAbstract == expect.toAbstract);
+    num = Decimal("NaN123");
+    actual = -num;
+    assert(actual.isQuiet);
+    assert(testContext.getFlag(INVALID_OPERATION));
+//    assert(actual.toAbstract == expect.toAbstract);*/
+    writeln("passed");
+}
+
+unittest {
+    write("alignOps...");
+    writeln("test missing");
+}
+
+unittest {
+    write("isInvalidBinaryOp...");
+    writeln("test missing");
+}
+
+unittest {
+    write("invalidOperand...");
+    writeln("test missing");
+}
+
+unittest {
+    write("isInvalidAddition...");
+    writeln("test missing");
+}
+
+unittest {
+    write("isInvalidMultiplication...");
+    writeln("test missing");
+}
+
+unittest {
+    write("isInvalidDivision...");
+    writeln("test missing");
+}
+
+unittest {
+    write("isZeroDividend...");
+    writeln("test missing");
+}
+
+unittest {
     writeln("---------------------");
     writeln("arithmetic...finished");
     writeln("---------------------");
@@ -1245,5 +1419,5 @@ unittest {
     writeln("decimal32....finished");
     writeln("---------------------");
 }
-
++/
 
