@@ -37,7 +37,7 @@ unittest {
 
 struct Dec32 {
 
-    private static decimal.context.DecimalContext context = {
+    private static decimal.context.DecimalContext context32 = {
         precision : 7,
         mode : Rounding.HALF_EVEN,
         eMin : -101,
@@ -262,7 +262,7 @@ struct Dec32 {
         long mant = std.math.abs(n);
         uint digits = numDigits(n);
         if (mant > MAX_IMPL) {
-            expo = setExponent(mant, digits, context);
+            expo = setExponent(mant, digits, context32);
         }
         expoEx = expo + BIAS;
         mantEx = cast(uint) mant;
@@ -313,47 +313,46 @@ struct Dec32 {
      */
     public this(const Decimal num) {
 
-        Decimal big = plus!Decimal(num, context);
-//        writeln("big = ", big);
-        if (big.isFinite) {
+        Decimal big = plus!Decimal(num, context32);
 
+        if (big.isFinite) {
+            if (big.isZero) {
+                value = SV.POS_ZRO;
+                signed = big.sign;
+                return;
+            }
+            uint mant = cast(uint)big.coefficient.toInt;
+            if (mant > MAX_XPLC) {
+                // set the test bits
+                testIm = 0b11;
+                signed = big.sign;
+                expoIm = big.exponent + BIAS;
+                // TODO: this can be done with a mask.
+                mantIm = mant % MAX_XPLC;
+            }
+            else {
+                signed = big.sign;
+                expoEx = big.exponent + BIAS;
+                mantEx = mant;
+            }
         }
         // check for special values
-        if (big.isInfinite) {
+        else if (big.isInfinite) {
             value = SV.POS_INF;
             signed = big.sign;
             return;
         }
-        if (big.isQuiet) {
+        else if (big.isQuiet) {
             value = SV.POS_NAN;
             signed = big.sign;
             return;
         }
-        if (big.isSignaling) {
+        else if (big.isSignaling) {
             value = SV.POS_SIG;
             signed = big.sign;
             return;
         }
-        if (big.isZero) {
-            value = SV.POS_ZRO;
-            signed = big.sign;
-            return;
-        }
 
-        uint mant = cast(uint)big.coefficient.toInt;
-        if (mant > MAX_XPLC) {
-            // set the test bits
-            testIm = 0b11;
-            signed = big.sign;
-            expoIm = big.exponent + BIAS;
-            // TODO: this can be done with a mask.
-            mantIm = mant % MAX_XPLC;
-        }
-        else {
-            signed = big.sign;
-            expoEx = big.exponent + BIAS;
-            mantEx = mant;
-        }
     }
 
    unittest {
@@ -401,7 +400,7 @@ struct Dec32 {
      *    Constructs a number from a real value.
      */
     this(const real r) {
-        string str = format("%.*G", cast(int)context.precision, r);
+        string str = format("%.*G", cast(int)context32.precision, r);
         this(str);
     }
 
@@ -528,12 +527,12 @@ struct Dec32 {
         return copy;
     }
 
-    immutable Dec32 qNaN = Dec32(SV.POS_NAN);
-    immutable Dec32 sNaN = Dec32(SV.POS_SIG);
-    immutable Dec32 Infinity = Dec32(SV.POS_INF);
-    immutable Dec32 NegInfinity = Dec32(SV.NEG_INF);
-    immutable Dec32 Zero = Dec32(SV.POS_ZRO);
-    immutable Dec32 NegZero = Dec32(SV.NEG_ZRO);
+    static immutable Dec32 qNaN = Dec32(SV.POS_NAN);
+    static immutable Dec32 sNaN = Dec32(SV.POS_SIG);
+    static immutable Dec32 Infinity = Dec32(SV.POS_INF);
+    static immutable Dec32 NegInfinity = Dec32(SV.NEG_INF);
+    static immutable Dec32 Zero = Dec32(SV.POS_ZRO);
+    static immutable Dec32 NegZero = Dec32(SV.NEG_ZRO);
 
     static Dec32 zero(const bool signed = false) {
         if (signed) return NegZero.dup;
@@ -762,12 +761,7 @@ struct Dec32 {
      * greater than the argument, respectively.
      */
     const int opCmp(const Dec32 that) {
-//        return compare(this.toDecimal, that.toDecimal, context);
-        writeln("this = ", this);
-        writeln("that = ", that);
-        int result = compare!Dec32(this, that, context);
-        writeln("result = ", result);
-        return compare!Dec32(this, that, context);
+        return compare!Dec32(this, that, context32);
     }
 
     unittest {
@@ -775,9 +769,6 @@ struct Dec32 {
         Dec32 a, b;
         a = Dec32(104.0);
         b = Dec32(105.0);
-        writeln("a = ", a);
-        writeln("b = ", b);
-        writeln("a < b = ", a < b);
         assert(a < b);
         assert(b > a);
         writeln("passed");
@@ -787,7 +778,7 @@ struct Dec32 {
      * Returns true if this number is equal to the specified number.
      */
     const bool opEquals(ref const Dec32 that) {
-        return equals(this.toDecimal, that.toDecimal, context);
+        return equals!Dec32(this, that, context32);
     }
 
     unittest {
@@ -798,6 +789,140 @@ struct Dec32 {
         assert(a == b);
         writeln("passed");
     }
+
+//--------------------------------
+// assignment
+//--------------------------------
+
+    // UNREADY: opAssign(T: Dec32)(const Dec32). Flags. Unit Tests.
+    /// Assigns a Dec32 (copies that to this).
+    void opAssign(T:Dec32)(const T that) {
+        this.value = that.value;
+    }
+
+    unittest {
+        write("opAssign(Dec32)..");
+        Dec32 rhs, lhs;
+        rhs = Dec32(270E-5);
+        lhs = rhs;
+        assert(lhs == rhs);
+        writeln("passed");
+    }
+
+    // UNREADY: opAssign(T)(const T). Flags.
+    ///    Assigns a numeric value.
+    void opAssign(T)(const T that) {
+        this = Dec32(that);
+    }
+
+    unittest {
+        write("opAssign(numeric)...");
+        Dec32 rhs;
+        rhs = 332089;
+        assert(rhs.toString == "332089");
+        rhs = 3.1415E+3;
+        assert(rhs.toString == "3141.5");
+        writeln("passed");
+    }
+
+//--------------------------------
+// unary operators
+//--------------------------------
+
+    const Dec32 opUnary(string op)()
+    {
+        static if (op == "+") {
+            return plus!Dec32(this, context32);
+        }
+        else static if (op == "-") {
+            return minus!Dec32(this, context32);
+        }
+        else static if (op == "++") {
+            return add!Dec32(this, Dec32(1), context32);
+        }
+        else static if (op == "--") {
+            return subtract!Dec32(this, Dec32(1), context32);
+        }
+    }
+
+    unittest {
+	write("opUnary......");
+    Dec32 num, actual, expect;
+    num = 134;
+    expect = num;
+    actual = +num;
+    assert(actual == expect);
+    num = 134.02;
+    expect = -134.02;
+    actual = -num;
+    assert(actual == expect);
+    num = 134;
+    expect = 135;
+    actual = ++num;
+    assert(actual == expect);
+    // TODO: seems to be broken for nums like 1.000E8
+    num = 12.35;
+    expect = 11.35;
+    actual = --num;
+    assert(actual == expect);
+	writeln("passed");
+}
+
+
+//--------------------------------
+// binary operators
+//--------------------------------
+
+    const Dec32 opBinary(string op)(const Dec32 rhs)
+    {
+        static if (op == "+") {
+            return add!Dec32(this, rhs, context32);
+        }
+        else static if (op == "-") {
+            return subtract!Dec32(this, rhs, context32);
+        }
+        else static if (op == "*") {
+            return multiply!Dec32(this, rhs, context32);
+        }
+        else static if (op == "/") {
+            return divide!Dec32(this, rhs, context32);
+        }
+        else static if (op == "%") {
+            return remainder!Dec32(this, rhs, context32);
+        }
+    }
+
+    unittest {
+	write("opBinary.....");
+    Dec32 op1, op2, actual, expect;
+    op1 = 4;
+    op2 = 8;
+    actual = op1 + op2;
+    expect = 12;
+    assert(expect == actual);
+    actual = op1 - op2;
+    expect = -4;
+    assert(expect == actual);
+    actual = op1 * op2;
+    expect = 32;
+    assert(expect == actual);
+    op1 = 5;
+    op2 = 2;
+    actual = op1 / op2;
+    expect = 2.5;
+    assert(expect == actual);
+    op1 = 10;
+    op2 = 3;
+    actual = op1 % op2;
+    expect = 1;
+    assert(expect == actual);
+	writeln("passed");
+}
+
+
+//-----------------------------
+// operator assignment
+//-----------------------------
 
 //-----------------------------
 // helper functions

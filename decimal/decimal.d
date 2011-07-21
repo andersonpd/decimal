@@ -48,34 +48,9 @@ unittest {
 }
 
 alias Decimal.context context;
-// alias Decimal.context.precision precision;
-
-/*/// precision stack
-private static Stack!(uint) precisionStack;
-
-/// saves the current context
-package static void pushContext() {
-    precisionStack.push(context.precision);
-}
-
-unittest {
-    write("pushContext...");
-    writeln("test missing");
-}
-
-/// restores the previous precision
-package static void popPrecision() {
-    context.precision = precisionStack.pop();
-}
-
-unittest {
-    write("popPrecision...");
-    writeln("test missing");
-}
-*/
 
 // special values for NaN, Inf, etc.
-public static enum SV {NONE, ZERO, INF, QNAN, SNAN};
+private static enum SV {NONE, ZERO, INF, QNAN, SNAN};
 
 /**
  * A struct representing an arbitrary-precision floating-point number.
@@ -87,25 +62,7 @@ public static enum SV {NONE, ZERO, INF, QNAN, SNAN};
  */
 struct Decimal {
 
-/*public @property bool sign() { return m_sign; };
-public @property void sign(bool value) { m_sign = value; };
-
-public @property int expo() { return m_expo; };
-public @property void expo(int value) { m_expo = value; };
-
-public @property int digits() { return m_digits; };
-public @property void digits(int value) { m_digits = value; };*/
-
     private static decimal.context.DecimalContext context = DEFAULT_CONTEXT.dup;
-
-/*    private static ContextStack contextStack;
-    public static void pushContext(DecimalContext context) {
-        DecimalContext copy = context;
-        contextStack.push(copy);
-    }
-    public static DecimalContext popContext() {
-        return contextStack.pop;
-    }*/
 
     // TODO: make these private
     private SV sval = SV.QNAN;        // special values: default value is quiet NaN
@@ -122,7 +79,7 @@ public @property void digits(int value) { m_digits = value; };*/
         sval = SV.NONE;
     }
 
-public:
+private:
 
 // common decimal "numbers"
     static Decimal NAN      = Decimal(SV.QNAN);
@@ -141,19 +98,18 @@ public:
 
 unittest {
 	write("special values...");
-    writeln("Decimal(SV.QNAN) = ", Decimal(SV.QNAN));
-    writeln("NAN.toAbstract = ", NAN.toAbstract);
-    writeln("SNAN.toAbstract = ", SNAN.toAbstract);
-
-/*    writeln("NAN = ", NAN);
-    assert(Decimal(SV.QNAN) == NAN);*/
-    writeln("Decimal(SV.SNAN) = ", Decimal(SV.SNAN));
-    writeln("Decimal(SV.INF) = ", Decimal(SV.INF));
-    writeln("Decimal(true, SV.INF) = ", Decimal(true, SV.INF));
-    writeln("Decimal(SV.ZERO) = ", Decimal(SV.ZERO));
-
-	writeln("test missing");
+    Decimal num;
+    num = NAN;
+    assert(num.toString == "NaN");
+    num = SNAN;
+    assert(num.toString == "sNaN");
+    assert("Decimal(SV.QNAN).toAbstract = ", NAN.toAbstract);
+    num = NEG_ZERO;
+    assert(num.toString == "-0");
+	writeln("passed");
 }
+
+public:
 
 
 //--------------------------------
@@ -169,8 +125,7 @@ unittest {
     public this(const bool sign, const SV sv, const uint payload = 0) {
         this.signed = sign;
         this.sval = sv;
-        // FIXTHIS: This line hangs the compiler.
-        //this.mant = BigInt(payload);
+        this.mant = BigInt(payload);
     }
 
     unittest {
@@ -218,9 +173,9 @@ unittest {
         else {
             this.signed = sign;
             this.mant = big;
-            if (big == BigInt(0)) {
-                this.sval = SV.ZERO;
-            }
+//            if (big == BigInt(0)) {
+//                this.sval = SV.ZERO;
+//            }
         }
         this.expo = exponent;
         this.digits = numDigits(this.mant);
@@ -313,10 +268,7 @@ unittest {
     // UNREADY: this(const string). Flags. Unit Tests.
     // construct from string representation
     this(const string str) {
-//        writeln("str = ", str);
         this = toNumber(str);
-//        writeln("this = ", this);
-        //this = str;
     };
 
     unittest {
@@ -369,6 +321,29 @@ unittest {
         writeln("test missing");
     }
 
+/**
+ * Returns this(Dec32).
+ */
+
+    this(const decimal.dec32.Dec32 num) {
+    bool sign = num.sign;
+    auto mant = num.coefficient;
+    int  expo = num.exponent;
+
+    if (num.isFinite) {
+        this = Decimal(sign, BigInt(mant), expo);
+    }
+    else if (num.isInfinite) {
+        this = Decimal(sign, SV.INF, 0);
+    }
+    else if (num.isQuiet) {
+        this = Decimal(sign, SV.QNAN, mant);
+    }
+    else if (num.isSignaling) {
+       this = Decimal(sign, SV.SNAN, mant);
+    }
+
+    }
     // UNREADY: dup. Flags. Unit Tests.
     /**
      * dup property
@@ -457,17 +432,6 @@ unittest {
         write("opAssign(real)...");
         writeln("test missing");
     }
-
-    // TODO: Don says this implicit cast is "disgusting"!!
-    /// Assigns a string
-//    void opAssign/*(T:string)*/(const string numeric_string) {
-//        this = toNumber(numeric_string);
-//    }
-//
-//    unittest {
-//        write("opAssign(string)...");
-//        writeln("test missing");
-//    }
 
 //--------------------------------
 // string representations
@@ -643,9 +607,9 @@ unittest {
         writeln("test missing");
     }
 
-    void setZero() {
-        this.sval = SV.ZERO;
-    }
+//    void setZero() {
+//        this.sval = SV.ZERO;
+//    }
 
 //--------------------------------
 // floating point properties
@@ -661,19 +625,9 @@ unittest {
         return context.precision;
     }
 
-    unittest {
-        write("precision...");
-        writeln("test missing");
-    }
-
     /// returns the default value for this type (NaN)
     static Decimal init() {
         return NAN.dup;
-    }
-
-    unittest {
-        write("init...");
-        writeln("test missing");
     }
 
     /// Returns NaN
@@ -681,41 +635,21 @@ unittest {
         return NAN.dup;
     }
 
-    unittest {
-        write("nan...");
-        writeln("test missing");
-    }
-
-    /// Returns signalling NaN
+    /// Returns signaling NaN
     static Decimal snan() {
         return SNAN.dup;
     }
 
-    unittest {
-        write("snan...");
-        writeln("test missing");
-    }
-
-    /// Returns positive infinity.
+    /// Returns infinity.
     static Decimal infinity(bool signed = false) {
         if (signed) return NEG_INF.dup;
         return POS_INF.dup;
     }
 
-    unittest {
-        write("infinity...");
-        writeln("test missing");
-    }
-
-    /// Returns positive zero.
+    /// Returns zero.
     static Decimal zero(bool signed = false) {
         if (signed) return NEG_ZERO.dup;
         return ZERO.dup;
-    }
-
-    unittest {
-        write("zero...");
-        writeln("test missing");
     }
 
     /// Returns the maximum number of decimal digits in this context.
@@ -723,37 +657,17 @@ unittest {
         return context.precision;
     }
 
-    unittest {
-        write("dig...");
-        writeln("test missing");
-    }
-
     /// Returns the number of binary digits in this context.
     static int mant_dig() {
         return cast(int)(context.precision/LOG2);
-    }
-
-    unittest {
-        write("mant_dig...");
-        writeln("test missing");
     }
 
     static int min_exp() {
         return cast(int)(context.eMin/LOG2);
     }
 
-    unittest {
-        write("min_exp...");
-        writeln("test missing");
-    }
-
     static int max_exp() {
         return cast(int)(context.eMax/LOG2);
-    }
-
-    unittest {
-        write("max_exp...");
-        writeln("test missing");
     }
 
     // Returns the maximum representable normal value in the current context.
@@ -764,19 +678,9 @@ unittest {
         return Decimal(cstr);
     }
 
-    unittest {
-        write("max...");
-        writeln("test missing");
-    }
-
     // Returns the minimum representable normal value in the current context.
     static Decimal min_normal() {
         return Decimal(1, context.eMin);
-    }
-
-    unittest {
-        write("min_normal...");
-        writeln("test missing");
     }
 
     // Returns the minimum representable subnormal value in the current context.
@@ -784,55 +688,18 @@ unittest {
         return Decimal(1, context.eTiny);
     }
 
-    unittest {
-        write("min...");
-        writeln("test missing");
-    }
-
     // returns the smallest available increment to 1.0 in this context
     static Decimal epsilon() {
         return Decimal(1, -context.precision);
-    }
-
-    unittest {
-        write("epsilon...");
-        writeln("test missing");
     }
 
     static int min_10_exp() {
         return context.eMin;
     }
 
-    unittest {
-        write("min_10_exp...");
-        writeln("test missing");
-    }
-
     static int max_10_exp() {
         return context.eMax;
     }
-
-    unittest {
-        write("max_10_exp...");
-        writeln("test missing");
-    }
-
-/*    // floating point properties
-    static Dec32 init()       { return nan; }
-    static Dec32 infinity()   { return Dec32(inf_val ); }
-    static Dec32 nan()        { return Dec32(qnan_val); }
-    static Dec32 epsilon()    { return qNaN; }
-    static Dec32 max()        { return qNaN; } // 9999999E+90;
-    static Dec32 min_normal() { return qNaN; } // 1E-101;
-    static Dec32 im()         { return Zero; }
-    const  Dec32 re()         { return this; }
-
-    static int dig()        { return 7; }
-    static int mant_dig()   { return 24; }
-    static int max_10_exp() { return MAX_EXPO; }
-    static int max_exp()    { return -1; }
-    static int min_10_exp() { return MIN_EXPO; }
-    static int min_exp()    { return -1; }*/
 
 //--------------------------------
 //  classification properties
@@ -868,7 +735,7 @@ unittest {
      * Returns true if this number is + or - zero.
      */
     const bool isZero() {
-        return sval == SV.ZERO;
+        return isFinite && coefficient == 0;
     }
 
     unittest {
@@ -1063,8 +930,10 @@ unittest {
      * Returns true if this number is normal.
      */
     const bool isNormal() {
-        if (sval != SV.NONE) return false;
-        return adjustedExponent >= context.eMin;
+        if (isFinite && !isZero) {
+            return adjustedExponent >= context.eMin;
+        }
+        return false;
     }
 
     unittest {

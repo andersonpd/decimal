@@ -57,7 +57,16 @@ T to(T:string)(const BigInt num) {
 /**
  * Converts a small decimal to a big decimal
  */
-public Decimal toDecimal(T)(const T num) if (isSmallDecimal!T) {
+public Decimal toDecimal(T)(const T num) if (is(typeof(num) == Decimal)) {
+
+        return num.dup;
+    }
+
+/**
+ * Converts a small decimal to a big decimal
+ */
+public Decimal toDecimal(T)(const T num) if (isDecimal!T) {
+
     bool sign = num.sign;
     auto mant = num.coefficient;
     int  expo = num.exponent;
@@ -77,13 +86,13 @@ public Decimal toDecimal(T)(const T num) if (isSmallDecimal!T) {
 
     // NOTE: Should never reach here.
     throw (new Exception("Invalid conversion"));
-
 }
 
 unittest {
     write("toDecimal...");
     Dec32 small;
     Decimal big;
+    small = 5;
     big = toDecimal!Dec32(small);
     writeln();
     writeln("big = ", big);

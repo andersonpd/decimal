@@ -40,28 +40,12 @@ import std.ascii: isDigit;
 import std.stdio: write, writeln;
 import std.string;
 
-// BigInt BIG_ONE = BigInt(1);
-// TODO: BIG_ONE, BIG_ZERO
+const BigInt BIG_ONE = BigInt(1);
+const BigInt BIG_ZERO = BigInt(0);
 
 //--------------------------------
 // conversion to/from strings
 //--------------------------------
-
-// READY: toSciString.
-/**
- * Converts a Decimal to a string representation.
- */
-/*public string toSciString(const Decimal num) {
-    return decimal.conv.toSciString!Decimal(num);
-};    // end toSciString()*/
-
-// READY: toEngString.
-/**
- * Converts a Decimal to an engineering string representation.
- */
-/*public string toEngString(const Decimal num) {
-   return decimal.conv.toEngString!Decimal(num);
-}; // end toEngString()*/
 
 // UNREADY: toNumber. Description. Corner Cases. Context.
 /**
@@ -240,9 +224,6 @@ public Decimal toNumber(const string inStr) {
     // convert coefficient string to BigInt
     num.coefficient = BigInt(str.idup);
     num.digits = numDigits(num.coefficient);
-    if (num.coefficient == 0) { // BigInt(0)) {
-        num.setZero; //  = Decimal.zero(num.sign);
-    }
 
     return num;
 }
@@ -935,7 +916,9 @@ public int compare(T)(const T op1, const T op2, DecimalContext context,
 
     // test the coefficient
     // result.isZero may not be true if the result hasn't been rounded
-    if (result.coefficient == 0) return 0;
+    if (result.coefficient == 0) {
+        return 0;
+    }
     return result.sign ? -1 : 1;
 }
 
@@ -944,7 +927,7 @@ unittest {
     op1 = Dec32(2.1);
     op2 = Dec32("3");
     assert(compare(op1, op2, context) == -1);
-//    op1 = 2.1;
+    op1 = 2.1;
     op2 = Dec32(2.1);
     assert(compare(op1, op2, context) == 0);
 }
@@ -1471,8 +1454,10 @@ public T multiply(T)(const T op1, const T op2, DecimalContext context,
         return product;
     }
     // product is finite
+
     product.clear();
-    product.coefficient = cast(BigInt)op1.coefficient * cast(BigInt)op2.coefficient;
+//    product.coefficient = cast(BigInt)op1.coefficient * cast(BigInt)op2.coefficient;
+    product.coefficient = op1.coefficient * op2.coefficient;
     product.exponent = op1.exponent + op2.exponent;
     product.sign = op1.sign ^ op2.sign;
     product.digits = numDigits(product.coefficient);
@@ -1543,8 +1528,10 @@ public T divide(T)(const T op1, const T op2,
     quotient.clear();
     // TODO: are two guard digits necessary? sufficient?
     context.precision += 2;
-    T dividend = copy!T(op1);
-    T divisor  = copy!T(op2);
+    Decimal dividend = Decimal(op1);
+    Decimal divisor  = Decimal(op2);
+    Decimal working = Decimal.zero;
+    working.clear();
     int diff = dividend.exponent - divisor.exponent;
     if (diff > 0) {
         decShl(dividend.coefficient, diff);
@@ -1557,17 +1544,18 @@ public T divide(T)(const T op1, const T op2,
         dividend.exponent = dividend.exponent - shift;
         dividend.digits = dividend.digits + diff;
     }
-    quotient.coefficient = dividend.coefficient / divisor.coefficient;
-    quotient.exponent = dividend.exponent - divisor.exponent;
-    quotient.sign = dividend.sign ^ divisor.sign;
-    quotient.digits = numDigits(quotient.coefficient);
+    working.coefficient = dividend.coefficient / divisor.coefficient;
+    working.exponent = dividend.exponent - divisor.exponent;
+    working.sign = dividend.sign ^ divisor.sign;
+    working.digits = numDigits(working.coefficient);
     context.precision -= 2;
     if (rounded) {
-        round(quotient, context);
+        round(working, context);
         if (!context.getFlag(INEXACT)) {
-            quotient = reduceToIdeal(quotient, diff, context);
+            working = reduceToIdeal(working, diff, context);
         }
     }
+    quotient = T(working);
     return quotient;
 }
 
@@ -1847,14 +1835,14 @@ private void alignOps(T)(ref T op1, ref T op2) if (isDecimal!T) {
  * -- General Decimal Arithmetic Specification, p. 24
  */
 private bool isInvalidBinaryOp(T)(const T op1, const T op2,
-        /*ref*/ T num, DecimalContext context) if (isDecimal!T) {
+        T num, DecimalContext context) if (isDecimal!T) {
     // if either operand is a signaling NaN...
     if (op1.isSignaling || op2.isSignaling) {
         // flag the invalid operation
         context.setFlag(INVALID_OPERATION);
         // set the num to the first sNaN operand
-
         num = op1.isSignaling ? op1 : op2;
+
         // retain sign and payload; convert to qNaN
         //num = T(num.sign, SV.QNAN, 0); // FIXTHIS: add payload, num.coefficient);
         return true;
@@ -1986,24 +1974,6 @@ private bool isInvalidDivision(T)(const T dividend, const T divisor,
     }
     return false;
 }
-
-// UNREADY: isZeroDividend. Unit tests.
-/**
- * Checks for a zero dividend. If found, sets the quotient to zero.
- */
-// NOTE: is this used?
-/*private bool isZeroDividend(T)(const T dividend, const T divisor,
-        ref T quotient, DecimalContext context) if (isDecimal!T) {
-    if (dividend.isZero()) {
-        quotient.sval = SV.ZERO;
-        quotient.coefficient = BigInt(0);
-        quotient.exponent = 0;
-        quotient.digits = dividend.digits; // TODO: ??? should be 1???
-        quotient.sign = dividend.sign;
-        return true;
-    }
-    return false;
-}*/
 
 //--------------------------------
 

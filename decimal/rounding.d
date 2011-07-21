@@ -592,8 +592,6 @@ unittest {
     writeln("---------------------");
 }
 
-//public static ZERO = BigInt();
-
 // TODO: preload the powers of ten and powers of five (& powers of 2?)
 // TODO: compare benchmarks for division by chunks of a quintillion vs. tens.
 // TODO: compare benchmarks for division by powers of 10 vs. 2s * 5s.
