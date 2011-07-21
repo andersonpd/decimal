@@ -268,7 +268,7 @@ public:
     // UNREADY: this(const string). Flags. Unit Tests.
     // construct from string representation
     this(const string str) {
-        this = toNumber(str);
+        this = decimal.conv.toNumber(str);
     };
 
     unittest {

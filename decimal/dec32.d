@@ -924,6 +924,28 @@ struct Dec32 {
 // operator assignment
 //-----------------------------
 
+    ref Dec32 opOpAssign(string op) (Dec32 rhs) {
+        this = opBinary!op(rhs);
+        return this;
+    }
+
+    unittest {
+	write("opOpAssign...");
+    Dec32 op1, op2, actual, expect;
+    op1 = 23.56;
+    op2 = -2.07;
+    op1 += op2;
+    expect = 21.49;
+    actual = op1;
+    assert(expect == actual);
+    op1 *= op2;
+    expect = -44.4843;
+    actual = op1;
+    assert(expect == actual);
+	writeln("passed");
+}
+
+
 //-----------------------------
 // helper functions
 //-----------------------------

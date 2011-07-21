@@ -515,6 +515,200 @@ unittest {
     writeln("dec = ", dec);*/
 }
 
+// UNREADY: toNumber. Description. Corner Cases. Context.
+/**
+ * Converts a string into a Decimal.
+ */
+public Decimal toNumber(const string inStr) {
+
+//writeln("inStr = ", inStr);
+    Decimal num;
+    num.sign = false;
+//writeln("num = ", num);
+
+    // strip, copy, tolower
+    char[] str = strip(inStr).dup;
+    toLowerInPlace(str);
+
+    // get sign, if any
+    if (startsWith(str,"-")) {
+        num.sign = true;
+        str = str[1..$];
+    }
+    else if (startsWith(str,"+")) {
+        str = str[1..$];
+    }
+//writeln("num.sign = ", num.sign);
+
+    // check for NaN
+    if (startsWith(str,"nan")) {
+        num = Decimal.nan;
+        if (str == "nan") {
+            num.coefficient = 0; // BigInt(0);
+            return num;
+        }
+        // set payload
+        str = str[3..$];
+        // ensure string is all digits
+        foreach(char c; str) {
+            if (!isDigit(c)) {
+                return num;
+            }
+        }
+        // convert string to payload
+        num.coefficient = BigInt(str.idup);
+        return num;
+    };
+
+    // check for sNaN
+    if (startsWith(str,"snan")) {
+        num = Decimal.snan;
+        if (str == "snan") {
+            num.coefficient = 0; // BigInt(0);
+            return num;
+        }
+        // set payload
+        str = str[4..$];
+        // ensure string is all digits
+        foreach(char c; str) {
+            if (!isDigit(c)) {
+                return num;
+            }
+        }
+        // convert string to payload
+        num.coefficient = BigInt(str.idup);
+        return num;
+    };
+
+    // check for infinity
+    if (str == "inf" || str == "infinity") {
+//        bool signed = num.sign;
+        num = Decimal.infinity(num.sign);
+        return num;
+    };
+
+    // at this point, num is a qNaN
+    num.clear();
+    // check for exponent
+    int pos = indexOf(str, 'e');
+    if (pos > 0) {
+        // if it's just a trailing 'e', return NaN
+        if (pos == str.length - 1) {
+            num = Decimal.nan;
+            return num;
+        }
+        // split the string into coefficient and exponent
+        char[] xstr = str[pos+1..$];
+        str = str[0..pos];
+        // assume exponent is positive
+        bool xneg = false;
+        // check for minus sign
+        if (startsWith(xstr, "-")) {
+            xneg = true;
+            xstr = xstr[1..$];
+        }
+        // check for plus sign
+        else if (startsWith(xstr, "+")) {
+            xstr = xstr[1..$];
+        }
+
+        // ensure it's not now empty
+        if (xstr.length < 1) {
+            num = Decimal.nan;
+            return num;
+        }
+
+        // ensure exponent is all digits
+        foreach(char c; xstr) {
+            if (!isDigit(c)) {
+                num = Decimal.nan;
+            return num;
+            }
+        }
+
+        // trim leading zeros
+        while (xstr[0] == '0' && xstr.length > 1) {
+            xstr = xstr[1..$];
+        }
+
+        // make sure it will fit into an int
+        if (xstr.length > 10) {
+            num = Decimal.nan;
+            return num;
+        }
+        if (xstr.length == 10) {
+            // try to convert it to a long (should work) and
+            // then see if the long value is too big (or small)
+            long lex = std.conv.to!long(xstr);
+            if ((xneg && (-lex < int.min)) || lex > int.max) {
+            num = Decimal.nan;
+        return num;
+            }
+            num.exponent = cast(int) lex;
+        }
+        else {
+            // everything should be copacetic at this point
+            num.exponent = std.conv.to!int(xstr);
+        }
+        if (xneg) {
+            num.exponent = -num.exponent;
+        }
+    }
+    else {
+        num.exponent = 0;
+    }
+
+    // remove trailing decimal point
+    if (endsWith(str, ".")) {
+        str = str[0..$-1];
+    }
+    // strip leading zeros
+    while (str[0] == '0' && str.length > 1) {
+        str = str[1..$];
+    }
+
+    // remove internal decimal point
+    int point = indexOf(str, '.');
+    if (point >= 0) {
+        // excise the point and adjust exponent
+        str = str[0..point] ~ str[point+1..$];
+        int diff = str.length - point;
+        num.exponent = num.exponent - diff;
+    }
+
+    // ensure string is not empty
+    if (str.length < 1) {
+        num = Decimal.nan;
+        return num;
+    }
+
+    // ensure string is all digits
+    foreach(char c; str) {
+        if (!isDigit(c)) {
+            num = Decimal.nan;
+            return num;
+        }
+    }
+    // convert coefficient string to BigInt
+    num.coefficient = BigInt(str.idup);
+    num.digits = decimal.rounding.numDigits(num.coefficient);
+
+    return num;
+}
+
+unittest {
+    Decimal f = Decimal("1.0");
+    assert(f.toString() == "1.0");
+    f = Decimal(".1");
+    assert(f.toString() == "0.1");
+    f = Decimal("-123");
+    assert(f.toString() == "-123");
+    f = Decimal("1.23E3");
+    assert(f.toString() == "1.23E+3");
+    f = Decimal("1.23E-3");
+    assert(f.toString() == "0.00123");
+}
+
 unittest {
     writeln("----------------------");
     writeln("conv..........finished");
