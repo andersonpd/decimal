@@ -51,6 +51,8 @@ const BigInt BIG_ZERO = BigInt(0);
 // classification functions
 //--------------------------------
 
+private static DecimalContext arithContext = DecimalContext().dup;
+
 // READY: radix
 /**
  * Returns the radix of this representation (10).
@@ -248,77 +250,77 @@ unittest {
     op1 = Decimal("2.17");
     op2 = Decimal("0.001");
     expect = Decimal("2.170");
-    actual = quantize!Decimal(op1, op2, context);
+    actual = quantize!Decimal(op1, op2, arithContext);
     assert(actual == expect);
     op1 = Decimal("2.17");
     op2 = Decimal("0.01");
     expect = Decimal("2.17");
-    actual = quantize(op1, op2, context);
+    actual = quantize(op1, op2, arithContext);
     assert(actual == expect);
     op1 = Decimal("2.17");
     op2 = Decimal("0.1");
     expect = Decimal("2.2");
-    actual = quantize(op1, op2, context);
+    actual = quantize(op1, op2, arithContext);
     assert(actual == expect);
     op1 = Decimal("2.17");
     op2 = Decimal("1e+0");
     expect = Decimal("2");
-    actual = quantize(op1, op2, context);
+    actual = quantize(op1, op2, arithContext);
     assert(actual == expect);
     op1 = Decimal("2.17");
     op2 = Decimal("1e+1");
     expect = Decimal("0E+1");
-    actual = quantize(op1, op2, context);
+    actual = quantize(op1, op2, arithContext);
     assert(actual.toString() == expect.toString());
     op1 = Decimal("-Inf");
     op2 = Decimal("Infinity");
     expect = Decimal("-Infinity");
-    actual = quantize(op1, op2, context);
+    actual = quantize(op1, op2, arithContext);
     assert(actual == expect);
     op1 = Decimal("2");
     op2 = Decimal("Infinity");
     expect = Decimal("NaN");
-    actual = quantize(op1, op2, context);
+    actual = quantize(op1, op2, arithContext);
     assert(actual.toString() == expect.toString());
     op1 = Decimal("-0.1");
     op2 = Decimal("1");
     expect = Decimal("-0");
-    actual = quantize(op1, op2, context);
+    actual = quantize(op1, op2, arithContext);
     assert(actual.toString() == expect.toString());
     op1 = Decimal("-0");
     op2 = Decimal("1e+5");
     expect = Decimal("-0E+5");
-    actual = quantize(op1, op2, context);
+    actual = quantize(op1, op2, arithContext);
     assert(actual.toString() == expect.toString());
     op1 = Decimal("+35236450.6");
     op2 = Decimal("1e-2");
     expect = Decimal("NaN");
-    actual = quantize(op1, op2, context);
+    actual = quantize(op1, op2, arithContext);
     assert(actual.toString() == expect.toString());
     op1 = Decimal("-35236450.6");
     op2 = Decimal("1e-2");
     expect = Decimal("NaN");
-    actual = quantize(op1, op2, context);
+    actual = quantize(op1, op2, arithContext);
     assert(actual.toString() == expect.toString());
     op1 = Decimal("217");
     op2 = Decimal("1e-1");
     expect = Decimal( "217.0");
-    actual = quantize(op1, op2, context);
+    actual = quantize(op1, op2, arithContext);
     assert(actual.toString() == expect.toString());
     op1 = Decimal("217");
     op2 = Decimal("1e+0");
     expect = Decimal("217");
-    actual = quantize(op1, op2, context);
+    actual = quantize(op1, op2, arithContext);
     assert(actual.toString() == expect.toString());
     op1 = Decimal("217");
     op2 = Decimal("1e+1");
     expect = Decimal("2.2E+2");
-    actual = quantize(op1, op2, context);
+    actual = quantize(op1, op2, arithContext);
     assert(actual.toString() == expect.toString());
     op1 = Decimal("217");
     op2 = Decimal("1e+2");
     expect = Decimal("2E+2");
-    actual = quantize(op1, op2, context);
+    actual = quantize(op1, op2, arithContext);
     assert(actual.toString() == expect.toString());
     assert(actual == expect);
 }
@@ -354,7 +356,7 @@ unittest {
     Decimal num, expd;
     num = Decimal("250");
     expd = Decimal("2");
-    assert(logb(num, context) == expd);
+    assert(logb(num, arithContext) == expd);
 }
 
 /**
@@ -391,7 +393,7 @@ unittest {
     auto num1 = Decimal("7.50");
     auto num2 = Decimal("-2");
     auto expd = Decimal("0.0750");
-    assert(scaleb(num1, num2, context) == expd);
+    assert(scaleb(num1, num2, arithContext) == expd);
 }
 
 //--------------------------------
@@ -439,7 +441,7 @@ unittest {
     string str;
     num = Decimal("1.200");
     str = "1.2";
-    red = reduce(num, context);
+    red = reduce(num, arithContext);
     assert(red.toString() == str);
 }
 
@@ -469,12 +471,12 @@ unittest {
     Decimal expect;
     num = Decimal("-Inf");
     expect = Decimal("Inf");
-    assert(abs(num, context) == expect);
+    assert(abs(num, arithContext) == expect);
     num = 101.5;
     expect = 101.5;
-    assert(abs(num, context) == expect);
+    assert(abs(num, arithContext) == expect);
     num = -101.5;
-    assert(abs(num, context) == expect);
+    assert(abs(num, arithContext) == expect);
 }
 
 // READY: plus
@@ -499,12 +501,12 @@ unittest {
     Decimal zero = Decimal.zero;
     Decimal num, expect, actual;
     num = 1.3;
-    expect = add(zero, num, context);
-    actual = plus(num,context);
-    assert(plus(num, context) == expect);
+    expect = add(zero, num, arithContext);
+    actual = plus(num,arithContext);
+    assert(plus(num, arithContext) == expect);
     num = -1.3;
-    expect = add(zero, num, context);
-    assert(plus(num, context) == expect);
+    expect = add(zero, num, arithContext);
+    assert(plus(num, arithContext) == expect);
 }
 
 // READY: minus
@@ -528,11 +530,11 @@ unittest {
     Decimal zero = Decimal(0);
     Decimal num, expect;
     num = 1.3;
-    expect = subtract(zero, num, context);
-    assert(minus(num, context) == expect);
+    expect = subtract(zero, num, arithContext);
+    assert(minus(num, arithContext) == expect);
     num = -1.3;
-    expect = subtract(zero, num, context);
-    assert(minus(num, context) == expect);
+    expect = subtract(zero, num, arithContext);
+    assert(minus(num, arithContext) == expect);
 }
 
 //-----------------------------------
@@ -570,10 +572,10 @@ unittest {
     Decimal num, expect;
     num = 1;
     expect = Decimal("1.00000001");
-    assert(nextPlus(num, context) == expect);
+    assert(nextPlus(num, arithContext) == expect);
     num = 10;
     expect = Decimal("10.0000001");
-    assert(nextPlus(num, context) == expect);
+    assert(nextPlus(num, arithContext) == expect);
 }
 
 // UNREADY: nextMinus. Description. Unit Tests.
@@ -610,10 +612,10 @@ unittest {
     Decimal num, expect;
     num = 1;
     expect = 0.999999999;
-    assert(nextMinus(num, context) == expect);
+    assert(nextMinus(num, arithContext) == expect);
     num = -1.00000003;
     expect = -1.00000004;
-    assert(nextMinus(num, context) == expect);
+    assert(nextMinus(num, arithContext) == expect);
 }
 
 // UNREADY: nextToward. Description. Unit Tests.
@@ -638,11 +640,11 @@ unittest {
     op1 = 1;
     op2 = 2;
     expect = 1.00000001;
-    assert(nextToward(op1, op2, context) == expect);
+    assert(nextToward(op1, op2, arithContext) == expect);
     op1 = -1.00000003;
     op2 = 0;
     expect = -1.00000002;
-    assert(nextToward(op1, op2, context) == expect);
+    assert(nextToward(op1, op2, arithContext) == expect);
 }
 
 //--------------------------------
@@ -730,10 +732,10 @@ unittest {
     Dec32 op1, op2;
     op1 = Dec32(2.1);
     op2 = Dec32("3");
-    assert(compare(op1, op2, context) == -1);
+    assert(compare(op1, op2, arithContext) == -1);
     op1 = 2.1;
     op2 = Dec32(2.1);
-    assert(compare(op1, op2, context) == 0);
+    assert(compare(op1, op2, arithContext) == 0);
 }
 
 // UNREADY: equals. Verify 'equals' is identical to 'compare == 0'.
@@ -960,10 +962,10 @@ unittest {
     Decimal op1, op2;
     op1 = 3;
     op2 = 2;
-    assert(max(op1, op2, context) == op1);
+    assert(max(op1, op2, arithContext) == op1);
     op1 = -10;
     op2 = 3;
-    assert(max(op1, op2, context) == op2);
+    assert(max(op1, op2, arithContext) == op2);
 }
 
 // UNREADY: maxMagnitude. Flags.
@@ -1021,10 +1023,10 @@ unittest {
     Decimal op1, op2;
     op1 = 3;
     op2 = 2;
-    assert(min(op1, op2, context) == op2);
+    assert(min(op1, op2, arithContext) == op2);
     op1 = -10;
     op2 = 3;
-    assert(min(op1, op2, context) == op1);
+    assert(min(op1, op2, arithContext) == op1);
 }
 
 // UNREADY: minMagnitude. Flags.
@@ -1079,17 +1081,17 @@ public T shift(T)(const T op1, const int op2, DecimalContext context)
 unittest {
     Decimal num = 34;
     int digits = 8;
-    Decimal act = shift(num, digits, context);
+    Decimal act = shift(num, digits, arithContext);
     num = 12;
     digits = 9;
-    act = shift(num, digits, context);
+    act = shift(num, digits, arithContext);
     num = 123456789;
     digits = -2;
-    act = shift(num, digits, context);
+    act = shift(num, digits, arithContext);
     digits = 0;
-    act = shift(num, digits, context);
+    act = shift(num, digits, arithContext);
     digits = 2;
-    act = shift(num, digits, context);
+    act = shift(num, digits, arithContext);
 }
 
 /**
@@ -1153,7 +1155,7 @@ public T add(T)(const T op1, const T op2, DecimalContext context,
         return augend;
     }
     // TODO: is this check redundant?
-    if (isInvalidAddition(augend, addend, sum)) {
+    if (isInvalidAddition(augend, addend, sum, context)) {
         return sum;
     }
     // only augend is infinite,
@@ -1213,11 +1215,11 @@ unittest {
     Dec32 op1, op2, sum;
     op1 = Dec32("12");
     op2 = Dec32("7.00");
-    sum = add(op1, op2, context);
+    sum = add(op1, op2, arithContext);
     assert(sum.toString() == "19.00");
     op1 = Dec32("1E+2");
     op2 = Dec32("1E+4");
-    sum = add(op1, op2, context);
+    sum = add(op1, op2, arithContext);
     assert(sum.toString() == "1.01E+4");
 }
 
@@ -1275,10 +1277,10 @@ unittest {
     Decimal op1, op2, result;
     op1 = Decimal("1.20");
     op2 = 3;
-    result = multiply(op1, op2, context);
+    result = multiply(op1, op2, arithContext);
     assert(result.toString() == "3.60");
     op1 = 7;
-    result = multiply(op1, op2, context);
+    result = multiply(op1, op2, arithContext);
     assert(result.toString() == "21");
 }
 
@@ -1300,15 +1302,15 @@ public T fma(T)(const T op1, const T op2, const T op3,
 unittest {
     Decimal op1, op2, op3, result;
     op1 = 3; op2 = 5; op3 = 7;
-    result = (fma(op1, op2, op3, context));
+    result = (fma(op1, op2, op3, arithContext));
     assert(result == Decimal(22));
     op1 = 3; op2 = -5; op3 = 7;
-    result = (fma(op1, op2, op3, context));
+    result = (fma(op1, op2, op3, arithContext));
     assert(result == Decimal(-8));
     op1 = 888565290;
     op2 = 1557.96930;
     op3 = -86087.7578;
-    result = (fma(op1, op2, op3, context));
+    result = (fma(op1, op2, op3, arithContext));
     assert(result == Decimal(1.38435736E+12));
 }
 
@@ -1364,25 +1366,25 @@ public T divide(T)(const T op1, const T op2,
 }
 
 unittest {
-    pushContext(context);
-    context.precision = 9;
+    pushContext(arithContext);
+    arithContext.precision = 9;
     Decimal op1, op2, actual, expect;
     op1 = 1;
     op2 = 3;
-    actual = divide(op1, op2, context);
+    actual = divide(op1, op2, arithContext);
     expect = Decimal(0.333333333);
     assert(actual == expect);
     assert(actual.toString() == expect.toString());
     op1 = 1;
     op2 = 10;
     expect = 0.1;
-    actual = divide(op1, op2, context);
+    actual = divide(op1, op2, arithContext);
     assert(actual == expect);
 // TODO: what's wrong here?
 //    writeln("expect = ", expect);
 //    writeln("actual = ", actual);
 //    assert(actual.toString() == expect.toString());
-    context = popContext;
+    arithContext = popContext;
 }
 
 // UNREADY: divideInteger. Error if integer value > precision digits. Duplicates code with divide?
@@ -1424,16 +1426,16 @@ unittest {
     Decimal op1, op2, actual, expect;
     op1 = 2;
     op2 = 3;
-    actual = divideInteger(op1, op2, context);
+    actual = divideInteger(op1, op2, arithContext);
     expect = 0;
     assert(actual == expect);
     op1 = 10;
-    actual = divideInteger(op1, op2, context);
+    actual = divideInteger(op1, op2, arithContext);
     expect = 3;
     assert(actual == expect);
     op1 = 1;
     op2 = 0.3;
-    actual = divideInteger(op1, op2, context);
+    actual = divideInteger(op1, op2, arithContext);
     assert(actual == expect);
 }
 
@@ -1461,11 +1463,11 @@ unittest {
     Decimal op1, op2, actual, expect;
     op1 = 2.1;
     op2 = 3;
-    actual = remainder(op1, op2, context);
+    actual = remainder(op1, op2, arithContext);
     expect = 2.1;
     assert(actual == expect);
     op1 = 10;
-    actual = remainder(op1, op2, context);
+    actual = remainder(op1, op2, arithContext);
     expect = 1;
     assert(actual == expect);
 }
@@ -1513,11 +1515,11 @@ unittest {
     Decimal num, expect, actual;
     num = 2.1;
     expect = 2;
-    actual = roundToIntegralExact(num, context);
+    actual = roundToIntegralExact(num, arithContext);
     assert(actual == expect);
     num = 100;
     expect = 100;
-    actual = roundToIntegralExact(num, context);
+    actual = roundToIntegralExact(num, arithContext);
     assert(actual == expect);
     assert(actual.toString() == expect.toString());
 }
@@ -1605,9 +1607,9 @@ unittest {
     // FIXTHIS: Can't actually test payloads at this point.
     num = Decimal("sNaN123");
     expect = Decimal("NaN123");
-    actual = abs!Decimal(num, context);
+    actual = abs!Decimal(num, arithContext);
     assert(actual.isQuiet);
-    assert(context.getFlag(INVALID_OPERATION));
+    assert(arithContext.getFlag(INVALID_OPERATION));
 //    assert(actual.toAbstract == expect.toAbstract);
 }
 
@@ -1703,7 +1705,8 @@ private bool invalidOperand(T)(const T op1, ref T result,
  *
  *    -- General Decimal Arithmetic Specification, p. 52, "Invalid operation"
  */
-private bool isInvalidAddition(T) (T op1, T op2, ref T result) {
+private bool isInvalidAddition(T) (T op1, T op2, ref T result,
+        DecimalContext context) {
     if (isInvalidBinaryOp!T(op1, op2, result, context)) {
         return true;
     }

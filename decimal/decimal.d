@@ -47,7 +47,7 @@ unittest {
     writeln("-------------------");
 }
 
-alias Decimal.context context;
+alias Decimal.bigContext bigContext;
 
 // special values for NaN, Inf, etc.
 private static enum SV {NONE, ZERO, INF, QNAN, SNAN};
@@ -62,7 +62,7 @@ private static enum SV {NONE, ZERO, INF, QNAN, SNAN};
  */
 struct Decimal {
 
-    private static decimal.context.DecimalContext context = DEFAULT_CONTEXT.dup;
+    private static DecimalContext bigContext = DecimalContext();
 
     // TODO: make these private
     private SV sval = SV.QNAN;        // special values: default value is quiet NaN
@@ -283,7 +283,7 @@ public:
      *    Constructs a number from a real value.
      */
     this(const real r) {
-        string str = format("%.*G", cast(int)context.precision, r);
+        string str = format("%.*G", cast(int)bigContext.precision, r);
         this(str);
     }
 
@@ -622,7 +622,7 @@ unittest {
     }
 
     static int precision() {
-        return context.precision;
+        return bigContext.precision;
     }
 
     /// returns the default value for this type (NaN)
@@ -654,51 +654,51 @@ unittest {
 
     /// Returns the maximum number of decimal digits in this context.
     static uint dig() {
-        return context.precision;
+        return bigContext.precision;
     }
 
     /// Returns the number of binary digits in this context.
     static int mant_dig() {
-        return cast(int)(context.precision/LOG2);
+        return cast(int)(bigContext.precision/LOG2);
     }
 
     static int min_exp() {
-        return cast(int)(context.eMin/LOG2);
+        return cast(int)(bigContext.eMin/LOG2);
     }
 
     static int max_exp() {
-        return cast(int)(context.eMax/LOG2);
+        return cast(int)(bigContext.eMax/LOG2);
     }
 
     // Returns the maximum representable normal value in the current context.
     // FIXTHIS: this doesn't always access the current context. Move it to context?
     static Decimal max() {
-        string cstr = "9." ~ replicate("9", context.precision-1)
-            ~ "E" ~ format("%d", context.eMax);
+        string cstr = "9." ~ replicate("9", bigContext.precision-1)
+            ~ "E" ~ format("%d", bigContext.eMax);
         return Decimal(cstr);
     }
 
     // Returns the minimum representable normal value in the current context.
     static Decimal min_normal() {
-        return Decimal(1, context.eMin);
+        return Decimal(1, bigContext.eMin);
     }
 
     // Returns the minimum representable subnormal value in the current context.
     static Decimal min() {
-        return Decimal(1, context.eTiny);
+        return Decimal(1, bigContext.eTiny);
     }
 
     // returns the smallest available increment to 1.0 in this context
     static Decimal epsilon() {
-        return Decimal(1, -context.precision);
+        return Decimal(1, -bigContext.precision);
     }
 
     static int min_10_exp() {
-        return context.eMin;
+        return bigContext.eMin;
     }
 
     static int max_10_exp() {
-        return context.eMax;
+        return bigContext.eMax;
     }
 
 //--------------------------------
@@ -907,7 +907,7 @@ unittest {
      */
     const bool isSubnormal() {
         if (sval != SV.NONE) return false;
-        return adjustedExponent < context.eMin;
+        return adjustedExponent < bigContext.eMin;
     }
 
     unittest {
@@ -931,7 +931,7 @@ unittest {
      */
     const bool isNormal() {
         if (isFinite && !isZero) {
-            return adjustedExponent >= context.eMin;
+            return adjustedExponent >= bigContext.eMin;
         }
         return false;
     }
@@ -974,7 +974,7 @@ unittest {
      * greater than the argument, respectively.
      */
     const int opCmp(const Decimal that) {
-        return compare!Decimal(this, that, context);
+        return compare!Decimal(this, that, bigContext);
     }
 
 unittest {
@@ -991,7 +991,7 @@ unittest {
      * A Decimal may not be equal to itself (this != this) if it is a NaN.
      */
     const bool opEquals (ref const Decimal that) {
-        return equals!Decimal(this, that, context);
+        return equals!Decimal(this, that, bigContext);
     }
 
 unittest {
@@ -1009,7 +1009,7 @@ unittest {
      * subtract('0', b);
      */
     const Decimal opNeg() {
-        return minus!Decimal(this, context);
+        return minus!Decimal(this, bigContext);
     }
 
     unittest {
@@ -1023,7 +1023,7 @@ unittest {
      * add('0', a);
      */
     const Decimal opPos() {
-        return plus!Decimal(this, context);
+        return plus!Decimal(this, bigContext);
     }
 
     unittest {
@@ -1089,7 +1089,7 @@ unittest {
 
     /// Adds a Decimal to this and returns the Decimal result
     const Decimal opAdd(T:Decimal)(const T addend) {
-        return add!Decimal(this, addend, context);
+        return add!Decimal(this, addend, bigContext);
     }
 
     unittest {
@@ -1099,7 +1099,7 @@ unittest {
 
     // Adds a number to this and returns the result.
     const Decimal opAdd(T)(const T addend) {
-        return add!Decimal(this, Decimal(BigInt(addend)), context);
+        return add!Decimal(this, Decimal(BigInt(addend)), bigContext);
     }
 
     unittest {
@@ -1108,7 +1108,7 @@ unittest {
     }
 
     const Decimal opSub(T:Decimal)(const T subtrahend) {
-        return subtract!Decimal(this, subtrahend, context);
+        return subtract!Decimal(this, subtrahend, bigContext);
     }
 
     unittest {
@@ -1117,7 +1117,7 @@ unittest {
     }
 
     const Decimal opSub(T)(const T subtrahend) {
-        return subtract!Decimal(this, Decimal(BigInt(subtrahend)), context);
+        return subtract!Decimal(this, Decimal(BigInt(subtrahend)), bigContext);
     }
 
     unittest {
@@ -1126,7 +1126,7 @@ unittest {
     }
 
     const Decimal opMul(T:Decimal)(const T multiplier) {
-        return multiply!Decimal(this, multiplier, context);
+        return multiply!Decimal(this, multiplier, bigContext);
     }
 
     unittest {
@@ -1135,7 +1135,7 @@ unittest {
     }
 
     const Decimal opMul(T:long)(const T multiplier) {
-        return multiply!Decimal(this, Decimal(BigInt(multiplier)), context);
+        return multiply!Decimal(this, Decimal(BigInt(multiplier)), bigContext);
     }
 
     unittest {
@@ -1144,7 +1144,7 @@ unittest {
     }
 
     const Decimal opDiv(T:Decimal)(const T divisor) {
-        return divide!Decimal(this, divisor, context);
+        return divide!Decimal(this, divisor, bigContext);
     }
 
     unittest {
@@ -1153,7 +1153,7 @@ unittest {
     }
 
     const Decimal opDiv(T)(const T divisor) {
-        return divide!Decimal(this, Decimal(divisor), context);
+        return divide!Decimal(this, Decimal(divisor), bigContext);
     }
 
     unittest {
@@ -1162,7 +1162,7 @@ unittest {
     }
 
     const Decimal opMod(T:Decimal)(const T divisor) {
-        return remainder!Decimal(this, divisor, context);
+        return remainder!Decimal(this, divisor, bigContext);
     }
 
     unittest {
@@ -1171,7 +1171,7 @@ unittest {
     }
 
     const Decimal opMod(T)(const T divisor) {
-        return remainder(this, Decimal(divisor), context);
+        return remainder(this, Decimal(divisor), bigContext);
     }
 
     unittest {
@@ -1247,7 +1247,7 @@ unittest {
 //-----------------------------
 
     const Decimal nextUp() {
-        return nextPlus!Decimal(this, context);
+        return nextPlus!Decimal(this, bigContext);
     }
 
     unittest {
@@ -1256,7 +1256,7 @@ unittest {
     }
 
     const Decimal nextDown() {
-        return nextMinus!Decimal(this, context);
+        return nextMinus!Decimal(this, bigContext);
     }
 
     unittest {
@@ -1265,7 +1265,7 @@ unittest {
     }
 
     const Decimal nextAfter(const Decimal num) {
-        return nextToward!Decimal(this, num, context);
+        return nextToward!Decimal(this, num, bigContext);
     }
 
 unittest {

@@ -24,12 +24,11 @@ import decimal.decimal;
 import decimal.dec32;
 import decimal.rounding;
 
-/+
 //--------------------------------
 // unit test methods
 //--------------------------------
 
-template Test(T) {
+/*template Test(T) {
     bool isEqual(T)(T actual, T expected, string label, string message = "") {
         bool equal = (expected == actual);
         if (!equal) {
@@ -60,19 +59,7 @@ unittest {
 //    assert(numDigits(big) == 101);
 //    assert(firstDigit(big) == 1);
 }
-
-import decimal.context; //: INVALID_OPERATION;
-/*
-import decimal.digits;
-import decimal.decimal;
-import decimal.arithmetic;
-import decimal.math;
-import std.bigint;
-import std.stdio: write, writeln;
-import std.string;
-
-alias Decimal.context.precision precision;*/
-
+*/
 private DecimalContext testContext = DEFAULT_CONTEXT;
 
 unittest {
@@ -614,43 +601,43 @@ unittest {
     int result;
     op1 = 2.1;
     op2 = 3;
-    result = compare(op1, op2, context);
+    result = compare(op1, op2, testContext);
     assert(result == -1);
     op1 = 2.1;
     op2 = 2.1;
-    result = compare(op1, op2, context);
+    result = compare(op1, op2, testContext);
     assert(result == 0);
     op1 = Decimal("2.1");
     op2 = Decimal("2.10");
-    result = compare(op1, op2, context);
+    result = compare(op1, op2, testContext);
     assert(result == 0);
     op1 = 3;
     op2 = 2.1;
-    result = compare(op1, op2, context);
+    result = compare(op1, op2, testContext);
     assert(result == 1);
     op1 = 2.1;
     op2 = -3;
-    result = compare(op1, op2, context);
+    result = compare(op1, op2, testContext);
     assert(result == 1);
     op1 = -3;
     op2 = 2.1;
-    result = compare(op1, op2, context);
+    result = compare(op1, op2, testContext);
     assert(result == -1);
     op1 = -3;
     op2 = -4;
-    result = compare(op1, op2, context);
+    result = compare(op1, op2, testContext);
     assert(result == 1);
     op1 = -300;
     op2 = -4;
-    result = compare(op1, op2, context);
+    result = compare(op1, op2, testContext);
     assert(result == -1);
     op1 = 3;
     op2 = Decimal.max;
-    result = compare(op1, op2, context);
+    result = compare(op1, op2, testContext);
     assert(result == -1);
     op1 = -3;
     op2 = copyNegate!Decimal(Decimal.max);
-    result = compare!Decimal(op1, op2, context);
+    result = compare!Decimal(op1, op2, testContext);
     assert(result == 1);
     writeln("passed");
 }
@@ -725,16 +712,16 @@ unittest {
     Decimal op1, op2;
     op1 = 3;
     op2 = 2;
-    assert(max(op1, op2, context) == op1);
+    assert(max(op1, op2, testContext) == op1);
     op1 = -10;
     op2 = 3;
-    assert(max(op1, op2, context) == op2);
+    assert(max(op1, op2, testContext) == op2);
     op1 = Decimal("1.0");
     op2 = 1;
-    assert(max(op1, op2, context) == op2);
+    assert(max(op1, op2, testContext) == op2);
     op1 = 7;
     op2 = Decimal("NaN");
-    assert(max(op1, op2, context) == op1);
+    assert(max(op1, op2, testContext) == op1);
     writeln("passed");
 }
 
@@ -748,16 +735,16 @@ unittest {
     Decimal op1, op2;
     op1 = 3;
     op2 = 2;
-    assert(min(op1, op2, context) == op2);
+    assert(min(op1, op2, testContext) == op2);
     op1 = -10;
     op2 = 3;
-    assert(min(op1, op2, context) == op1);
+    assert(min(op1, op2, testContext) == op1);
     op1 = Decimal("1.0");
     op2 = 1;
-    assert(min(op1, op2, context) == op1);
+    assert(min(op1, op2, testContext) == op1);
     op1 = 7;
     op2 = Decimal("NaN");
-    assert(min(op1, op2, context) == op1);
+    assert(min(op1, op2, testContext) == op1);
     writeln("passed");
 }
 
@@ -770,17 +757,17 @@ unittest {
     write("shift........");
     Decimal num = 34;
     int digits = 8;
-    Decimal act = shift(num, digits, context);
+    Decimal act = shift(num, digits, testContext);
     num = 12;
     digits = 9;
-    act = shift(num, digits, context);
+    act = shift(num, digits, testContext);
     num = 123456789;
     digits = -2;
-    act = shift(num, digits, context);
+    act = shift(num, digits, testContext);
     digits = 0;
-    act = shift(num, digits, context);
+    act = shift(num, digits, testContext);
     digits = 2;
-    act = shift(num, digits, context);
+    act = shift(num, digits, testContext);
     writeln("failed");
 }
 
@@ -813,39 +800,39 @@ unittest {
     write("add..........");
     Decimal op1 = Decimal("12");
     Decimal op2 = Decimal("7.00");
-    Decimal sum = add(op1, op2, context);
+    Decimal sum = add(op1, op2, testContext);
     assert(sum.toString() == "19.00");
     op1 = Decimal("1E+2");
     op2 = Decimal("1E+4");
-    sum = add(op1, op2, context);
+    sum = add(op1, op2, testContext);
     assert(sum.toString() == "1.01E+4");
     op1 = Decimal("1.3");
     op2 = Decimal("1.07");
-    sum = subtract(op1, op2, context);
+    sum = subtract(op1, op2, testContext);
     assert(sum.toString() == "0.23");
     op2 = Decimal("1.30");
-    sum = subtract(op1, op2, context);
+    sum = subtract(op1, op2, testContext);
     assert(sum.toString() == "0.00");
     op2 = Decimal("2.07");
-    sum = subtract(op1, op2, context);
+    sum = subtract(op1, op2, testContext);
     assert(sum.toString() == "-0.77");
     op1 = Decimal("Inf");
     op2 = 1;
-    sum = add(op1, op2, context);
+    sum = add(op1, op2, testContext);
     assert(sum.toString() == "Infinity");
     op1 = Decimal("NaN");
     op2 = 1;
-    sum = add(op1, op2, context);
+    sum = add(op1, op2, testContext);
     assert(sum.isQuiet);
     op2 = Decimal("Infinity");
-    sum = add(op1, op2, context);
+    sum = add(op1, op2, testContext);
     assert(sum.isQuiet);
     op1 = 1;
-    sum = subtract(op1, op2, context);
+    sum = subtract(op1, op2, testContext);
     assert(sum.toString() == "-Infinity");
     op1 = Decimal("-0");
     op2 = 0;
-    sum = subtract(op1, op2, context);
+    sum = subtract(op1, op2, testContext);
     assert(sum.toString() == "-0");
     writeln("passed");
 }
@@ -893,15 +880,15 @@ unittest {
     write("fma..........");
     Decimal op1, op2, op3, result;
     op1 = 3; op2 = 5; op3 = 7;
-    result = (fma(op1, op2, op3, context));
+    result = (fma(op1, op2, op3, testContext));
     assert(result == Decimal(22));
     op1 = 3; op2 = -5; op3 = 7;
-    result = (fma(op1, op2, op3, context));
+    result = (fma(op1, op2, op3, testContext));
     assert(result == Decimal(-8));
     op1 = Decimal("888565290");
     op2 = Decimal("1557.96930");
     op3 = Decimal("-86087.7578");
-    result = (fma(op1, op2, op3, context));
+    result = (fma(op1, op2, op3, testContext));
     assert(result == Decimal("1.38435736E+12"));
     writeln("passed");
 }

@@ -131,7 +131,7 @@ unittest {
 */
 
     Decimal pi() {
-        return pi (context.precision);
+        return pi (bigContext.precision);
     }
 
     unittest {
@@ -156,9 +156,9 @@ unittest {
      * Returns the value of pi to the specified precision.
      */
     Decimal pi(uint precision) {
-        uint savedPrecision = context.precision;
+        uint savedPrecision = bigContext.precision;
         precision += 2;
-        context.precision = precision;
+        bigContext.precision = precision;
         const Decimal ONE = Decimal(1L);
         const Decimal TWO = Decimal(2L);
         Decimal epsilon = ONE / std.math.pow(10L, precision);
@@ -176,8 +176,8 @@ unittest {
             i++;
         }
         Decimal result = a*a/t;
-        round(result, context);
-        context.precision = savedPrecision;
+        round(result, bigContext);
+        bigContext.precision = savedPrecision;
         return result;
     }
 
@@ -190,7 +190,7 @@ unittest {
      * Returns the square root of the argument to the current precision.
      */
     Decimal sqrt(const Decimal arg) {
-        return sqrt(arg, context.precision);
+        return sqrt(arg, bigContext.precision);
     }
 
     unittest {
@@ -246,11 +246,11 @@ unittest {
         if (arg.isNegative) {
             return Decimal.nan;
         }
-        uint savedPrecision = context.precision;
+        uint savedPrecision = bigContext.precision;
         precision += 2;
 //        writeln("precision = ", precision);
 
-        context.precision = precision;
+        bigContext.precision = precision;
 //        write("sqrt(", arg, ") = ");
         const Decimal HALF = Decimal(0.5);
         const Decimal ONE = Decimal(1);
@@ -295,7 +295,7 @@ unittest {
             i++;
         }
 //        writeln(xp);
-        round(xp, context);
+        round(xp, bigContext);
         precision = savedPrecision;
         return xp;
     }

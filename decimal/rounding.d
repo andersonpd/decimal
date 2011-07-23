@@ -34,6 +34,7 @@ import std.typecons: Tuple;
 private BigInt tens[18];
 private BigInt fives[18];
 
+private static DecimalContext roundContext = DecimalContext().dup;
 /*private static context = DEFAULT_CONTEXT.dup;
 
 private static ContextStack contextStack;
@@ -366,16 +367,16 @@ private T getRemainder(T)(ref T num, ref DecimalContext context)
 }
 
 unittest {
-    pushContext(context);
-    context.precision = 5;
+    pushContext(roundContext);
+    roundContext.precision = 5;
     Decimal num, acrem, exnum, exrem;
     num = Decimal(1234567890123456L);
-    acrem = getRemainder(num, context);
+    acrem = getRemainder(num, roundContext);
     exnum = Decimal("1.2345E+15");
     assert(num == exnum);
     exrem = 67890123456;
     assert(acrem == exrem);
-    context = popContext();
+    roundContext = popContext();
 }
 
 // UNREADY: increment. Order.
@@ -403,15 +404,15 @@ unittest {
     Decimal num, expect;
     num = 10;
     expect = 11;
-    increment(num, context);
+    increment(num, roundContext);
     assert(num == expect);
     num = 19;
     expect = 20;
-    increment(num, context);
+    increment(num, roundContext);
     assert(num == expect);
     num = 999;
     expect = 1000;
-    increment(num, context);
+    increment(num, roundContext);
     assert(num == expect);
 }
 
@@ -482,21 +483,21 @@ public uint setExponent(ref long num, ref uint digits, const DecimalContext cont
 } // end setExponent()
 
 unittest {
-    DecimalContext context;
-    context.precision = 5;
-    context.mode = Rounding.HALF_EVEN;
+    DecimalContext roundContext;
+    roundContext.precision = 5;
+    roundContext.mode = Rounding.HALF_EVEN;
     long num; uint digits; int expo;
     num = 1000;
     digits = numDigits(num);
-    expo = setExponent(num, digits, context);
+    expo = setExponent(num, digits, roundContext);
     assert(num == 1000 && expo == 0 && digits == 4);
     num = 1000000;
     digits = numDigits(num);
-    expo = setExponent(num, digits, context);
+    expo = setExponent(num, digits, roundContext);
     assert(num == 10000 && expo == 2 && digits == 5);
     num = 99999;
     digits = numDigits(num);
-    expo = setExponent(num, digits, context);
+    expo = setExponent(num, digits, roundContext);
     assert(num == 99999 && expo == 0 && digits == 5);
 }
 
