@@ -621,84 +621,81 @@ unittest {
         writeln("-------------------");
     }
 
-    static int precision() {
-        return bigContext.precision;
-    }
-
     /// returns the default value for this type (NaN)
     static Decimal init() {
-        return NAN.dup;
+        return NAN;
     }
 
     /// Returns NaN
     static Decimal nan() {
-        return NAN.dup;
+        return NAN;
     }
 
     /// Returns signaling NaN
     static Decimal snan() {
-        return SNAN.dup;
+        return SNAN;
     }
 
     /// Returns infinity.
     static Decimal infinity(bool signed = false) {
-        if (signed) return NEG_INF.dup;
-        return POS_INF.dup;
+        return signed ? NEG_INF : POS_INF;
     }
 
     /// Returns zero.
     static Decimal zero(bool signed = false) {
-        if (signed) return NEG_ZERO.dup;
-        return ZERO.dup;
+        return signed ? NEG_ZERO : ZERO;
     }
 
     /// Returns the maximum number of decimal digits in this context.
-    static uint dig() {
-        return bigContext.precision;
+    static uint precision(DecimalContext context = bigContext) {
+        return context.precision;
+    }
+
+    /// Returns the maximum number of decimal digits in this context.
+    static uint dig(DecimalContext context = bigContext) {
+        return context.precision;
     }
 
     /// Returns the number of binary digits in this context.
-    static int mant_dig() {
-        return cast(int)(bigContext.precision/LOG2);
+    static int mant_dig(DecimalContext context = bigContext) {
+        return context.mant_dig;
     }
 
-    static int min_exp() {
-        return cast(int)(bigContext.eMin/LOG2);
+    static int min_exp(DecimalContext context = bigContext) {
+        return context.min_exp;
     }
 
-    static int max_exp() {
-        return cast(int)(bigContext.eMax/LOG2);
+    static int max_exp(DecimalContext context = bigContext) {
+        return context.max_exp;
     }
 
     // Returns the maximum representable normal value in the current context.
-    // FIXTHIS: this doesn't always access the current context. Move it to context?
-    static Decimal max() {
-        string cstr = "9." ~ replicate("9", bigContext.precision-1)
-            ~ "E" ~ format("%d", bigContext.eMax);
-        return Decimal(cstr);
+    // TODO: this is a fairly expensive operation. Can it be fixed?
+    static Decimal max(DecimalContext context = bigContext) {
+        return Decimal(context.maxString);
     }
 
-    // Returns the minimum representable normal value in the current context.
-    static Decimal min_normal() {
-        return Decimal(1, bigContext.eMin);
+    /// Returns the minimum representable normal value in this context.
+    static Decimal min_normal(DecimalContext context = bigContext) {
+        return Decimal(1, context.eMin);
     }
 
-    // Returns the minimum representable subnormal value in the current context.
-    static Decimal min() {
-        return Decimal(1, bigContext.eTiny);
+    /// Returns the minimum representable subnormal value in this context.
+    static Decimal min(DecimalContext context = bigContext) {
+        return Decimal(1, context.eTiny);
     }
 
-    // returns the smallest available increment to 1.0 in this context
-    static Decimal epsilon() {
-        return Decimal(1, -bigContext.precision);
+    /// returns the smallest available increment to 1.0 in this context
+    static Decimal epsilon(DecimalContext context = bigContext) {
+        return Decimal(1, -context.precision);
     }
 
-    static int min_10_exp() {
-        return bigContext.eMin;
+    static int min_10_exp(DecimalContext context = bigContext) {
+        return context.eMin;
     }
 
-    static int max_10_exp() {
-        return bigContext.eMax;
+    static int max_10_exp(DecimalContext context = bigContext) {
+        return context.eMax;
     }
 
 //--------------------------------

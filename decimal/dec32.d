@@ -39,9 +39,8 @@ struct Dec32 {
 
     private static decimal.context.DecimalContext context32 = {
         precision : 7,
-        mode : Rounding.HALF_EVEN,
-        eMin : -101,
-        eMax :   90
+        rounding : Rounding.HALF_EVEN,
+        eMax : E_MAX
     };
 
     /// The number of bits in the signed value of the decimal number.
@@ -108,15 +107,20 @@ struct Dec32 {
     /// exponent without setting the first to bits to 11.
     immutable uint MAX_BSXP = 0xBF; // = 191
 
+    // length of the coefficient in decimal digits.
+    immutable int MANT_LENGTH = 7;
     // The maximum coefficient that fits in an explicit number.
     immutable uint MAX_XPLC = 0x7FFFFF; // = 8388607;
     // The maximum coefficient allowed in an implicit number.
     immutable uint MAX_IMPL = 9999999;  // = 0x98967F;
-    // The maximum exponent allowed in this representation.
+    // The maximum representable exponent.
     immutable int  MAX_EXPO  =   90;    // = MAX_BSXP - BIAS;
-    // The minimum exponent allowed in this representation.
+    // The minimum representable exponent.
     immutable int  MIN_EXPO  = -101;    // = 0 - BIAS.
-    // The min and max exponents aren't symmetrical.
+
+    // The min and max adjusted exponents.
+    immutable int E_MAX   = MAX_EXPO;
+    immutable int E_MIN   = -E_MAX;  // TODO: might want to make this -E_MAX
 
     // union providing different views of the number representation.
     private union {
@@ -194,6 +198,13 @@ struct Dec32 {
         // The value corresponding to negative zero. (-0)
         NEG_ZRO = 0xB2800000
     }
+
+    private immutable Dec32 QNAN = Dec32(SV.POS_NAN);
+    private immutable Dec32 SNAN = Dec32(SV.POS_SIG);
+    private immutable Dec32 INFINITY = Dec32(SV.POS_INF);
+    private immutable Dec32 NEG_INFINITY = Dec32(SV.NEG_INF);
+    private immutable Dec32 ZERO = Dec32(SV.POS_ZRO);
+    private immutable Dec32 NEG_ZERO = Dec32(SV.NEG_ZRO);
 
 //--------------------------------
 //  constructors
@@ -527,39 +538,83 @@ struct Dec32 {
         return copy;
     }
 
-    static immutable Dec32 qNaN = Dec32(SV.POS_NAN);
-    static immutable Dec32 sNaN = Dec32(SV.POS_SIG);
-    static immutable Dec32 Infinity = Dec32(SV.POS_INF);
-    static immutable Dec32 NegInfinity = Dec32(SV.NEG_INF);
-    static immutable Dec32 Zero = Dec32(SV.POS_ZRO);
-    static immutable Dec32 NegZero = Dec32(SV.NEG_ZRO);
-
     static Dec32 zero(const bool signed = false) {
-        if (signed) return NegZero.dup;
-        else return Zero.dup;
+        return signed ? NEG_ZERO.dup : ZERO.dup;
     }
 
     static Dec32 infinity(const bool signed = false) {
-        if (signed) return NegInfinity.dup;
-        else return Infinity.dup;
+        return signed ? NEG_INFINITY.dup : INFINITY.dup;
     }
 
     // floating point properties
-    static Dec32 init()       { return qNaN; }
-    static Dec32 nan()        { return qNaN; }
-    static Dec32 snan()       { return sNaN; }
-    static Dec32 epsilon()    { return qNaN; }
-    static Dec32 max()        { return qNaN; } // 9999999E+90;
-    static Dec32 min_normal() { return qNaN; } // 1E-101;
-    static Dec32 im()         { return Zero; }
-    const  Dec32 re()         { return this; }
+    static Dec32 init()       { return QNAN; }
+    static Dec32 nan()        { return QNAN; }
+    static Dec32 snan()       { return SNAN; }
+
+    static Dec32 epsilon()    { return Dec32(1, -context32.precision); }
+    static Dec32 max()        { return Dec32("9999999E+90"); }
+    static Dec32 min_normal() { return Dec32(1, context32.eMin); }
 
     static int dig()        { return 7; }
     static int mant_dig()   { return 24; }
-    static int max_10_exp() { return MAX_EXPO; }
-    static int max_exp()    { return -1; }
-    static int min_10_exp() { return MIN_EXPO; }
-    static int min_exp()    { return -1; }
+    static int max_10_exp() { return context32.eMax; }
+    static int min_10_exp() { return context32.eMin; }
+    static int max_exp()    { return cast(int)(context32.eMax/LOG2); }
+    static int min_exp()    { return cast(int)(context32.eMin/LOG2); }
+
+    /// Returns the maximum number of decimal digits in this context.
+    static uint precision(DecimalContext context = context32) {
+        return context.precision;
+    }
+
+    /// Returns the maximum number of decimal digits in this context.
+    static uint dig(DecimalContext context = context32) {
+        return context.precision;
+    }
+
+    /// Returns the number of binary digits in this context.
+    static uint mant_dig(DecimalContext context = context32) {
+        return cast(int)context.mant_dig;
+    }
+
+    static int min_exp(DecimalContext context = context32) {
+        return context.min_exp;
+    }
+
+    static int max_exp(DecimalContext context = context32) {
+        return context.max_exp;
+    }
+
+    // Returns the maximum representable normal value in the current context.
+    // TODO: this is a fairly expensive operation. Can it be fixed?
+    static Dec32 max(DecimalContext context = context32) {
+        string cstr = "9." ~ replicate("9", context.precision-1)
+            ~ "E" ~ format("%d", context.eMax);
+        return Dec32(cstr);
+    }
+
+    /// Returns the minimum representable normal value in this context.
+    static Dec32 min_normal(DecimalContext context = context32) {
+        return Dec32(1, context.eMin);
+    }
+
+    /// Returns the minimum representable subnormal value in this context.
+    static Dec32 min(DecimalContext context = context32) {
+        return Dec32(1, context.eTiny);
+    }
+
+    /// returns the smallest available increment to 1.0 in this context
+    static Dec32 epsilon(DecimalContext context = context32) {
+        return Dec32(1, -context.precision);
+    }
+
+    static int min_10_exp(DecimalContext context = context32) {
+        return context.eMin;
+    }
+
+    static int max_10_exp(DecimalContext context = context32) {
+        return context.eMax;
+    }
 
 //--------------------------------
 //  classification properties
@@ -1031,7 +1086,7 @@ unittest {
     writeln("MIN_EXPO = ", Dec32.MIN_EXPO);
 
     writefln("pos_nan_val = 0x%08X", Dec32.SV_NAN);
-    writeln("Dec32.qNaN = ", Dec32.qNaN);
+    writeln("Dec32.QNAN = ", Dec32.QNAN);
 
     Dec32 dec = Dec32();
     writeln("dec = ", dec);

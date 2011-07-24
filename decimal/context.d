@@ -19,6 +19,10 @@
 
 module decimal.context;
 
+import std.math: LOG2;
+import std.array: replicate;
+import std.string: format;
+
 //--------------------------
 // DecimalContext struct
 //--------------------------
@@ -58,24 +62,53 @@ public struct DecimalContext {
     public static ubyte traps = 0;
     public static ubyte flags = 0;
 
-    Rounding mode = Rounding.HALF_EVEN;
+    // TODO: make these privates and add properties(?)
+    Rounding rounding = Rounding.HALF_EVEN;
     uint precision = 9;
-    int eMin = -98;     // smallest normalized exponent
     int eMax =  99;     // largest normalized exponent
-
 
     const DecimalContext dup() {
         DecimalContext copy;
-        copy.mode = mode;
+        copy.rounding = rounding;
         copy.precision = precision;
-        copy.eMin = eMin;
         copy.eMax = eMax;
         return copy;
     }
 
+    /// smallest normalized exponent
+    @property
+    const int eMin() {
+        return 1 - eMax;
+    }
+
     /// smallest non-normalized exponent
+    @property
     const int eTiny() {
         return eMin - (precision - 1);
+    }
+
+    /// Returns the number of binary digits in this context.
+    @property
+    const uint mant_dig() {
+        return cast(int)(precision/LOG2);
+    }
+
+    @property
+    const int min_exp() {
+        return cast(int)(eMin/LOG2);
+    }
+
+    @property
+    const int max_exp() {
+        return cast(int)(eMax/LOG2);
+    }
+
+    // Returns the maximum representable normal value in the current context.
+    // TODO: this is a fairly expensive operation. Can it be fixed?
+    const string maxString() {
+        string cstr = "9." ~ replicate("9", precision-1)
+            ~ "E" ~ format("%d", eMax);
+        return cstr;
     }
 
     /// Sets (or resets?) the specified context flag(s).
@@ -124,14 +157,14 @@ public struct DecimalContext {
         clearFlags;
         setFlag(!(INEXACT | ROUNDED | SUBNORMAL));
         precision = 9;
-        mode = Rounding.HALF_UP;
+        rounding = Rounding.HALF_UP;
     }
 
     void setExtended(uint precision) {
         clearFlags;
         clearTraps;
         this.precision = precision;
-        mode = Rounding.HALF_EVEN;
+        rounding = Rounding.HALF_EVEN;
     }
 
 };    // end struct DecimalContext

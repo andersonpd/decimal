@@ -20,6 +20,7 @@ module decimal.test;
 
 import std.bigint;
 import decimal.arithmetic;
+import decimal.context;
 import decimal.decimal;
 import decimal.dec32;
 import decimal.rounding;
@@ -60,7 +61,7 @@ unittest {
 //    assert(firstDigit(big) == 1);
 }
 */
-private DecimalContext testContext = DEFAULT_CONTEXT;
+private DecimalContext testContext = DecimalContext();
 
 unittest {
     writeln("---------------------");
@@ -482,7 +483,6 @@ unittest {
     write("next-plus....");
     pushContext(testContext);
     testContext.eMax = 999;
-    testContext.eMin = -999;
     Decimal num, expect;
     num = 1;
     expect = Decimal("1.00000001");
@@ -507,12 +507,9 @@ unittest {
     num = Decimal("-1.00000003");
     expect = Decimal("-1.00000002");
     assert(nextPlus(num, testContext) == expect);
-    // FIXTHIS: max doesn't pass the current context
-/*    num = Decimal("-Infinity");
+    num = Decimal("-Infinity");
     expect = Decimal("-9.99999999E+999");
-    writeln("expect = ", expect);
-    writeln("nextPlus(num, testContext) = ", nextPlus(num, testContext));
-    assert(nextPlus(num, testContext) == expect);*/
+    assert(nextPlus(num, testContext) == expect);
     testContext = popContext;
     writeln("passed");
 }
@@ -520,7 +517,7 @@ unittest {
 unittest {
     write("next-minus...");
     pushContext(testContext);
-    testContext.eMin = -999;
+//    testContext.eMin = -999;
     testContext.eMax = 999;
     Decimal num;
     Decimal expect;
@@ -1209,7 +1206,7 @@ unittest {
     write("roundByMode....");
 //    DecimalContext context;
     context.precision = 5;
-    context.mode = Rounding.HALF_EVEN;
+    context.rounding = Rounding.HALF_EVEN;
     Decimal num;
     num = 1000;
     roundByMode(num, context);
@@ -1223,11 +1220,11 @@ unittest {
     num = 1234550;
     roundByMode(num, context);
     assert(num.mant == 12346 && num.expo == 2 && num.digits == 5);
-    context.mode = Rounding.DOWN;
+    context.rounding = Rounding.DOWN;
     num = 1234550;
     roundByMode(num, context);
     assert(num.mant == 12345 && num.expo == 2 && num.digits == 5);
-    context.mode = Rounding.UP;
+    context.rounding = Rounding.UP;
     num = 1234550;
     roundByMode(num, context);
     assert(num.mant == 12346 && num.expo == 2 && num.digits == 5);
@@ -1273,7 +1270,7 @@ unittest {
     write("setExponent....");
     pushContext(testContext);
     testContext.precision = 5;
-    testContext.mode = Rounding.HALF_EVEN;
+    testContext.rounding = Rounding.HALF_EVEN;
     long num; uint digits; int expo;
     num = 1000;
     digits = numDigits(num);
@@ -1291,12 +1288,12 @@ unittest {
     digits = numDigits(num);
     expo = setExponent(num, digits, testContext);
     assert(num == 12346 && expo == 2 && digits == 5);
-    testContext.mode = Rounding.DOWN;
+    testContext.rounding = Rounding.DOWN;
     num = 1234550;
     digits = numDigits(num);
     expo = setExponent(num, digits, testContext);
     assert(num == 12345 && expo == 2 && digits == 5);
-    testContext.mode = Rounding.UP;
+    testContext.rounding = Rounding.UP;
     num = 1234550;
     digits = numDigits(num);
     expo = setExponent(num, digits, testContext);
@@ -1406,5 +1403,5 @@ unittest {
     writeln("decimal32....finished");
     writeln("---------------------");
 }
-+/
+
 

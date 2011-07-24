@@ -34,7 +34,7 @@ import std.typecons: Tuple;
 private BigInt tens[18];
 private BigInt fives[18];
 
-private static DecimalContext roundContext = DecimalContext().dup;
+private static DecimalContext testContextR = DecimalContext().dup;
 /*private static context = DEFAULT_CONTEXT.dup;
 
 private static ContextStack contextStack;
@@ -67,7 +67,7 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
     // check for overflow
     if (num.adjustedExponent > context.eMax) {
         context.setFlag(OVERFLOW);
-        switch (context.mode) {
+        switch (context.rounding) {
             case Rounding.HALF_UP:
             case Rounding.HALF_EVEN:
             case Rounding.HALF_DOWN:
@@ -216,7 +216,7 @@ private void roundByMode(T)(ref T num, ref DecimalContext context)
     if (remainder.isZero) {
         return;
     }
-    switch (context.mode) {
+    switch (context.rounding) {
         case Rounding.DOWN:
 //            writeln("DOWN");
             return;
@@ -285,30 +285,31 @@ private void roundByMode(T)(ref T num, ref DecimalContext context)
 
 unittest {
     write("roundByMode....");
-    DecimalContext ctxB;
-    ctxB.precision = 5;
-    ctxB.mode = Rounding.HALF_EVEN;
+    pushContext(testContextR);
+    testContextR.precision = 5;
+    testContextR.rounding = Rounding.HALF_EVEN;
     Decimal num;
     num = 1000;
-    roundByMode(num, ctxB);
+    roundByMode(num, testContextR);
     assert(num.coefficient == 1000 && num.exponent == 0 && num.digits == 4);
     num = 1000000;
-    roundByMode(num, ctxB);
+    roundByMode(num, testContextR);
     assert(num.coefficient == 10000 && num.exponent == 2 && num.digits == 5);
     num = 99999;
-    roundByMode(num, ctxB);
+    roundByMode(num, testContextR);
     assert(num.coefficient == 99999 && num.exponent == 0 && num.digits == 5);
     num = 1234550;
-    roundByMode(num, ctxB);
+    roundByMode(num, testContextR);
     assert(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
-    ctxB.mode = Rounding.DOWN;
+    testContextR.rounding = Rounding.DOWN;
     num = 1234550;
-    roundByMode(num, ctxB);
+    roundByMode(num, testContextR);
     assert(num.coefficient == 12345 && num.exponent == 2 && num.digits == 5);
-    ctxB.mode = Rounding.UP;
+    testContextR.rounding = Rounding.UP;
     num = 1234550;
-    roundByMode(num, ctxB);
+    roundByMode(num, testContextR);
     assert(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
+    testContextR = popContext;
     writeln("passed");
 }
 
@@ -367,16 +368,16 @@ private T getRemainder(T)(ref T num, ref DecimalContext context)
 }
 
 unittest {
-    pushContext(roundContext);
-    roundContext.precision = 5;
+    pushContext(testContextR);
+    testContextR.precision = 5;
     Decimal num, acrem, exnum, exrem;
     num = Decimal(1234567890123456L);
-    acrem = getRemainder(num, roundContext);
+    acrem = getRemainder(num, testContextR);
     exnum = Decimal("1.2345E+15");
     assert(num == exnum);
     exrem = 67890123456;
     assert(acrem == exrem);
-    roundContext = popContext();
+    testContextR = popContext();
 }
 
 // UNREADY: increment. Order.
@@ -404,15 +405,15 @@ unittest {
     Decimal num, expect;
     num = 10;
     expect = 11;
-    increment(num, roundContext);
+    increment(num, testContextR);
     assert(num == expect);
     num = 19;
     expect = 20;
-    increment(num, roundContext);
+    increment(num, testContextR);
     assert(num == expect);
     num = 999;
     expect = 1000;
-    increment(num, roundContext);
+    increment(num, testContextR);
     assert(num == expect);
 }
 
@@ -431,7 +432,7 @@ public uint setExponent(ref long num, ref uint digits, const DecimalContext cont
         return expo;
     }
 
-    switch (context.mode) {
+    switch (context.rounding) {
         case Rounding.DOWN:
             break;
         case Rounding.HALF_UP:
@@ -483,21 +484,21 @@ public uint setExponent(ref long num, ref uint digits, const DecimalContext cont
 } // end setExponent()
 
 unittest {
-    DecimalContext roundContext;
-    roundContext.precision = 5;
-    roundContext.mode = Rounding.HALF_EVEN;
+    DecimalContext testContextR;
+    testContextR.precision = 5;
+    testContextR.rounding = Rounding.HALF_EVEN;
     long num; uint digits; int expo;
     num = 1000;
     digits = numDigits(num);
-    expo = setExponent(num, digits, roundContext);
+    expo = setExponent(num, digits, testContextR);
     assert(num == 1000 && expo == 0 && digits == 4);
     num = 1000000;
     digits = numDigits(num);
-    expo = setExponent(num, digits, roundContext);
+    expo = setExponent(num, digits, testContextR);
     assert(num == 10000 && expo == 2 && digits == 5);
     num = 99999;
     digits = numDigits(num);
-    expo = setExponent(num, digits, roundContext);
+    expo = setExponent(num, digits, testContextR);
     assert(num == 99999 && expo == 0 && digits == 5);
 }
 

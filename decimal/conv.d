@@ -542,9 +542,10 @@ public Decimal toNumber(const string inStr) {
 
     // check for NaN
     if (startsWith(str,"nan")) {
-        num = Decimal.nan;
+        bool signed = num.sign;
+        num = Decimal(num.sign, SV.QNAN);
         if (str == "nan") {
-            num.coefficient = 0; // BigInt(0);
+//            num.coefficient = 0; // BigInt(0);
             return num;
         }
         // set payload
