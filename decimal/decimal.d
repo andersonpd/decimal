@@ -75,9 +75,9 @@ struct Decimal {
     /**
      * clears the special value flags
      */
-    public void clear() {
+/*    public void clear() {
         sval = SV.NONE;
-    }
+    }*/
 
 private:
 
@@ -124,7 +124,7 @@ public:
      */
     public this(const bool sign, const SV sv, const uint payload = 0) {
         this.signed = sign;
-        this.sval = sv;
+        this.sval = sv != SV.ZERO ? sv : SV.NONE;
         this.mant = BigInt(payload);
     }
 
@@ -143,8 +143,8 @@ public:
      * Constructs a new number, given the special value.
      * The sign is set to true (positive), and the payload is set to zero.
      */
-    private this(SV sv) {
-        sval = sv;
+    private this(const SV sv) {
+        this.sval = sv != SV.ZERO ? sv : SV.NONE;
     }
 
     unittest {
@@ -165,7 +165,7 @@ public:
         // TODO: clarify the sign and coefficient relationship:
         // the actual call is to sign, abs(coefficient).
         BigInt big = cast(BigInt) coefficient;
-        this.clear();
+        this = zero();
         if (big < BigInt(0)) {
             this.signed = !sign;
             this.mant = -big;
@@ -173,9 +173,6 @@ public:
         else {
             this.signed = sign;
             this.mant = big;
-//            if (big == BigInt(0)) {
-//                this.sval = SV.ZERO;
-//            }
         }
         this.expo = exponent;
         this.digits = numDigits(this.mant);
@@ -903,7 +900,7 @@ unittest {
      * Returns true if this number is subnormal.
      */
     const bool isSubnormal() {
-        if (sval != SV.NONE) return false;
+        if (!isFinite) return false;
         return adjustedExponent < bigContext.eMin;
     }
 

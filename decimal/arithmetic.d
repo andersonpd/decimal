@@ -1178,7 +1178,6 @@ public T add(T)(const T op1, const T op2, DecimalContext context,
     // at this point, the result will be finite and not zero
     // (before rounding)
     sum = T.zero;
-    sum.clear;
 
     // if operands have the same sign...
     if (augend.sign == addend.sign) {
@@ -1261,7 +1260,7 @@ public T multiply(T)(const T op1, const T op2, DecimalContext context,
     }
     // product is finite
 
-    product.clear();
+    product = T.zero();
 //    product.coefficient = cast(BigInt)op1.coefficient * cast(BigInt)op2.coefficient;
     product.coefficient = op1.coefficient * op2.coefficient;
     product.exponent = op1.exponent + op2.exponent;
@@ -1331,13 +1330,13 @@ public T divide(T)(const T op1, const T op2,
     if (isInvalidDivision!T(op1, op2, quotient, context)) {
         return quotient;
     }
-    quotient.clear();
+    quotient= T.zero();
     // TODO: are two guard digits necessary? sufficient?
     context.precision += 2;
     Decimal dividend = Decimal(op1);
     Decimal divisor  = Decimal(op2);
     Decimal working = Decimal.zero;
-    working.clear();
+    working = Decimal.zero();
     int diff = dividend.exponent - divisor.exponent;
     if (diff > 0) {
         decShl(dividend.coefficient, diff);
@@ -1403,7 +1402,7 @@ public T divideInteger(T)(const T op1, const T op2,
         return quotient;
     }
 
-    quotient.clear();
+    quotient = T.zero();
     T divisor  = copy!T(op1);
     T dividend = copy!T(op2);
     // align operands

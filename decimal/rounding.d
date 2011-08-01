@@ -123,7 +123,7 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
     if (is(T : Decimal)) {
 //        if (num.sval == SV.NONE && num.coefficient == BigInt(0)) {
         if (num.coefficient == 0) {
-            num.clear;
+            num.zero;
         }
     }
     // subnormal rounding to zero == clamped
@@ -347,10 +347,10 @@ private T getRemainder(T)(ref T num, ref DecimalContext context)
 //        writeln("quotient = ", quotient);
 //        writeln("modulo = ", modulo);
         if (modulo != 0) {
+            remainder.zero;
             remainder.digits = diff;
             remainder.exponent = num.exponent;
             remainder.coefficient = modulo;
-            remainder.clear;
         }
         num.coefficient = quotient;
         num.digits = context.precision;

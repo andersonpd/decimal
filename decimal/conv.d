@@ -588,8 +588,10 @@ public Decimal toNumber(const string inStr) {
         return num;
     };
 
+//writeln("num 1 = ", num);
     // at this point, num is a qNaN
-    num.clear();
+    num = Decimal.zero(num.sign);
+//writeln("num 2 = ", num);
     // check for exponent
     int pos = indexOf(str, 'e');
     if (pos > 0) {
@@ -658,7 +660,7 @@ public Decimal toNumber(const string inStr) {
     else {
         num.exponent = 0;
     }
-
+//writeln("num  3 = ", num);
     // remove trailing decimal point
     if (endsWith(str, ".")) {
         str = str[0..$-1];

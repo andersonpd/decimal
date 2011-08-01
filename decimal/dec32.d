@@ -1008,7 +1008,7 @@ struct Dec32 {
     /**
      * Has no effect -- simplifies templates.
      */
-    public void clear() { }
+//    public void clear() { }
 
      /**
      * Returns uint ten raised to the specified power.

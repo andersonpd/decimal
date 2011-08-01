@@ -29,7 +29,7 @@ import decimal.rounding;
 // unit test methods
 //--------------------------------
 
-/*template Test(T) {
+template Test(T) {
     bool isEqual(T)(T actual, T expected, string label, string message = "") {
         bool equal = (expected == actual);
         if (!equal) {
@@ -39,6 +39,30 @@ import decimal.rounding;
     }
 }
 
+
+bool expectEquals(T)(T expected, T actual,
+        string file = __FILE__, int line = __LINE__ ) {
+    if (expected == actual) {
+        return true;
+    }
+    writeln("failed at ", std.path.basename(file), "(", line, "):",
+//             " (", expected, " == ", actual, ")");
+            " expected \"", expected, "\"",
+            " but found \"", actual, "\".");
+    return false;
+}
+
+bool expectTrue(bool actual, string file = __FILE__, int line = __LINE__ ) {
+    return expectEquals(true, actual, file, line);
+}
+
+
+unittest {
+	writeln("test...");
+    expectEquals(1,2);
+    expectTrue(false);
+	writeln("test missing");
+}
 
 //--------------------------------
 // unit tests
@@ -60,7 +84,7 @@ unittest {
 //    assert(numDigits(big) == 101);
 //    assert(firstDigit(big) == 1);
 }
-*/
+
 private DecimalContext testContext = DecimalContext();
 
 unittest {
@@ -86,85 +110,83 @@ unittest {
     Decimal f;
     string str = "0";
     f = Decimal(str);
-//    writeln("str = ", str);
-//    writeln("f = ", f);
-    assert(f.toString() == str);
-    assert(f.toAbstract() == "[0,0,0]");
+    expectEquals(f.toString(), str);
+    expectEquals(f.toAbstract(), "[0,0,0]");
     str = "0.00";
     f = Decimal(str);
-    assert(f.toString() == str);
-    assert(f.toAbstract() == "[0,0,-2]");
+    expectEquals(f.toString(), str);
+    expectEquals(f.toAbstract(), "[0,0,-2]");
     str = "0.0";
     f = Decimal(str);
-    assert(f.toString() == str);
-    assert(f.toAbstract() == "[0,0,-1]");
+    expectEquals(f.toString(), str);
+    expectEquals(f.toAbstract(), "[0,0,-1]");
     f = Decimal("0.");
-    assert(f.toString() == "0");
-    assert(f.toAbstract() == "[0,0,0]");
+    expectEquals(f.toString(), "0");
+    expectEquals(f.toAbstract(), "[0,0,0]");
     f = Decimal(".0");
-    assert(f.toString() == "0.0");
-    assert(f.toAbstract() == "[0,0,-1]");
+    expectEquals(f.toString(), "0.0");
+    expectEquals(f.toAbstract(), "[0,0,-1]");
     str = "1.0";
     f = Decimal(str);
-    assert(f.toString() == str);
-    assert(f.toAbstract() == "[0,10,-1]");
+    expectEquals(f.toString(), str);
+    expectEquals(f.toAbstract(), "[0,10,-1]");
     str = "1.";
     f = Decimal(str);
-    assert(f.toString() == "1");
-    assert(f.toAbstract() == "[0,1,0]");
+    expectEquals(f.toString(), "1");
+    expectEquals(f.toAbstract(), "[0,1,0]");
     str = ".1";
     f = Decimal(str);
-    assert(f.toString() == "0.1");
-    assert(f.toAbstract() == "[0,1,-1]");
+    expectEquals(f.toString(), "0.1");
+    expectEquals(f.toAbstract(), "[0,1,-1]");
     f = Decimal("123");
-    assert(f.toString() == "123");
+    expectEquals(f.toString(), "123");
     f = Decimal("-123");
-    assert(f.toString() == "-123");
+    expectEquals(f.toString(), "-123");
     f = Decimal("1.23E3");
-    assert(f.toString() == "1.23E+3");
+    expectEquals(f.toString(), "1.23E+3");
     f = Decimal("1.23E");
-    assert(f.toString() == "NaN");
+    expectEquals(f.toString(), "NaN");
     f = Decimal("1.23E-");
-    assert(f.toString() == "NaN");
+    expectEquals(f.toString(), "NaN");
     f = Decimal("1.23E+");
-    assert(f.toString() == "NaN");
+    expectEquals(f.toString(), "NaN");
     f = Decimal("1.23E+3");
-    assert(f.toString() == "1.23E+3");
+    expectEquals(f.toString(), "1.23E+3");
     f = Decimal("1.23E3B");
-    assert(f.toString() == "NaN");
+    expectEquals(f.toString(), "NaN");
     f = Decimal("12.3E+007");
-    assert(f.toString() == "1.23E+8");
+    expectEquals(f.toString(), "1.23E+8");
     f = Decimal("12.3E+70000000000");
-    assert(f.toString() == "NaN");
+    expectEquals(f.toString(), "NaN");
     f = Decimal("12.3E+7000000000");
-    assert(f.toString() == "NaN");
+    expectEquals(f.toString(), "NaN");
     f = Decimal("12.3E+700000000");
-    assert(f.toString() == "1.23E+700000001");
+    expectEquals(f.toString(), "1.23E+700000001");
     f = Decimal("12.3E-700000000");
-    assert(f.toString() == "1.23E-699999999");
+    expectEquals(f.toString(), "1.23E-699999999");
     // NOTE: since there will still be adjustments -- maybe limit to 99999999?
     f = Decimal("12.0");
-    assert(f.toString() == "12.0");
+    expectEquals(f.toString(), "12.0");
     f = Decimal("12.3");
-    assert(f.toString() == "12.3");
+    expectEquals(f.toString(), "12.3");
     f = Decimal("1.23E-3");
-    assert(f.toString() == "0.00123");
+    expectEquals(f.toString(), "0.00123");
     f = Decimal("0.00123");
-    assert(f.toString() == "0.00123");
+    expectEquals(f.toString(), "0.00123");
     f = Decimal("-1.23E-12");
-    assert(f.toString() == "-1.23E-12");
+    expectEquals(f.toString(), "-1.23E-12");
     f = Decimal("-0");
-    assert(f.toString() == "-0");
+    expectEquals(f.toString(), "-0");
     f = Decimal("inf");
-    assert(f.toString() == "Infinity");
+    expectEquals(f.toString(), "Infinity");
     f = Decimal("NaN");
-    assert(f.toString() == "NaN");
+    expectEquals(f.toString(), "NaN");
     f = Decimal("-NaN");
-    assert(f.toString() == "-NaN");
+    expectEquals(f.toString(), "-NaN");
     f = Decimal("sNaN");
-    assert(f.toString() == "sNaN");
+    expectEquals(f.toString(), "sNaN");
     f = Decimal("Fred");
-    assert(f.toString() == "NaN");
+    expectEquals(f.toString(), "NaN");
     writeln("passed");
 }
 
@@ -178,31 +200,31 @@ unittest {
     write("class........");
     Decimal num;
     num = Decimal("Infinity");
-    assert(classify(num) == "+Infinity");
+    expectEquals(classify(num), "+Infinity");
     num = Decimal("1E-10");
-    assert(classify(num) == "+Normal");
+    expectEquals(classify(num), "+Normal");
     num = Decimal("2.50");
-    assert(classify(num) == "+Normal");
+    expectEquals(classify(num), "+Normal");
     num = Decimal("0.1E-99");
-    assert(classify(num) == "+Subnormal");
+    expectEquals(classify(num), "+Subnormal");
     num = Decimal("0");
-    assert(classify(num) == "+Zero");
+    expectEquals(classify(num), "+Zero");
     num = Decimal("-0");
-    assert(classify(num) == "-Zero");
+    expectEquals(classify(num), "-Zero");
     num = Decimal("-0.1E-99");
-    assert(classify(num) == "-Subnormal");
+    expectEquals(classify(num), "-Subnormal");
     num = Decimal("-1E-10");
-    assert(classify(num) == "-Normal");
+    expectEquals(classify(num), "-Normal");
     num = Decimal("-2.50");
-    assert(classify(num) == "-Normal");
+    expectEquals(classify(num), "-Normal");
     num = Decimal("-Infinity");
-    assert(classify(num) == "-Infinity");
+    expectEquals(classify(num), "-Infinity");
     num = Decimal("NaN");
-    assert(classify(num) == "NaN");
+    expectEquals(classify(num), "NaN");
     num = Decimal("-NaN");
-    assert(classify(num) == "NaN");
+    expectEquals(classify(num), "NaN");
     num = Decimal("sNaN");
-    assert(classify(num) == "sNaN");
+    expectEquals(classify(num), "sNaN");
     writeln("passed");
 }
 
