@@ -29,14 +29,10 @@ import decimal.context;
 import decimal.decimal;
 import decimal.rounding;
 
-unittest {
-    writeln("---------------------");
-    writeln("decimal32.....testing");
-    writeln("---------------------");
-}
-
 struct Dec32 {
 
+
+    /// The global context for this type.
     private static decimal.context.DecimalContext context32 = {
         precision : 7,
         rounding : Rounding.HALF_EVEN,
@@ -49,10 +45,10 @@ struct Dec32 {
     immutable uint svalBits = 32;
 
     /// the number of bits in the sign bit (1, obviously)
-    immutable uint signBits = 1;
+    immutable uint signBit = 1;
 
     /// The number of bits in the unsigned value of the decimal number.
-    immutable uint unsignedBits = 31; // = svalBits - signBits;
+    immutable uint unsignedBits = 31; // = svalBits - signBit;
 
     /// The number of bits in the (biased) exponent.
     immutable uint expoBits = 8;
@@ -70,32 +66,30 @@ struct Dec32 {
     /// are always '100'.
     immutable uint implicitBits = 21; // = explicitBits - testBits;
 
-    /// The number of bits in the payload of a NaN.
-    immutable uint payloadBits = 21; // = implicitBits;
-
-    /// The number of special bits.
-    /// These bits are used to indicate NaNs.
-    /// The number includes the two test bits.
+    /// The number of special bits, including the two test bits.
+    /// These bits are used to denote infinities and NaNs.
     immutable uint specialBits = 6;
 
-    /// The number of bits that follow the special bits in infinities or NaNs.
-    /// These bits are always set to zero in special values.
-    /// Their number is simply the remaining number of bits
-    /// when all others are accounted for.
-    immutable uint anonBits = 4;
-            // = svalBits - payloadBits - specialBits - signBits;
-
-    /// The number of infinity bits.
-    /// These bits are used to indicate Infinity.
-    /// The number includes the two test bits.
+    /// The number of infinity bits, a subset of the special bits.
+    /// These bits are used to denote infinity.
     immutable uint infinityBits = 5;
+
+    /// The number of bits in the payload of a NaN.
+    immutable uint payloadBits = 16;
+
+    /// The number of bits that follow the special bits in NaNs.
+    /// These bits are always set to zero in canonical representations.
+    /// Their number is the remaining number of bits in a NaN
+    /// when all others (sign, special and payload) are accounted for.
+    immutable uint nanPadBits = 9;
+            // = svalBits - payloadBits - specialBits - signBit;
 
     /// The number of bits that follow the special bits in infinities.
     /// These bits are always set to zero in canonical representations.
-    /// Their number is simply the remaining number of bits
-    /// when all others are accounted for.
-    immutable uint anonInfBits = 26;
-            // = svalBits - infinityBits - signBits;
+    /// Their number is the remaining number of bits in an infinity
+    /// when all others (sign and infinity) are accounted for.
+    immutable uint infPadBits = 26;
+            // = svalBits - infinityBits - signBit;
 
     /// The exponent bias. The exponent is stored as an unsigned number and
     /// the bias is subtracted from the unsigned value to give the true
@@ -104,7 +98,7 @@ struct Dec32 {
 
     /// The maximum biased exponent.
     /// The largest binary number that can fit in the width of the
-    /// exponent without setting the first to bits to 11.
+    /// exponent without setting either of the first two bits to 1.
     immutable uint MAX_BSXP = 0xBF; // = 191
 
     // length of the coefficient in decimal digits.
@@ -131,14 +125,14 @@ struct Dec32 {
         // unsigned value and sign bit
         mixin (bitfields!(
             uint, "uValue", unsignedBits,
-            bool, "signed", signBits)
+            bool, "signed", signBit)
         );
         // Ex = explicit finite number:
         //     full coefficient, exponent and sign
         mixin (bitfields!(
             uint, "mantEx", explicitBits,
             uint, "expoEx", expoBits,
-            bool, "signEx", signBits)
+            bool, "signEx", signBit)
         );
         // Im = implicit finite number:
         //      partial coefficient, exponent, test bits and sign bit.
@@ -146,22 +140,22 @@ struct Dec32 {
             uint, "mantIm", implicitBits,
             uint, "expoIm", expoBits,
             uint, "testIm", testBits,
-            bool, "signIm", signBits)
+            bool, "signIm", signBit)
         );
-        // Nf = infinities:
+        // Inf = infinities:
         //      payload, unused bits, special bits and sign bit.
         mixin (bitfields!(
-            uint, "anonNf", anonInfBits,
-            uint, "spclNf", infinityBits,
-            bool, "signNf", signBits)
+            uint, "anonInf", infPadBits,
+            uint, "testInf", infinityBits,
+            bool, "signInf", signBit)
         );
-        // Sv = special values: qNaN and sNan:
+        // Nan = special values: qNaN and sNan:
         //      payload, unused bits, special bits and sign bit.
         mixin (bitfields!(
-            uint, "pyldSv", payloadBits,
-            uint, "anonSv", anonBits,
-            uint, "spclSv", specialBits,
-            bool, "signSv", signBits)
+            uint, "pyldNaN", payloadBits,
+            uint, "anonNaN", nanPadBits,
+            uint, "testNaN", specialBits,
+            bool, "signNaN", signBit)
         );
     }
 
@@ -218,7 +212,6 @@ struct Dec32 {
     }
 
     unittest {
-	    write("this(sv)...");
         Dec32 num;
         num = Dec32(SV.POS_SIG);
         assert(num.isSignaling);
@@ -260,7 +253,6 @@ struct Dec32 {
         assert(num.isZero);
         assert(num.isNegative);
         assert(num.isFinite);
-	    writeln("passed");
     }
 
     /**
@@ -280,7 +272,6 @@ struct Dec32 {
     }
 
     unittest {
-	    write("this(long)...");
         Dec32 num;
         num = Dec32(1234567890L);
         assert(num.toString == "1.234568E+9");
@@ -292,7 +283,6 @@ struct Dec32 {
         assert(num.toString == "-1");
         num = Dec32(5);
         assert(num.toString == "5");
-	    writeln("passed");
     }
 
     /**
@@ -304,7 +294,6 @@ struct Dec32 {
     }
 
     unittest {
-	    write("this(long, int)...");
         Dec32 num;
         num = Dec32(1234567890L, 5);
         assert(num.toString == "1.234568E+14");
@@ -316,7 +305,6 @@ struct Dec32 {
         assert(num.toString == "-1E-75");
         num = Dec32(5, -3);
         assert(num.toString == "0.005");
-	    writeln("passed");
     }
 
     /**
@@ -367,7 +355,6 @@ struct Dec32 {
     }
 
    unittest {
-       write("this(Decimal)...");
         Decimal dec = Decimal(0);
         Dec32 num = Dec32(dec);
         assert(dec.toString == num.toString);
@@ -384,7 +371,6 @@ struct Dec32 {
         num = Dec32(dec);
         assert(num.toString == "4.294967E+9");
         assert(dec.toString == "4294967295");
-        writeln("passed");
     }
 
     /**
@@ -396,7 +382,6 @@ struct Dec32 {
     }
 
     unittest {
-        write("this(string)...");
         Dec32 num;
         num = Dec32("1.234568E+9");
         assert(num.toString == "1.234568E+9");
@@ -404,7 +389,6 @@ struct Dec32 {
         assert(num.isQuiet && num.isSpecial && num.isNaN);
         num = Dec32("-inf");
         assert(num.isInfinite && num.isSpecial && num.isNegative);
-        writeln("passed");
     }
 
     /**
@@ -416,12 +400,17 @@ struct Dec32 {
     }
 
     unittest {
-        write("this(real)...");
         real r = 1.2345E+16;
         Dec32 actual = Dec32(r);
         Dec32 expect = Dec32("1.2345E+16");
         assert(expect == actual);
-        writeln("passed");
+    }
+
+    /**
+     * Copy constructor.
+     */
+    public this(const Dec32 that) {
+        this.bits = that.bits;
     }
 
 //--------------------------------
@@ -430,81 +419,149 @@ struct Dec32 {
 
     public:
 
-    // TODO: maybe rename these to properties?
-    // raw value? coded value?
-    const uint getValue() {
-        return this.value;
-    }
-
-    uint setValue(const uint value) {
-        this.value = value;
+    /// Returns the raw bits of this number.
+    @property
+    const uint bits() {
         return value;
     }
 
+    /// Sets the raw bits of this number.
+    @property
+    uint bits(const uint raw) {
+        value = raw;
+        return value;
+    }
+
+    /// Returns the sign of this number.
     @property
     const bool sign() {
         return signed;
     }
 
+    /// Sets the sign of this number and returns the sign.
     @property
-    bool sign(bool value) {
+    bool sign(const bool value) {
         signed = value;
         return signed;
     }
 
+    /// Returns the exponent of this number.
     @property
     const int exponent() {
         if (this.isExplicit) {
             return expoEx - BIAS;
+        }
+        if (this.isSpecial()) {
+            return 0;
         }
         else {
             return expoIm - BIAS;
         }
     }
 
-    // TODO: Need to add range checks >= minExpo and <= maxExpo
-    // TODO: Need to define exceptions. Out of range exponents: infinity or zero.
-    @property
-     int exponent(int expo) {
-        if (this.isExplicit) {
-            expoEx = expo + BIAS;
-        }
-        else if (this.isFinite) {
-            expoIm = expo + BIAS;
-        }
-        else {
-            expo = 0;
-        }
-        return expo;
+    unittest {
+	write("get exponent...");
+    // TODO: test explicit, implicit and special.
+    writeln("test missing");
     }
 
+    /// Sets the exponent of this number.
+    /// If this number is infinity or NaN, this number is converted to
+    /// a quiet NaN and the invalid operation flag is set.
+    /// Otherwise, if the input value exceeds the maximum allowed exponent,
+    /// this number is converted to infinity and the overflow flag is set.
+    /// If the input value is less than the minimum allowed exponent,
+    /// this number is converted to zero, the exponent is set to E_tiny
+    /// and the underflow flag is set.
+    @property
+     int exponent(const int expo) {
+        // check for overflow
+        if (expo > context32.eMax) {
+            this = signed ? NEG_INFINITY : INFINITY;
+            context32.setFlag(OVERFLOW);
+            return 0;
+        }
+        // check for underflow
+        if (expo < context32.eMin) {
+            // if the exponent is too small even for a subnormal number,
+            // the number is set to zero.
+            if (expo < context32.eTiny) {
+                this = signed ? NEG_ZERO : ZERO;
+                expoEx = context32.eTiny + BIAS;
+                context32.setFlag(SUBNORMAL);
+                context32.setFlag(UNDERFLOW);
+                return context32.eTiny;
+            }
+            // at this point the exponent is between eMin and eTiny.
+            // TODO: still needs work -- may have to round the coefficient.
+        }
+        // if explicit...
+        if (this.isExplicit) {
+            expoEx = expo + BIAS;
+            return expoEx;
+        }
+        // if implicit...
+        if (this.isFinite) {
+            expoIm = expo + BIAS;
+            return expoIm;
+        }
+        // if this point is reached the number is either infinity or NaN;
+        // these have undefined exponent values.
+        context32.setFlag(INVALID_OPERATION);
+        this = SV.POS_NAN;
+        return 0;
+    }
+
+    unittest {
+	write("set exponent...");
+    // TODO: test explicit, implicit and special.
+    // TODO: test overflow and underflow.
+    writeln("test missing");
+    }
+
+    /// Returns the coefficient of this number.
+    // FIXTHIS: this is not a const function
     @property
     const uint coefficient() {
         if (this.isExplicit) {
             return mantEx;
         }
-        else if (this.isFinite) {
+        if (this.isFinite) {
             return mantIm | (0B100 << implicitBits);
         }
-        else if (this.isSpecial) {
-            return mantIm;  // the "coefficient" of a NaN is the payload.
-        }
-        else {
-            return 0;       // infinities have a zero coefficient.
-        }
+        // if this point is reached the number is either infinity or NaN;
+        // these have undefined coefficient values.
+        //this = QNAN;
+        context32.setFlag(INVALID_OPERATION);
+        return 0;
+    }
+
+    unittest {
+	    write("get coefficient...");
+        // TODO: test explicit, implicit, nan and infinity.
+	    writeln("test missing");
     }
 
     // If the new coefficient is > MAX_XPLC this could cause an
     // explicit number to become an implicit number, and vice versa.
     @property
-        uint coefficient(ulong mant) {
-        return coefficient(cast(uint)mant);
+        uint coefficient(const ulong mant) {
+        // FIXTHIS: how do we check for a too large input?
+        // TODO: what do we do if found? round it? (yes, round it)
+        uint temp = cast(uint)mant;
+        return coefficient(temp);
+    }
+
+    unittest {
+	    write("get coefficient...");
+        // TODO: test explicit, implicit, nan and infinity.
+	    writeln("test missing");
     }
 
     // If the new coefficient is > MAX_XPLC this could cause an
     // explicit number to become an implicit number, and vice versa.
     @property
-    uint coefficient(uint mant) {
+    uint coefficient(/*const*/ uint mant) {
         if (mant > MAX_XPLC) {
             mant &= 0x7FFFFFF;  // only store the last 21 bits.
         }
@@ -521,20 +578,71 @@ struct Dec32 {
         return mant;
     }
 
+    unittest {
+	    write("set coefficient...");
+        // TODO: test explicit, implicit, nan and infinity.
+	    writeln("test missing");
+    }
+
+    /// Returns the number of digits in this number's coefficient.
     @property
     const int digits() {
         return numDigits(this.coefficient);
     }
 
     // TODO: this is a stopgap
+    // NOTE: if we really want to set the digits then we need to
+    // adjust the context value, right?
+    // TODO: there is info in the spec about minimum # of digits.
     @property
-    const int digits(int digs) {
+    const int digits(const int digs) {
         return digs;
     }
 
+    /// Returns the payload of this number.
+    /// If this is a NaN, returns the value of the payload bits.
+    /// Otherwise returns zero.
+    @property
+    const uint payload() {
+        if (this.isNaN) {
+            return pyldNaN;
+        }
+        // TODO: raise an invalid operation flag?
+        // If this wasn't a NaN before, this becomes a NaN w/o a payload?
+        return 0;
+    }
+
+    unittest {
+	    write("get payload...");
+        // TODO: test explicit, implicit, nan and infinity.
+	    writeln("test missing");
+    }
+
+    /// Sets the payload of this number.
+    /// If the number is not a NaN (har!) no action is taken and zero
+    /// is returned.
+    @property
+    uint payload(const uint value) {
+        if (isNaN) {
+            pyldNaN = value;
+            return value;
+        }
+        return 0;
+    }
+
+    unittest {
+	    write("get payload...");
+        // TODO: test explicit, implicit, nan and infinity.
+	    writeln("test missing");
+    }
+
+//--------------------------------
+//  constants
+//--------------------------------
+
     const Dec32 dup() {
         Dec32 copy;
-        copy.setValue(this.getValue);
+        copy.bits(this.bits);
         return copy;
     }
 
@@ -624,6 +732,10 @@ struct Dec32 {
         return testIm != 0b11;
     }
 
+    const bool isImplicit() {
+        return isFinite() && !isExplicit();
+    }
+
     /**
      * Returns true if this number's representation is canonical.
      */
@@ -649,21 +761,21 @@ struct Dec32 {
      * Returns true if this number is a signaling NaN.
      */
     const bool isSignaling() {
-        return spclSv == SV_SIG;
+        return testNaN == SV_SIG;
     }
 
     /**
      * Returns true if this number is a quiet NaN.
      */
     const bool isQuiet() {
-        return spclSv == SV_NAN;
+        return testNaN == SV_NAN;
     }
 
     /**
      * Returns true if this number is +\- infinity.
      */
     const bool isInfinite() {
-        return spclNf == SV_INF;
+        return testInf == SV_INF;
     }
 
     /**
@@ -790,7 +902,7 @@ struct Dec32 {
     public const string toAbstract() {
 //writeln("this = ", this);
 //writeln("this = ", this.toHexString);
-//writefln("spclSv = %X", spclSv);
+//writefln("testNaN = %X", testNaN);
 
         if (this.isSignaling) {
             if (coefficient) {
