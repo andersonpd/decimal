@@ -442,7 +442,7 @@ unittest {
     Decimal num;
     Decimal expd;
     num = Decimal("sNaN");
-    assert(abs(num, testContext).isSignaling);
+    assert(abs(num, testContext).isQuiet);  // converted to quiet Nan per spec.
     assert(testContext.getFlag(INVALID_OPERATION));
     num = Decimal("NaN");
     assert(abs(num, testContext).isQuiet);
