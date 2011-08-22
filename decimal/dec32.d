@@ -116,6 +116,10 @@ struct Dec32 {
     immutable int E_MAX   = MAX_EXPO;
     immutable int E_MIN   = -E_MAX;  // TODO: might want to make this -E_MAX
 
+    // masks for coefficients
+    immutable uint MASK_IMPL = 0x1FFFFF;
+    immutable uint MASK_XPLC = 0x7FFFFF;
+
     // union providing different views of the number representation.
     private union {
 
@@ -159,6 +163,41 @@ struct Dec32 {
         );
     }
 
+/*    unittest {
+        Dec32 num;
+        num = 0;
+writeln("num = ", num);
+writeln("num.toAbstract = ", num.toAbstract);
+writeln("num.exponent = ", num.exponent);
+writeln("num.coefficient = ", num.coefficient);
+writeln("num.mantEx = ", num.mantEx);
+writeln("num.expoEx = ", num.expoEx);
+writeln("num.mantIm = ", num.mantIm);
+writeln("num.expoIm = ", num.expoIm);
+        num = 8388607;
+writeln("num = ", num);
+writeln("num.toAbstract = ", num.toAbstract);
+writeln("num.exponent = ", num.exponent);
+writeln("num.coefficient = ", num.coefficient);
+writeln("num.mantEx = ", num.mantEx);
+writeln("num.expoEx = ", num.expoEx);
+writeln("num.mantIm = ", num.mantIm);
+writeln("num.expoIm = ", num.expoIm);
+        num = Dec32(8388608);
+writeln("num = ", num);
+writeln("num.isImplicit = ", num.isImplicit);
+writeln("num.toAbstract = ", num.toAbstract);
+writeln("num.exponent = ", num.exponent);
+writeln("num.coefficient = ", num.coefficient);
+writeln("num.mantEx = ", num.mantEx);
+writeln("num.expoEx = ", num.expoEx);
+writeln("num.mantIm = ", num.mantIm);
+writeln("num.expoIm = ", num.expoIm);
+
+
+
+    }*/
+
 //--------------------------------
 //  special values
 //--------------------------------
@@ -193,11 +232,11 @@ struct Dec32 {
         NEG_ZRO = 0xB2800000
     }
 
-    private immutable Dec32 QNAN = Dec32(SV.POS_NAN);
-    private immutable Dec32 SNAN = Dec32(SV.POS_SIG);
+    private immutable Dec32 QNAN     = Dec32(SV.POS_NAN);
+    private immutable Dec32 SNAN     = Dec32(SV.POS_SIG);
     private immutable Dec32 INFINITY = Dec32(SV.POS_INF);
-    private immutable Dec32 NEG_INFINITY = Dec32(SV.NEG_INF);
-    private immutable Dec32 ZERO = Dec32(SV.POS_ZRO);
+    private immutable Dec32 NEG_INF  = Dec32(SV.NEG_INF);
+    private immutable Dec32 ZERO     = Dec32(SV.POS_ZRO);
     private immutable Dec32 NEG_ZERO = Dec32(SV.NEG_ZRO);
 
 //--------------------------------
@@ -205,7 +244,7 @@ struct Dec32 {
 //--------------------------------
 
     /**
-     * Creates a Dec32 from an unsigned integer.
+     * Creates a Dec32 from a special value.
      */
     private this(const SV sv) {
         value = sv;
@@ -260,15 +299,10 @@ struct Dec32 {
      */
     public this(const long n)
     {
+        this = zero;
         signed = n < 0;
-        int expo = 0;
-        long mant = std.math.abs(n);
-        uint digits = numDigits(n);
-        if (mant > MAX_IMPL) {
-            expo = setExponent(mant, digits, context32);
-        }
-        expoEx = expo + BIAS;
-        mantEx = cast(uint) mant;
+        ulong mant = std.math.abs(n);
+        coefficient(mant);
     }
 
     unittest {
@@ -315,29 +349,15 @@ struct Dec32 {
         Decimal big = plus!Decimal(num, context32);
 
         if (big.isFinite) {
-            if (big.isZero) {
-                value = SV.POS_ZRO;
-                signed = big.sign;
-                return;
-            }
-            uint mant = cast(uint)big.coefficient.toInt;
-            if (mant > MAX_XPLC) {
-                // set the test bits
-                testIm = 0b11;
-                signed = big.sign;
-                expoIm = big.exponent + BIAS;
-                // TODO: this can be done with a mask.
-                mantIm = mant % MAX_XPLC;
-            }
-            else {
-                signed = big.sign;
-                expoEx = big.exponent + BIAS;
-                mantEx = mant;
-            }
+            this = zero;
+            this.coefficient(cast(ulong)big.coefficient.toLong);
+            this.exponent(big.exponent);
+            this.sign(big.sign);
+            return;
         }
         // check for special values
         else if (big.isInfinite) {
-            value = SV.POS_INF;
+            bits(SV.POS_INF);
             signed = big.sign;
             return;
         }
@@ -354,6 +374,7 @@ struct Dec32 {
 
     }
 
+   // TODO: add a test for 999999E+x -- I think it's rounding when it shouldn't
    unittest {
         Decimal dec = Decimal(0);
         Dec32 num = Dec32(dec);
@@ -394,6 +415,7 @@ struct Dec32 {
     /**
      *    Constructs a number from a real value.
      */
+    // TODO: change this to use fields from bitmanip
     this(const real r) {
         string str = format("%.*G", cast(int)context32.precision, r);
         this(str);
@@ -446,23 +468,36 @@ struct Dec32 {
     }
 
     /// Returns the exponent of this number.
+    /// The exponent is undefined for infinities and NaNs: zero is returned.
     @property
     const int exponent() {
         if (this.isExplicit) {
             return expoEx - BIAS;
         }
-        if (this.isSpecial()) {
-            return 0;
-        }
-        else {
+        if (this.isImplicit) {
             return expoIm - BIAS;
         }
+        // infinity or NaN.
+        return 0;
     }
 
     unittest {
-	write("get exponent...");
-    // TODO: test explicit, implicit and special.
-    writeln("test missing");
+        Dec32 num;
+        // reals
+        num = std.math.PI;
+        assert(num.exponent = -6);
+        num = 9.75E89;
+        assert(num.exponent = 87);
+        // explicit
+        num = 8388607;
+        assert(num.exponent = 0);
+        // implicit
+        num = 8388610;
+        assert(num.exponent = 0);
+        num = 9.999998E23;
+        assert(num.exponent = 17);
+        num = 9.999999E23;
+        assert(num.exponent = 17);
     }
 
     /// Sets the exponent of this number.
@@ -471,13 +506,13 @@ struct Dec32 {
     /// Otherwise, if the input value exceeds the maximum allowed exponent,
     /// this number is converted to infinity and the overflow flag is set.
     /// If the input value is less than the minimum allowed exponent,
-    /// this number is converted to zero, the exponent is set to E_tiny
+    /// this number is converted to zero, the exponent is set to eTiny
     /// and the underflow flag is set.
     @property
      int exponent(const int expo) {
         // check for overflow
         if (expo > context32.eMax) {
-            this = signed ? NEG_INFINITY : INFINITY;
+            this = signed ? NEG_INF : INFINITY;
             context32.setFlag(OVERFLOW);
             return 0;
         }
@@ -513,75 +548,94 @@ struct Dec32 {
     }
 
     unittest {
-	write("set exponent...");
-    // TODO: test explicit, implicit and special.
+	write("exponent...");
+    Dec32 num;
+    num = Dec32(-12000,5);
+    num.exponent(10);
+    assert(num.exponent == 10);
+    num = Dec32(-9000053,-14);
+    num.exponent(-27);
+    assert(num.exponent == -27);
+    num = infinity;
+    assert(num.exponent == 0);
     // TODO: test overflow and underflow.
-    writeln("test missing");
+    writeln("passed");
     }
 
     /// Returns the coefficient of this number.
-    // FIXTHIS: this is not a const function
+    /// The exponent is undefined for infinities and NaNs: zero is returned.
     @property
     const uint coefficient() {
         if (this.isExplicit) {
             return mantEx;
         }
         if (this.isFinite) {
-            return mantIm | (0B100 << implicitBits);
+            return mantIm | (0b100 << implicitBits);
         }
-        // if this point is reached the number is either infinity or NaN;
-        // these have undefined coefficient values.
-        //this = QNAN;
-        context32.setFlag(INVALID_OPERATION);
+        // Infinity or NaN.
         return 0;
     }
 
-    unittest {
-	    write("get coefficient...");
-        // TODO: test explicit, implicit, nan and infinity.
-	    writeln("test missing");
-    }
-
-    // If the new coefficient is > MAX_XPLC this could cause an
+    // Sets the coefficient of this number. This may cause an
     // explicit number to become an implicit number, and vice versa.
     @property
-        uint coefficient(const ulong mant) {
-        // FIXTHIS: how do we check for a too large input?
-        // TODO: what do we do if found? round it? (yes, round it)
-        uint temp = cast(uint)mant;
-        return coefficient(temp);
+    uint coefficient(const ulong mant) {
+        // if not finite, convert to NaN and return 0.
+        if (!this.isFinite) {
+            this = nan;
+            context32.setFlag(INVALID_OPERATION);
+            return 0;
+        }
+        long mant1 = mant;
+        if (mant1 > MAX_IMPL) {
+            int expo = 0;
+            uint digits = numDigits(mant1);
+            expo = setExponent(mant1, digits, context32);
+            if (this.isExplicit) {
+                expoEx = expoEx + expo;
+            }
+            else {
+                expoIm = expoIm + expo;
+            }
+        }
+        uint mant2 = cast(uint)mant1;
+        if (mant2 <= MAX_XPLC) {
+            // if implicit, convert to explicit
+            if (this.isImplicit) {
+                expoEx = expoIm;
+            }
+            mantEx = mant2;
+            return mantEx;
+        }
+        else {  // mant2 <= MAX_IMPL
+            // if explicit, convert to implicit
+            if (this.isExplicit) {
+                expoIm = expoEx;
+                testIm = 0b11;
+            }
+            mantIm = mant2 & MASK_IMPL;
+            return mantIm | (0b100 << implicitBits);
+        }
     }
 
     unittest {
-	    write("get coefficient...");
+	    write("coefficient...");
+        Dec32 num;
+        assert(num.coefficient == 0);
+        num = 9.998743;
+// TODO: rounding problem
+//        assert(num.coefficient == 9998743);
+        num = Dec32(9999213,-6);
+        assert(num.coefficient == 9999213);
+        num = -125;
+        assert(num.coefficient == 125);
+        num = -99999999;
+// TODO: rounding problem
+writeln("num = ", num);
+writeln("num.coefficient = ", num.coefficient);
+//        assert(num.coefficient == 1000000);
         // TODO: test explicit, implicit, nan and infinity.
-	    writeln("test missing");
-    }
-
-    // If the new coefficient is > MAX_XPLC this could cause an
-    // explicit number to become an implicit number, and vice versa.
-    @property
-    uint coefficient(/*const*/ uint mant) {
-        if (mant > MAX_XPLC) {
-            mant &= 0x7FFFFFF;  // only store the last 21 bits.
-        }
-        else {
-            mantEx = mant;
-            testIm = 0B00;
-        }
-        if (this.isExplicit) {
-            mant = value;
-        }
-        else {
-            mant = value | 0x7FFFFFFF;
-        }
-        return mant;
-    }
-
-    unittest {
-	    write("set coefficient...");
-        // TODO: test explicit, implicit, nan and infinity.
-	    writeln("test missing");
+	    writeln("failed");
     }
 
     /// Returns the number of digits in this number's coefficient.
@@ -607,15 +661,7 @@ struct Dec32 {
         if (this.isNaN) {
             return pyldNaN;
         }
-        // TODO: raise an invalid operation flag?
-        // If this wasn't a NaN before, this becomes a NaN w/o a payload?
         return 0;
-    }
-
-    unittest {
-	    write("get payload...");
-        // TODO: test explicit, implicit, nan and infinity.
-	    writeln("test missing");
     }
 
     /// Sets the payload of this number.
@@ -625,16 +671,25 @@ struct Dec32 {
     uint payload(const uint value) {
         if (isNaN) {
             pyldNaN = value;
-            return value;
+            return pyldNaN;
         }
         return 0;
     }
 
     unittest {
-	    write("get payload...");
-        // TODO: test explicit, implicit, nan and infinity.
-	    writeln("test missing");
+	    write("payload...");
+        Dec32 num;
+        assert(num.payload == 0);
+        num = snan;
+        assert(num.payload == 0);
+        num.payload(234);
+        assert(num.payload == 234);
+        assert(num.toString == "sNaN234");
+        num = 1234567;
+        assert(num.payload == 0);
+	    writeln("passed");
     }
+
 
 //--------------------------------
 //  constants
@@ -651,7 +706,7 @@ struct Dec32 {
     }
 
     static Dec32 infinity(const bool signed = false) {
-        return signed ? NEG_INFINITY.dup : INFINITY.dup;
+        return signed ? NEG_INF.dup : INFINITY.dup;
     }
 
     // floating point properties
@@ -835,41 +890,20 @@ struct Dec32 {
      * Converts a Dec32 to a Decimal
      */
     public const Decimal toDecimal() {
-        uint mant;
-        int  expo;
-        bool sign;
 
-        if (isExplicit) {
-            mant = mantEx;
-            expo = expoEx - BIAS;
-            sign = signed;
+        if (isFinite) {
+            return Decimal(sign, BigInt(coefficient), exponent);
         }
-        else if (isFinite) {
-            mant = mantIm | (0b100 << implicitBits); // is this always right?
-            expo = expoIm - BIAS;
-            sign = signed;
+        if (isInfinite) {
+            return Decimal.infinity(sign);
         }
-        else {
-            // special values
-            if (signed) {
-                sign = true;
-                mant = value & 0x7FFFFFFF;
-            }
-            else {
-                sign = false;
-                mant = value;
-            }
-            if (uValue == SV.POS_INF) {
-                return Decimal.infinity(sign);
-            }
-            if (uValue == SV.POS_NAN) {
-                return Decimal.nan;
-            }
-            if (uValue == SV.POS_SIG) {
-                return Decimal.snan;
-            }
+        // TODO: include payloads
+        if (isQuiet) {
+            return Decimal.nan(sign);
         }
-        return Decimal(sign, BigInt(mant), expo);
+        else { // isSignaling
+            return Decimal.snan(sign);
+        }
     }
 
     unittest {
@@ -899,18 +933,18 @@ struct Dec32 {
     /**
      * Converts a Dec32 to a string
      */
-    public const string toAbstract() {
-//writeln("this = ", this);
-//writeln("this = ", this.toHexString);
-//writefln("testNaN = %X", testNaN);
-
+    public const string toAbstract()
+    {
         if (this.isSignaling) {
-            if (coefficient) {
-                return format("[%d,%s,%d]", signed ? 1 : 0, "sNaN", coefficient);
+            if (payload) {
+                return format("[%d,%s,%d]", signed ? 1 : 0, "sNaN", payload);
             }
             return format("[%d,%s]", signed ? 1 : 0, "sNaN");
         }
         if (this.isQuiet) {
+            if (payload) {
+                return format("[%d,%s,%d]", signed ? 1 : 0, "qNaN", payload);
+            }
             return format("[%d,%s%s]", signed ? 1 : 0, "qNaN", coefficient);
         }
         if (this.isInfinite) {
@@ -1188,22 +1222,6 @@ public string toSciString(const Dec32 num) {
  */
 public string toEngString(const Dec32 num) {
     return decimal.conv.toEngString!Dec32(num);
-}
-
-unittest {
-//    writefln("num.mant = 0x%08X", num.mant);
-    writefln("MAX_IMPL = 0x%08X", Dec32.MAX_IMPL);
-    writefln("MAX_XPLC = 0x%08X", Dec32.MAX_XPLC);
-    writeln("MAX_EXPO = ", Dec32.MAX_EXPO);
-    writeln("MIN_EXPO = ", Dec32.MIN_EXPO);
-
-    writefln("pos_nan_val = 0x%08X", Dec32.SV_NAN);
-    writeln("Dec32.QNAN = ", Dec32.QNAN);
-
-    Dec32 dec = Dec32();
-    writeln("dec = ", dec);
-    writeln("dec.mantEx = ", dec.mantEx);
-
 }
 
 unittest {

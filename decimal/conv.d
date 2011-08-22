@@ -68,20 +68,20 @@ public Decimal toDecimal(T)(const T num) if (is(typeof(num) == Decimal)) {
 public Decimal toDecimal(T)(const T num) if (isDecimal!T) {
 
     bool sign = num.sign;
-    auto mant = num.coefficient;
-    int  expo = num.exponent;
 
     if (num.isFinite) {
+        auto mant = num.coefficient;
+        int  expo = num.exponent;
         return Decimal(sign, BigInt(mant), expo);
     }
     else if (num.isInfinite) {
-        return Decimal(sign, SV.INF, 0);
+        return Decimal.infinity(sign);
     }
     else if (num.isQuiet) {
-        return Decimal(sign, SV.QNAN, mant);
+        return Decimal(sign, SV.QNAN, num.payload);
     }
     else if (num.isSignaling) {
-        return Decimal(sign, SV.SNAN, mant);
+        return Decimal(sign, SV.SNAN, num.payload);
     }
 
     // NOTE: Should never reach here.
@@ -181,8 +181,8 @@ public string toSciString(T)(const T num) if (isDecimal!T) {
             str = "NaN";
         }
         // add payload to NaN, if present
-        if (num.isNaN && mant != 0) {
-            str ~= to!string(mant);
+        if (num.isNaN && num.payload != 0) {
+            str ~= to!string(num.payload);
         }
         // add sign, if present
         return signed ? "-" ~ str : str;
@@ -521,10 +521,8 @@ unittest {
  */
 public Decimal toNumber(const string inStr) {
 
-//writeln("inStr = ", inStr);
     Decimal num;
     num.sign = false;
-//writeln("num = ", num);
 
     // strip, copy, tolower
     char[] str = strip(inStr).dup;
@@ -538,7 +536,6 @@ public Decimal toNumber(const string inStr) {
     else if (startsWith(str,"+")) {
         str = str[1..$];
     }
-//writeln("num.sign = ", num.sign);
 
     // check for NaN
     if (startsWith(str,"nan")) {
@@ -565,7 +562,7 @@ public Decimal toNumber(const string inStr) {
     if (startsWith(str,"snan")) {
         num = Decimal.snan;
         if (str == "snan") {
-            num.coefficient = 0; // BigInt(0);
+            num.payload = 0; // BigInt(0);
             return num;
         }
         // set payload
@@ -577,7 +574,7 @@ public Decimal toNumber(const string inStr) {
             }
         }
         // convert string to payload
-        num.coefficient = BigInt(str.idup);
+        num.payload = cast(uint)BigInt(str.idup).toInt; // coefficient = BigInt(str.idup);
         return num;
     };
 

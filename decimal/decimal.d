@@ -83,8 +83,10 @@ private:
 
 // common decimal "numbers"
     static Decimal NAN      = Decimal(SV.QNAN);
+    static Decimal NEG_NAN  = Decimal(true, SV.QNAN);
     static Decimal SNAN     = Decimal(SV.SNAN);
-    static Decimal POS_INF  = Decimal(SV.INF);
+    static Decimal NEG_SNAN = Decimal(true, SV.SNAN);
+    static Decimal INFINITY = Decimal(SV.INF);
     static Decimal NEG_INF  = Decimal(true, SV.INF);
     static Decimal ZERO     = Decimal(SV.ZERO);
     static Decimal NEG_ZERO = Decimal(true, SV.ZERO);
@@ -122,10 +124,10 @@ public:
     /**
      * Constructs a new number, given the sign, the special value and the payload.
      */
-    public this(const bool sign, const SV sv, const uint payload = 0) {
+    public this(const bool sign, const SV sv, const uint pyld = 0) {
         this.signed = sign;
         this.sval = sv != SV.ZERO ? sv : SV.NONE;
-        this.mant = BigInt(payload);
+        this.payload = pyld;
     }
 
     unittest {
@@ -334,10 +336,10 @@ public:
         this = Decimal(sign, SV.INF, 0);
     }
     else if (num.isQuiet) {
-        this = Decimal(sign, SV.QNAN, mant);
+        this = Decimal(sign, SV.QNAN, 0);
     }
     else if (num.isSignaling) {
-       this = Decimal(sign, SV.SNAN, mant);
+       this = Decimal(sign, SV.SNAN, 0);
     }
 
     }
@@ -440,11 +442,15 @@ unittest {
 public const string toAbstract() {
     switch (sval) {
         case SV.SNAN:
-            string payload = mant == BigInt(0) ? "" : "," ~ toDecString(mant);
-            return format("[%d,%s%s]", signed ? 1 : 0, "sNaN", payload);
+            if (payload)
+                return format("[%d,%s,%d]", signed ? 1 : 0, "sNaN", payload);
+            else
+                return format("[%d,%s%]", signed ? 1 : 0, "sNaN");
         case SV.QNAN:
-            string payload = mant == BigInt(0) ? "" : "," ~ toDecString(mant);
-            return format("[%d,%s%s]", signed ? 1 : 0, "qNaN", payload);
+            if (payload)
+                return format("[%d,%s,%d]", signed ? 1 : 0, "qNaN", payload);
+            else
+                return format("[%d,%s%]", signed ? 1 : 0, "qNaN");
         case SV.INF:
             return format("[%d,%s]", signed ? 1 : 0, "inf");
         default:
@@ -529,6 +535,23 @@ unittest {
     unittest {
         write("coefficient.");
         writeln("test missing");
+    }
+
+    @property
+    const uint payload() {
+        if (this.isNaN) {
+            return cast(uint)(this.mant.toLong);
+        }
+        return 0;
+    }
+
+    @property
+    uint payload(uint pyld) {
+        if (this.isNaN) {
+            this.mant = BigInt(pyld);
+            return cast(uint)(this.mant.toLong);
+        }
+        return 0;
     }
 
     /// returns the adjusted exponent of this number
@@ -624,18 +647,18 @@ unittest {
     }
 
     /// Returns NaN
-    static Decimal nan() {
-        return NAN;
+    static Decimal nan(bool signed = false) {
+        return signed ? NEG_NAN : NAN;
     }
 
     /// Returns signaling NaN
-    static Decimal snan() {
-        return SNAN;
+    static Decimal snan(bool signed = false) {
+        return signed ? NEG_SNAN : SNAN;
     }
 
     /// Returns infinity.
     static Decimal infinity(bool signed = false) {
-        return signed ? NEG_INF : POS_INF;
+        return signed ? NEG_INF : INFINITY;
     }
 
     /// Returns zero.
