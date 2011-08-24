@@ -402,6 +402,13 @@ struct Dec32 {
         this.bits = that.bits;
     }
 
+    /**
+     * duplicator.
+     */
+    const Dec32 dup() {
+        return Dec32(this);
+    }
+
 //--------------------------------
 //  properties
 //--------------------------------
@@ -515,18 +522,16 @@ struct Dec32 {
     }
 
     unittest {
-	write("exponent...");
-    Dec32 num;
-    num = Dec32(-12000,5);
-    num.exponent = 10;
-    assert(num.exponent == 10);
-    num = Dec32(-9000053,-14);
-    num.exponent = -27;
-    assert(num.exponent == -27);
-    num = infinity;
-    assert(num.exponent == 0);
-    // (4) TODO: test overflow and underflow.
-    writeln("passed");
+        Dec32 num;
+        num = Dec32(-12000,5);
+        num.exponent = 10;
+        assert(num.exponent == 10);
+        num = Dec32(-9000053,-14);
+        num.exponent = -27;
+        assert(num.exponent == -27);
+        num = infinity;
+        assert(num.exponent == 0);
+        // (4) TODO: test overflow and underflow.
     }
 
     /// Returns the coefficient of this number.
@@ -645,7 +650,6 @@ writeln("num.coefficient = ", num.coefficient);
     }
 
     unittest {
-	    write("payload...");
         Dec32 num;
         assert(num.payload == 0);
         num = snan;
@@ -655,11 +659,6 @@ writeln("num.coefficient = ", num.coefficient);
         assert(num.toString == "sNaN234");
         num = 1234567;
         assert(num.payload == 0);
-	    writeln("passed");
-    }
-
-    const Dec32 dup() {
-        return Dec32(this);
     }
 
 //--------------------------------
@@ -681,9 +680,6 @@ writeln("num.coefficient = ", num.coefficient);
     static Dec32 snan(const bool signed = false) {
         return signed ? NEG_SNAN : SNAN;
     }
-
-/*    static Dec32 nan()        { return QNAN; }
-    static Dec32 snan()       { return SNAN; }*/
 
     // floating point properties
     static Dec32 init()       { return QNAN; }
@@ -941,13 +937,11 @@ writeln("num.coefficient = ", num.coefficient);
     }
 
     unittest {
-        write("opCmp........");
         Dec32 a, b;
         a = Dec32(104.0);
         b = Dec32(105.0);
         assert(a < b);
         assert(b > a);
-        writeln("passed");
     }
 
     /**
@@ -958,12 +952,10 @@ writeln("num.coefficient = ", num.coefficient);
     }
 
     unittest {
-        write("opEquals.....");
         Dec32 a, b;
         a = Dec32(105);
         b = Dec32(105);
         assert(a == b);
-        writeln("passed");
     }
 
 //--------------------------------
@@ -977,12 +969,10 @@ writeln("num.coefficient = ", num.coefficient);
     }
 
     unittest {
-        write("opAssign(Dec32)..");
         Dec32 rhs, lhs;
         rhs = Dec32(270E-5);
         lhs = rhs;
         assert(lhs == rhs);
-        writeln("passed");
     }
 
     // (7) UNREADY: opAssign(T)(const T). Flags.
@@ -992,13 +982,11 @@ writeln("num.coefficient = ", num.coefficient);
     }
 
     unittest {
-        write("opAssign(numeric)...");
         Dec32 rhs;
         rhs = 332089;
         assert(rhs.toString == "332089");
         rhs = 3.1415E+3;
         assert(rhs.toString == "3141.5");
-        writeln("passed");
     }
 
 //--------------------------------
@@ -1021,30 +1009,26 @@ writeln("num.coefficient = ", num.coefficient);
         }
     }
 
-    // (8) TODO: copy all unit tests to test.d
     unittest {
-	write("opUnary......");
-    Dec32 num, actual, expect;
-    num = 134;
-    expect = num;
-    actual = +num;
-    assert(actual == expect);
-    num = 134.02;
-    expect = -134.02;
-    actual = -num;
-    assert(actual == expect);
-    num = 134;
-    expect = 135;
-    actual = ++num;
-    assert(actual == expect);
-    // TODO: seems to be broken for nums like 1.000E8
-    num = 12.35;
-    expect = 11.35;
-    actual = --num;
-    assert(actual == expect);
-	writeln("passed");
-}
-
+        Dec32 num, actual, expect;
+        num = 134;
+        expect = num;
+        actual = +num;
+        assert(actual == expect);
+        num = 134.02;
+        expect = -134.02;
+        actual = -num;
+        assert(actual == expect);
+        num = 134;
+        expect = 135;
+        actual = ++num;
+        assert(actual == expect);
+        // TODO: seems to be broken for nums like 1.000E8
+        num = 12.35;
+        expect = 11.35;
+        actual = --num;
+        assert(actual == expect);
+    }
 
 //--------------------------------
 // binary operators
@@ -1070,32 +1054,29 @@ writeln("num.coefficient = ", num.coefficient);
     }
 
     unittest {
-	write("opBinary.....");
-    Dec32 op1, op2, actual, expect;
-    op1 = 4;
-    op2 = 8;
-    actual = op1 + op2;
-    expect = 12;
-    assert(expect == actual);
-    actual = op1 - op2;
-    expect = -4;
-    assert(expect == actual);
-    actual = op1 * op2;
-    expect = 32;
-    assert(expect == actual);
-    op1 = 5;
-    op2 = 2;
-    actual = op1 / op2;
-    expect = 2.5;
-    assert(expect == actual);
-    op1 = 10;
-    op2 = 3;
-    actual = op1 % op2;
-    expect = 1;
-    assert(expect == actual);
-	writeln("passed");
-}
-
+        Dec32 op1, op2, actual, expect;
+        op1 = 4;
+        op2 = 8;
+        actual = op1 + op2;
+        expect = 12;
+        assert(expect == actual);
+        actual = op1 - op2;
+        expect = -4;
+        assert(expect == actual);
+        actual = op1 * op2;
+        expect = 32;
+        assert(expect == actual);
+        op1 = 5;
+        op2 = 2;
+        actual = op1 / op2;
+        expect = 2.5;
+        assert(expect == actual);
+        op1 = 10;
+        op2 = 3;
+        actual = op1 % op2;
+        expect = 1;
+        assert(expect == actual);
+    }
 
 //-----------------------------
 // operator assignment
@@ -1107,20 +1088,18 @@ writeln("num.coefficient = ", num.coefficient);
     }
 
     unittest {
-	write("opOpAssign...");
-    Dec32 op1, op2, actual, expect;
-    op1 = 23.56;
-    op2 = -2.07;
-    op1 += op2;
-    expect = 21.49;
-    actual = op1;
-    assert(expect == actual);
-    op1 *= op2;
-    expect = -44.4843;
-    actual = op1;
-    assert(expect == actual);
-	writeln("passed");
-}
+        Dec32 op1, op2, actual, expect;
+        op1 = 23.56;
+        op2 = -2.07;
+        op1 += op2;
+        expect = 21.49;
+        actual = op1;
+        assert(expect == actual);
+        op1 *= op2;
+        expect = -44.4843;
+        actual = op1;
+        assert(expect == actual);
+    }
 
 
 //-----------------------------
@@ -1135,12 +1114,7 @@ writeln("num.coefficient = ", num.coefficient);
     }
 
     unittest {
-        write("pow10..........");
-        int n;
-        BigInt pow;
-        n = 3;
-        assert(pow10(n) == 1000);
-        writeln("passed");
+        assert(pow10(3) == 1000);
     }
 
 }   // end Dec32 struct
@@ -1170,11 +1144,9 @@ public string toHexString(const Dec32 num) {
 }
 
 unittest {
-	write("hexstring...");
     Dec32 num = 12345;
     assert(toHexString(num) == "32803039");
     assert(toBinaryString(num) == "00110010100000000011000000111001");
-	writeln("passed");
 }
 
 

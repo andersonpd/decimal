@@ -1419,14 +1419,191 @@ unittest {
 
 unittest {
     write("this(str)....");
-    Dec32 num = Dec32("1.234568E+9");
+    Dec32 num;
+    num = Dec32("1.234568E+9");
     assert(num.toString == "1.234568E+9");
+    num = Dec32("NaN");
+    assert(num.isQuiet && num.isSpecial && num.isNaN);
+    num = Dec32("-inf");
+    assert(num.isInfinite && num.isSpecial && num.isNegative);
     writeln("passed");
+}
+
+unittest {
+    Dec32 num;
+    // reals
+    num = std.math.PI;
+    assert(num.exponent = -6);
+    num = 9.75E89;
+    assert(num.exponent = 87);
+    // explicit
+    num = 8388607;
+    assert(num.exponent = 0);
+    // implicit
+    num = 8388610;
+    assert(num.exponent = 0);
+    num = 9.999998E23;
+    assert(num.exponent = 17);
+    num = 9.999999E23;
+    assert(num.exponent = 17);
+}
+
+unittest {
+	write("exponent...");
+    Dec32 num;
+    num = Dec32(-12000,5);
+    num.exponent = 10;
+    assert(num.exponent == 10);
+    num = Dec32(-9000053,-14);
+    num.exponent = -27;
+    assert(num.exponent == -27);
+    num = Dec32.infinity;
+    assert(num.exponent == 0);
+    // (4) TODO: test overflow and underflow.
+    writeln("passed");
+}
+
+unittest {
+ write("payload...");
+    Dec32 num;
+    assert(num.payload == 0);
+    num = Dec32.snan;
+    assert(num.payload == 0);
+    num.payload = 234;
+    assert(num.payload == 234);
+    assert(num.toString == "sNaN234");
+    num = 1234567;
+    assert(num.payload == 0);
+ writeln("passed");
+}
+
+unittest {
+    write("opCmp........");
+    Dec32 a, b;
+    a = Dec32(104.0);
+    b = Dec32(105.0);
+    assert(a < b);
+    assert(b > a);
+    writeln("passed");
+}
+
+unittest {
+    write("opEquals.....");
+    Dec32 a, b;
+    a = Dec32(105);
+    b = Dec32(105);
+    assert(a == b);
+    writeln("passed");
+}
+
+unittest {
+    write("opAssign(Dec32)..");
+    Dec32 rhs, lhs;
+    rhs = Dec32(270E-5);
+    lhs = rhs;
+    assert(lhs == rhs);
+    writeln("passed");
+}
+
+unittest {
+    write("opAssign(numeric)...");
+    Dec32 rhs;
+    rhs = 332089;
+    assert(rhs.toString == "332089");
+    rhs = 3.1415E+3;
+    assert(rhs.toString == "3141.5");
+    writeln("passed");
+}
+
+unittest {
+	write("opUnary......");
+    Dec32 num, actual, expect;
+    num = 134;
+    expect = num;
+    actual = +num;
+    assert(actual == expect);
+    num = 134.02;
+    expect = -134.02;
+    actual = -num;
+    assert(actual == expect);
+    num = 134;
+    expect = 135;
+    actual = ++num;
+    assert(actual == expect);
+    // TODO: seems to be broken for nums like 1.000E8
+    num = 12.35;
+    expect = 11.35;
+    actual = --num;
+    assert(actual == expect);
+	writeln("passed");
+}
+
+unittest {
+	write("opBinary.....");
+    Dec32 op1, op2, actual, expect;
+    op1 = 4;
+    op2 = 8;
+    actual = op1 + op2;
+    expect = 12;
+    assert(expect == actual);
+    actual = op1 - op2;
+    expect = -4;
+    assert(expect == actual);
+    actual = op1 * op2;
+    expect = 32;
+    assert(expect == actual);
+    op1 = 5;
+    op2 = 2;
+    actual = op1 / op2;
+    expect = 2.5;
+    assert(expect == actual);
+    op1 = 10;
+    op2 = 3;
+    actual = op1 % op2;
+    expect = 1;
+    assert(expect == actual);
+	writeln("passed");
+}
+
+unittest {
+	write("opOpAssign...");
+    Dec32 op1, op2, actual, expect;
+    op1 = 23.56;
+    op2 = -2.07;
+    op1 += op2;
+    expect = 21.49;
+    actual = op1;
+    assert(expect == actual);
+    op1 *= op2;
+    expect = -44.4843;
+    actual = op1;
+    assert(expect == actual);
+	writeln("passed");
+}
+
+unittest {
+    write("pow10..........");
+    assert(Dec32.pow10(3) == 1000);
+    writeln("passed");
+}
+
+unittest {
+	write("hexstring...");
+    Dec32 num = 12345;
+    assert(toHexString(num) == "32803039");
+    assert(toBinaryString(num) == "00110010100000000011000000111001");
+	writeln("passed");
 }
 
 unittest {
     writeln("---------------------");
     writeln("decimal32....finished");
+    writeln("---------------------");
+}
+
+unittest {
+    writeln("---------------------");
+    writeln("test.........finished");
     writeln("---------------------");
 }
 
