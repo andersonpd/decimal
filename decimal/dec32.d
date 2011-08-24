@@ -198,7 +198,9 @@ struct Dec32 {
     }
 
     private immutable Dec32 QNAN     = Dec32(SV.POS_NAN);
+    private immutable Dec32 NEG_QNAN = Dec32(SV.NEG_NAN);
     private immutable Dec32 SNAN     = Dec32(SV.POS_SIG);
+    private immutable Dec32 NEG_SNAN = Dec32(SV.NEG_SIG);
     private immutable Dec32 INFINITY = Dec32(SV.POS_INF);
     private immutable Dec32 NEG_INF  = Dec32(SV.NEG_INF);
     private immutable Dec32 ZERO     = Dec32(SV.POS_ZRO);
@@ -493,7 +495,7 @@ struct Dec32 {
                 return context32.eTiny;
             }
             // at this point the exponent is between eMin and eTiny.
-            // (3) TODO: still needs work -- may have to round the coefficient.
+            // NOTE: I don't think this needs special handling
         }
         // if explicit...
         if (this.isExplicit) {
@@ -516,10 +518,10 @@ struct Dec32 {
 	write("exponent...");
     Dec32 num;
     num = Dec32(-12000,5);
-    num.exponent(10);
+    num.exponent = 10;
     assert(num.exponent == 10);
     num = Dec32(-9000053,-14);
-    num.exponent(-27);
+    num.exponent = -27;
     assert(num.exponent == -27);
     num = infinity;
     assert(num.exponent == 0);
@@ -648,7 +650,7 @@ writeln("num.coefficient = ", num.coefficient);
         assert(num.payload == 0);
         num = snan;
         assert(num.payload == 0);
-        num.payload(234);
+        num.payload = 234;
         assert(num.payload == 234);
         assert(num.toString == "sNaN234");
         num = 1234567;
@@ -656,24 +658,32 @@ writeln("num.coefficient = ", num.coefficient);
 	    writeln("passed");
     }
 
+    const Dec32 dup() {
+        return Dec32(this);
+    }
 
 //--------------------------------
 //  constants
 //--------------------------------
 
-    const Dec32 dup() {
-        Dec32 copy;
-        copy.bits = this.bits;
-        return copy;
-    }
-
     static Dec32 zero(const bool signed = false) {
-        return signed ? NEG_ZERO.dup : ZERO.dup;
+        return signed ? NEG_ZERO : ZERO;
     }
 
     static Dec32 infinity(const bool signed = false) {
-        return signed ? NEG_INF.dup : INFINITY.dup;
+        return signed ? NEG_INF : INFINITY;
     }
+
+    static Dec32 nan(const bool signed = false) {
+        return signed ? NEG_QNAN : QNAN;
+    }
+
+    static Dec32 snan(const bool signed = false) {
+        return signed ? NEG_SNAN : SNAN;
+    }
+
+/*    static Dec32 nan()        { return QNAN; }
+    static Dec32 snan()       { return SNAN; }*/
 
     // floating point properties
     static Dec32 init()       { return QNAN; }
@@ -840,12 +850,11 @@ writeln("num.coefficient = ", num.coefficient);
         return adjustedExponent >= MIN_EXPO;
     }
 
-    // (L) TODO: this is where the "digits" come into play.
     /**
      * Returns the value of the adjusted exponent.
      */
      const int adjustedExponent() {
-        return exponent + 6;
+        return exponent + digits - 1;
      }
 
 //--------------------------------
@@ -1152,7 +1161,30 @@ public string toEngString(const Dec32 num) {
     return decimal.conv.toEngString!Dec32(num);
 }
 
-// (9) TODO: add toHexString and toBinaryString
+// (7) UNREADY: toHexString. Description. Unit Tests.
+/**
+ * Converts a Dec32 number to a hexadecimal string representation.
+ */
+public string toHexString(const Dec32 num) {
+    return format("%8x", num.bits);
+}
+
+unittest {
+	write("hexstring...");
+    Dec32 num = 12345;
+    assert(toHexString(num) == "32803039");
+    assert(toBinaryString(num) == "00110010100000000011000000111001");
+	writeln("passed");
+}
+
+
+// (7) UNREADY: toBinaryString. Description. Unit Tests.
+/**
+ * Converts a Dec32 number to a binary string representation.
+ */
+public string toBinaryString(const Dec32 num) {
+    return format("%0#32b", num.bits);
+}
 
 // (8) TODO: when all are copied, delete this.
 unittest {
