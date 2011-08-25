@@ -1297,32 +1297,32 @@ unittest {
     pushContext(testContext);
     testContext.precision = 5;
     testContext.rounding = Rounding.HALF_EVEN;
-    long num; uint digits; int expo;
+    ulong num; uint digits; int expo;
     num = 1000;
     digits = numDigits(num);
-    expo = setExponent(num, digits, testContext);
+    expo = setExponent(false, num, digits, testContext);
     assert(num == 1000 && expo == 0 && digits == 4);
     num = 1000000;
     digits = numDigits(num);
-    expo = setExponent(num, digits, testContext);
+    expo = setExponent(false, num, digits, testContext);
     assert(num == 10000 && expo == 2 && digits == 5);
     num = 99999;
     digits = numDigits(num);
-    expo = setExponent(num, digits, testContext);
+    expo = setExponent(false, num, digits, testContext);
     assert(num == 99999 && expo == 0 && digits == 5);
     num = 1234550;
     digits = numDigits(num);
-    expo = setExponent(num, digits, testContext);
+    expo = setExponent(false, num, digits, testContext);
     assert(num == 12346 && expo == 2 && digits == 5);
     testContext.rounding = Rounding.DOWN;
     num = 1234550;
     digits = numDigits(num);
-    expo = setExponent(num, digits, testContext);
+    expo = setExponent(false, num, digits, testContext);
     assert(num == 12345 && expo == 2 && digits == 5);
     testContext.rounding = Rounding.UP;
     num = 1234550;
     digits = numDigits(num);
-    expo = setExponent(num, digits, testContext);
+    expo = setExponent(false, num, digits, testContext);
     assert(num == 12346 && expo == 2 && digits == 5);
     testContext = popContext;
     writeln("passed");
@@ -1385,10 +1385,36 @@ unittest {
     write("this(long)...");
     Dec32 num = Dec32(1234567890L);
     assert(num.toString == "1.234568E+9");
+    num = Dec32(0);
+    assert(num.toString == "0");
+    num = Dec32(1);
+    assert(num.toString == "1");
+    num = Dec32(-1);
+    assert(num.toString == "-1");
+    num = Dec32(5);
+    assert(num.toString == "5");
     writeln("passed");
 }
 
- unittest {
+unittest {
+    writeln("this(long, int)....");
+    Dec32 num;
+    num = Dec32(1234567890L, 5);
+    assert(num.toString == "1.234568E+14");
+    num = Dec32(0, 2);
+    assert(num.toString == "0E+2");
+    num = Dec32(1, 75);
+    assert(num.toString == "1E+75");
+    num = Dec32(-1, -75);
+    assert(num.toString == "-1E-75");
+    num = Dec32(5, -3);
+    assert(num.toString == "0.005");
+    writeln("passed");
+}
+
+// TODO: is there a this(BigInt)?
+// should there be?
+/*unittest {
     writeln("this(big)....");
     Decimal num = Decimal(0);
     Dec32 dec = Dec32(num);
@@ -1414,7 +1440,31 @@ unittest {
     dec = Dec32(num);
     writeln("num = ", num);
     writeln("dec = ", dec);
-    writeln("test missing");
+    writeln("passed");
+}*/
+
+unittest {
+	write("this(Decimal)...");
+    Decimal dec = 0;
+    Dec32 num = dec;
+    assert(dec.toString == num.toString);
+    dec = 1;
+    num = dec;
+    assert(dec.toString == num.toString);
+    dec = -1;
+    num = dec;
+    assert(dec.toString == num.toString);
+    dec = -16000;
+    num = dec;
+    assert(dec.toString == num.toString);
+    dec = uint.max;
+    num = dec;
+    assert(num.toString == "4.294967E+9");
+    assert(dec.toString == "4294967295");
+    dec = 9999999E+12;
+    num = dec;
+    assert(dec.toString == num.toString);
+	writeln("passed");
 }
 
 unittest {
@@ -1430,6 +1480,32 @@ unittest {
 }
 
 unittest {
+    write("this(real)....");
+    real r = 1.2345E+16;
+    Dec32 actual = Dec32(r);
+    Dec32 expect = Dec32("1.2345E+16");
+    assert(expect == actual);
+    writeln("passed");
+}
+
+unittest {
+     write("coefficient...");
+    Dec32 num;
+    assert(num.coefficient == 0);
+    num = 9.998743;
+    assert(num.coefficient == 9998743);
+    num = Dec32(9999213,-6);
+    assert(num.coefficient == 9999213);
+    num = -125;
+    assert(num.coefficient == 125);
+    num = 99999999;
+    assert(num.coefficient == 1000000);
+    // TODO: test explicit, implicit, nan and infinity.
+    writeln("passed");
+}
+
+unittest {
+	write("exponent...");
     Dec32 num;
     // reals
     num = std.math.PI;
@@ -1446,11 +1522,7 @@ unittest {
     assert(num.exponent = 17);
     num = 9.999999E23;
     assert(num.exponent = 17);
-}
 
-unittest {
-	write("exponent...");
-    Dec32 num;
     num = Dec32(-12000,5);
     num.exponent = 10;
     assert(num.exponent == 10);
@@ -1590,8 +1662,8 @@ unittest {
 unittest {
 	write("hexstring...");
     Dec32 num = 12345;
-    assert(toHexString(num) == "32803039");
-    assert(toBinaryString(num) == "00110010100000000011000000111001");
+    assert(num.toHexString == "0x32803039");
+    assert(num.toBinaryString == "00110010100000000011000000111001");
 	writeln("passed");
 }
 

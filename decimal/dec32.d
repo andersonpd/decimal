@@ -29,8 +29,14 @@ import decimal.context;
 import decimal.decimal;
 import decimal.rounding;
 
-struct Dec32 {
+// (8) TODO: when all are copied, delete this.
+unittest {
+    writeln("---------------------");
+    writeln("decimal32.......begin");
+    writeln("---------------------");
+}
 
+struct Dec32 {
 
     /// The global context for this type.
     private static decimal.context.DecimalContext context32 = {
@@ -39,66 +45,67 @@ struct Dec32 {
         eMax : E_MAX
     };
 
-    /// The number of bits in the signed value of the decimal number.
-    /// This is equal to the number of bits in the underlying integer;
-    /// (must be 32, 64, or 128).
+private:
+    // The total number of bits in the decimal number.
+    // This is equal to the number of bits in the underlying integer;
+    // (must be 32, 64, or 128).
     immutable uint bitLength = 32;
 
-    /// the number of bits in the sign bit (1, obviously)
+    // the number of bits in the sign bit (1, obviously)
     immutable uint signBit = 1;
 
-    /// The number of bits in the unsigned value of the decimal number.
+    // The number of bits in the unsigned value of the decimal number.
     immutable uint unsignedBits = 31; // = bitLength - signBit;
 
-    /// The number of bits in the (biased) exponent.
+    // The number of bits in the (biased) exponent.
     immutable uint expoBits = 8;
 
-    /// The number of bits in the coefficient when the value is
-    /// explicitly represented.
+    // The number of bits in the coefficient when the value is
+    // explicitly represented.
     immutable uint explicitBits = 23;
 
-    /// The number of bits used to indicate special values and implicit
-    /// representation
+    // The number of bits used to indicate special values and implicit
+    // representation
     immutable uint testBits = 2;
 
-    /// The number of bits in the coefficient when the value is implicitly
-    /// represented. The three missing bits (the most significant bits)
-    /// are always '100'.
+    // The number of bits in the coefficient when the value is implicitly
+    // represented. The three missing bits (the most significant bits)
+    // are always '100'.
     immutable uint implicitBits = 21; // = explicitBits - testBits;
 
-    /// The number of special bits, including the two test bits.
-    /// These bits are used to denote infinities and NaNs.
+    // The number of special bits, including the two test bits.
+    // These bits are used to denote infinities and NaNs.
     immutable uint specialBits = 6;
 
-    /// The number of infinity bits, a subset of the special bits.
-    /// These bits are used to denote infinity.
+    // The number of infinity bits, a subset of the special bits.
+    // These bits are used to denote infinity.
     immutable uint infinityBits = 5;
 
-    /// The number of bits in the payload of a NaN.
+    // The number of bits in the payload of a NaN.
     immutable uint payloadBits = 16;
 
-    /// The number of bits that follow the special bits in NaNs.
-    /// These bits are always set to zero in canonical representations.
-    /// Their number is the remaining number of bits in a NaN
-    /// when all others (sign, special and payload) are accounted for.
+    // The number of bits that follow the special bits in NaNs.
+    // These bits are always set to zero in canonical representations.
+    // Their number is the remaining number of bits in a NaN
+    // when all others (sign, special and payload) are accounted for.
     immutable uint nanPadBits = 9;
             // = bitLength - payloadBits - specialBits - signBit;
 
-    /// The number of bits that follow the special bits in infinities.
-    /// These bits are always set to zero in canonical representations.
-    /// Their number is the remaining number of bits in an infinity
-    /// when all others (sign and infinity) are accounted for.
+    // The number of bits that follow the special bits in infinities.
+    // These bits are always set to zero in canonical representations.
+    // Their number is the remaining number of bits in an infinity
+    // when all others (sign and infinity) are accounted for.
     immutable uint infPadBits = 26;
             // = bitLength - infinityBits - signBit;
 
-    /// The exponent bias. The exponent is stored as an unsigned number and
-    /// the bias is subtracted from the unsigned value to give the true
-    /// (signed) exponent.
+    // The exponent bias. The exponent is stored as an unsigned number and
+    // the bias is subtracted from the unsigned value to give the true
+    // (signed) exponent.
     immutable int BIAS = 101;   // = 0x65
 
-    /// The maximum biased exponent.
-    /// The largest binary number that can fit in the width of the
-    /// exponent without setting either of the first two bits to 1.
+    // The maximum biased exponent.
+    // The largest binary number that can fit in the width of the
+    // exponent without setting either of the first two bits to 1.
     immutable uint MAX_BSXP = 0xBF; // = 191
 
     // length of the coefficient in decimal digits.
@@ -121,10 +128,10 @@ struct Dec32 {
     immutable uint MASK_XPLC = 0x7FFFFF;
 
     // union providing different views of the number representation.
-    private union {
+    union {
 
         // entire 32-bit unsigned integer
-        uint sBits = SV.POS_NAN;    // init value == NaN
+        uint intBits = SV.POS_NAN;    // set to the initial value: NaN
 
         // unsigned value and sign bit
         mixin (bitfields!(
@@ -167,6 +174,7 @@ struct Dec32 {
 //  special values
 //--------------------------------
 
+private:
     // The value of the (6) special bits when the number is a signaling NaN.
     immutable uint SV_SIG = 0x3F;
     // The value of the (6) special bits when the number is a quiet NaN.
@@ -197,14 +205,15 @@ struct Dec32 {
         NEG_ZRO = 0xB2800000
     }
 
-    private immutable Dec32 QNAN     = Dec32(SV.POS_NAN);
-    private immutable Dec32 NEG_QNAN = Dec32(SV.NEG_NAN);
-    private immutable Dec32 SNAN     = Dec32(SV.POS_SIG);
-    private immutable Dec32 NEG_SNAN = Dec32(SV.NEG_SIG);
-    private immutable Dec32 INFINITY = Dec32(SV.POS_INF);
-    private immutable Dec32 NEG_INF  = Dec32(SV.NEG_INF);
-    private immutable Dec32 ZERO     = Dec32(SV.POS_ZRO);
-    private immutable Dec32 NEG_ZERO = Dec32(SV.NEG_ZRO);
+public:
+    immutable Dec32 NAN      = Dec32(SV.POS_NAN);
+    immutable Dec32 NEG_NAN  = Dec32(SV.NEG_NAN);
+    immutable Dec32 SNAN     = Dec32(SV.POS_SIG);
+    immutable Dec32 NEG_SNAN = Dec32(SV.NEG_SIG);
+    immutable Dec32 INFINITY = Dec32(SV.POS_INF);
+    immutable Dec32 NEG_INF  = Dec32(SV.NEG_INF);
+    immutable Dec32 ZERO     = Dec32(SV.POS_ZRO);
+    immutable Dec32 NEG_ZERO = Dec32(SV.NEG_ZRO);
 
 //--------------------------------
 //  constructors
@@ -214,9 +223,10 @@ struct Dec32 {
      * Creates a Dec32 from a special value.
      */
     private this(const SV sv) {
-        sBits = sv;
+        intBits = sv;
     }
 
+    // this unit test uses private values
     unittest {
         Dec32 num;
         num = Dec32(SV.POS_SIG);
@@ -340,8 +350,6 @@ struct Dec32 {
 
     }
 
-   // (1) TODO: add a test for 999999E+x --
-   // I think it's rounding when it shouldn't
    unittest {
         Decimal dec = 0;
         Dec32 num = dec;
@@ -359,6 +367,9 @@ struct Dec32 {
         num = dec;
         assert(num.toString == "4.294967E+9");
         assert(dec.toString == "4294967295");
+        dec = 9999999E+12;
+        num = dec;
+        assert(dec.toString == num.toString);
     }
 
     /**
@@ -383,7 +394,7 @@ struct Dec32 {
      *    Constructs a number from a real value.
      */
     // (2) TODO: change this to use fields from bitmanip
-    this(const real r) {
+    public this(const real r) {
         string str = format("%.*G", cast(int)context32.precision, r);
         this(str);
     }
@@ -413,19 +424,19 @@ struct Dec32 {
 //  properties
 //--------------------------------
 
-    public:
+public:
 
     /// Returns the raw bits of this number.
     @property
     const uint bits() {
-        return sBits;
+        return intBits;
     }
 
     /// Sets the raw bits of this number.
     @property
     uint bits(const uint raw) {
-        sBits = raw;
-        return sBits;
+        intBits = raw;
+        return intBits;
     }
 
     /// Returns the sign of this number.
@@ -550,7 +561,6 @@ struct Dec32 {
 
     // Sets the coefficient of this number. This may cause an
     // explicit number to become an implicit number, and vice versa.
-    // (5) TODO: fix the mant, mant1, mant2 usage.
     @property
     uint coefficient(const ulong mant) {
         // if not finite, convert to NaN and return 0.
@@ -559,11 +569,11 @@ struct Dec32 {
             context32.setFlag(INVALID_OPERATION);
             return 0;
         }
-        long mant1 = mant;
-        if (mant1 > MAX_IMPL) {
+        ulong copy = mant;
+        if (copy > MAX_IMPL) {
             int expo = 0;
-            uint digits = numDigits(mant1);
-            expo = setExponent(mant1, digits, context32);
+            uint digits = numDigits(copy);
+            expo = setExponent(sign, copy, digits, context32);
             if (this.isExplicit) {
                 expoEx = expoEx + expo;
             }
@@ -571,44 +581,37 @@ struct Dec32 {
                 expoIm = expoIm + expo;
             }
         }
-        uint mant2 = cast(uint)mant1;
-        if (mant2 <= MAX_XPLC) {
+        // at this point, the number <= MAX_IMPL
+        if (copy <= MAX_XPLC) {
             // if implicit, convert to explicit
             if (this.isImplicit) {
                 expoEx = expoIm;
             }
-            mantEx = mant2;
+            mantEx = cast(uint)copy;
             return mantEx;
         }
-        else {  // mant2 <= MAX_IMPL
+        else {  // copy <= MAX_IMPL
             // if explicit, convert to implicit
             if (this.isExplicit) {
                 expoIm = expoEx;
                 testIm = 0b11;
             }
-            mantIm = mant2 & MASK_IMPL;
+            mantIm = cast(uint)copy & MASK_IMPL;
             return mantIm | (0b100 << implicitBits);
         }
     }
 
     unittest {
-	    write("coefficient...");
         Dec32 num;
         assert(num.coefficient == 0);
         num = 9.998743;
-// (1) TODO: rounding problem
-//        assert(num.coefficient == 9998743);
+        assert(num.coefficient == 9998743);
         num = Dec32(9999213,-6);
         assert(num.coefficient == 9999213);
         num = -125;
         assert(num.coefficient == 125);
         num = -99999999;
-// (1) TODO: rounding problem
-writeln("num = ", num);
-writeln("num.coefficient = ", num.coefficient);
-//        assert(num.coefficient == 1000000);
-        // (6) TODO: test explicit, implicit, nan and infinity.
-	    writeln("failed");
+        assert(num.coefficient == 1000000);
     }
 
     /// Returns the number of digits in this number's coefficient.
@@ -617,10 +620,12 @@ writeln("num.coefficient = ", num.coefficient);
         return numDigits(this.coefficient);
     }
 
-    // (L) TODO: this is a stopgap
+    // (11) TODO: this is a stopgap
     // NOTE: if we really want to set the digits then we need to
     // adjust the context value, right?
-    // (L) TODO: there is info in the spec about minimum # of digits.
+    // (11) TODO: there is info in the spec about minimum # of digits.
+    // I think this should ensure the coefficient has only the specified
+    // number of digits and adjust the exponent as needed.
     @property
     const int digits(const int digs) {
         return digs;
@@ -674,7 +679,7 @@ writeln("num.coefficient = ", num.coefficient);
     }
 
     static Dec32 nan(const bool signed = false) {
-        return signed ? NEG_QNAN : QNAN;
+        return signed ? NEG_NAN : NAN;
     }
 
     static Dec32 snan(const bool signed = false) {
@@ -682,14 +687,15 @@ writeln("num.coefficient = ", num.coefficient);
     }
 
     // floating point properties
-    static Dec32 init()       { return QNAN; }
-    static Dec32 nan()        { return QNAN; }
+    static Dec32 init()       { return NAN; }
+    static Dec32 nan()        { return NAN; }
     static Dec32 snan()       { return SNAN; }
 
     static Dec32 epsilon()    { return Dec32(1, -context32.precision); }
     static Dec32 max()        { return Dec32("9999999E+90"); }
     static Dec32 min_normal() { return Dec32(1, context32.eMin); }
 
+    // TODO: do these change with context or not??
     static int dig()        { return 7; }
     static int mant_dig()   { return 24; }
     static int max_10_exp() { return context32.eMax; }
@@ -734,6 +740,8 @@ writeln("num.coefficient = ", num.coefficient);
     }
 
     /// Returns the minimum representable subnormal value in this context.
+    // TODO: does this set the subnormal flag? Do others do the same
+    // on creation??
     static Dec32 min(DecimalContext context = context32) {
         return Dec32(1, context.eTiny);
     }
@@ -766,6 +774,7 @@ writeln("num.coefficient = ", num.coefficient);
     /**
      * Returns true if this number's representation is canonical.
      */
+    // TODO: need to check when the number is a Nan or Infinity.
     const bool isCanonical() {
         return true;
     }
@@ -860,7 +869,7 @@ writeln("num.coefficient = ", num.coefficient);
     /**
      * Converts a Dec32 to a Decimal
      */
-    public const Decimal toDecimal() {
+    const Decimal toDecimal() {
 
         if (isFinite) {
             return Decimal(sign, BigInt(coefficient), exponent);
@@ -883,28 +892,35 @@ writeln("num.coefficient = ", num.coefficient);
     }
 
     /**
-     * Converts a Dec32 to a hexadecimal string
+     * Converts this number to an exact scientific-style string representation.
      */
-    const public string toHexString() {
-         return format("0x%08X", sBits);
+    const string toSciString() {
+        return decimal.conv.toSciString!Dec32(this);
     }
 
-    unittest {
-        write("toHexString...");
-        writeln("test missing");
+    /**
+     * Converts this number to an exact engineering-style string representation.
+     */
+    const string toEngString() {
+        return decimal.conv.toEngString!Dec32(this);
     }
 
     /**
      * Converts a Dec32 to a string
      */
     const public string toString() {
-         return toSciString(this);
+         return toSciString();
+    }
+
+    unittest {
+        write("toString...");
+        writeln("test missing");
     }
 
     /**
-     * Converts a Dec32 to a string
+     * Creates an abstract representation of this number.
      */
-    public const string toAbstract()
+    const string toAbstract()
     {
         if (this.isSignaling) {
             if (payload) {
@@ -922,6 +938,31 @@ writeln("num.coefficient = ", num.coefficient);
             return format("[%d,%s]", signed ? 1 : 0, "inf");
         }
         return format("[%d,%s,%d]", signed ? 1 : 0, coefficient, exponent);
+    }
+
+    unittest {
+        write("toAbstract...");
+        writeln("test missing");
+    }
+
+    /**
+     * Converts this number to a hexadecimal string representation.
+     */
+    public string toHexString() {
+         return format("0x%08X", bits);
+    }
+
+    /**
+     * Converts this number to a binary string representation.
+     */
+    const string toBinaryString() {
+        return format("%0#32b", bits);
+    }
+
+    unittest {
+        Dec32 num = 12345;
+        assert(num.toHexString == "0x32803039");
+        assert(num.toBinaryString == "00110010100000000011000000111001");
     }
 
 //--------------------------------
@@ -965,7 +1006,7 @@ writeln("num.coefficient = ", num.coefficient);
     // (7) UNREADY: opAssign(T: Dec32)(const Dec32). Flags. Unit Tests.
     /// Assigns a Dec32 (copies that to this).
     void opAssign(T:Dec32)(const T that) {
-        this.sBits = that.sBits;
+        this.intBits = that.intBits;
     }
 
     unittest {
@@ -1024,6 +1065,12 @@ writeln("num.coefficient = ", num.coefficient);
         actual = ++num;
         assert(actual == expect);
         // TODO: seems to be broken for nums like 1.000E8
+        // they should be unchanged since the bump is too small.
+        num = 1.00E8;
+        expect = num;
+        actual = --num;
+writeln("expect = ", expect);
+writeln("actual = ", actual);
         num = 12.35;
         expect = 11.35;
         actual = --num;
@@ -1118,45 +1165,6 @@ writeln("num.coefficient = ", num.coefficient);
     }
 
 }   // end Dec32 struct
-
-// (7) UNREADY: toSciString. Description. Unit Tests.
-/**
- * Converts a Decimal number to a string representation.
- */
-public string toSciString(const Dec32 num) {
-    return decimal.conv.toSciString!Dec32(num);
-}
-
-// (7) UNREADY: toEngString. Description. Unit Tests.
-/**
- * Converts a Decimal number to a string representation.
- */
-public string toEngString(const Dec32 num) {
-    return decimal.conv.toEngString!Dec32(num);
-}
-
-// (7) UNREADY: toHexString. Description. Unit Tests.
-/**
- * Converts a Dec32 number to a hexadecimal string representation.
- */
-public string toHexString(const Dec32 num) {
-    return format("%8x", num.bits);
-}
-
-unittest {
-    Dec32 num = 12345;
-    assert(toHexString(num) == "32803039");
-    assert(toBinaryString(num) == "00110010100000000011000000111001");
-}
-
-
-// (7) UNREADY: toBinaryString. Description. Unit Tests.
-/**
- * Converts a Dec32 number to a binary string representation.
- */
-public string toBinaryString(const Dec32 num) {
-    return format("%0#32b", num.bits);
-}
 
 // (8) TODO: when all are copied, delete this.
 unittest {

@@ -197,6 +197,7 @@ unittest {
 // private rounding routines
 //--------------------------------
 
+// TODO: this version has the same problem as the long version.
 // TODO: Move into round routine.
 // UNREADY: roundByMode. Description. Order.
 private void roundByMode(T)(ref T num, ref DecimalContext context)
@@ -418,17 +419,15 @@ unittest {
 }
 
 // UNREADY: setExponent. Description. Order.
-public uint setExponent(ref long num, ref uint digits, const DecimalContext context) {
+public uint setExponent(const bool sign, ref ulong unum, ref uint digits,
+        const DecimalContext context) {
 
     uint inDigits = digits;
-    ulong unum = std.math.abs(num);
-    bool sign = num < 0;
     ulong remainder = clipRemainder(unum, digits, context.precision);
     int expo = inDigits - digits;
 
     // if the remainder is zero, return
     if (remainder == 0) {
-        num = sign ? -unum : unum;
         return expo;
     }
 
@@ -478,7 +477,13 @@ public uint setExponent(ref long num, ref uint digits, const DecimalContext cont
             break;
     }    // end switch(mode)
 
-    num = sign ? -unum : unum;
+    // this can only be true if the number was all 9s and rolled over;
+    // e.g., 999 + 1 = 1000. So clip a zero and increment the exponent.
+    if (digits > context.precision) {
+        unum /= 10;
+        expo++;
+        digits--;
+    }
     return expo;
 
 } // end setExponent()
@@ -487,18 +492,18 @@ unittest {
     DecimalContext testContextR;
     testContextR.precision = 5;
     testContextR.rounding = Rounding.HALF_EVEN;
-    long num; uint digits; int expo;
+    ulong num; uint digits; int expo;
     num = 1000;
     digits = numDigits(num);
-    expo = setExponent(num, digits, testContextR);
+    expo = setExponent(false, num, digits, testContextR);
     assert(num == 1000 && expo == 0 && digits == 4);
     num = 1000000;
     digits = numDigits(num);
-    expo = setExponent(num, digits, testContextR);
+    expo = setExponent(false, num, digits, testContextR);
     assert(num == 10000 && expo == 2 && digits == 5);
     num = 99999;
     digits = numDigits(num);
-    expo = setExponent(num, digits, testContextR);
+    expo = setExponent(false, num, digits, testContextR);
     assert(num == 99999 && expo == 0 && digits == 5);
 }
 
