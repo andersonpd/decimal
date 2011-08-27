@@ -29,7 +29,6 @@ import decimal.context;
 import decimal.decimal;
 import decimal.rounding;
 
-// (1) TODO: payloads.
 // (2) TODO: toInt, toLong.
 // (3) TODO: digits(uint).
 // (4) TODO: problem with unary ops (++).
@@ -919,20 +918,24 @@ public:
      * Converts a Dec32 to a Decimal
      */
     const Decimal toDecimal() {
-
         if (isFinite) {
             return Decimal(sign, BigInt(coefficient), exponent);
         }
         if (isInfinite) {
             return Decimal.infinity(sign);
         }
-        // (1) TODO: include payloads
+        // number is a NaN
+        Decimal dec;
         if (isQuiet) {
-            return Decimal.nan(sign);
+            dec = Decimal.nan(sign);
         }
-        else { // isSignaling
-            return Decimal.snan(sign);
+        if (isSignaling) {
+            dec = Decimal.snan(sign);
         }
+        if (payload) {
+            dec.payload(payload);
+        }
+        return dec;
     }
 
     unittest {
@@ -967,26 +970,67 @@ public:
     }
 
     /**
+     * Creates an exact representation of this number.
+     */
+    const string toExact()
+    {
+        if (this.isFinite) {
+            return format("%s%07dE%s%02d", signed ? "-" : "+", coefficient,
+                    exponent < 0 ? "-" : "+", exponent);
+        }
+        if (this.isInfinite) {
+            return format("%s%s", signed ? "-" : "+", "Infinity");
+        }
+        if (this.isQuiet) {
+            if (payload) {
+                return format("%s%s%d", signed ? "-" : "+", "NaN", payload);
+            }
+            return format("%s%s", signed ? "-" : "+", "NaN");
+        }
+        // this.isSignaling
+        if (payload) {
+            return format("%s%s%d", signed ? "-" : "+", "sNaN", payload);
+        }
+        return format("%s%s", signed ? "-" : "+", "sNaN");
+    }
+
+    unittest {
+        write("toExact...");
+        Dec32 num;
+        assert(num.toExact == "+NaN");
+        num = max;
+        assert(num.toExact == "+9999999E+90");
+        num = 1;
+        assert(num.toExact == "+0000001E+00");
+        num = MAX_XPLC;
+        assert(num.toExact == "+8388607E+00");
+        num = infinity(true);
+        assert(num.toExact == "-Infinity");
+        writeln("passed");
+    }
+
+    /**
      * Creates an abstract representation of this number.
      */
     const string toAbstract()
     {
-        if (this.isSignaling) {
-            if (payload) {
-                return format("[%d,%s,%d]", signed ? 1 : 0, "sNaN", payload);
-            }
-            return format("[%d,%s]", signed ? 1 : 0, "sNaN");
+        if (this.isFinite) {
+            return format("[%d,%s,%d]", signed ? 1 : 0, coefficient, exponent);
+        }
+        if (this.isInfinite) {
+            return format("[%d,%s]", signed ? 1 : 0, "inf");
         }
         if (this.isQuiet) {
             if (payload) {
                 return format("[%d,%s,%d]", signed ? 1 : 0, "qNaN", payload);
             }
-            return format("[%d,%s%s]", signed ? 1 : 0, "qNaN", coefficient);
+            return format("[%d,%s]", signed ? 1 : 0, "qNaN");
         }
-        if (this.isInfinite) {
-            return format("[%d,%s]", signed ? 1 : 0, "inf");
+        // this.isSignaling
+        if (payload) {
+            return format("[%d,%s,%d]", signed ? 1 : 0, "sNaN", payload);
         }
-        return format("[%d,%s,%d]", signed ? 1 : 0, coefficient, exponent);
+        return format("[%d,%s]", signed ? 1 : 0, "sNaN");
     }
 
     unittest {
