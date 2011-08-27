@@ -29,11 +29,9 @@ import decimal.context;
 import decimal.decimal;
 import decimal.rounding;
 
-// (2) TODO: toInt, toLong.
-// (3) TODO: digits(uint).
 // (4) TODO: problem with unary ops (++).
 // (5) TODO: subnormal creation.
-// (6) TODO: all others can wait.
+// (6) TODO: "9999999E90" == infinity?
 // (7) TODO: when all are copied, delete this.
 unittest {
     writeln("---------------------");
@@ -243,6 +241,8 @@ public:
     immutable Dec32 NEG_ZERO = Dec32(SV.NEG_ZRO);
     immutable Dec32 MAX      = Dec32(SV.POS_MAX);
     immutable Dec32 NEG_MAX  = Dec32(SV.NEG_MAX);
+    immutable Dec32 ONE      = Dec32(SV.POS_ZRO + 1);
+    immutable Dec32 NEG_ONE  = Dec32(-1); //SV.POS_ZRO + 1);
 
 //--------------------------------
 //  constructors
@@ -654,12 +654,10 @@ public:
         return numDigits(this.coefficient);
     }
 
-    // (3) TODO: digits
-    // I think this should ensure the coefficient has only the specified
-    // number of digits and adjust the exponent as needed.
+    /// Has no effect.
     @property
     const int digits(const int digs) {
-        return digs;
+        return digits;
     }
 
     /// Returns the payload of this number.
@@ -943,6 +941,62 @@ public:
         writeln("test missing");
     }
 
+    const int toInt() {
+        int n;
+        if (isNaN) {
+            context32.setFlag(INVALID_OPERATION);
+            return 0;
+        }
+        if (this > Dec32(int.max) || (isInfinite && !isSigned)) return int.max;
+        if (this < Dec32(int.min) || (isInfinite &&  isSigned)) return int.min;
+        quantize!Dec32(this, ONE, context32);
+        n = coefficient;
+        return signed ? -n : n;
+    }
+
+    unittest {
+        write("toInt...");
+        Dec32 num;
+        num = 12345;
+        assert(num.toInt == 12345);
+        num = 1.0E6;
+        assert(num.toInt == 1000000);
+        num = -1.0E60;
+        assert(num.toInt == int.min);
+        num = NEG_INF;
+        assert(num.toInt == int.min);
+        writeln("passed");
+    }
+
+    const long toLong() {
+        long n;
+        if (isNaN) {
+            context32.setFlag(INVALID_OPERATION);
+            return 0;
+        }
+        if (this > Dec32(long.max) || (isInfinite && !isSigned)) return long.max;
+        if (this < Dec32(long.min) || (isInfinite &&  isSigned)) return long.min;
+        quantize!Dec32(this, ONE, context32);
+        n = coefficient;
+        return signed ? -n : n;
+    }
+
+    unittest {
+        write("toLong...");
+        Dec32 num;
+        num = -12345;
+        assert(num.toLong == -12345);
+        num = 2 * int.max;
+        assert(num.toLong == 2 * int.max);
+        num = 1.0E6;
+        assert(num.toLong == 1000000);
+        num = -1.0E60;
+        assert(num.toLong == long.min);
+        num = NEG_INF;
+        assert(num.toLong == long.min);
+        writeln("passed");
+    }
+
     /**
      * Converts this number to an exact scientific-style string representation.
      */
@@ -1041,7 +1095,7 @@ public:
     /**
      * Converts this number to a hexadecimal string representation.
      */
-    public string toHexString() {
+    const string toHexString() {
          return format("0x%08X", bits);
     }
 

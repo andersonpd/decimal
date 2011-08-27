@@ -1537,24 +1537,6 @@ public T roundToIntegralValue(T)(const T num,
     return result;
 }
 
-// UNREADY: setDigits. Description. Ordering.
-/**
- * Sets the number of digits to the current precision.
- */
-// TODO: template this?
-/*package void setDigits(ref Decimal num) {
-    int diff = num.digits - context.precision;
-    if (diff > 0) {
-        round(num, context);
-    }
-}
-
-unittest {
-    write("setDigits...");
-    writeln("test missing");
-}*/
-
-
 // UNREADY: reduceToIdeal. Description. Flags.
 /**
  * Reduces operand to simplest form. All trailing zeros are removed.
