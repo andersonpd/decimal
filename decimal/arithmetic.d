@@ -775,6 +775,7 @@ public bool equals(T)(const T op1, const T op2, DecimalContext context,
         return false;
     }
 
+    // TODO: this is a good test for Decimal but others should do a bitwise compare
     // compare the numbers numerically
     int diff = (op1.exponent + op1.digits) - (op2.exponent + op2.digits);
     if (diff != 0) {

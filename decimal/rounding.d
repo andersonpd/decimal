@@ -419,11 +419,11 @@ unittest {
 }
 
 // UNREADY: setExponent. Description. Order.
-public uint setExponent(const bool sign, ref ulong unum, ref uint digits,
+public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
         const DecimalContext context) {
 
     uint inDigits = digits;
-    ulong remainder = clipRemainder(unum, digits, context.precision);
+    ulong remainder = clipRemainder(mant, digits, context.precision);
     int expo = inDigits - digits;
 
     // if the remainder is zero, return
@@ -436,41 +436,41 @@ public uint setExponent(const bool sign, ref ulong unum, ref uint digits,
             break;
         case Rounding.HALF_UP:
             if (firstDigit(remainder) >= 5) {
-                increment(unum, digits);
+                increment(mant, digits);
             }
             break;
         case Rounding.HALF_EVEN:
             ulong first = firstDigit(remainder);
             if (first > 5) {
-                increment(unum, digits);
+                increment(mant, digits);
             }
             if (first < 5) {
                 break;
             }
             // remainder == 5
             // if last digit is odd...
-            if (unum & 1) {
-                increment(unum, digits);
+            if (mant & 1) {
+                increment(mant, digits);
             }
             break;
         case Rounding.CEILING:
-            if (!sign && remainder != 0) {
-                increment(unum, digits);
+            if (!sign) {
+                increment(mant, digits);
             }
             break;
         case Rounding.FLOOR:
-            if (sign && remainder != 0) {
-                increment(unum, digits);
+            if (sign) {
+                increment(mant, digits);
             }
             break;
         case Rounding.HALF_DOWN:
             if (firstDigit(remainder) > 5) {
-                increment(unum, digits);
+                increment(mant, digits);
             }
             break;
         case Rounding.UP:
             if (remainder != 0) {
-                increment(unum, digits);
+                increment(mant, digits);
             }
             break;
         default:
@@ -480,7 +480,7 @@ public uint setExponent(const bool sign, ref ulong unum, ref uint digits,
     // this can only be true if the number was all 9s and rolled over;
     // e.g., 999 + 1 = 1000. So clip a zero and increment the exponent.
     if (digits > context.precision) {
-        unum /= 10;
+        mant /= 10;
         expo++;
         digits--;
     }

@@ -29,7 +29,13 @@ import decimal.context;
 import decimal.decimal;
 import decimal.rounding;
 
-// (8) TODO: when all are copied, delete this.
+// (1) TODO: payloads.
+// (2) TODO: toInt, toLong.
+// (3) TODO: digits(uint).
+// (4) TODO: problem with unary ops (++).
+// (5) TODO: subnormal creation.
+// (6) TODO: all others can wait.
+// (7) TODO: when all are copied, delete this.
 unittest {
     writeln("---------------------");
     writeln("decimal32.......begin");
@@ -75,21 +81,17 @@ private:
 
     // The number of special bits, including the two test bits.
     // These bits are used to denote infinities and NaNs.
-    immutable uint specialBits = 6;
+    immutable uint specialBits = 4;
 
-    // The number of infinity bits, a subset of the special bits.
+    // The number of bits that follow the special bits.
+    // Their number is the number of bits in an special value
+    // when the others (sign and special) are accounted for.
+    immutable uint spclPadBits = 27;
+            // = bitLength - infinityBits - signBit;
+
+    // The number of infinity bits, including the special bits.
     // These bits are used to denote infinity.
     immutable uint infinityBits = 5;
-
-    // The number of bits in the payload of a NaN.
-    immutable uint payloadBits = 16;
-
-    // The number of bits that follow the special bits in NaNs.
-    // These bits are always set to zero in canonical representations.
-    // Their number is the remaining number of bits in a NaN
-    // when all others (sign, special and payload) are accounted for.
-    immutable uint nanPadBits = 9;
-            // = bitLength - payloadBits - specialBits - signBit;
 
     // The number of bits that follow the special bits in infinities.
     // These bits are always set to zero in canonical representations.
@@ -97,6 +99,20 @@ private:
     // when all others (sign and infinity) are accounted for.
     immutable uint infPadBits = 26;
             // = bitLength - infinityBits - signBit;
+
+    // The number of nan bits, including the special bits.
+    // These bits are used to denote NaN.
+    immutable uint nanBits = 6;
+
+    // The number of bits in the payload of a NaN.
+    immutable uint payloadBits = 16;
+
+    // The number of bits that follow the nan bits in NaNs.
+    // These bits are always set to zero in canonical representations.
+    // Their number is the remaining number of bits in a NaN
+    // when all others (sign, nan and payload) are accounted for.
+    immutable uint nanPadBits = 9;
+            // = bitLength - payloadBits - specialBits - signBit;
 
     // The exponent bias. The exponent is stored as an unsigned number and
     // the bias is subtracted from the unsigned value to give the true
@@ -153,19 +169,26 @@ private:
             uint, "testIm", testBits,
             bool, "signIm", signBit)
         );
-        // Inf = infinities:
-        //      payload, unused bits, special bits and sign bit.
+        // Spcl = special values: non-finite numbers
+        //      unused bits, special bits and sign bit.
         mixin (bitfields!(
-            uint, "anonInf", infPadBits,
+            uint, "padSpcl",  spclPadBits,
+            uint, "testSpcl", specialBits,
+            bool, "signSpcl", signBit)
+        );
+        // Inf = infinities:
+        //      payload, unused bits, infinitu bits and sign bit.
+        mixin (bitfields!(
+            uint, "padInf",  infPadBits,
             uint, "testInf", infinityBits,
             bool, "signInf", signBit)
         );
-        // Nan = special values: qNaN and sNan:
-        //      payload, unused bits, special bits and sign bit.
+        // Nan = not-a-number: qNaN and sNan
+        //      payload, unused bits, nan bits and sign bit.
         mixin (bitfields!(
             uint, "pyldNaN", payloadBits,
-            uint, "anonNaN", nanPadBits,
-            uint, "testNaN", specialBits,
+            uint, "padNaN",  nanPadBits,
+            uint, "testNaN", nanBits,
             bool, "signNaN", signBit)
         );
     }
@@ -176,13 +199,13 @@ private:
 
 private:
     // The value of the (6) special bits when the number is a signaling NaN.
-    immutable uint SV_SIG = 0x3F;
+    immutable uint SIG_VAL = 0x3F;
     // The value of the (6) special bits when the number is a quiet NaN.
-    immutable uint SV_NAN = 0x3E;
+    immutable uint NAN_VAL = 0x3E;
     // The value of the (5) special bits when the number is infinity.
-    immutable uint SV_INF = 0x1E;
+    immutable uint INF_VAL = 0x1E;
 
-    private static enum SV : uint
+    static enum SV : uint
     {
         // The value corresponding to a positive signaling NaN.
         POS_SIG = 0x7E000000,
@@ -202,7 +225,12 @@ private:
         // The value corresponding to positive zero. (+0)
         POS_ZRO = 0x32800000,
         // The value corresponding to negative zero. (-0)
-        NEG_ZRO = 0xB2800000
+        NEG_ZRO = 0xB2800000,
+
+        // The value of the largest representable positive number.
+        POS_MAX = 0x77F8967F,
+        // The value of the largest representable negative number.
+        NEG_MAX = 0xF7F8967F
     }
 
 public:
@@ -214,6 +242,8 @@ public:
     immutable Dec32 NEG_INF  = Dec32(SV.NEG_INF);
     immutable Dec32 ZERO     = Dec32(SV.POS_ZRO);
     immutable Dec32 NEG_ZERO = Dec32(SV.NEG_ZRO);
+    immutable Dec32 MAX      = Dec32(SV.POS_MAX);
+    immutable Dec32 NEG_MAX  = Dec32(SV.NEG_MAX);
 
 //--------------------------------
 //  constructors
@@ -333,18 +363,15 @@ public:
         }
         // check for special values
         else if (big.isInfinite) {
-            bits = SV.POS_INF;
-            signed = big.sign;
+            this = infinity(big.sign);
             return;
         }
         else if (big.isQuiet) {
-            bits = SV.POS_NAN;
-            signed = big.sign;
+            this = nan(big.sign);
             return;
         }
         else if (big.isSignaling) {
-            bits = SV.POS_SIG;
-            signed = big.sign;
+            this = snan(big.sign);
             return;
         }
 
@@ -393,16 +420,25 @@ public:
     /**
      *    Constructs a number from a real value.
      */
-    // (2) TODO: change this to use fields from bitmanip
     public this(const real r) {
+        // check for special values
+        if (!std.math.isFinite(r)) {
+            this = std.math.isInfinity(r) ? INFINITY : NAN;
+            this.sign = cast(bool)std.math.signbit(r);
+            return;
+        }
         string str = format("%.*G", cast(int)context32.precision, r);
         this(str);
     }
 
     unittest {
-        real r = 1.2345E+16;
-        Dec32 actual = Dec32(r);
+        float f = 1.2345E+16f;
+        Dec32 actual = Dec32(f);
         Dec32 expect = Dec32("1.2345E+16");
+        assert(expect == actual);
+        real r = 1.2345E+16;
+        actual = Dec32(r);
+        expect = Dec32("1.2345E+16");
         assert(expect == actual);
     }
 
@@ -528,7 +564,7 @@ public:
         // if this point is reached the number is either infinity or NaN;
         // these have undefined exponent values.
         context32.setFlag(INVALID_OPERATION);
-        this = SV.POS_NAN;
+        this = nan;
         return 0;
     }
 
@@ -542,7 +578,6 @@ public:
         assert(num.exponent == -27);
         num = infinity;
         assert(num.exponent == 0);
-        // (4) TODO: test overflow and underflow.
     }
 
     /// Returns the coefficient of this number.
@@ -594,7 +629,7 @@ public:
             // if explicit, convert to implicit
             if (this.isExplicit) {
                 expoIm = expoEx;
-                testIm = 0b11;
+                testIm = 0x3;
             }
             mantIm = cast(uint)copy & MASK_IMPL;
             return mantIm | (0b100 << implicitBits);
@@ -620,10 +655,7 @@ public:
         return numDigits(this.coefficient);
     }
 
-    // (11) TODO: this is a stopgap
-    // NOTE: if we really want to set the digits then we need to
-    // adjust the context value, right?
-    // (11) TODO: there is info in the spec about minimum # of digits.
+    // (3) TODO: digits
     // I think this should ensure the coefficient has only the specified
     // number of digits and adjust the exponent as needed.
     @property
@@ -686,16 +718,20 @@ public:
         return signed ? NEG_SNAN : SNAN;
     }
 
+    static Dec32 max(const bool signed = false) {
+        return signed ? NEG_MAX : MAX;
+    }
+
     // floating point properties
     static Dec32 init()       { return NAN; }
     static Dec32 nan()        { return NAN; }
     static Dec32 snan()       { return SNAN; }
 
-    static Dec32 epsilon()    { return Dec32(1, -context32.precision); }
-    static Dec32 max()        { return Dec32("9999999E+90"); }
+    static Dec32 epsilon()    { return Dec32(1, -7); }
+    static Dec32 max()        { return MAX; }
     static Dec32 min_normal() { return Dec32(1, context32.eMin); }
+    static Dec32 min()        { return Dec32(1, context32.eTiny); }
 
-    // TODO: do these change with context or not??
     static int dig()        { return 7; }
     static int mant_dig()   { return 24; }
     static int max_10_exp() { return context32.eMax; }
@@ -726,22 +762,14 @@ public:
         return context.max_exp;
     }
 
-    // Returns the maximum representable normal value in the current context.
-    // (L) TODO: this is a fairly expensive operation. Can it be fixed?
-    static Dec32 max(DecimalContext context = context32) {
-        string cstr = "9." ~ replicate("9", context.precision-1)
-            ~ "E" ~ format("%d", context.eMax);
-        return Dec32(cstr);
-    }
-
     /// Returns the minimum representable normal value in this context.
     static Dec32 min_normal(DecimalContext context = context32) {
         return Dec32(1, context.eMin);
     }
 
     /// Returns the minimum representable subnormal value in this context.
-    // TODO: does this set the subnormal flag? Do others do the same
-    // on creation??
+    // (5) TODO: does this set the subnormal flag?
+    // Do others do the same on creation??
     static Dec32 min(DecimalContext context = context32) {
         return Dec32(1, context.eTiny);
     }
@@ -763,20 +791,33 @@ public:
 //  classification properties
 //--------------------------------
 
-    const bool isExplicit() {
-        return testIm != 0b11;
-    }
-
-    const bool isImplicit() {
-        return isFinite() && !isExplicit();
+    /**
+     * Returns true if this number's representation is canonical.
+     * Finite numbers are always canonical.
+     * Infinities and NaNs are canonical if their unused bits are zero.
+     */
+    const bool isCanonical() {
+        if (isFinite)   return true;
+        if (isInfinite) return this.padInf == 0;
+        /* isNaN */     return this.padNaN == 0;
     }
 
     /**
      * Returns true if this number's representation is canonical.
+     * Finite numbers are always canonical.
+     * Infinities and NaNs are canonical if their unused bits are zero.
      */
-    // TODO: need to check when the number is a Nan or Infinity.
-    const bool isCanonical() {
-        return true;
+    const Dec32 canonical() {
+        Dec32 copy = this;
+        if (this.isCanonical) return copy;
+        if (this.isInfinite) {
+            copy.padInf = 0;
+            return copy;
+        }
+        else { /* isNaN */
+            copy.padNaN = 0;
+            return copy;
+        }
     }
 
     /**
@@ -790,42 +831,50 @@ public:
      * Returns true if this number is a quiet or signaling NaN.
      */
     const bool isNaN() {
-        return isQuiet || isSignaling;
+        return testNaN == NAN_VAL || testNaN == SIG_VAL;
     }
 
     /**
      * Returns true if this number is a signaling NaN.
      */
     const bool isSignaling() {
-        return testNaN == SV_SIG;
+        return testNaN == SIG_VAL;
     }
 
     /**
      * Returns true if this number is a quiet NaN.
      */
     const bool isQuiet() {
-        return testNaN == SV_NAN;
+        return testNaN == NAN_VAL;
     }
 
     /**
      * Returns true if this number is +\- infinity.
      */
     const bool isInfinite() {
-        return testInf == SV_INF;
+        return testInf == INF_VAL;
     }
 
     /**
      * Returns true if this number is neither infinite nor a NaN.
      */
     const bool isFinite() {
-        return !isNaN && !isInfinite;
+        return testSpcl != 0xF;
     }
 
     /**
      * Returns true if this number is a NaN or infinity.
      */
     const bool isSpecial() {
-        return isInfinite || isNaN;
+        return testSpcl == 0xF;
+    }
+
+    const bool isExplicit() {
+        return testIm != 0x3;
+    }
+
+    const bool isImplicit() {
+        return testIm == 0x3 && testSpcl != 0xF;
     }
 
     /**
@@ -877,7 +926,7 @@ public:
         if (isInfinite) {
             return Decimal.infinity(sign);
         }
-        // (L) TODO: include payloads
+        // (1) TODO: include payloads
         if (isQuiet) {
             return Decimal.nan(sign);
         }
@@ -989,6 +1038,13 @@ public:
      * Returns true if this number is equal to the specified number.
      */
     const bool opEquals(ref const Dec32 that) {
+        // quick bitwise check
+        if (this.bits == that.bits) {
+            if (this.isFinite) return true;
+            if (this.isInfinite) return true;
+            if (this.isQuiet) return false;
+            // let the main routine handle the signaling NaN
+        }
         return equals!Dec32(this, that, context32);
     }
 
@@ -1064,13 +1120,19 @@ public:
         expect = 135;
         actual = ++num;
         assert(actual == expect);
-        // TODO: seems to be broken for nums like 1.000E8
+        // (4) TODO: seems to be broken for nums like 1.000E8
         // they should be unchanged since the bump is too small.
         num = 1.00E8;
         expect = num;
         actual = --num;
 writeln("expect = ", expect);
 writeln("actual = ", actual);
+        num = 9999999E70; //Dec32("9999999E90");
+        num = Dec32(9999999, 90);
+writeln("num = ", num);
+writeln("num.toHexString = ", num.toHexString);
+writeln("num.toAbstract = ", num.toAbstract);
+writeln("num.toBinaryString = ", num.toBinaryString);
         num = 12.35;
         expect = 11.35;
         actual = --num;
@@ -1166,7 +1228,7 @@ writeln("actual = ", actual);
 
 }   // end Dec32 struct
 
-// (8) TODO: when all are copied, delete this.
+// (7) TODO: when all are copied, delete this.
 unittest {
     writeln("---------------------");
     writeln("decimal32....finished");
