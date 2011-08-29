@@ -31,7 +31,6 @@ import decimal.rounding;
 
 // (4) TODO: problem with unary ops (++).
 // (5) TODO: subnormal creation.
-// (6) TODO: "9999999E90" == infinity?
 // (7) TODO: when all are copied, delete this.
 unittest {
     writeln("---------------------");
@@ -111,34 +110,29 @@ private:
     immutable uint nanPadBits = 9;
             // = bitLength - payloadBits - specialBits - signBit;
 
+    // length of the coefficient in decimal digits.
+    immutable int C_LENGTH = 7;
+    // The maximum coefficient that fits in an explicit number.
+    immutable uint C_MAX_EXPLICIT = 0x7FFFFF; // = 8388607;
+    // The maximum coefficient allowed in an implicit number.
+    immutable uint C_MAX_IMPLICIT = 9999999;  // = 0x98967F;
+    // masks for coefficients
+    immutable uint C_IMPLICIT_MASK = 0x1FFFFF;
+    immutable uint C_EXPLICIT_MASK = 0x7FFFFF;
+
+    // The maximum unbiased exponent. The largest binary number that can fit
+    // in the width of the exponent field without setting
+    // either of the first two bits to 1.
+    immutable uint MAX_EXPO = 0xBF; // = 191
     // The exponent bias. The exponent is stored as an unsigned number and
     // the bias is subtracted from the unsigned value to give the true
     // (signed) exponent.
-    immutable int BIAS = 101;   // = 0x65
-
-    // The maximum biased exponent.
-    // The largest binary number that can fit in the width of the
-    // exponent without setting either of the first two bits to 1.
-    immutable uint MAX_BSXP = 0xBF; // = 191
-
-    // length of the coefficient in decimal digits.
-    immutable int MANT_LENGTH = 7;
-    // The maximum coefficient that fits in an explicit number.
-    immutable uint MAX_XPLC = 0x7FFFFF; // = 8388607;
-    // The maximum coefficient allowed in an implicit number.
-    immutable uint MAX_IMPL = 9999999;  // = 0x98967F;
+    immutable int BIAS = 101;       // = 0x65
     // The maximum representable exponent.
-    immutable int  MAX_EXPO  =   90;    // = MAX_BSXP - BIAS;
-    // The minimum representable exponent.
-    immutable int  MIN_EXPO  = -101;    // = 0 - BIAS.
-
+    immutable int E_LIMIT = 90;     // MAX_EXPO - BIAS
     // The min and max adjusted exponents.
-    immutable int E_MAX   = MAX_EXPO;
-    immutable int E_MIN   = -E_MAX;
-
-    // masks for coefficients
-    immutable uint MASK_IMPL = 0x1FFFFF;
-    immutable uint MASK_XPLC = 0x7FFFFF;
+    immutable int E_MAX =  96;      // E_LIMIT + C_LENGTH - 1
+    immutable int E_MIN = -95;      // = 1 - E_MAX
 
     // union providing different views of the number representation.
     union {
@@ -350,7 +344,7 @@ public:
      * Creates a Dec32 from a Decimal
      */
     public this(const Decimal num) {
-
+// problem is here -- max gets rounded to infinity
         Decimal big = plus!Decimal(num, context32);
 
         if (big.isFinite) {
@@ -604,7 +598,7 @@ public:
             return 0;
         }
         ulong copy = mant;
-        if (copy > MAX_IMPL) {
+        if (copy > C_MAX_IMPLICIT) {
             int expo = 0;
             uint digits = numDigits(copy);
             expo = setExponent(sign, copy, digits, context32);
@@ -615,8 +609,8 @@ public:
                 expoIm = expoIm + expo;
             }
         }
-        // at this point, the number <= MAX_IMPL
-        if (copy <= MAX_XPLC) {
+        // at this point, the number <= C_MAX_IMPLICIT
+        if (copy <= C_MAX_EXPLICIT) {
             // if implicit, convert to explicit
             if (this.isImplicit) {
                 expoEx = expoIm;
@@ -624,13 +618,13 @@ public:
             mantEx = cast(uint)copy;
             return mantEx;
         }
-        else {  // copy <= MAX_IMPL
+        else {  // copy <= C_MAX_IMPLICIT
             // if explicit, convert to implicit
             if (this.isExplicit) {
                 expoIm = expoEx;
                 testIm = 0x3;
             }
-            mantIm = cast(uint)copy & MASK_IMPL;
+            mantIm = cast(uint)copy & C_IMPLICIT_MASK;
             return mantIm | (0b100 << implicitBits);
         }
     }
@@ -890,7 +884,7 @@ public:
      */
     const bool isSubnormal() {
         if (isSpecial) return false;
-        return adjustedExponent < MIN_EXPO;
+        return adjustedExponent < E_MIN;
     }
 
     /**
@@ -898,14 +892,14 @@ public:
      */
     const bool isNormal() {
         if (isSpecial) return false;
-        return adjustedExponent >= MIN_EXPO;
+        return adjustedExponent >= E_MIN;
     }
 
     /**
      * Returns the value of the adjusted exponent.
      */
      const int adjustedExponent() {
-        return exponent + digits - 1;
+        return exponent - digits + 1;
      }
 
 //--------------------------------
@@ -1056,7 +1050,7 @@ public:
         assert(num.toExact == "+9999999E+90");
         num = 1;
         assert(num.toExact == "+0000001E+00");
-        num = MAX_XPLC;
+        num = C_MAX_EXPLICIT;
         assert(num.toExact == "+8388607E+00");
         num = infinity(true);
         assert(num.toExact == "-Infinity");
@@ -1225,12 +1219,12 @@ public:
         actual = --num;
 writeln("expect = ", expect);
 writeln("actual = ", actual);
-        num = 9999999E70; //Dec32("9999999E90");
-        num = Dec32(9999999, 90);
+        num = Dec32(9999999, 91);
 writeln("num = ", num);
-writeln("num.toHexString = ", num.toHexString);
-writeln("num.toAbstract = ", num.toAbstract);
-writeln("num.toBinaryString = ", num.toBinaryString);
+writeln("num.toExact = ", num.toExact);
+        num = Dec32("9999999E91");
+writeln("num = ", num);
+writeln("num.toExact = ", num.toExact);
         num = 12.35;
         expect = 11.35;
         actual = --num;

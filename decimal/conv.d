@@ -58,9 +58,8 @@ T to(T:string)(const BigInt num) {
  * Converts a small decimal to a big decimal
  */
 public Decimal toDecimal(T)(const T num) if (is(typeof(num) == Decimal)) {
-
-        return num.dup;
-    }
+    return num.dup;
+}
 
 /**
  * Converts a small decimal to a big decimal
@@ -160,8 +159,8 @@ unittest {
 
 // UNREADY: toSciString. Description. Unit Tests.
 /**
-    * Converts a Decimal number to a string representation.
-    */
+ * Converts a Decimal number to a string representation.
+ */
 public string toSciString(T)(const T num) if (isDecimal!T) {
 
     auto mant = num.coefficient;
@@ -170,22 +169,7 @@ public string toSciString(T)(const T num) if (isDecimal!T) {
 
     // string representation of special values
     if (num.isSpecial) {
-        string str;
-        if (num.isInfinite) {
-            str = "Infinity";
-        }
-        else if (num.isSignaling) {
-            str = "sNaN";
-        }
-        else {
-            str = "NaN";
-        }
-        // add payload to NaN, if present
-        if (num.isNaN && num.payload != 0) {
-            str ~= to!string(num.payload);
-        }
-        // add sign, if present
-        return signed ? "-" ~ str : str;
+        return toSpecialString!T(num);
     }
 
     // string representation of finite numbers
@@ -215,6 +199,7 @@ public string toSciString(T)(const T num) if (isDecimal!T) {
         }
         return signed ? ("-" ~ cstr).idup : cstr.idup;
     }
+
     // use exponential notation
     if (clen > 1) {
         insertInPlace(cstr, 1, ".");
@@ -226,7 +211,66 @@ public string toSciString(T)(const T num) if (isDecimal!T) {
     string str = (cstr ~ "E" ~ xstr).idup;
     return signed ? "-" ~ str : str;
 
-};    // end toSciString()
+}    // end toSciString()
+
+
+// UNREADY: toSpecialString. Description. Unit Tests.
+// string representation of special values
+private string toSpecialString(T)(const T num) if (isDecimal!T) {
+
+    string str = "";
+    bool signed = num.isSigned;
+
+    // string representation of special values
+    if (!num.isSpecial) return str;
+
+    if (num.isInfinite) {
+        str = "Infinity";
+    }
+    else if (num.isSignaling) {
+        str = "sNaN";
+    }
+    else {
+        str = "NaN";
+    }
+    // add payload to NaN, if present
+    if (num.isNaN && num.payload != 0) {
+        str ~= to!string(num.payload);
+    }
+    // add sign, if present
+    return signed ? "-" ~ str : str;
+}
+
+
+/*public string toSimpleString(T)(const T num) if (isDecimal!T) {
+
+    bool signed = num.isSigned;
+    // string representation of finite numbers
+    string temp = to!string(mant);
+    char[] cstr = temp.dup;
+    int clen = cstr.length;
+    int adjx = expo + clen - 1;
+
+    // if exponent is not zero, insert a decimal point
+    if (expo != 0) {
+        int point = std.math.abs(expo);
+        // if coefficient is too small, pad with zeroes
+        if (point > clen) {
+            cstr = rightJustify(cstr, point, '0');
+            clen = cstr.length;
+        }
+        // if no chars precede the decimal point, prefix a zero
+        if (point == clen) {
+            cstr = "0." ~ cstr;
+        }
+        // otherwise insert a decimal point
+        else {
+            insertInPlace(cstr, cstr.length - point, ".");
+        }
+    }
+    return signed ? ("-" ~ cstr).idup : cstr.idup;
+
+}    // end toSimpleString()*/
 
 unittest {
     write("toSciString...");
@@ -541,8 +585,8 @@ public Decimal toNumber(const string inStr) {
     if (startsWith(str,"nan")) {
         bool signed = num.sign;
         num = Decimal(num.sign, SV.QNAN);
+        // if no payload, return
         if (str == "nan") {
-//            num.coefficient = 0; // BigInt(0);
             return num;
         }
         // set payload
@@ -554,7 +598,8 @@ public Decimal toNumber(const string inStr) {
             }
         }
         // convert string to payload
-        num.coefficient = BigInt(str.idup);
+        //        uint payload = std.conv.to!uint(str);
+        num.payload = std.conv.to!uint(str);
         return num;
     };
 
@@ -567,6 +612,8 @@ public Decimal toNumber(const string inStr) {
         }
         // set payload
         str = str[4..$];
+        // payload has a max length of 6 digits
+        if (str.length > 6) return num;
         // ensure string is all digits
         foreach(char c; str) {
             if (!isDigit(c)) {
@@ -574,21 +621,20 @@ public Decimal toNumber(const string inStr) {
             }
         }
         // convert string to payload
-        num.payload = cast(uint)BigInt(str.idup).toInt; // coefficient = BigInt(str.idup);
+        uint payload = std.conv.to!uint(str);
+        if (payload > ushort.max) return num;
+        num.payload = payload;
         return num;
     };
 
     // check for infinity
     if (str == "inf" || str == "infinity") {
-//        bool signed = num.sign;
         num = Decimal.infinity(num.sign);
         return num;
     };
 
-//writeln("num 1 = ", num);
-    // at this point, num is a qNaN
+    // at this point, num must be finite
     num = Decimal.zero(num.sign);
-//writeln("num 2 = ", num);
     // check for exponent
     int pos = indexOf(str, 'e');
     if (pos > 0) {

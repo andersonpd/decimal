@@ -62,7 +62,7 @@ public struct DecimalContext {
     public static ubyte traps = 0;
     public static ubyte flags = 0;
 
-    // TODO: make these privates and add properties(?)
+    // TODO: make these private and add properties(?)
     Rounding rounding = Rounding.HALF_EVEN;
     uint precision = 9;
     int eMax =  99;     // largest normalized exponent

@@ -546,13 +546,53 @@ unittest {
     }
 
     @property
-    uint payload(uint pyld) {
+    uint payload(uint value) {
         if (this.isNaN) {
-            this.mant = BigInt(pyld);
-            return cast(uint)(this.mant.toLong);
+            this.mant = BigInt(value);
+            return value;
         }
         return 0;
     }
+
+    unittest {
+        write("payload");
+        writeln("test missing");
+    }
+
+/*    const string toExact()
+    {
+        if (this.isFinite) {
+            return format("%s%dE%s%02d", signed ? "-" : "+", coefficient,
+                    exponent < 0 ? "-" : "+", exponent);
+        }
+        if (this.isInfinite) {
+            return format("%s%s", signed ? "-" : "+", "Infinity");
+        }
+        if (this.isQuiet) {
+            if (payload) {
+                return format("%s%s%d", signed ? "-" : "+", "NaN", payload);
+            }
+            return format("%s%s", signed ? "-" : "+", "NaN");
+        }
+        // this.isSignaling
+        if (payload) {
+            return format("%s%s%d", signed ? "-" : "+", "sNaN", payload);
+        }
+        return format("%s%s", signed ? "-" : "+", "sNaN");
+    }
+
+    unittest {
+        write("toExact...");
+        Decimal num;
+        assert(num.toExact == "+NaN");
+        num = +9999999E+90;
+        assert(num.toExact == "+9999999E+90");
+        num = 1;
+        assert(num.toExact == "+1E+00");
+        num = infinity(true);
+        assert(num.toExact == "-Infinity");
+        writeln("passed");
+    }*/
 
     /// returns the adjusted exponent of this number
     const int adjustedExponent() {
