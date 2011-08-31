@@ -41,6 +41,8 @@ unittest {
  * Temporary hack to allow to!string(BigInt).
  */
 T to(T:string)(const int n) {
+//writeln("int n = ", n);
+//writeln("format(\"%d\", n) = ", format("%d", n));
     return format("%d", n);
 }
 
@@ -48,6 +50,7 @@ T to(T:string)(const int n) {
  * Temporary hack to allow to!string(BigInt).
  */
 T to(T:string)(const BigInt num) {
+//writeln("BigInt num = ", num);
     string outbuff="";
     void sink(const(char)[] s) { outbuff ~= s; }
     num.toString(&sink, "d");
@@ -271,6 +274,44 @@ private string toSpecialString(T)(const T num) if (isDecimal!T) {
     return signed ? ("-" ~ cstr).idup : cstr.idup;
 
 }    // end toSimpleString()*/
+
+    public string toExact(T)(const T num) if (isDecimal!T)
+    {
+        if (num.isFinite) {
+            return format("%s%sE%s%02d", num.sign ? "-" : "+",
+                    to!string(num.coefficient),
+                    num.exponent < 0 ? "-" : "+", num.exponent);
+        }
+        if (num.isInfinite) {
+            return format("%s%s", num.sign ? "-" : "+", "Infinity");
+        }
+        if (num.isQuiet) {
+            if (num.payload) {
+                return format("%s%s%d", num.sign ? "-" : "+", "NaN", num.payload);
+            }
+            return format("%s%s", num.sign ? "-" : "+", "NaN");
+        }
+        // num.isSignaling
+        if (num.payload) {
+            return format("%s%s%d", num.sign ? "-" : "+", "sNaN", num.payload);
+        }
+        return format("%s%s", num.sign ? "-" : "+", "sNaN");
+    }
+
+    unittest {
+        write("toExact...");
+        Dec32 num;
+        assert(num.toExact == "+NaN");
+        num = +9999999E+90;
+        assert(num.toExact == "+9999999E+90");
+        num = 1;
+writeln("num = ", num);
+writeln("num.toExact = ", num.toExact);
+//        assert(num.toExact == "+1E+00");
+        num = Dec32.infinity(true);
+        assert(num.toExact == "-Infinity");
+        writeln("passed");
+    }
 
 unittest {
     write("toSciString...");

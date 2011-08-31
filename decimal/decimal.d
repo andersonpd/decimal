@@ -133,11 +133,9 @@ public:
     unittest {
         write("this(bool, SV, payload)...");
         Decimal num = Decimal(true, SV.INF);
-        writeln("num.toSciString = ", num.toSciString);
-        writeln("num.toAbstract = ", num.toAbstract);
-//        assert(toSciString!Decimal(num) == "-Infinity");
-//        assert(num.toAbstract() == "[1,inf]");
-        writeln("failed");
+        assert(num.toSciString == "-Infinity");
+        assert(num.toAbstract() == "[1,inf]");
+        writeln("passed");
     }
 
     // UNREADY: Unit Tests.
@@ -559,6 +557,9 @@ unittest {
         writeln("test missing");
     }
 
+    const string toExact() {
+        return decimal.conv.toExact!Decimal(this);
+    }
 /*    const string toExact()
     {
         if (this.isFinite) {
@@ -579,7 +580,7 @@ unittest {
             return format("%s%s%d", signed ? "-" : "+", "sNaN", payload);
         }
         return format("%s%s", signed ? "-" : "+", "sNaN");
-    }
+    }*/
 
     unittest {
         write("toExact...");
@@ -592,7 +593,7 @@ unittest {
         num = infinity(true);
         assert(num.toExact == "-Infinity");
         writeln("passed");
-    }*/
+    }
 
     /// returns the adjusted exponent of this number
     const int adjustedExponent() {

@@ -226,17 +226,15 @@ private:
 
 public:
     immutable Dec32 NAN      = Dec32(SV.POS_NAN);
-    immutable Dec32 NEG_NAN  = Dec32(SV.NEG_NAN);
     immutable Dec32 SNAN     = Dec32(SV.POS_SIG);
-    immutable Dec32 NEG_SNAN = Dec32(SV.NEG_SIG);
     immutable Dec32 INFINITY = Dec32(SV.POS_INF);
     immutable Dec32 NEG_INF  = Dec32(SV.NEG_INF);
     immutable Dec32 ZERO     = Dec32(SV.POS_ZRO);
     immutable Dec32 NEG_ZERO = Dec32(SV.NEG_ZRO);
     immutable Dec32 MAX      = Dec32(SV.POS_MAX);
     immutable Dec32 NEG_MAX  = Dec32(SV.NEG_MAX);
-    immutable Dec32 ONE      = Dec32(SV.POS_ZRO + 1);
-    immutable Dec32 NEG_ONE  = Dec32(-1); //SV.POS_ZRO + 1);
+    immutable Dec32 ONE      = Dec32( 1);
+    immutable Dec32 NEG_ONE  = Dec32(-1);
 
 //--------------------------------
 //  constructors
@@ -344,9 +342,8 @@ public:
      * Creates a Dec32 from a Decimal
      */
     public this(const Decimal num) {
-// problem is here -- max gets rounded to infinity
-        Decimal big = plus!Decimal(num, context32);
 
+        Decimal big = plus!Decimal(num, context32);
         if (big.isFinite) {
             this = zero;
             this.coefficient = cast(ulong)big.coefficient.toLong;
@@ -360,14 +357,13 @@ public:
             return;
         }
         else if (big.isQuiet) {
-            this = nan(big.sign);
+            this = nan();
             return;
         }
         else if (big.isSignaling) {
-            this = snan(big.sign);
+            this = snan();
             return;
         }
-
     }
 
    unittest {
@@ -697,20 +693,28 @@ public:
         return signed ? NEG_ZERO : ZERO;
     }
 
+    static Dec32 max(const bool signed = false) {
+        return signed ? NEG_MAX : MAX;
+    }
+
     static Dec32 infinity(const bool signed = false) {
         return signed ? NEG_INF : INFINITY;
     }
 
-    static Dec32 nan(const bool signed = false) {
-        return signed ? NEG_NAN : NAN;
+    static Dec32 nan(const uint payload = 0) {
+        if (payload) {
+            Dec32 result = NAN;
+            result.payload = payload;
+        }
+        return NAN;
     }
 
-    static Dec32 snan(const bool signed = false) {
-        return signed ? NEG_SNAN : SNAN;
-    }
-
-    static Dec32 max(const bool signed = false) {
-        return signed ? NEG_MAX : MAX;
+    static Dec32 snan(const uint payload = 0) {
+        if (payload) {
+            Dec32 result = SNAN;
+            result.payload = payload;
+        }
+        return SNAN;
     }
 
     // floating point properties
@@ -788,9 +792,10 @@ public:
      * Infinities and NaNs are canonical if their unused bits are zero.
      */
     const bool isCanonical() {
-        if (isFinite)   return true;
-        if (isInfinite) return this.padInf == 0;
-        /* isNaN */     return this.padNaN == 0;
+        if (isInfinite) return padInf == 0;
+        if (isNaN) return signed == 0 && padNaN == 0;
+        // finite numbers are always canonical
+        return true;
     }
 
     /**
@@ -806,6 +811,7 @@ public:
             return copy;
         }
         else { /* isNaN */
+            copy.signed = 0;
             copy.padNaN = 0;
             return copy;
         }
@@ -1212,19 +1218,15 @@ public:
         expect = 135;
         actual = ++num;
         assert(actual == expect);
-        // (4) TODO: seems to be broken for nums like 1.000E8
-        // they should be unchanged since the bump is too small.
         num = 1.00E8;
         expect = num;
-        actual = --num;
-writeln("expect = ", expect);
-writeln("actual = ", actual);
-        num = Dec32(9999999, 91);
-writeln("num = ", num);
-writeln("num.toExact = ", num.toExact);
-        num = Dec32("9999999E91");
-writeln("num = ", num);
-writeln("num.toExact = ", num.toExact);
+// TODO:   actual = --num; // fails!
+//        actual = num--;
+//        assert(actual == expect);
+        num = Dec32(9999999, 90);
+        expect = num;
+        actual = num++;
+        assert(actual == expect);
         num = 12.35;
         expect = 11.35;
         actual = --num;
