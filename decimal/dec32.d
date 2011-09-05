@@ -329,6 +329,36 @@ public:
         assert(num.toString == "-1E-75");
         num = Dec32(5, -3);
         assert(num.toString == "0.005");
+        num = Dec32(true, 1234567890L, 5);
+        assert(num.toString == "-1.234568E+14");
+        num = Dec32(0, 0, 2);
+        assert(num.toString == "0E+2");
+    }
+
+    /**
+     * Creates a Dec32 from an unsigned integer and integer exponent.
+     */
+    public this(const bool sign, const ulong mant, const int expo) {
+        this(mant, expo);
+        signed = sign;
+    }
+
+    unittest {
+        Dec32 num;
+        num = Dec32(1234567890L, 5);
+        assert(num.toString == "1.234568E+14");
+        num = Dec32(0, 2);
+        assert(num.toString == "0E+2");
+        num = Dec32(1, 75);
+        assert(num.toString == "1E+75");
+        num = Dec32(-1, -75);
+        assert(num.toString == "-1E-75");
+        num = Dec32(5, -3);
+        assert(num.toString == "0.005");
+        num = Dec32(true, 1234567890L, 5);
+        assert(num.toString == "-1.234568E+14");
+        num = Dec32(0, 0, 2);
+        assert(num.toString == "0E+2");
     }
 
     /**

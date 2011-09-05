@@ -39,10 +39,10 @@ unittest {
 
 /**
  * Temporary hack to allow to!string(BigInt).
+ * NOTE: the 'int' version is needed because there are
+ * routines that call 'int' or 'BigInt' based on the coefficient type.
  */
-T to(T:string)(const int n) {
-//writeln("int n = ", n);
-//writeln("format(\"%d\", n) = ", format("%d", n));
+T to(T:string)(const long n) {
     return format("%d", n);
 }
 
@@ -50,7 +50,6 @@ T to(T:string)(const int n) {
  * Temporary hack to allow to!string(BigInt).
  */
 T to(T:string)(const BigInt num) {
-//writeln("BigInt num = ", num);
     string outbuff="";
     void sink(const(char)[] s) { outbuff ~= s; }
     num.toString(&sink, "d");
@@ -58,17 +57,44 @@ T to(T:string)(const BigInt num) {
 }
 
 /**
+ * Converts any decimal to a small decimal
+ */
+public T toSmallDecimal(T,U)(const U num) if (isDecimal!T) {
+
+    static if(is(typeof(num) == T)) {return num.dup;}
+    static if(is(typeof(num) == Decimal)) {return T(num);}
+
+    if (num.isFinite) {
+        // TODO: should use ulong instead of long
+        ulong mant;
+        if (is(typeof(num.coefficient) == BigInt)) {
+            mant = num.coefficient.toLong();
+        }
+        else {
+            mant = num.coefficient;
+        }
+        return T(num.sign, mant, num.exponent);
+    }
+    else if (num.isInfinite) {
+        return T.infinity(sign);
+    }
+    else if (num.isSignaling) {
+        return T.snan(num.payload);
+    }
+    else if (num.isQuiet) {
+        return T.nan(num.payload);
+    }
+    return T.nan;
+}
+
+/**
  * Converts any decimal to a big decimal
  */
 public Decimal toDecimal(T)(const T num) if (isDecimal!T) {
 
-//    static if (is(T : Decimal)) {
-    static if (is(typeof(num) == Decimal)) {
-        return num.dup;
-    }
+    static if(is(typeof(num) == Decimal)) {return num.dup;}
 
     bool sign = num.sign;
-
     if (num.isFinite) {
         auto mant = num.coefficient;
         int  expo = num.exponent;
@@ -77,318 +103,75 @@ public Decimal toDecimal(T)(const T num) if (isDecimal!T) {
     else if (num.isInfinite) {
         return Decimal.infinity(sign);
     }
-    else if (num.isQuiet) {
-        return Decimal(SV.QNAN, num.payload);
-    }
     else if (num.isSignaling) {
-        return Decimal(SV.SNAN, num.payload);
+        return Decimal.snan(num.payload);
     }
-
-    // NOTE: Should never reach here.
-    throw (new Exception("Invalid conversion"));
+    else if (num.isQuiet) {
+        return Decimal.nan(num.payload);
+    }
+    return Decimal.nan;
 }
 
 unittest {
-    write("toDecimal...");
     Dec32 small;
     Decimal big;
     small = 5;
     big = toDecimal!Dec32(small);
-    writeln();
-    writeln("big = ", big);
-    writeln("test missing");
-}
-
-/**
- * Converts an encoded decimal number to a hexadecimal string
- */
-public string toHexString(T)(const T num) if (isSmallDecimal!T) {
-    // TODO: what's the syntax for a variable format string?
-    return format("0x%016X", value);
-}
-
-unittest {
-    write("toHexString...");
-    writeln("test missing");
+    assert(big.toString == small.toString);
 }
 
 /**
  * Detect whether T is a decimal type.
  */
-template isDecimal(T) {
-    enum bool isDecimal = is(T: Dec32) || is(T: Decimal);
-}
-
-unittest {
-    write("isDecimal(T)...");
-    writeln("test missing");
+public template isDecimal(T) {
+    enum bool isDecimal = is(T:Dec32) || is(T:Decimal);
 }
 
 /**
- * Detect whether T is a decimal type.
+ * Detect whether T is a big decimal type.
  */
-template isBigDecimal(T) {
-    enum bool isBigDecimal = is(T: Decimal);
-}
-
-unittest {
-    write("isBigDecimal(T)...");
-    writeln("test missing");
+public template isBigDecimal(T) {
+    enum bool isBigDecimal = is(T:Decimal);
 }
 
 /**
- * Detect whether T is a decimal type.
+ * Detect whether T is a small decimal type.
  */
-template isSmallDecimal(T) {
-    enum bool isSmallDecimal = is(T: Dec32); // || is(T: Dec64);
+public template isSmallDecimal(T) {
+    enum bool isSmallDecimal = is(T:Dec32); // || is(T: Dec64);
 }
 
 unittest {
-    write("isSmallDecimal(T)...");
-    writeln("test missing");
+    assert(isSmallDecimal!Dec32);
+    assert(!isSmallDecimal!Decimal);
+    assert(isDecimal!Dec32);
+    assert(isDecimal!Decimal);
+    assert(!isBigDecimal!Dec32);
+    assert(isBigDecimal!Decimal);
 }
-
-/*unittest
-{
-    static assert(isIntegral!(byte));
-    static assert(isIntegral!(const(byte)));
-    static assert(isIntegral!(immutable(byte)));
-    static assert(isIntegral!(shared(byte)));
-    static assert(isIntegral!(shared(const(byte))));
-}*/
-
 
 // UNREADY: toSciString. Description. Unit Tests.
 /**
  * Converts a Decimal number to a string representation.
  */
 public string toSciString(T)(const T num) if (isDecimal!T) {
+    return toStdString!T(num, false);
+};    // end toSciString()
 
-    auto mant = num.coefficient;
-    int  expo = num.exponent;
-    bool signed = num.isSigned;
-
-    // string representation of special values
-    if (num.isSpecial) {
-        return toSpecialString!T(num);
-    }
-
-    // string representation of finite numbers
-    string temp = to!string(mant);
-    char[] cstr = temp.dup;
-    int clen = cstr.length;
-    int adjx = expo + clen - 1;
-
-    // if exponent is small, don't use exponential notation
-    if (expo <= 0 && adjx >= -6) {
-        // if exponent is not zero, insert a decimal point
-        if (expo != 0) {
-            int point = std.math.abs(expo);
-            // if coefficient is too small, pad with zeroes
-            if (point > clen) {
-                cstr = rightJustify(cstr, point, '0');
-                clen = cstr.length;
-            }
-            // if no chars precede the decimal point, prefix a zero
-            if (point == clen) {
-                cstr = "0." ~ cstr;
-            }
-            // otherwise insert a decimal point
-            else {
-                insertInPlace(cstr, cstr.length - point, ".");
-            }
-        }
-        return signed ? ("-" ~ cstr).idup : cstr.idup;
-    }
-
-    // use exponential notation
-    if (clen > 1) {
-        insertInPlace(cstr, 1, ".");
-    }
-    string xstr = to!string(adjx);
-    if (adjx >= 0) {
-        xstr = "+" ~ xstr;
-    }
-    string str = (cstr ~ "E" ~ xstr).idup;
-    return signed ? "-" ~ str : str;
-
-}    // end toSciString()
-
-
-// UNREADY: toSpecialString. Description. Unit Tests.
-// string representation of special values
-private string toSpecialString(T)(const T num) if (isDecimal!T) {
-
-    string str = "";
-    bool signed = num.isSigned;
-
-    // string representation of special values
-    if (!num.isSpecial) return str;
-
-    if (num.isInfinite) {
-        str = "Infinity";
-    }
-    else if (num.isSignaling) {
-        str = "sNaN";
-    }
-    else {
-        str = "NaN";
-    }
-    // add payload to NaN, if present
-    if (num.isNaN && num.payload != 0) {
-        str ~= to!string(num.payload);
-    }
-    // add sign, if present
-    return signed ? "-" ~ str : str;
-}
-
-
-/*public string toSimpleString(T)(const T num) if (isDecimal!T) {
-
-    bool signed = num.isSigned;
-    // string representation of finite numbers
-    string temp = to!string(mant);
-    char[] cstr = temp.dup;
-    int clen = cstr.length;
-    int adjx = expo + clen - 1;
-
-    // if exponent is not zero, insert a decimal point
-    if (expo != 0) {
-        int point = std.math.abs(expo);
-        // if coefficient is too small, pad with zeroes
-        if (point > clen) {
-            cstr = rightJustify(cstr, point, '0');
-            clen = cstr.length;
-        }
-        // if no chars precede the decimal point, prefix a zero
-        if (point == clen) {
-            cstr = "0." ~ cstr;
-        }
-        // otherwise insert a decimal point
-        else {
-            insertInPlace(cstr, cstr.length - point, ".");
-        }
-    }
-    return signed ? ("-" ~ cstr).idup : cstr.idup;
-
-}    // end toSimpleString()*/
-
-    public string toExact(T)(const T num) if (isDecimal!T)
-    {
-        if (num.isFinite) {
-            return format("%s%sE%s%02d", num.sign ? "-" : "+",
-                    to!string(num.coefficient),
-                    num.exponent < 0 ? "-" : "+", num.exponent);
-        }
-        if (num.isInfinite) {
-            return format("%s%s", num.sign ? "-" : "+", "Infinity");
-        }
-        if (num.isQuiet) {
-            if (num.payload) {
-                return format("%s%s%d", num.sign ? "-" : "+", "NaN", num.payload);
-            }
-            return format("%s%s", num.sign ? "-" : "+", "NaN");
-        }
-        // num.isSignaling
-        if (num.payload) {
-            return format("%s%s%d", num.sign ? "-" : "+", "sNaN", num.payload);
-        }
-        return format("%s%s", num.sign ? "-" : "+", "sNaN");
-    }
-
-    unittest {
-        write("toExact...");
-        Dec32 num;
-        assert(num.toExact == "+NaN");
-        num = +9999999E+90;
-        assert(num.toExact == "+9999999E+90");
-        num = 1;
-writeln("num = ", num);
-writeln("num.toExact = ", num.toExact);
-//        assert(num.toExact == "+1E+00");
-        num = Dec32.infinity(true);
-        assert(num.toExact == "-Infinity");
-        writeln("passed");
-    }
-
-unittest {
-    write("toSciString...");
-    Dec32 num = Dec32(123); //(false, 123, 0);
-    assert(toSciString!Dec32(num) == "123");
-    assert(num.toAbstract() == "[0,123,0]");
-    writeln("num = ", num);
-    writeln("num.toAbstract = ", num.toAbstract);
-    num = Dec32(-123, 0);
-    writeln("num = ", num);
-    writeln("num.toAbstract = ", num.toAbstract);
-    assert(toSciString!Dec32(num) == "-123");
-    assert(num.toAbstract() == "[1,123,0]");
-    num = Dec32(123, 1);
-    assert(toSciString!Dec32(num) == "1.23E+3");
-    assert(num.toAbstract() == "[0,123,1]");
-    num = Dec32(123, 3);
-    assert(toSciString!Dec32(num) == "1.23E+5");
-    assert(num.toAbstract() == "[0,123,3]");
-    num = Dec32(123, -1);
-    assert(toSciString!Dec32(num) == "12.3");
-    assert(num.toAbstract() == "[0,123,-1]");
-    num = Dec32(123, -5);
-    assert(toSciString!Dec32(num) == "0.00123");
-    assert(num.toAbstract() == "[0,123,-5]");
-    num = Dec32(123, -10);
-    assert(toSciString!Dec32(num) == "1.23E-8");
-    assert(num.toAbstract() == "[0,123,-10]");
-    num = Dec32(-123, -12);
-    assert(toSciString!Dec32(num) == "-1.23E-10");
-    assert(num.toAbstract() == "[1,123,-12]");
-    num = Dec32(0, 0);
-    assert(toSciString!Dec32(num) == "0");
-    assert(num.toAbstract() == "[0,0,0]");
-    num = Dec32(0, -2);
-    assert(toSciString!Dec32(num) == "0.00");
-    assert(num.toAbstract() == "[0,0,-2]");
-    num = Dec32(0, 2);
-    assert(toSciString!Dec32(num) == "0E+2");
-    assert(num.toAbstract() == "[0,0,2]");
-/*    num = -Dec32(0, 0);
-    assert(toSciString!Dec32(num) == "-0");
-    assert(num.toAbstract() == "[1,0,0]");*/
-    num = Dec32(5, -6);
-    assert(toSciString!Dec32(num) == "0.000005");
-    assert(num.toAbstract() == "[0,5,-6]");
-    num = Dec32(50,-7);
-    assert(toSciString!Dec32(num) == "0.0000050");
-    assert(num.toAbstract() == "[0,50,-7]");
-    num = Dec32(5, -7);
-    assert(toSciString!Dec32(num) == "5E-7");
-    assert(num.toAbstract() == "[0,5,-7]");
-    writeln("-------");
-    num = Dec32("inf");
-    writeln("num = ", num);
-    writeln("num.toAbstract = ", num.toAbstract);
-    assert(toSciString!Dec32(num) == "Infinity");
-    assert(num.toAbstract() == "[0,inf]");
-/*    num = Dec32(true, SV.INF);
-    assert(toSciString!Dec32(num) == "-Infinity");
-    assert(num.toAbstract() == "[1,inf]");
-    num = Dec32(false, SV.QNAN);
-    assert(toSciString!Dec32(num) == "NaN");
-    assert(num.toAbstract() == "[0,qNaN]");*/
-    // TODO: This test doesn't pass because we the payload setter won't compile.
-//    num = Dec32(false, SV.QNAN, 123);
-//    assert(toSciString!Dec32(num) == "NaN123");
-//    assert(num.toAbstract() == "[0,qNaN,123]");
-/*    num = Dec32(true, SV.SNAN);
-    assert(toSciString!Dec32(num) == "-sNaN");
-    assert(num.toAbstract() == "[1,sNaN]");*/
-    writeln("passed");
-}
+// UNREADY: toEngString. Description. Unit Tests.
+/**
+ * Converts a Decimal number to a string representation.
+ */
+public string toEngString(T)(const T num) if (isDecimal!T) {
+    return toStdString!T(num, true);
+};    // end toEngString()
 
 // UNREADY: toEngString. Description. Unit Tests.
 /**
     * Converts a Decimal number to a string representation.
     */
-public string toEngString(T)(const T num) if (isDecimal!T) {
+public string toStdString(T)
+        (const T num, bool engineering = false) if (isDecimal!T) {
 
     auto mant = num.coefficient;
     int  expo = num.exponent;
@@ -407,8 +190,8 @@ public string toEngString(T)(const T num) if (isDecimal!T) {
             str = "NaN";
         }
         // add payload to NaN, if present
-        if (num.isNaN && mant != 0) {
-            str ~= to!string(mant);
+        if (num.isNaN && num.payload != 0) {
+            str ~= to!string(num.payload);
         }
         // add sign, if present
         return signed ? "-" ~ str : str;
@@ -442,160 +225,99 @@ public string toEngString(T)(const T num) if (isDecimal!T) {
         return signed ? ("-" ~ cstr).idup : cstr.idup;
     }
 
-    // use exponential notation
-    if (num.isZero) {
-        adjx += 2;
-    }
+    if (engineering) {
+        // use exponential notation
+        if (num.isZero) {
+            adjx += 2;
+        }
 
-    int mod = adjx % 3;
-    // the % operator rounds down; we need it to round to floor.
-    if (mod < 0) {
-        mod = -(mod + 3);
-    }
+        int mod = adjx % 3;
+        // the % operator rounds down; we need it to round to floor.
+        if (mod < 0) {
+            mod = -(mod + 3);
+        }
 
-    int dot = std.math.abs(mod) + 1;
-    adjx = adjx - dot + 1;
+        int dot = std.math.abs(mod) + 1;
+        adjx = adjx - dot + 1;
 
-    if (num.isZero) {
-        dot = 1;
-        clen = 3 - std.math.abs(mod);
-        cstr.length = 0;
-        for (int i = 0; i < clen; i++) {
+        if (num.isZero) {
+            dot = 1;
+            clen = 3 - std.math.abs(mod);
+            cstr.length = 0;
+            for (int i = 0; i < clen; i++) {
+                cstr ~= '0';
+            }
+        }
+
+        while (dot > clen) {
             cstr ~= '0';
+            clen++;
         }
+        if (clen > dot) {
+            insertInPlace(cstr, dot, ".");
+        }
+        string str = cstr.idup;
+        if (adjx != 0) {
+            string xstr = to!string(adjx);
+            if (adjx > 0) {
+                xstr = '+' ~ xstr;
+            }
+            str = str ~ "E" ~ xstr;
+        }
+        return signed ? "-" ~ str : str;
     }
-
-    while (dot > clen) {
-        cstr ~= '0';
-        clen++;
-    }
-    if (clen > dot) {
-        insertInPlace(cstr, dot, ".");
-    }
-    string str = cstr.idup;
-    if (adjx != 0) {
+    else {
+        // use exponential notation
+        if (clen > 1) {
+            insertInPlace(cstr, 1, ".");
+        }
         string xstr = to!string(adjx);
-        if (adjx > 0) {
-            xstr = '+' ~ xstr;
+        if (adjx >= 0) {
+            xstr = "+" ~ xstr;
         }
-        str = str ~ "E" ~ xstr;
+        string str = (cstr ~ "E" ~ xstr).idup;
+        return signed ? "-" ~ str : str;
     }
-    return signed ? "-" ~ str : str;
 
 };    // end toEngString()
 
 unittest {
-    write("toEngString...");
+    Dec32 num = Dec32(123); //(false, 123, 0);
+    assert(toSciString!Dec32(num) == "123");
+    assert(num.toAbstract() == "[0,123,0]");
+    writeln("num = ", num);
+    writeln("num.toAbstract = ", num.toAbstract);
+    num = Dec32(-123, 0);
+    writeln("num = ", num);
+    writeln("num.toAbstract = ", num.toAbstract);
+    assert(toSciString!Dec32(num) == "-123");
+    assert(num.toAbstract() == "[1,123,0]");
+    num = Dec32(123, 1);
+    assert(toSciString!Dec32(num) == "1.23E+3");
+    assert(num.toAbstract() == "[0,123,1]");
+    num = Dec32(123, 3);
+    assert(toSciString!Dec32(num) == "1.23E+5");
+    assert(num.toAbstract() == "[0,123,3]");
+    num = Dec32(123, -1);
+    assert(toSciString!Dec32(num) == "12.3");
+    assert(num.toAbstract() == "[0,123,-1]");
+    num = Dec32("inf");
+    writeln("num = ", num);
+    writeln("num.toAbstract = ", num.toAbstract);
+    assert(toSciString!Dec32(num) == "Infinity");
+    assert(num.toAbstract() == "[0,inf]");
     string str = "1.23E+3";
-    Decimal num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
+    Decimal dec = Decimal(str);
+    assert(toEngString!Decimal(dec) == str);
     str = "123E+3";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
+    dec = Decimal(str);
+    assert(toEngString!Decimal(dec) == str);
     str = "12.3E-9";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
+    dec = Decimal(str);
+    assert(toEngString!Decimal(dec) == str);
     str = "-123E-12";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
-    str = "700E-9";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
-    str = "70";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
-    str = "0E-9";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
-    str = "0.00E-6";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
-    str = "0.0E-6";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
-    str = "0.000000";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
-/*    str = "0.00E-3";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
-    str = "0.0E-3";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);*/
-    str = "0.000";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
-    str = "0.00";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
-    str = "0.0";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
-    str = "0";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
-    str = "0.00E+3";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
-    str = "0.0E+3";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
-    str = "0E+3";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
-    str = "0.00E+6";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
-    str = "0.0E+6";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
-    str = "0E+6";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
-    str = "0.00E+9";
-    num = Decimal(str);
-    assert(toEngString!Decimal(num) == str);
-    writeln("passed");
-}
-
-unittest {
-/*    writefln("num.mant = 0x%08X", num.mant);
-    writefln("max_mant = 0x%08X", Dec32.max_mant);
-    writefln("max_norm = 0x%08X", Dec32.max_norm);
-    writeln("max_expo = ", Dec32.max_expo);
-    writeln("min_expo = ", Dec32.min_expo);
-
-    writefln("qnan_val = 0x%08X", Dec32.qnan_val);
-    writeln("Dec32.qNaN = ", Dec32.qNaN);
-
-    Dec32 dec = Dec32();
-    writeln("dec = ", dec);
-    writeln("dec.mant1 = ", dec.mant1);
-
-    Decimal num = Decimal(0);
-    dec = Dec32(num);
-    writeln("num = ", num);
-    writeln("dec = ", dec);
-
-    num = Decimal(1);
-    dec = Dec32(num);
-    writeln("num = ", num);
-    writeln("dec = ", dec);
-
-    num = Decimal(-1);
-    dec = Dec32(num);
-    writeln("num = ", num);
-    writeln("dec = ", dec);
-
-    num = Decimal(-16000);
-    dec = Dec32(num);
-    writeln("num = ", num);
-    writeln("dec = ", dec);
-
-    num = Decimal(uint.max);
-    dec = Dec32(num);
-    writeln("num = ", num);
-    writeln("dec = ", dec);*/
+    dec = Decimal(str);
+    assert(toEngString!Decimal(dec) == str);
 }
 
 // UNREADY: toNumber. Description. Corner Cases. Context.
@@ -637,7 +359,6 @@ public Decimal toNumber(const string inStr) {
             }
         }
         // convert string to payload
-        //        uint payload = std.conv.to!uint(str);
         num.payload = std.conv.to!uint(str);
         return num;
     };
@@ -794,10 +515,73 @@ unittest {
     assert(f.toString() == "0.00123");
 }
 
+public string toAbstract(T)(const T num) if (isDecimal!T)
+{
+    if (num.isFinite) {
+        return format("[%d,%s,%d]", num.sign ? 1 : 0,
+                to!string(num.coefficient), num.exponent);
+    }
+    if (num.isInfinite) {
+        return format("[%d,%s]", num.sign ? 1 : 0, "inf");
+    }
+    if (num.isQuiet) {
+        if (num.payload) {
+            return format("[%d,%s%d]", num.sign ? 1 : 0, "qNaN", num.payload);
+        }
+        return format("[%d,%s]", num.sign ? 1 : 0, "qNaN");
+    }
+    if (num.isSignaling) {
+        if (num.payload) {
+            return format("[%d,%s%d]", num.sign ? 1 : 0, "sNaN", num.payload);
+        }
+        return format("[%d,%s]", num.sign ? 1 : 0, "sNaN");
+    }
+    return "[0,qNAN]";
+}
+
+    public string toExact(T)(const T num) if (isDecimal!T)
+    {
+        if (num.isFinite) {
+            return format("%s%sE%s%02d", num.sign ? "-" : "+",
+                    to!string(num.coefficient),
+                    num.exponent < 0 ? "-" : "+", num.exponent);
+        }
+        if (num.isInfinite) {
+            return format("%s%s", num.sign ? "-" : "+", "Infinity");
+        }
+        if (num.isQuiet) {
+            if (num.payload) {
+                return format("%s%s%d", num.sign ? "-" : "+", "NaN", num.payload);
+            }
+            return format("%s%s", num.sign ? "-" : "+", "NaN");
+        }
+        if (num.isSignaling) {
+            if (num.payload) {
+                return format("%s%s%d", num.sign ? "-" : "+", "sNaN", num.payload);
+            }
+            return format("%s%s", num.sign ? "-" : "+", "sNaN");
+        }
+        return "+NaN";
+    }
+
+    unittest {
+        write("toExact...");
+        Dec32 num;
+        assert(num.toExact == "+NaN");
+        num = +9999999E+90;
+        assert(num.toExact == "+9999999E+90");
+        num = 1;
+writeln("num = ", num);
+writeln("num.toExact = ", num.toExact);
+//        assert(num.toExact == "+1E+00");
+        num = Dec32.infinity(true);
+        assert(num.toExact == "-Infinity");
+        writeln("passed");
+    }
+
 unittest {
     writeln("----------------------");
     writeln("conv..........finished");
     writeln("----------------------");
 }
-
 

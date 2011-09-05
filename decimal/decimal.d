@@ -330,7 +330,8 @@ unittest {
  * Converts a number to an abstract string representation.
  */
 public const string toAbstract() {
-    switch (sval) {
+    return decimal.conv.toAbstract!Decimal(this);
+/*    switch (sval) {
         case SV.SNAN:
             if (payload)
                 return format("[%d,%s,%d]", signed ? 1 : 0, "sNaN", payload);
@@ -346,11 +347,18 @@ public const string toAbstract() {
         default:
             return format("[%d,%s,%d]",
                 signed ? 1 : 0, decimal.conv.to!string(mant), expo);
-    }
+    }*/
 }
 
 unittest {
     write("toAbstract...");
+    Decimal num;
+    num = Decimal("-inf");
+writeln("num.toAbstract = ", num.toAbstract);
+    num = Decimal("nan");
+writeln("num.toAbstract = ", num.toAbstract);
+    num = Decimal("snan1234");
+writeln("num.toAbstract = ", num.toAbstract);
     writeln("test missing");
 }
 
@@ -1173,10 +1181,8 @@ unittest {
 }    // end struct Decimal
 
 unittest {
-    writeln();
     writeln("-------------------");
-    writeln("Decimal......tested");
+    writeln("decimal....finsihed");
     writeln("-------------------");
-    writeln();
 }
 

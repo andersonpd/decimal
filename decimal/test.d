@@ -25,6 +25,7 @@ import decimal.context;
 import decimal.decimal;
 import decimal.dec32;
 import decimal.rounding;
+import decimal.conv;
 
 unittest {
     writeln("-------------------");
@@ -96,19 +97,175 @@ private DecimalContext testContext = DecimalContext();
 
 unittest {
     writeln("---------------------");
-    writeln("arithmetic....testing");
+    writeln("conversion....testing");
     writeln("---------------------");
 }
 
 unittest {
+    write("toDecimal...");
+    Dec32 small;
+    Decimal big;
+    small = 5;
+    big = toDecimal!Dec32(small);
+    assert(big.toString == small.toString);
+    writeln("passed");
+}
+
+unittest {
+    write("isDecimal(T)...");
+    assert(isSmallDecimal!Dec32);
+    assert(!isSmallDecimal!Decimal);
+    assert(isDecimal!Dec32);
+    assert(isDecimal!Decimal);
+    assert(!isBigDecimal!Dec32);
+    assert(isBigDecimal!Decimal);
+    writeln("passed");
+}
+
+unittest {
     write("to-sci-str...");
-    // test moved to decimal.conv
+    Dec32 num = Dec32(123); //(false, 123, 0);
+    assert(toSciString!Dec32(num) == "123");
+    assert(num.toAbstract() == "[0,123,0]");
+    writeln("num = ", num);
+    writeln("num.toAbstract = ", num.toAbstract);
+    num = Dec32(-123, 0);
+    writeln("num = ", num);
+    writeln("num.toAbstract = ", num.toAbstract);
+    assert(toSciString!Dec32(num) == "-123");
+    assert(num.toAbstract() == "[1,123,0]");
+    num = Dec32(123, 1);
+    assert(toSciString!Dec32(num) == "1.23E+3");
+    assert(num.toAbstract() == "[0,123,1]");
+    num = Dec32(123, 3);
+    assert(toSciString!Dec32(num) == "1.23E+5");
+    assert(num.toAbstract() == "[0,123,3]");
+    num = Dec32(123, -1);
+    assert(toSciString!Dec32(num) == "12.3");
+    assert(num.toAbstract() == "[0,123,-1]");
+    num = Dec32(123, -5);
+    assert(toSciString!Dec32(num) == "0.00123");
+    assert(num.toAbstract() == "[0,123,-5]");
+    num = Dec32(123, -10);
+    assert(toSciString!Dec32(num) == "1.23E-8");
+    assert(num.toAbstract() == "[0,123,-10]");
+    num = Dec32(-123, -12);
+    assert(toSciString!Dec32(num) == "-1.23E-10");
+    assert(num.toAbstract() == "[1,123,-12]");
+    num = Dec32(0, 0);
+    assert(toSciString!Dec32(num) == "0");
+    assert(num.toAbstract() == "[0,0,0]");
+    num = Dec32(0, -2);
+    assert(toSciString!Dec32(num) == "0.00");
+    assert(num.toAbstract() == "[0,0,-2]");
+    num = Dec32(0, 2);
+    assert(toSciString!Dec32(num) == "0E+2");
+    assert(num.toAbstract() == "[0,0,2]");
+/*    num = -Dec32(0, 0);
+    assert(toSciString!Dec32(num) == "-0");
+    assert(num.toAbstract() == "[1,0,0]");*/
+    num = Dec32(5, -6);
+    assert(toSciString!Dec32(num) == "0.000005");
+    assert(num.toAbstract() == "[0,5,-6]");
+    num = Dec32(50,-7);
+    assert(toSciString!Dec32(num) == "0.0000050");
+    assert(num.toAbstract() == "[0,50,-7]");
+    num = Dec32(5, -7);
+    assert(toSciString!Dec32(num) == "5E-7");
+    assert(num.toAbstract() == "[0,5,-7]");
+    writeln("-------");
+    num = Dec32("inf");
+    writeln("num = ", num);
+    writeln("num.toAbstract = ", num.toAbstract);
+    assert(toSciString!Dec32(num) == "Infinity");
+    assert(num.toAbstract() == "[0,inf]");
+/*    num = Dec32(true, SV.INF);
+    assert(toSciString!Dec32(num) == "-Infinity");
+    assert(num.toAbstract() == "[1,inf]");
+    num = Dec32(false, SV.QNAN);
+    assert(toSciString!Dec32(num) == "NaN");
+    assert(num.toAbstract() == "[0,qNaN]");*/
+    // TODO: This test doesn't pass because we the payload setter won't compile.
+//    num = Dec32(false, SV.QNAN, 123);
+//    assert(toSciString!Dec32(num) == "NaN123");
+//    assert(num.toAbstract() == "[0,qNaN,123]");
+/*    num = Dec32(true, SV.SNAN);
+    assert(toSciString!Dec32(num) == "-sNaN");
+    assert(num.toAbstract() == "[1,sNaN]");*/
     writeln("passed");
 }
 
 unittest {
     write("to-eng-str...");
-    // test moved to decimal.conv
+    string str = "1.23E+3";
+    Decimal num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "123E+3";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "12.3E-9";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "-123E-12";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "700E-9";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "70";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "0E-9";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "0.00E-6";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "0.0E-6";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "0.000000";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+/*    str = "0.00E-3";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "0.0E-3";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);*/
+    str = "0.000";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "0.00";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "0.0";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "0";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "0.00E+3";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "0.0E+3";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "0E+3";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "0.00E+6";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "0.0E+6";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "0E+6";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
+    str = "0.00E+9";
+    num = Decimal(str);
+    assert(toEngString!Decimal(num) == str);
     writeln("passed");
 }
 
@@ -198,6 +355,18 @@ unittest {
     f = Decimal("Fred");
     expectEquals(f.toString(), "NaN") ? passed++ : failed++;
     writefln("unittest %s: passed %d; failed %d", title, passed, failed);
+}
+
+unittest {
+    writeln("---------------------");
+    writeln("conversion...finished");
+    writeln("---------------------");
+}
+
+unittest {
+    writeln("---------------------");
+    writeln("arithmetic....testing");
+    writeln("---------------------");
 }
 
 unittest {
