@@ -26,6 +26,12 @@ import decimal.decimal;
 import decimal.dec32;
 import decimal.rounding;
 
+unittest {
+    writeln("-------------------");
+    writeln("test........testing");
+    writeln("-------------------");
+}
+
 //--------------------------------
 // unit test methods
 //--------------------------------
@@ -72,15 +78,15 @@ unittest {
 unittest {
     bool passed = true;
     long n = 12345;
-    Test!(long).isEqual(lastDigit(n), 5, "digits 1");
-    Test!(long).isEqual(numDigits(n), 5, "digits 2");
-    Test!(long).isEqual(firstDigit(n), 1, "digits 3");
-    Test!(long).isEqual(firstDigit(n), 8, "digits 4");
+    Test!long.isEqual!uint(lastDigit(n), 5, "digits 1");
+    Test!long.isEqual(numDigits(n), 5, "digits 2");
+    Test!long.isEqual(firstDigit(n), 1, "digits 3");
+    Test!long.isEqual(firstDigit(n), 8, "digits 4");
     BigInt big = BigInt("12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678905");
-    Test!(long).isEqual(lastDigit(big), 5, "digits 5");
-    Test!(long).isEqual(numDigits(big), 101, "digits 6");
-    Test!(long).isEqual(numDigits(big), 22, "digits 7");
-    Test!(long).isEqual(firstDigit(n), 1, "digits 8");
+    Test!long.isEqual!uint(lastDigit(big), 5, "digits 5");
+    Test!long.isEqual(numDigits(big), 101, "digits 6");
+    Test!long.isEqual(numDigits(big), 22, "digits 7");
+    Test!long.isEqual(firstDigit(n), 1, "digits 8");
 //    assert(lastDigit(big) == 5);
 //    assert(numDigits(big) == 101);
 //    assert(firstDigit(big) == 1);
@@ -195,9 +201,11 @@ unittest {
 }
 
 unittest {
-    write("radix........");
-    assert(radix() == 10);
-    writeln("passed");
+    string title = "radix";
+    uint passed = 0;
+    uint failed = 0;
+    expectEquals(radix, 10) ? passed++ : failed++;
+    writefln("unittest %s: passed %d; failed %d", title, passed, failed);
 }
 
 unittest {
@@ -1158,9 +1166,234 @@ unittest {
 
 unittest {
     writeln("---------------------");
-    writeln("digits........testing");
+    writeln("Decimal.......testing");
     writeln("---------------------");
 /*    context.precision = 5;*/
+}
+
+unittest {
+	write("special values...");
+    Decimal num;
+    num = Decimal.NAN;
+    assert(num.toString == "NaN");
+    num = Decimal.SNAN;
+    assert(num.toString == "sNaN");
+    assert("Decimal(SV.QNAN).toAbstract = ", Decimal.NAN.toAbstract);
+    num = Decimal.NEG_ZERO;
+    assert(num.toString == "-0");
+	writeln("passed");
+}
+
+unittest {
+    write("this(bool, SV, payload)...");
+    Decimal num = Decimal(SV.INF, true);
+    assert(num.toSciString == "-Infinity");
+    assert(num.toAbstract() == "[1,inf]");
+    writeln("passed");
+}
+
+unittest {
+    write("this(bool, BigInt, int)...");
+    Decimal num;
+    num = Decimal(true, BigInt(7254), 94);
+    assert(num.toString == "-7.254E+97");
+    writeln("passed");
+}
+
+unittest {
+    write("this(BigInt, int)...");
+    Decimal num;
+    num = Decimal(BigInt(7254), 94);
+    assert(num.toString == "7.254E+97");
+    writeln("passed");
+}
+
+    unittest {
+        write("this(BigInt)...");
+        Decimal num;
+        num = Decimal(BigInt(-7254));
+        assert(num.toString == "-7254");
+        writeln("passed");
+    }
+
+unittest {
+    write("construction.");
+    Decimal f = Decimal(1234L, 567);
+    f = Decimal(1234, 567);
+    assert(f.toString() == "1.234E+570");
+    f = Decimal(1234L);
+    assert(f.toString() == "1234");
+    f = Decimal(123400L);
+    assert(f.toString() == "123400");
+    f = Decimal(1234L);
+    assert(f.toString() == "1234");
+    writeln("passed");
+}
+
+unittest {
+    write("toExact...");
+    Decimal num;
+    assert(num.toExact == "+NaN");
+    num = +9999999E+90;
+    assert(num.toExact == "+9999999E+90");
+    num = 1;
+    assert(num.toExact == "+1E+00");
+    num = Decimal.infinity(true);
+    assert(num.toExact == "-Infinity");
+    writeln("passed");
+}
+
+unittest {
+    write("canonical....");
+    Decimal num = Decimal("2.50");
+    assert(num.isCanonical);
+    writeln("passed");
+}
+
+unittest {
+    write("isZero.......");
+    Decimal num;
+    num = Decimal("0");
+    assert(num.isZero);
+    num = Decimal("2.50");
+    assert(!num.isZero);
+    num = Decimal("-0E+2");
+    assert(num.isZero);
+    writeln("passed");
+}
+
+unittest {
+    write("isNaN........");
+    Decimal num;
+    num = Decimal("2.50");
+    assert(!num.isNaN);
+    num = Decimal("NaN");
+    assert(num.isNaN);
+    num = Decimal("-sNaN");
+    assert(num.isNaN);
+    writeln("passed");
+}
+
+unittest {
+    write("isSignaling..");
+    Decimal num;
+    num = Decimal("2.50");
+    assert(!num.isSignaling);
+    num = Decimal("NaN");
+    assert(!num.isSignaling);
+    num = Decimal("sNaN");
+    assert(num.isSignaling);
+    writeln("passed");
+}
+
+unittest {
+    write("isQuiet......");
+    Decimal num;
+    num = Decimal("2.50");
+    assert(!num.isQuiet);
+    num = Decimal("NaN");
+    assert(num.isQuiet);
+    num = Decimal("sNaN");
+    assert(!num.isQuiet);
+    writeln("passed");
+}
+
+unittest {
+    write("isInfinite...");
+    Decimal num;
+    num = Decimal("2.50");
+    assert(!num.isInfinite);
+    num = Decimal("-Inf");
+    assert(num.isInfinite);
+    num = Decimal("NaN");
+    assert(!num.isInfinite);
+    writeln("passed");
+}
+
+unittest {
+    write("isFinite.....");
+    Decimal num;
+    num = Decimal("2.50");
+    assert(num.isFinite);
+    num = Decimal("-0.3");
+    assert(num.isFinite);
+    num = 0;
+    assert(num.isFinite);
+    num = Decimal("Inf");
+    assert(!num.isFinite);
+    num = Decimal("-Inf");
+    assert(!num.isFinite);
+    num = Decimal("NaN");
+    assert(!num.isFinite);
+    writeln("passed");
+}
+
+unittest {
+    write("isSigned.....");
+    Decimal num;
+    num = Decimal("2.50");
+    assert(!num.isSigned);
+    num = Decimal("-12");
+    assert(num.isSigned);
+    num = Decimal("-0");
+    assert(num.isSigned);
+    writeln("passed");
+}
+
+unittest {
+    write("isNegative...");
+    Decimal num;
+    num = Decimal("2.50");
+    assert(!num.isNegative);
+    num = Decimal("-12");
+    assert(num.isNegative);
+    num = Decimal("-0");
+    assert(num.isNegative);
+    writeln("passed");
+}
+
+unittest {
+    write("isSubnormal..");
+    Decimal num;
+    num = Decimal("2.50");
+    assert(!num.isSubnormal);
+    num = Decimal("0.1E-99");
+    assert(num.isSubnormal);
+    num = Decimal("0.00");
+    assert(!num.isSubnormal);
+    num = Decimal("-Inf");
+    assert(!num.isSubnormal);
+    num = Decimal("NaN");
+    assert(!num.isSubnormal);
+    writeln("passed");
+}
+
+unittest {
+    write("isNormal.....");
+    Decimal num;
+    num = Decimal("2.50");
+    assert(num.isNormal);
+    num = Decimal("0.1E-99");
+    assert(!num.isNormal);
+    num = Decimal("0.00");
+    assert(!num.isNormal);
+    num = Decimal("-Inf");
+    assert(!num.isNormal);
+    num = Decimal("NaN");
+    assert(!num.isNormal);
+    writeln("passed");
+}
+
+unittest {
+    writeln("-------------------");
+    writeln("Decimal......tested");
+    writeln("-------------------");
+}
+
+unittest {
+    writeln("---------------------");
+    writeln("digits........testing");
+    writeln("---------------------");
 }
 
 unittest {
@@ -1225,6 +1458,226 @@ unittest {
     round(after, testContext);;
     assert(after.toAbstract() == "[0,125,2]");
     testContext = popContext;
+    writeln("passed");
+}
+
+unittest {
+    write("numDigits......");
+    BigInt big = BigInt("12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678905");
+    assert(numDigits(big) == 101);
+    writeln("passed");
+}
+
+unittest {
+    write("firstDigit.....");
+    BigInt big = BigInt("82345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678905");
+    assert(firstDigit(big) == 8);
+    writeln("passed");
+}
+
+unittest {
+    write("decShl.........");
+    BigInt m;
+    int n;
+    m = 12345;
+    n = 2;
+//    writeln("decShl(m,n) = ", decShl(m,n));
+    assert(decShl(m,n) == 1234500);
+    m = 1234567890;
+    n = 7;
+    assert(decShl(m,n) == BigInt(12345678900000000));
+    m = 12;
+    n = 2;
+    assert(decShl(m,n) == 1200);
+    m = 12;
+    n = 4;
+    assert(decShl(m,n) == 120000);
+    writeln("passed");
+}
+
+unittest {
+    write("decShr.........");
+    BigInt m;
+    int n;
+    m = 12345;
+    n = 2;
+    assert(decShr(m,n) == 123);
+    m = 12345678901234567;
+    n = 7;
+    assert(decShr(m,n) == 1234567890);
+    m = 12;
+    n = 2;
+    assert(decShr(m,n) == 0);
+    m = 12;
+    n = 4;
+    assert(decShr(m,n) == 0);
+    m = long.max;
+    n = 18;
+    assert(decShr(m,n) == 9);
+    writeln("passed");
+}
+
+unittest {
+    write("lastDigit......");
+    BigInt n;
+    n = 7;
+    assert(lastDigit(n) == 7);
+    n = -13;
+    assert(lastDigit(n) == 3);
+    n = 999;
+    assert(lastDigit(n) == 9);
+    n = -9999;
+    assert(lastDigit(n) == 9);
+    n = 25987;
+    assert(lastDigit(n) == 7);
+    n = -5008615;
+    assert(lastDigit(n) == 5);
+    n = 3234567893;
+    assert(lastDigit(n) == 3);
+    n = -10000000000;
+    assert(lastDigit(n) == 0);
+    n = 823456789012348;
+    assert(lastDigit(n) == 8);
+    n = 4234567890123456;
+    assert(lastDigit(n) == 6);
+    n = 623456789012345674;
+    assert(lastDigit(n) == 4);
+    n = long.max;
+    assert(lastDigit(n) == 7);
+    writeln("passed");
+}
+
+unittest {
+    write("decShr.........");
+    long m;
+    int n;
+    m = 12345;
+    n = 2;
+    assert(decShr(m,n) == 123);
+    m = 12345678901234567;
+    n = 7;
+    assert(decShr(m,n) == 1234567890);
+    m = 12;
+    n = 2;
+    assert(decShr(m,n) == 0);
+    m = 12;
+    n = 4;
+    assert(decShr(m,n) == 0);
+    m = long.max;
+    n = 18;
+    assert(decShr(m,n) == 9);
+    writeln("passed");
+}
+
+unittest {
+    write("decShl.........");
+    long m;
+    int n;
+    m = 12345;
+    n = 2;
+    assert(decShl(m,n) == 1234500);
+    m = 1234567890;
+    n = 7;
+    assert(decShl(m,n) == 12345678900000000);
+    m = 12;
+    n = 2;
+    assert(decShl(m,n) == 1200);
+    m = 12;
+    n = 4;
+    assert(decShl(m,n) == 120000);
+/*    m = long.max;
+    n = 18;
+    assert(decShl(m,n) == 9);*/
+    writeln("passed");
+}
+
+unittest {
+    write("lastDigit......");
+    long n;
+    n = 7;
+    assert(lastDigit(n) == 7);
+    n = -13;
+    assert(lastDigit(n) == 3);
+    n = 999;
+    assert(lastDigit(n) == 9);
+    n = -9999;
+    assert(lastDigit(n) == 9);
+    n = 25987;
+    assert(lastDigit(n) == 7);
+    n = -5008615;
+    assert(lastDigit(n) == 5);
+    n = 3234567893;
+    assert(lastDigit(n) == 3);
+    n = -10000000000;
+    assert(lastDigit(n) == 0);
+    n = 823456789012348;
+    assert(lastDigit(n) == 8);
+    n = 4234567890123456;
+    assert(lastDigit(n) == 6);
+    n = 623456789012345674;
+    assert(lastDigit(n) == 4);
+    n = long.max;
+    assert(lastDigit(n) == 7);
+    writeln("passed");
+}
+
+unittest {
+    write("firstDigit.....");
+    long n;
+    n = 7;
+    assert(firstDigit(n) == 7);
+    n = -13;
+    assert(firstDigit(n) == 1);
+    n = 999;
+    assert(firstDigit(n) == 9);
+    n = -9999;
+    assert(firstDigit(n) == 9);
+    n = 25987;
+    assert(firstDigit(n) == 2);
+    n = -5008617;
+    assert(firstDigit(n) == 5);
+    n = 3234567890;
+    assert(firstDigit(n) == 3);
+    n = -10000000000;
+    assert(firstDigit(n) == 1);
+    n = 823456789012345;
+    assert(firstDigit(n) == 8);
+    n = 4234567890123456;
+    assert(firstDigit(n) == 4);
+    n = 623456789012345678;
+    assert(firstDigit(n) == 6);
+    n = long.max;
+    assert(firstDigit(n) == 9);
+    writeln("passed");
+}
+
+unittest {
+    write("numDigits......");
+    long n;
+    n = 7;
+    assert(numDigits(n) ==  1);
+    n = -13;
+    assert(numDigits(n) ==  2);
+    n = 999;
+    assert(numDigits(n) ==  3);
+    n = -9999;
+    assert(numDigits(n) ==  4);
+    n = 25987;
+    assert(numDigits(n) ==  5);
+    n = -2008617;
+    assert(numDigits(n) ==  7);
+    n = 1234567890;
+    assert(numDigits(n) == 10);
+    n = -10000000000;
+    assert(numDigits(n) == 11);
+    n = 123456789012345;
+    assert(numDigits(n) == 15);
+    n = 1234567890123456;
+    assert(numDigits(n) == 16);
+    n = 123456789012345678;
+    assert(numDigits(n) == 18);
+    n = long.max;
+    assert(numDigits(n) == 19);
     writeln("passed");
 }
 
@@ -1651,6 +2104,75 @@ unittest {
     actual = op1;
     assert(expect == actual);
 	writeln("passed");
+}
+
+unittest {
+    write("toDecimal...");
+    Dec32 num = Dec32("12345E+17");
+    Decimal expected = Decimal("12345E+17");
+    Decimal actual = num.toDecimal;
+    assert(actual == expected);
+    writeln("passed");
+}
+
+unittest {
+    write("toLong...");
+    Dec32 num;
+    num = -12345;
+    assert(num.toLong == -12345);
+    num = 2 * int.max;
+    assert(num.toLong == 2 * int.max);
+    num = 1.0E6;
+    assert(num.toLong == 1000000);
+    num = -1.0E60;
+    assert(num.toLong == long.min);
+    num = Dec32.infinity(true);
+    assert(num.toLong == long.min);
+    writeln("passed");
+}
+
+unittest {
+    write("toInt...");
+    Dec32 num;
+    num = 12345;
+    assert(num.toInt == 12345);
+    num = 1.0E6;
+    assert(num.toInt == 1000000);
+    num = -1.0E60;
+    assert(num.toInt == int.min);
+    num = Dec32.infinity(true);
+    assert(num.toInt == int.min);
+    writeln("passed");
+}
+
+unittest {
+    write("toString...");
+    string str;
+    str = "-12.345E-42";
+    Dec32 num = Dec32(str);
+    assert(num.toString == "-1.2345E-41");
+    writeln("passed");
+}
+
+unittest {
+    write("toAbstract...");
+    Dec32 num;
+    num = Dec32("-25.67E+2");
+    assert(num.toAbstract == "[1,2567,0]");
+    writeln("test missing");
+}
+
+unittest {
+    write("toExact...");
+    Dec32 num;
+    assert(num.toExact == "+NaN");
+    num = Dec32.max;
+    assert(num.toExact == "+9999999E+90");
+    num = 1;
+    assert(num.toExact == "+0000001E+00");
+    num = Dec32.infinity(true);
+    assert(num.toExact == "-Infinity");
+    writeln("passed");
 }
 
 unittest {

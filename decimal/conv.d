@@ -58,32 +58,30 @@ T to(T:string)(const BigInt num) {
 }
 
 /**
- * Converts a small decimal to a big decimal
- */
-public Decimal toDecimal(T)(const T num) if (is(typeof(num) == Decimal)) {
-    return num.dup;
-}
-
-/**
- * Converts a small decimal to a big decimal
+ * Converts any decimal to a big decimal
  */
 public Decimal toDecimal(T)(const T num) if (isDecimal!T) {
+
+//    static if (is(T : Decimal)) {
+    static if (is(typeof(num) == Decimal)) {
+        return num.dup;
+    }
 
     bool sign = num.sign;
 
     if (num.isFinite) {
         auto mant = num.coefficient;
         int  expo = num.exponent;
-        return Decimal(sign, BigInt(mant), expo);
+        return Decimal(sign, mant, expo);
     }
     else if (num.isInfinite) {
         return Decimal.infinity(sign);
     }
     else if (num.isQuiet) {
-        return Decimal(sign, SV.QNAN, num.payload);
+        return Decimal(SV.QNAN, num.payload);
     }
     else if (num.isSignaling) {
-        return Decimal(sign, SV.SNAN, num.payload);
+        return Decimal(SV.SNAN, num.payload);
     }
 
     // NOTE: Should never reach here.
@@ -625,7 +623,7 @@ public Decimal toNumber(const string inStr) {
     // check for NaN
     if (startsWith(str,"nan")) {
         bool signed = num.sign;
-        num = Decimal(num.sign, SV.QNAN);
+        num = Decimal(SV.QNAN, num.sign );
         // if no payload, return
         if (str == "nan") {
             return num;

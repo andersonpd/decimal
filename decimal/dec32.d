@@ -31,13 +31,6 @@ import decimal.rounding;
 
 // (4) TODO: problem with unary ops (++).
 // (5) TODO: subnormal creation.
-// (7) TODO: when all are copied, delete this.
-unittest {
-    writeln("---------------------");
-    writeln("decimal32.......begin");
-    writeln("---------------------");
-}
-
 struct Dec32 {
 
     /// The global context for this type.
@@ -937,8 +930,10 @@ public:
     }
 
     unittest {
-        write("toDecimal...");
-        writeln("test missing");
+        Dec32 num = Dec32("12345E+17");
+        Decimal expected = Decimal("12345E+17");
+        Decimal actual = num.toDecimal;
+        assert(actual == expected);
     }
 
     const int toInt() {
@@ -955,7 +950,6 @@ public:
     }
 
     unittest {
-        write("toInt...");
         Dec32 num;
         num = 12345;
         assert(num.toInt == 12345);
@@ -965,7 +959,6 @@ public:
         assert(num.toInt == int.min);
         num = NEG_INF;
         assert(num.toInt == int.min);
-        writeln("passed");
     }
 
     const long toLong() {
@@ -974,6 +967,7 @@ public:
             context32.setFlag(INVALID_OPERATION);
             return 0;
         }
+        // TODO: make these constants. (The compiler probably already does.)
         if (this > Dec32(long.max) || (isInfinite && !isSigned)) return long.max;
         if (this < Dec32(long.min) || (isInfinite &&  isSigned)) return long.min;
         quantize!Dec32(this, ONE, context32);
@@ -982,7 +976,6 @@ public:
     }
 
     unittest {
-        write("toLong...");
         Dec32 num;
         num = -12345;
         assert(num.toLong == -12345);
@@ -994,7 +987,6 @@ public:
         assert(num.toLong == long.min);
         num = NEG_INF;
         assert(num.toLong == long.min);
-        writeln("passed");
     }
 
     /**
@@ -1019,8 +1011,10 @@ public:
     }
 
     unittest {
-        write("toString...");
-        writeln("test missing");
+        string str;
+        str = "-12.345E-42";
+        Dec32 num = Dec32(str);
+        assert(num.toString == "-1.2345E-41");
     }
 
     /**
@@ -1049,7 +1043,6 @@ public:
     }
 
     unittest {
-        write("toExact...");
         Dec32 num;
         assert(num.toExact == "+NaN");
         num = max;
@@ -1060,7 +1053,6 @@ public:
         assert(num.toExact == "+8388607E+00");
         num = infinity(true);
         assert(num.toExact == "-Infinity");
-        writeln("passed");
     }
 
     /**
@@ -1088,8 +1080,9 @@ public:
     }
 
     unittest {
-        write("toAbstract...");
-        writeln("test missing");
+        Dec32 num;
+        num = Dec32("-25.67E+2");
+        assert(num.toAbstract == "[1,2567,0]");
     }
 
     /**
@@ -1304,12 +1297,7 @@ public:
         assert(expect == actual);
     }
 
-
-//-----------------------------
-// helper functions
-//-----------------------------
-
-     /**
+    /**
      * Returns uint ten raised to the specified power.
      */
     static uint pow10(const int n) {
@@ -1317,16 +1305,10 @@ public:
     }
 
     unittest {
-        assert(pow10(3) == 1000);
+        int n;
+        n = 3;
+        assert(pow10(n) == 1000);
     }
 
 }   // end Dec32 struct
-
-// (7) TODO: when all are copied, delete this.
-unittest {
-    writeln("---------------------");
-    writeln("decimal32....finished");
-    writeln("---------------------");
-}
-
 

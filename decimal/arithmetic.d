@@ -29,7 +29,7 @@
 module decimal.arithmetic;
 
 import decimal.context;
-import decimal.conv : isDecimal;
+import decimal.conv : isDecimal, toDecimal;
 import decimal.decimal;
 import decimal.dec32;
 import decimal.rounding;
@@ -37,11 +37,11 @@ import std.array: insertInPlace;
 import std.bigint;
 import std.conv;
 import std.ascii: isDigit;
-import std.stdio: write, writeln;
+//import std.stdio: write, writeln;
 import std.string;
 
-const BigInt BIG_ONE = BigInt(1);
-const BigInt BIG_ZERO = BigInt(0);
+//const BigInt BIG_ONE = BigInt(1);
+//const BigInt BIG_ZERO = BigInt(0);
 
 //--------------------------------
 // conversion to/from strings
@@ -153,7 +153,6 @@ unittest {
     assert(copyAbs!Decimal(num) == expect);
 }
 
-// READY: copyNegate
 /**
  * Returns a copy of the operand with the sign inverted.
  * The copy is unaffected by context; no flags are changed.
@@ -172,7 +171,6 @@ unittest {
     assert(copyNegate!Decimal(num) == expect);
 }
 
-// READY: copySign
 /**
  * Returns a copy of the first operand with the sign of the second operand.
  * The copy is unaffected by context; no flags are changed.
@@ -479,7 +477,6 @@ unittest {
     assert(abs(num, testContextA) == expect);
 }
 
-// READY: plus
 /**
  *    Unary plus -- returns a copy with same sign as the number.
  *    Does NOT return a positive copy of a negative number!
@@ -509,7 +506,6 @@ unittest {
     assert(plus(num, testContextA) == expect);
 }
 
-// READY: minus
 /**
  *    Unary minus -- returns a copy with the opposite sign.
  *    This operation rounds the number and may set flags.
@@ -651,14 +647,12 @@ unittest {
 // comparison functions
 //--------------------------------
 
-// READY: sameQuantum
 /**
  * Returns true if the numbers have the same exponent.
  * No context flags are set.
  * If either operand is NaN or Infinity, returns true if and only if
  * both operands are NaN or Infinity, respectively.
  */
-// NOTE: No context
 public bool sameQuantum(T)(const T op1, const T op2) if (isDecimal!T) {
     if (op1.isNaN || op2.isNaN) {
         return op1.isNaN && op2.isNaN;
@@ -1128,7 +1122,6 @@ public T rotate(T)(const T op1, const int op2, DecimalContext context)
     return result;
 }
 
-// READY: add
 /**
  * Adds two numbers.
  *
@@ -1223,7 +1216,6 @@ unittest {
     assert(sum.toString() == "1.01E+4");
 }
 
-// READY: subtract
 /**
  * Subtracts a number from another number.
  *
@@ -1284,7 +1276,6 @@ unittest {
     assert(result.toString() == "21");
 }
 
-// READY: fma
 /**
  * Multiplies two numbers and adds a third number to the result.
  * The result of the multiplication is not rounded prior to the addition.
@@ -1314,7 +1305,6 @@ unittest {
     assert(result == Decimal(1.38435736E+12));
 }
 
-// READY: divide
 /**
  * Divides one number by another and returns the quotient.
  * Division by zero sets a flag and returns Infinity.
@@ -1334,10 +1324,10 @@ public T divide(T)(const T op1, const T op2,
     quotient= T.zero();
     // TODO: are two guard digits necessary? sufficient?
     context.precision += 2;
-    Decimal dividend = Decimal(op1);
-    Decimal divisor  = Decimal(op2);
+    Decimal dividend = toDecimal!T(op1);
+    Decimal divisor  = toDecimal!T(op2);
     Decimal working = Decimal.zero;
-    working = Decimal.zero();
+//    working = Decimal.zero();
     int diff = dividend.exponent - divisor.exponent;
     if (diff > 0) {
         decShl(dividend.coefficient, diff);
@@ -1380,10 +1370,6 @@ unittest {
     expect = 0.1;
     actual = divide(op1, op2, testContextA);
     assert(actual == expect);
-// TODO: what's wrong here?
-//    writeln("expect = ", expect);
-//    writeln("actual = ", actual);
-//    assert(actual.toString() == expect.toString());
     testContextA = popContext;
 }
 
@@ -1574,12 +1560,12 @@ private T reduceToIdeal(T)(const T num, int ideal,
  * Sets the invalid-operation flag and
  * returns a quiet NaN.
  */
-private T flagInvalid(T)(DecimalContext context, ulong payload = 0)
+private T flagInvalid(T)(DecimalContext context, uint payload = 0)
         if (isDecimal!T) {
     context.setFlag(INVALID_OPERATION);
     T result = T.nan;
     if (payload != 0) {
-        //result.setNaNPayload(payload);
+        result.payload = payload;
     }
     return result;
 }

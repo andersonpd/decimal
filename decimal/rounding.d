@@ -47,6 +47,29 @@ private static DecimalContext popContext() {
     return contextStack.pop;
 }
 */
+
+//-----------------------------
+// helper functions
+//-----------------------------
+
+public BigInt abs(const BigInt num) {
+    BigInt big = copy(num);
+    return big < BigInt(0) ? -big : big;
+}
+
+public BigInt copy(const BigInt num) {
+    BigInt big = cast(BigInt)num;
+    return big;
+}
+
+public int sgn(const BigInt num) {
+    BigInt zero = BigInt(0);
+    BigInt big = copy(num);
+    if (big < zero) return -1;
+    if (big < zero) return 1;
+    return 0;
+}
+
 //TODO: add ref context flags to parameters.
 // UNREADY: round. Description. Private or public?
 public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
@@ -136,7 +159,6 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
 } // end round()
 
 unittest {
-    write("round..........");
     Decimal before = Decimal(9999);
     Decimal after = before;
     DecimalContext contextX;
@@ -190,7 +212,6 @@ unittest {
     round(after, contextX);;
     assert(after.toAbstract() == "[0,125,2]");
 //    contextX = popContext();
-    writeln("passed");
 }
 
 //--------------------------------
@@ -285,7 +306,6 @@ private void roundByMode(T)(ref T num, ref DecimalContext context)
 } // end roundByMode()
 
 unittest {
-    write("roundByMode....");
     pushContext(testContextR);
     testContextR.precision = 5;
     testContextR.rounding = Rounding.HALF_EVEN;
@@ -311,7 +331,6 @@ unittest {
     roundByMode(num, testContextR);
     assert(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
     testContextR = popContext;
-    writeln("passed");
 }
 
 // UNREADY: getRemainder. Order. Unit tests.
@@ -343,10 +362,10 @@ private T getRemainder(T)(ref T num, ref DecimalContext context)
         auto dividend = num.coefficient;
         auto quotient = dividend/divisor;
         auto modulo = dividend - quotient*divisor;
-//        writeln("divisor = ", divisor);
-//        writeln("dividend = ", dividend);
-//        writeln("quotient = ", quotient);
-//        writeln("modulo = ", modulo);
+//writeln("divisor = ", divisor);
+//writeln("dividend = ", dividend);
+//writeln("quotient = ", quotient);
+//writeln("modulo = ", modulo);
         if (modulo != 0) {
             remainder.zero;
             remainder.digits = diff;
@@ -375,6 +394,10 @@ unittest {
     num = Decimal(1234567890123456L);
     acrem = getRemainder(num, testContextR);
     exnum = Decimal("1.2345E+15");
+//writeln("acrem = ", acrem);
+//writeln("exnum = ", exnum);
+/*acrem = 717200064
+exnum = 1.2345E+15*/
     assert(num == exnum);
     exrem = 67890123456;
     assert(acrem == exrem);
@@ -593,12 +616,6 @@ unittest {
     assert(digits == 4);
 }
 
-unittest {
-    writeln("---------------------");
-    writeln("digits........testing");
-    writeln("---------------------");
-}
-
 // TODO: preload the powers of ten and powers of five (& powers of 2?)
 // TODO: compare benchmarks for division by chunks of a quintillion vs. tens.
 // TODO: compare benchmarks for division by powers of 10 vs. 2s * 5s.
@@ -622,10 +639,8 @@ public int numDigits(const BigInt big) {
 }
 
 unittest {
-    write("numDigits......");
     BigInt big = BigInt("12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678905");
     assert(numDigits(big) == 101);
-    writeln("passed");
 }
 
 /**
@@ -647,29 +662,33 @@ public int firstDigit(const BigInt big) {
 }
 
 unittest {
-    write("firstDigit.....");
     BigInt big = BigInt("82345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678905");
     assert(firstDigit(big) == 8);
-    writeln("passed");
 }
 
 /**
  * Shifts the number left by the specified number of decimal digits.
  * If n <= 0 the number is returned unchanged.
  */
-public BigInt decShl(BigInt big, const uint n) {
-    if (n <= 0) { return big; }
-    BigInt fives = 1;
-    for (int i = 0; i < n; i++) {
-        fives *= 5;
+public T decShl(T)(T num, const int n) if (is (T:BigInt) || is(T:ulong)){
+    if (n <= 0) { return num; }
+    static if (is(T:BigInt)) {
+        BigInt fives = 1;
+        for (int i = 0; i < n; i++) {
+            fives *= 5;
+        }
+        num = num << n;
+        num *= fives;
+        return num;
     }
-    big = big << n;
-    big *= fives;
-    return big;
+    else {
+        long scale = 10UL^^n;
+        num *= scale;
+        return num;
+    }
 }
 
 unittest {
-    write("decShl.........");
     BigInt m;
     int n;
     m = 12345;
@@ -685,7 +704,6 @@ unittest {
     m = 12;
     n = 4;
     assert(decShl(m,n) == 120000);
-    writeln("passed");
 }
 
 /**
@@ -709,7 +727,6 @@ public BigInt decShr(BigInt big, const uint n) {
 }
 
 unittest {
-    write("decShr.........");
     BigInt m;
     int n;
     m = 12345;
@@ -728,167 +745,26 @@ unittest {
     m = long.max;
     n = 18;
     assert(decShr(m,n) == 9);
-    writeln("passed");
-}
-
-/**
- * Returns decimal string.
- */
-string toDecString(const BigInt x){
-    string outbuff="";
-    void sink(const(char)[] s) { outbuff ~= s; }
-    x.toString(&sink, "d");
-    return outbuff;
-}
-
-unittest {
-    write("toDecString....");
-    BigInt num;
-    num = 512;
-    assert(toDecString(num) == "512");
-    writeln("passed");
-}
-
-/**
- * Returns a non-const copy of the number.
- */
-public BigInt dup(const BigInt big) {
-    const BigInt copy = big;
-    return cast(BigInt)copy;
-}
-
-unittest {
-    write("dup(BigInt)....");
-    BigInt num, copy;
-    num = 145;
-    copy = dup(num);
-    assert(num is copy);
-    writeln("passed");
 }
 
 /**
  * Returns the last digit of the number.
  */
-public int lastDigit(BigInt big) {
-    BigInt digit = big % 10;
-    if (digit < 0) digit = -digit;
-    // NOTE: this cast is necessary because "BigInt.toInt" returns a long.
-    return cast(int)digit.toInt;
-}
-
-unittest {
-    write("lastDigit......");
-    BigInt n;
-    n = 7;
-    assert(lastDigit(n) == 7);
-    n = -13;
-    assert(lastDigit(n) == 3);
-    n = 999;
-    assert(lastDigit(n) == 9);
-    n = -9999;
-    assert(lastDigit(n) == 9);
-    n = 25987;
-    assert(lastDigit(n) == 7);
-    n = -5008615;
-    assert(lastDigit(n) == 5);
-    n = 3234567893;
-    assert(lastDigit(n) == 3);
-    n = -10000000000;
-    assert(lastDigit(n) == 0);
-    n = 823456789012348;
-    assert(lastDigit(n) == 8);
-    n = 4234567890123456;
-    assert(lastDigit(n) == 6);
-    n = 623456789012345674;
-    assert(lastDigit(n) == 4);
-    n = long.max;
-    assert(lastDigit(n) == 7);
-    writeln("passed");
-}
-
-//    long integer versions
-unittest {
-    writeln("---------------------");
-}
-
-/**
- * Shifts the number right by the specified number of decimal digits.
- * If n <= 0 the number is returned unchanged. If n > 18 zero is returned.
- */
-public ulong decShr(ulong num, int n) {
-    if (n <= 0) { return num; }
-    if (n > 18) { return 0; }
-    long scale = 10UL^^n;
-    num /= scale;
-    return num;
-}
-
-unittest {
-    write("decShr.........");
-    long m;
-    int n;
-    m = 12345;
-    n = 2;
-    assert(decShr(m,n) == 123);
-    m = 12345678901234567;
-    n = 7;
-    assert(decShr(m,n) == 1234567890);
-    m = 12;
-    n = 2;
-    assert(decShr(m,n) == 0);
-    m = 12;
-    n = 4;
-    assert(decShr(m,n) == 0);
-    m = long.max;
-    n = 18;
-    assert(decShr(m,n) == 9);
-    writeln("passed");
-}
-
-// TODO: check for overflow
-/**
- * Function:   decShl
- * Returns:    the shifted number
- * Parameters: num :the number to shift.
- *             n   :the number of digits to shift.
- */
-public ulong decShl(ulong num, int n) {
-    if (n <= 0) { return num; }
-    long scale = 10UL^^n;
-    num *= scale;
-    return num;
-}
-
-unittest {
-    write("decShl.........");
-    long m;
-    int n;
-    m = 12345;
-    n = 2;
-//    writeln("decShl(m,n) = ", decShl(m,n));
-    assert(decShl(m,n) == 1234500);
-    m = 1234567890;
-    n = 7;
-    assert(decShl(m,n) == 12345678900000000);
-    m = 12;
-    n = 2;
-    assert(decShl(m,n) == 1200);
-    m = 12;
-    n = 4;
-    assert(decShl(m,n) == 120000);
-/*    m = long.max;
-    n = 18;
-    assert(decShl(m,n) == 9);*/
-    writeln("passed");
-}
-
-public int lastDigit(const long num) {
+public uint lastDigit(const long num) {
     ulong n = std.math.abs(num);
-    return cast(int)(n % 10UL);
+    return cast(uint)(n % 10UL);
+}
+
+/**
+ * Returns the last digit of the number.
+ */
+public uint lastDigit(/*const*/ BigInt big) {
+    BigInt digit = big % BigInt(10);
+    if (digit < 0) digit = -digit;
+    return cast(uint)digit.toInt;
 }
 
 unittest {
-    write("lastDigit......");
     long n;
     n = 7;
     assert(lastDigit(n) == 7);
@@ -914,10 +790,100 @@ unittest {
     assert(lastDigit(n) == 4);
     n = long.max;
     assert(lastDigit(n) == 7);
-    writeln("passed");
 }
 
-alias Tuple!(int, "first", int, "count") NumInfo;
+unittest {
+    BigInt n;
+    n = 7;
+    assert(lastDigit(n) == 7);
+    n = -13;
+    assert(lastDigit(n) == 3);
+    n = 999;
+    assert(lastDigit(n) == 9);
+    n = -9999;
+    assert(lastDigit(n) == 9);
+    n = 25987;
+    assert(lastDigit(n) == 7);
+    n = -5008615;
+    assert(lastDigit(n) == 5);
+    n = 3234567893;
+    assert(lastDigit(n) == 3);
+    n = -10000000000;
+    assert(lastDigit(n) == 0);
+    n = 823456789012348;
+    assert(lastDigit(n) == 8);
+    n = 4234567890123456;
+    assert(lastDigit(n) == 6);
+    n = 623456789012345674;
+    assert(lastDigit(n) == 4);
+    n = long.max;
+    assert(lastDigit(n) == 7);
+}
+
+/**
+ * Shifts the number right by the specified number of decimal digits.
+ * If n <= 0 the number is returned unchanged. If n > 18 zero is returned.
+ */
+public ulong decShr(ulong num, int n) {
+    if (n <= 0) { return num; }
+    if (n > 18) { return 0; }
+    long scale = 10UL^^n;
+    num /= scale;
+    return num;
+}
+
+unittest {
+    long m;
+    int n;
+    m = 12345;
+    n = 2;
+    assert(decShr(m,n) == 123);
+    m = 12345678901234567;
+    n = 7;
+    assert(decShr(m,n) == 1234567890);
+    m = 12;
+    n = 2;
+    assert(decShr(m,n) == 0);
+    m = 12;
+    n = 4;
+    assert(decShr(m,n) == 0);
+    m = long.max;
+    n = 18;
+    assert(decShr(m,n) == 9);
+}
+
+// TODO: check for overflow
+/**
+ * Function:   decShl
+ * Returns:    the shifted number
+ * Parameters: num :the number to shift.
+ *             n   :the number of digits to shift.
+ */
+/*public ulong decShl(ulong num, int n) {
+    if (n <= 0) { return num; }
+    long scale = 10UL^^n;
+    num *= scale;
+    return num;
+}*/
+
+unittest {
+    long m;
+    int n;
+    m = 12345;
+    n = 2;
+    assert(decShl(m,n) == 1234500);
+    m = 1234567890;
+    n = 7;
+    assert(decShl(m,n) == 12345678900000000);
+    m = 12;
+    n = 2;
+    assert(decShl(m,n) == 1200);
+    m = 12;
+    n = 4;
+    assert(decShl(m,n) == 120000);
+}
+
+/+alias Tuple!(int, "first", int, "count") NumInfo;
 
 public NumInfo numberInfo(const long num) {
     ulong n = std.math.abs(num);
@@ -965,6 +931,7 @@ unittest {
     assert(firstDigit(n) == 9);
     writeln("passed");
 }
++/
 
 public int firstDigit(const long num) {
     ulong n = std.math.abs(num);
@@ -977,7 +944,6 @@ public int firstDigit(const long num) {
 }
 
 unittest {
-    write("firstDigit.....");
     long n;
     n = 7;
     assert(firstDigit(n) == 7);
@@ -1003,7 +969,6 @@ unittest {
     assert(firstDigit(n) == 6);
     n = long.max;
     assert(firstDigit(n) == 9);
-    writeln("passed");
 }
 
 private ulong p10(const uint n) {
@@ -1027,7 +992,6 @@ public int numDigits(const long num) {
 }
 
 unittest {
-    write("numDigits......");
     long n;
     n = 7;
     assert(numDigits(n) ==  1);
@@ -1053,7 +1017,6 @@ unittest {
     assert(numDigits(n) == 18);
     n = long.max;
     assert(numDigits(n) == 19);
-    writeln("passed");
 }
 
 /*
@@ -1072,6 +1035,4 @@ public long decShl(ref long num, uint n) {
     return num;
 }
 */
-
-
 
