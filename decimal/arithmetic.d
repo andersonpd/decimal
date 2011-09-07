@@ -53,7 +53,6 @@ import std.string;
 
 private static DecimalContext testContextA = DecimalContext().dup;
 
-// READY: radix
 /**
  * Returns the radix of this representation (10).
  */
@@ -65,28 +64,19 @@ unittest {
     assert(radix() == 10);
 }
 
-// READY: classify
 /**
  * Returns a string indicating the class and sign of the number.
  * Classes are: sNaN, NaN, Infinity, Subnormal, Zero, Normal.
  */
 public string classify(T)(const T num) if (isDecimal!T) {
-    if (num.isSignaling()) {
-        return "sNaN";
+    if (num.isFinite) {
+        if (num.isZero)      { return num.sign ? "-Zero" : "+Zero"; }
+        if (num.isNormal)    { return num.sign ? "-Normal" : "+Normal"; }
+        if (num.isSubnormal) { return num.sign ? "-Subnormal" : "+Subnormal"; }
     }
-    if (num.isQuiet) {
-        return "NaN";
-    }
-    if (num.isInfinite) {
-        return num.sign ? "-Infinity" : "+Infinity";
-    }
-    if (num.isSubnormal) {
-        return num.sign ? "-Subnormal" : "+Subnormal";
-    }
-    if (num.isZero) {
-        return num.sign ? "-Zero" : "+Zero";
-    }
-    return num.sign ? "-Normal" : "+Normal";
+    if (num.isInfinite)  { return num.sign ? "-Infinity" : "+Infinity"; }
+    if (num.isSignaling) { return "sNaN"; }
+    return "NaN";
 }
 
 unittest {
@@ -109,7 +99,6 @@ unittest {
 // copy functions
 //--------------------------------
 
-// READY: copy
 /**
  * Returns a copy of the operand.
  * The copy is unaffected by context; no flags are changed.
@@ -118,19 +107,16 @@ public T copy(T)(const T num) if (isDecimal!T) {
     return num.dup;
 }
 
-// TODO: these should actually be compare-total assertions
-// This is probably true of other unit tests as well
 unittest {
-    Decimal num, expd;
+    Decimal num, expect;
     num  = Decimal("2.1");
-    expd = Decimal("2.1");
-    assert(copy(num) == expd);
+    expect = Decimal("2.1");
+    assert(compareTotal(copy(num),expect) == 0);
     num  = Decimal("-1.00");
-    expd = Decimal("-1.00");
-    assert(copy(num) == expd);
+    expect = Decimal("-1.00");
+    assert(compareTotal(copy(num),expect) == 0);
 }
 
-// READY: copyAbs
 /**
  * Returns a copy of the operand with a positive sign.
  * The copy is unaffected by context; no flags are changed.
@@ -141,16 +127,14 @@ public T copyAbs(T)(const T num) if (isDecimal!T) {
     return copy;
 }
 
-// TODO: these should actually be compare-total assertions
-// This is probably true of other unit tests as well
 unittest {
     Decimal num, expect;
     num  = 2.1;
     expect = 2.1;
-    assert(copyAbs!Decimal(num) == expect);
+    assert(compareTotal(copyAbs(num),expect) == 0);
     num  = Decimal("-1.00");
     expect = Decimal("1.00");
-    assert(copyAbs!Decimal(num) == expect);
+    assert(compareTotal(copyAbs(num),expect) == 0);
 }
 
 /**
@@ -163,12 +147,10 @@ public T copyNegate(T)(const T num) if (isDecimal!T) {
     return copy;
 }
 
-// TODO: these should actually be compare-total assertions
-// This is probably true of other unit tests as well
 unittest {
     Decimal num  = "101.5";
     Decimal expect = "-101.5";
-    assert(copyNegate!Decimal(num) == expect);
+    assert(compareTotal(copyNegate(num),expect) == 0);
 }
 
 /**
@@ -181,17 +163,15 @@ public T copySign(T)(const T op1, const T op2) if (isDecimal!T) {
     return copy;
 }
 
-// TODO: these should actually be compare-total assertions
-// This is probably true of other unit tests as well
 unittest {
     Decimal num1, num2, expect;
     num1 = 1.50;
     num2 = 7.33;
     expect = 1.50;
-    assert(copySign(num1, num2) == expect);
+    assert(compareTotal(copySign(num1, num2),expect) == 0);
     num2 = -7.33;
     expect = -1.50;
-    assert(copySign(num1, num2) == expect);
+    assert(compareTotal(copySign(num1, num2),expect) == 0);
 }
 
 // UNREADY: quantize. Logic.

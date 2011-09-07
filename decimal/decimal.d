@@ -180,11 +180,6 @@ public:
         this(sign, BigInt(coefficient), exponent);
     }
 
-    unittest {
-        write("this(sign, long, int..");
-        writeln("test missing");
-    }
-
     // UNREADY: this(const long, const int). Flags. Unit Tests.
     /**
      * Constructs a number from an long coefficient
@@ -195,8 +190,6 @@ public:
     }
 
     unittest {
-        write("this(long, int..");
-        writeln("test missing");
     }
 
     // UNREADY: this(const long, const int). Flags. Unit Tests.
@@ -208,11 +201,6 @@ public:
         this(BigInt(coefficient), 0);
     }
 
-    unittest {
-        write("this(long, int..");
-        writeln("test missing");
-    }
-
     // string constructors:
 
     // UNREADY: this(const string). Flags. Unit Tests.
@@ -222,8 +210,26 @@ public:
     };
 
     unittest {
-        write("this(string)...");
-        writeln("test missing");
+        Decimal num;
+        string str;
+        num = Decimal(1, 12334, -5);
+        str = "-0.12334";
+        assert(num.toString == str);
+        num = Decimal(-23456, 10);
+        str = "-2.3456E+14";
+        assert(num.toString == str);
+        num = Decimal(234568901234);
+        str = "234568901234";
+        assert(num.toString == str);
+        num = Decimal("123.457E+29");
+        str = "1.23457E+31";
+        assert(num.toString == str);
+        num = std.math.E;
+        str = "2.71828183";
+        assert(num.toString == str);
+        num = std.math.LOG2;
+        Decimal copy = Decimal(num);
+        assert(compareTotal!Decimal(num, copy) == 0);
     }
 
     // floating point constructors:
@@ -237,21 +243,11 @@ public:
         this(str);
     }
 
-    unittest {
-        write("this(real)...");
-        writeln("test missing");
-    }
-
     // UNREADY: this(Decimal). Flags. Unit Tests.
     // copy constructor
     this(const Decimal that) {
         this = that;
     };
-
-    unittest {
-        write("this(Decimal)...");
-        writeln("test missing");
-    }
 
     // UNREADY: dup. Flags.
     /**
@@ -262,24 +258,10 @@ public:
     }
 
     unittest {
-        write("dup...");
         Decimal num = Decimal(std.math.PI);
         Decimal copy = num.dup;
         assert(num == copy);
-        writeln("passed");
     }
-
-unittest {
-    Decimal f = Decimal(1234L, 567);
-    f = Decimal(1234, 567);
-    assert(f.toString() == "1.234E+570");
-    f = Decimal(1234L);
-    assert(f.toString() == "1234");
-    f = Decimal(123400L);
-    assert(f.toString() == "123400");
-    f = Decimal(1234L);
-    assert(f.toString() == "1234");
-}
 
 //--------------------------------
 // assignment
@@ -287,87 +269,82 @@ unittest {
 
     // UNREADY: opAssign(T: Decimal)(const Decimal). Flags. Unit Tests.
     /// Assigns a Decimal (makes a copy)
-    void opAssign/*(T:Decimal)*/(const Decimal that) {
+    void opAssign(T:Decimal)(const T that) {
         this.signed = that.signed;
-        this.sval = that.sval;
+        this.sval   = that.sval;
         this.digits = that.digits;
-        this.expo = that.expo;
-        this.mant = cast(BigInt) that.mant;
-    }
-
-    unittest {
-        write("opAssign(Decimal)...");
-        writeln("test missing");
+        this.expo   = that.expo;
+        this.mant   = cast(BigInt) that.mant;
     }
 
     // UNREADY: opAssign(T)(const T). Flags.
     ///    Assigns a floating point value.
-    void opAssign/*(T)*/(const long that) {
+    void opAssign(T:BigInt)(const T that) {
         this = Decimal(that);
     }
 
-    unittest {
-        write("opAssign(long)...");
-        writeln("test missing");
+    // UNREADY: opAssign(T)(const T). Flags.
+    ///    Assigns a floating point value.
+    void opAssign(T:long)(const T that) {
+        this = Decimal(that);
     }
 
     // UNREADY: opAssign(T)(const T). Flags. Unit Tests.
     ///    Assigns a floating point value.
-    void opAssign/*(T)*/(const real that) {
+    void opAssign(T:real)(const T that) {
         this = Decimal(that);
     }
 
+    void opAssign(T)(const T that) if (isDecimal!T) {
+        this = decimal.conv.toDecimal!T(that);
+    }
+
     unittest {
-        write("opAssign(real)...");
-        writeln("test missing");
+        import decimal.dec32;
+
+        Decimal num;
+        string str;
+        num = Decimal(1, 245, 8);
+        str = "-2.45E+10";
+        assert(num.toString == str);
+        num = long.max;
+        str = "9223372036854775807";
+        assert(num.toString == str);
+        num = real.max;
+        str = "1.1897315E+4932";
+        assert(num.toString == str);
+        num = Dec32.max;
+        str = "9.999999E+96";
+        assert(num.toString == str);
+        num = BigInt("123456098420234978023480");
+        str = "123456098420234978023480";
+        assert(num.toString == str);
     }
 
 //--------------------------------
 // string representations
 //--------------------------------
 
-/**
- * Converts a number to an abstract string representation.
- */
-public const string toAbstract() {
-    return decimal.conv.toAbstract!Decimal(this);
-/*    switch (sval) {
-        case SV.SNAN:
-            if (payload)
-                return format("[%d,%s,%d]", signed ? 1 : 0, "sNaN", payload);
-            else
-                return format("[%d,%s%]", signed ? 1 : 0, "sNaN");
-        case SV.QNAN:
-            if (payload)
-                return format("[%d,%s,%d]", signed ? 1 : 0, "qNaN", payload);
-            else
-                return format("[%d,%s%]", signed ? 1 : 0, "qNaN");
-        case SV.INF:
-            return format("[%d,%s]", signed ? 1 : 0, "inf");
-        default:
-            return format("[%d,%s,%d]",
-                signed ? 1 : 0, decimal.conv.to!string(mant), expo);
-    }*/
-}
+    /**
+     * Converts a number to an abstract string representation.
+     */
+    public const string toAbstract() {
+        return decimal.conv.toAbstract!Decimal(this);
+    }
 
 unittest {
-    write("toAbstract...");
     Decimal num;
+    string str;
     num = Decimal("-inf");
-writeln("num.toAbstract = ", num.toAbstract);
+    str = "[1,inf]";
+    assert(num.toAbstract == str);
     num = Decimal("nan");
-writeln("num.toAbstract = ", num.toAbstract);
+    str = "[0,qNaN]";
+    assert(num.toAbstract == str);
     num = Decimal("snan1234");
-writeln("num.toAbstract = ", num.toAbstract);
-    writeln("test missing");
+    str = "[0,sNaN1234]";
+    assert(num.toAbstract == str);
 }
-
-/**
- * Converts a number to its string representation.
- */
-const string toString() {
-    return toSciString();
-};    // end toString()
 
 // READY: toSciString.
 /**
@@ -375,7 +352,7 @@ const string toString() {
  */
 const string toSciString() {
     return decimal.conv.toSciString!Decimal(this);
-};    // end toSciString()
+};
 
 // READY: toEngString.
 /**
@@ -383,12 +360,21 @@ const string toSciString() {
  */
 const string toEngString() {
    return decimal.conv.toEngString!Decimal(this);
-}; // end toEngString()
+};
 
+/**
+ * Converts a number to its string representation.
+ */
+const string toString() {
+    return toSciString();
+};
 
 unittest {
-    write("toString...");
-    writeln("test missing");
+    Decimal num;
+    string str;
+    num = Decimal(200000, 71);
+    str = "2.00000E+76";
+    assert(num.toString == str);
 }
 
 //--------------------------------
@@ -626,11 +612,6 @@ unittest {
         return  true;
     }
 
-    unittest {
-        write("isCanonical...");
-        writeln("test missing");
-    }
-
     /**
      * Returns the canonical form of the number.
      */
@@ -641,6 +622,8 @@ unittest {
     unittest {
         Decimal num = Decimal("2.50");
         assert(num.isCanonical);
+        Decimal copy = num.canonical;
+        assert(compareTotal(num, copy) == 0);
     }
 
     /**
@@ -763,8 +746,13 @@ unittest {
     }
 
     unittest {
-        write("isSpecial....");
-        writeln("test missing");
+        Decimal num;
+        num = infinity(true);
+        assert(num.isSpecial);
+        num = snan(1234);
+        assert(num.isSpecial);
+        num = 12378.34;
+        assert(!num.isSpecial);
     }
 
     /**
@@ -853,8 +841,17 @@ unittest {
      }
 
     unittest {
-        write("isIntegral...");
-        writeln("test missing");
+        Decimal num;
+        num = 12345;
+        assert(num.isIntegral);
+        num = BigInt("123456098420234978023480");
+        assert(num.isIntegral);
+        num = 1.5;
+        assert(!num.isIntegral);
+        num = 1.5E+1;
+        assert(num.isIntegral);
+        num = 0;
+        assert(num.isIntegral);
     }
 
 //--------------------------------

@@ -1337,7 +1337,126 @@ unittest {
     writeln("---------------------");
     writeln("Decimal.......testing");
     writeln("---------------------");
-/*    context.precision = 5;*/
+}
+
+unittest {
+    write("this().......");
+    Decimal num;
+    string str;
+    num = Decimal(1, 12334, -5);
+    str = "-0.12334";
+    assert(num.toString == str);
+    num = Decimal(-23456, 10);
+    str = "-2.3456E+14";
+    assert(num.toString == str);
+    num = Decimal(234568901234);
+    str = "234568901234";
+    assert(num.toString == str);
+    num = Decimal("123.457E+29");
+    str = "1.23457E+31";
+    assert(num.toString == str);
+    num = std.math.E;
+    str = "2.71828183";
+    assert(num.toString == str);
+    num = std.math.LOG2;
+    Decimal copy = Decimal(num);
+    assert(compareTotal!Decimal(num, copy) == 0);
+    num = Decimal(SV.INF, true);
+    assert(num.toSciString == "-Infinity");
+    assert(num.toAbstract() == "[1,inf]");
+    num = Decimal(true, BigInt(7254), 94);
+    assert(num.toString == "-7.254E+97");
+    num = Decimal(BigInt(7254), 94);
+    assert(num.toString == "7.254E+97");
+    num = Decimal(BigInt(-7254));
+    assert(num.toString == "-7254");
+    num = Decimal(1234L, 567);
+    assert(num.toString() == "1.234E+570");
+    num = Decimal(1234, 567);
+    assert(num.toString() == "1.234E+570");
+    num = Decimal(1234L);
+    assert(num.toString() == "1234");
+    num = Decimal(123400L);
+    assert(num.toString() == "123400");
+    num = Decimal(1234L);
+    assert(num.toString() == "1234");
+    writeln("passed");
+}
+
+unittest {
+    write("dup..........");
+    Decimal num = Decimal(std.math.PI);
+    Decimal copy = num.dup;
+    assert(num == copy);
+    writeln("passed");
+}
+
+unittest {
+    write("toString.....");
+    Decimal f = Decimal(1234L, 567);
+    f = Decimal(1234, 567);
+    assert(f.toString() == "1.234E+570");
+    f = Decimal(1234L);
+    assert(f.toString() == "1234");
+    f = Decimal(123400L);
+    assert(f.toString() == "123400");
+    f = Decimal(1234L);
+    assert(f.toString() == "1234");
+    writeln("passed");
+}
+
+unittest {
+    write("opAssign.....");
+    Decimal num;
+    string str;
+    num = Decimal(1, 245, 8);
+    str = "-2.45E+10";
+    assert(num.toString == str);
+    num = long.max;
+    str = "9223372036854775807";
+    assert(num.toString == str);
+    num = real.max;
+    str = "1.1897315E+4932";
+    assert(num.toString == str);
+    writeln("passed");
+    num = Dec32.max;
+    str = "9.999999E+96";
+    assert(num.toString == str);
+}
+
+unittest {
+    write("toAbstract...");
+    Decimal num;
+    string str;
+    num = Decimal("-inf");
+    str = "[1,inf]";
+    assert(num.toAbstract == str);
+    num = Decimal("nan");
+    str = "[0,qNaN]";
+    assert(num.toAbstract == str);
+    num = Decimal("snan1234");
+    str = "[0,sNaN1234]";
+    assert(num.toAbstract == str);
+    writeln("passed");
+}
+
+unittest {
+    write("toString.....");
+    Decimal num;
+    string str;
+    num = Decimal(200000, 71);
+    str = "2.00000E+76";
+    assert(num.toString == str);
+    writeln("passed");
+}
+
+unittest {
+    write("canonical....");
+    Decimal num = Decimal("2.50");
+    assert(num.isCanonical);
+    Decimal copy = num.canonical;
+    assert(compareTotal(num, copy) == 0);
+    writeln("passed");
 }
 
 unittest {
@@ -1351,52 +1470,6 @@ unittest {
     num = Decimal.NEG_ZERO;
     assert(num.toString == "-0");
 	writeln("passed");
-}
-
-unittest {
-    write("this(bool, SV, payload)...");
-    Decimal num = Decimal(SV.INF, true);
-    assert(num.toSciString == "-Infinity");
-    assert(num.toAbstract() == "[1,inf]");
-    writeln("passed");
-}
-
-unittest {
-    write("this(bool, BigInt, int)...");
-    Decimal num;
-    num = Decimal(true, BigInt(7254), 94);
-    assert(num.toString == "-7.254E+97");
-    writeln("passed");
-}
-
-unittest {
-    write("this(BigInt, int)...");
-    Decimal num;
-    num = Decimal(BigInt(7254), 94);
-    assert(num.toString == "7.254E+97");
-    writeln("passed");
-}
-
-    unittest {
-        write("this(BigInt)...");
-        Decimal num;
-        num = Decimal(BigInt(-7254));
-        assert(num.toString == "-7254");
-        writeln("passed");
-    }
-
-unittest {
-    write("construction.");
-    Decimal f = Decimal(1234L, 567);
-    f = Decimal(1234, 567);
-    assert(f.toString() == "1.234E+570");
-    f = Decimal(1234L);
-    assert(f.toString() == "1234");
-    f = Decimal(123400L);
-    assert(f.toString() == "123400");
-    f = Decimal(1234L);
-    assert(f.toString() == "1234");
-    writeln("passed");
 }
 
 unittest {
@@ -1554,8 +1627,36 @@ unittest {
 }
 
 unittest {
+    write("isSpecial....");
+    Decimal num;
+    num = Decimal.infinity(true);
+    assert(num.isSpecial);
+    num = Decimal.snan(1234);
+    assert(num.isSpecial);
+    num = 12378.34;
+    assert(!num.isSpecial);
+    writeln("passed");
+}
+
+unittest {
+    write("isIntegral...");
+    Decimal num;
+    num = 12345;
+    assert(num.isIntegral);
+    num = BigInt("123456098420234978023480");
+    assert(num.isIntegral);
+    num = 1.5;
+    assert(!num.isIntegral);
+    num = 1.5E+1;
+    assert(num.isIntegral);
+    num = 0;
+    assert(num.isIntegral);
+    writeln("passed");
+}
+
+unittest {
     writeln("-------------------");
-    writeln("Decimal......tested");
+    writeln("Decimal....finished");
     writeln("-------------------");
 }
 
