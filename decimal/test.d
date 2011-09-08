@@ -1655,6 +1655,104 @@ unittest {
 }
 
 unittest {
+    write("opCmp........");
+    Decimal num1, num2;
+    num1 = 105;
+    num2 = 10.543;
+    assert(num1 > num2);
+    assert(num2 < num1);
+    num1 = 10.543;
+    assert(num1 >= num2);
+    assert(num2 <= num1);
+    writeln("passed");
+}
+
+unittest {
+    write("opEquals.....");
+    Decimal num1, num2;
+    num1 = 105;
+    num2 = 10.543;
+    assert(num1 != num2);
+    num1 = 10.543;
+    assert(num1 == num2);
+    writeln("passed");
+}
+
+unittest {
+    write("opUnary......");
+    Decimal num, actual, expect;
+    num = 134;
+    expect = num;
+    actual = +num;
+    assert(actual == expect);
+    num = 134.02;
+    expect = -134.02;
+    actual = -num;
+    assert(actual == expect);
+    num = 134;
+    expect = 135;
+    actual = ++num;
+    assert(actual == expect);
+    num = 1.00E8;
+    expect = num;
+// TODO:   actual = --num; // fails!
+//        actual = num--;
+//        assert(actual == expect);
+    num = Decimal(9999999, 90);
+    expect = num;
+    actual = num++;
+    assert(actual == expect);
+    num = 12.35;
+    expect = 11.35;
+    actual = --num;
+    assert(actual == expect);
+    writeln("passed");
+}
+
+unittest {
+    write("opBinary.....");
+    Decimal op1, op2, actual, expect;
+    op1 = 4;
+    op2 = 8;
+    actual = op1 + op2;
+    expect = 12;
+    assert(expect == actual);
+    actual = op1 - op2;
+    expect = -4;
+    assert(expect == actual);
+    actual = op1 * op2;
+    expect = 32;
+    assert(expect == actual);
+    op1 = 5;
+    op2 = 2;
+    actual = op1 / op2;
+    expect = 2.5;
+    assert(expect == actual);
+    op1 = 10;
+    op2 = 3;
+    actual = op1 % op2;
+    expect = 1;
+    assert(expect == actual);
+    writeln("passed");
+}
+
+unittest {
+    write("opOpAssign...");
+    Decimal op1, op2, actual, expect;
+    op1 = 23.56;
+    op2 = -2.07;
+    op1 += op2;
+    expect = 21.49;
+    actual = op1;
+    assert(expect == actual);
+    op1 *= op2;
+    expect = -44.4843;
+    actual = op1;
+    assert(expect == actual);
+    writeln("passed");
+}
+
+unittest {
     writeln("-------------------");
     writeln("Decimal....finished");
     writeln("-------------------");

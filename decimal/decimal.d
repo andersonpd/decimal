@@ -866,10 +866,16 @@ unittest {
         return compare!Decimal(this, that, bigContext);
     }
 
-unittest {
-    write("opCmp...");
-    writeln("test missing");
-}
+    unittest {
+        Decimal num1, num2;
+        num1 = 105;
+        num2 = 10.543;
+        assert(num1 > num2);
+        assert(num2 < num1);
+        num1 = 10.543;
+        assert(num1 >= num2);
+        assert(num2 <= num1);
+    }
 
     /**
      * Returns true if this number is equal to the specified Decimal.
@@ -883,252 +889,133 @@ unittest {
         return equals!Decimal(this, that, bigContext);
     }
 
-unittest {
-    write("opEquals...");
-    writeln("test missing");
-}
+    unittest {
+        Decimal num1, num2;
+        num1 = 105;
+        num2 = 10.543;
+        assert(num1 != num2);
+        num1 = 10.543;
+        assert(num1 == num2);
+    }
 
 //--------------------------------
 // unary arithmetic operators
 //--------------------------------
 
-    /**
-     * unary minus -- returns a copy with the opposite sign.
-     * This operation may set flags -- equivalent to
-     * subtract('0', b);
-     */
-    const Decimal opNeg() {
-        return minus!Decimal(this, bigContext);
+    const Decimal opUnary(string op)()
+    {
+        static if (op == "+") {
+            return plus!Decimal(this, bigContext);
+        }
+        else static if (op == "-") {
+            return minus!Decimal(this, bigContext);
+        }
+        else static if (op == "++") {
+            return add!Decimal(this, Decimal(1), bigContext);
+        }
+        else static if (op == "--") {
+            return subtract!Decimal(this, Decimal(1), bigContext);
+        }
     }
 
     unittest {
-        write("opUnary...");
-        writeln("test missing");
-    }
-
-    /**
-     * unary plus -- returns a copy.
-     * This operation may set flags -- equivalent to
-     * add('0', a);
-     */
-    const Decimal opPos() {
-        return plus!Decimal(this, bigContext);
-    }
-
-    unittest {
-        write("opUnary...");
-        writeln("test missing");
-    }
-
-    /**
-     * Returns this + 1.
-     */
-    Decimal opPostInc() {
-        this += 1;
-        return this;
-    }
-
-    unittest {
-        write("opUnary...");
-        writeln("test missing");
-    }
-
-    /**
-     * Returns this - 1.
-     */
-    Decimal opPostDec() {
-        this -= 1;
-        return this;
-    }
-
-    unittest {
-        write("opUnary...");
-        writeln("test missing");
+        Decimal num, actual, expect;
+        num = 134;
+        expect = num;
+        actual = +num;
+        assert(actual == expect);
+        num = 134.02;
+        expect = -134.02;
+        actual = -num;
+        assert(actual == expect);
+        num = 134;
+        expect = 135;
+        actual = ++num;
+        assert(actual == expect);
+        num = 1.00E8;
+        expect = num;
+// TODO:   actual = --num; // fails!
+//        actual = num--;
+//        assert(actual == expect);
+        num = Decimal(9999999, 90);
+        expect = num;
+        actual = num++;
+        assert(actual == expect);
+        num = 12.35;
+        expect = 11.35;
+        actual = --num;
+        assert(actual == expect);
     }
 
 //--------------------------------
 //  binary arithmetic operators
 //--------------------------------
 
-    //TODO: these should be converted to opBinary, etc.
-
-    /**
-     * If the operand is a Decimal, act directly on it.
-     */
-/*    const Decimal opBinary(string op, T:Decimal)(const T operand) {
-        return opBinary!op(this, operand);
-    }*/
-
-    // TODO: is there some sort of compile time check we can do here?
-    // i.e., if T convertible to Decimal?
-    /**
-     * If the operand is a type that can be converted to Decimal,
-     * make the conversion and call the Decimal version.
-     */
-/*    const Decimal opBinary(string op, T)(const T operand) {
-        return opBinary!op(this, Decimal(operand));
-    }*/
-
-    /**
-     * Adds a number to this and returns the result.
-     */
-/*    const Decimal opBinary(string op)(const Decimal addend) if (op == "+") {
-        return add(this, addend);
-    }*/
-
-    /// Adds a Decimal to this and returns the Decimal result
-    const Decimal opAdd(T:Decimal)(const T addend) {
-        return add!Decimal(this, addend, bigContext);
+    const Decimal opBinary(string op)(const Decimal rhs)
+    {
+        static if (op == "+") {
+            return add!Decimal(this, rhs, bigContext);
+        }
+        else static if (op == "-") {
+            return subtract!Decimal(this, rhs, bigContext);
+        }
+        else static if (op == "*") {
+            return multiply!Decimal(this, rhs, bigContext);
+        }
+        else static if (op == "/") {
+            return divide!Decimal(this, rhs, bigContext);
+        }
+        else static if (op == "%") {
+            return remainder!Decimal(this, rhs, bigContext);
+        }
     }
 
     unittest {
-        write("opBinary...");
-        writeln("test missing");
+        Decimal op1, op2, actual, expect;
+        op1 = 4;
+        op2 = 8;
+        actual = op1 + op2;
+        expect = 12;
+        assert(expect == actual);
+        actual = op1 - op2;
+        expect = -4;
+        assert(expect == actual);
+        actual = op1 * op2;
+        expect = 32;
+        assert(expect == actual);
+        op1 = 5;
+        op2 = 2;
+        actual = op1 / op2;
+        expect = 2.5;
+        assert(expect == actual);
+        op1 = 10;
+        op2 = 3;
+        actual = op1 % op2;
+        expect = 1;
+        assert(expect == actual);
     }
 
-    // Adds a number to this and returns the result.
-    const Decimal opAdd(T)(const T addend) {
-        return add!Decimal(this, Decimal(BigInt(addend)), bigContext);
-    }
+//-----------------------------
+// operator assignment
+//-----------------------------
 
-    unittest {
-        write("opBinary...");
-        writeln("test missing");
-    }
-
-    const Decimal opSub(T:Decimal)(const T subtrahend) {
-        return subtract!Decimal(this, subtrahend, bigContext);
-    }
-
-    unittest {
-        write("opBinary...");
-        writeln("test missing");
-    }
-
-    const Decimal opSub(T)(const T subtrahend) {
-        return subtract!Decimal(this, Decimal(BigInt(subtrahend)), bigContext);
-    }
-
-    unittest {
-        write("opBinary...");
-        writeln("test missing");
-    }
-
-    const Decimal opMul(T:Decimal)(const T multiplier) {
-        return multiply!Decimal(this, multiplier, bigContext);
-    }
-
-    unittest {
-        write("opBinary...");
-        writeln("test missing");
-    }
-
-    const Decimal opMul(T:long)(const T multiplier) {
-        return multiply!Decimal(this, Decimal(BigInt(multiplier)), bigContext);
-    }
-
-    unittest {
-        write("opBinary...");
-        writeln("test missing");
-    }
-
-    const Decimal opDiv(T:Decimal)(const T divisor) {
-        return divide!Decimal(this, divisor, bigContext);
-    }
-
-    unittest {
-        write("opBinary...");
-        writeln("test missing");
-    }
-
-    const Decimal opDiv(T)(const T divisor) {
-        return divide!Decimal(this, Decimal(divisor), bigContext);
-    }
-
-    unittest {
-        write("opBinary...");
-        writeln("test missing");
-    }
-
-    const Decimal opMod(T:Decimal)(const T divisor) {
-        return remainder!Decimal(this, divisor, bigContext);
-    }
-
-    unittest {
-        write("opBinary...");
-        writeln("test missing");
-    }
-
-    const Decimal opMod(T)(const T divisor) {
-        return remainder(this, Decimal(divisor), bigContext);
-    }
-
-    unittest {
-        write("opBinary...");
-        writeln("test missing");
-    }
-
-//--------------------------------
-//  arithmetic assignment operators
-//--------------------------------
-
-    Decimal opAddAssign(T)(const T addend) {
-        this = this + addend;
+    ref Decimal opOpAssign(string op) (Decimal rhs) {
+        this = opBinary!op(rhs);
         return this;
     }
 
     unittest {
-        write("opOpAssign...");
-        writeln("test missing");
-    }
-
-/*    ref Decimal opOpAssign(string op, T)(const T operand) {
-        return opBinary!op(this, operand);
-    }*/
-
-    unittest {
-        write("opOpAssign...");
-        writeln("test missing");
-    }
-
-    Decimal opSubAssign(T)(const T subtrahend) {
-        this = this - subtrahend;
-        return this;
-    }
-
-    unittest {
-        write("opOpAssign...");
-        writeln("test missing");
-    }
-
-    Decimal opMulAssign(T)(const T factor) {
-        this = this * factor;
-        return this;
-    }
-
-    unittest {
-        write("opOpAssign...");
-        writeln("test missing");
-    }
-
-    Decimal opDivAssign(T)(const T divisor) {
-        this = this / divisor;
-        return this;
-    }
-
-    unittest {
-        write("opOpAssign...");
-        writeln("test missing");
-    }
-
-    Decimal opModAssign(T)(const T divisor) {
-        this = this % divisor;
-        return this;
-    }
-
-    unittest {
-        write("opOpAssign...");
-        writeln("test missing");
+        Decimal op1, op2, actual, expect;
+        op1 = 23.56;
+        op2 = -2.07;
+        op1 += op2;
+        expect = 21.49;
+        actual = op1;
+        assert(expect == actual);
+        op1 *= op2;
+        expect = -44.4843;
+        actual = op1;
+        assert(expect == actual);
     }
 
 //-----------------------------
