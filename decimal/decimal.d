@@ -246,7 +246,11 @@ public:
     // UNREADY: this(Decimal). Flags. Unit Tests.
     // copy constructor
     this(const Decimal that) {
-        this = that;
+        this.signed = that.signed;
+        this.sval   = that.sval;
+        this.digits = that.digits;
+        this.expo   = that.expo;
+        this.mant   = cast(BigInt) that.mant;
     };
 
     // UNREADY: dup. Flags.

@@ -420,7 +420,10 @@ unittest {
     num = Decimal("1.200");
     str = "1.2";
     red = reduce(num, testContextA);
-    assert(red.toString() == str);
+writeln("str = ", str);
+writeln("red = ", red);
+
+    assert(red.toString == str);
 }
 
 // READY: abs

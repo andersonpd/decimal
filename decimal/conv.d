@@ -52,7 +52,7 @@ T to(T:string)(const long n) {
 T to(T:string)(const BigInt num) {
     string outbuff="";
     void sink(const(char)[] s) { outbuff ~= s; }
-    num.toString(&sink, "d");
+    num.toString(&sink, "%d");
     return outbuff;
 }
 
@@ -173,6 +173,8 @@ public string toEngString(T)(const T num) if (isDecimal!T) {
 public string toStdString(T)
         (const T num, bool engineering = false) if (isDecimal!T) {
 
+//writeln("num = ", num);
+//writeln("T = ", num.typeof);
     auto mant = num.coefficient;
     int  expo = num.exponent;
     bool signed = num.isSigned;
@@ -199,6 +201,7 @@ public string toStdString(T)
 
     // string representation of finite numbers
     string temp = to!string(mant);
+//writeln("temp = ", temp);
     char[] cstr = temp.dup;
     int clen = cstr.length;
     int adjx = expo + clen - 1;

@@ -1260,7 +1260,8 @@ public:
 // binary operators
 //--------------------------------
 
-    const Dec32 opBinary(string op)(const Dec32 rhs)
+    const T opBinary(string op, T:Dec32)(const T rhs)
+//    const Dec32 opBinary(string op)(const Dec32 rhs)
     {
         static if (op == "+") {
             return add!Dec32(this, rhs, context32);
@@ -1303,6 +1304,18 @@ public:
         expect = 1;
         assert(expect == actual);
     }
+
+    /**
+     * Detect whether T is a decimal type.
+     */
+    public template isPromotable(T) {
+        enum bool isPromotable = is(T:ulong) || is(T:real);
+    }
+
+/*    const T opBinary(string op, T)(const T rhs) if(isPromotable!T)
+    {
+    return rhs;
+    }*/
 
 //-----------------------------
 // operator assignment
