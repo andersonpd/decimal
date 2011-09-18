@@ -1543,7 +1543,7 @@ private T reduceToIdeal(T)(const T num, int ideal,
  * Sets the invalid-operation flag and
  * returns a quiet NaN.
  */
-private T flagInvalid(T)(DecimalContext context, uint payload = 0)
+private T flagInvalid(T)(DecimalContext context, ushort payload = 0)
         if (isDecimal!T) {
     context.setFlag(INVALID_OPERATION);
     T result = T.nan;

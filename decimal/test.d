@@ -141,6 +141,9 @@ unittest {
     assert(toSciString!Dec32(num) == "1.23E+5");
     assert(num.toAbstract() == "[0,123,3]");
     num = Dec32(123, -1);
+
+
+
     assert(toSciString!Dec32(num) == "12.3");
     assert(num.toAbstract() == "[0,123,-1]");
     num = Dec32(123, -5);

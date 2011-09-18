@@ -22,6 +22,7 @@ import decimal.arithmetic: copyNegate, equals;
 import decimal.context;
 import decimal.conv;
 import decimal.dec32;
+import decimal.dec64;
 import decimal.decimal;
 import std.array: insertInPlace;
 import std.bigint;
@@ -408,7 +409,8 @@ exnum = 1.2345E+15*/
 /**
  * Increments the coefficient by 1. If this causes an overflow, divides by 10.
  */
-private void increment(ref Decimal num, const DecimalContext context) {
+private void increment(T:Decimal)(ref T num, const DecimalContext context) {
+//private void increment(ref Decimal num, const DecimalContext context) {
     num.coefficient = num.coefficient + 1;
     // check if the num was all nines --
     // did the coefficient roll over to 1000...?
@@ -578,7 +580,7 @@ unittest {
  * Re-calculates the number of digits -- the increment may have caused
  * an increase in the number of digits, i.e., input number was all 9s.
  */
-private void increment(ref Dec32 num, const DecimalContext context) {
+private void increment(T)(ref T num, const DecimalContext context) if (isSmallDecimal!T) {
     num.coefficient = num.coefficient + 1;
     num.digits = numDigits(num.coefficient);
 }
@@ -588,7 +590,8 @@ private void increment(ref Dec32 num, const DecimalContext context) {
  * Re-calculates the number of digits -- the increment may have caused
  * an increase in the number of digits, i.e., input number was all 9s.
  */
-private void increment(ref ulong num, ref uint digits) {
+private void increment(T:ulong)(ref T num, ref uint digits) { //const DecimalContext context) if (isSmallDecimal!T) {
+//private void incrementLong(ref ulong num, ref uint digits) {
     num++;
     digits = numDigits(num);
 }

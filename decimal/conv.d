@@ -1,4 +1,4 @@
-﻿// Written in the D programming language
+// Written in the D programming language
 
 /**
  *
@@ -19,6 +19,7 @@
 module decimal.conv;
 
 import decimal.dec32;
+import decimal.dec64;
 import decimal.decimal;
 import std.array: insertInPlace;
 import std.bigint;
@@ -124,7 +125,7 @@ unittest {
  * Detect whether T is a decimal type.
  */
 public template isDecimal(T) {
-    enum bool isDecimal = is(T:Dec32) || is(T:Decimal);
+    enum bool isDecimal = is(T:Dec32) || is(T:Dec64) || is(T:Decimal);
 }
 
 /**
@@ -138,7 +139,7 @@ public template isBigDecimal(T) {
  * Detect whether T is a small decimal type.
  */
 public template isSmallDecimal(T) {
-    enum bool isSmallDecimal = is(T:Dec32); // || is(T: Dec64);
+    enum bool isSmallDecimal = is(T:Dec32) || is(T: Dec64);
 }
 
 unittest {
@@ -166,15 +167,13 @@ public string toEngString(T)(const T num) if (isDecimal!T) {
     return toStdString!T(num, true);
 };    // end toEngString()
 
-// UNREADY: toEngString. Description. Unit Tests.
+// UNREADY: toStdString. Description. Unit Tests.
 /**
-    * Converts a Decimal number to a string representation.
-    */
+ * Converts a Decimal number to a string representation.
+ */
 public string toStdString(T)
         (const T num, bool engineering = false) if (isDecimal!T) {
 
-//writeln("num = ", num);
-//writeln("T = ", num.typeof);
     auto mant = num.coefficient;
     int  expo = num.exponent;
     bool signed = num.isSigned;
@@ -322,6 +321,122 @@ unittest {
     dec = Decimal(str);
     assert(toEngString!Decimal(dec) == str);
 }
+
+// UNREADY: toStdString. Description. Unit Tests.
+/**
+ * Converts a Decimal number to a string representation.
+ */
+public string writeTo(T)
+	(const T num, string fmt = "") if (isDecimal!T) {
+
+    auto mant = num.coefficient;
+    int  expo = num.exponent;
+    bool signed = num.isSigned;
+
+    // string representation of special values
+    if (num.isSpecial) {
+        string str;
+        if (num.isInfinite) {
+            str = "Infinity";
+        }
+        else if (num.isSignaling) {
+            str = "sNaN";
+        }
+        else {
+            str = "NaN";
+        }
+        // add payload to NaN, if present
+        if (num.isNaN && num.payload != 0) {
+            str ~= to!string(num.payload);
+        }
+        // add sign, if present
+        return signed ? "-" ~ str : str;
+    }
+
+    // string representation of finite numbers
+    string temp = to!string(mant);
+//writeln("temp = ", temp);
+    char[] cstr = temp.dup;
+    int clen = cstr.length;
+    int adjx = expo + clen - 1;
+
+    // if exponent is small, don't use exponential notation
+    if (expo <= 0 && adjx >= -6) {
+        // if exponent is not zero, insert a decimal point
+        if (expo != 0) {
+            int point = std.math.abs(expo);
+            // if coefficient is too small, pad with zeroes
+            if (point > clen) {
+                cstr = rightJustify(cstr, point, '0');
+                clen = cstr.length;
+            }
+            // if no chars precede the decimal point, prefix a zero
+            if (point == clen) {
+                cstr = "0." ~ cstr;
+            }
+            // otherwise insert a decimal point
+            else {
+                insertInPlace(cstr, cstr.length - point, ".");
+            }
+        }
+        return signed ? ("-" ~ cstr).idup : cstr.idup;
+    }
+
+    if (engineering) {
+        // use exponential notation
+        if (num.isZero) {
+            adjx += 2;
+        }
+
+        int mod = adjx % 3;
+        // the % operator rounds down; we need it to round to floor.
+        if (mod < 0) {
+            mod = -(mod + 3);
+        }
+
+        int dot = std.math.abs(mod) + 1;
+        adjx = adjx - dot + 1;
+
+        if (num.isZero) {
+            dot = 1;
+            clen = 3 - std.math.abs(mod);
+            cstr.length = 0;
+            for (int i = 0; i < clen; i++) {
+                cstr ~= '0';
+            }
+        }
+
+        while (dot > clen) {
+            cstr ~= '0';
+            clen++;
+        }
+        if (clen > dot) {
+            insertInPlace(cstr, dot, ".");
+        }
+        string str = cstr.idup;
+        if (adjx != 0) {
+            string xstr = to!string(adjx);
+            if (adjx > 0) {
+                xstr = '+' ~ xstr;
+            }
+            str = str ~ "E" ~ xstr;
+        }
+        return signed ? "-" ~ str : str;
+    }
+    else {
+        // use exponential notation
+        if (clen > 1) {
+            insertInPlace(cstr, 1, ".");
+        }
+        string xstr = to!string(adjx);
+        if (adjx >= 0) {
+            xstr = "+" ~ xstr;
+        }
+        string str = (cstr ~ "E" ~ xstr).idup;
+        return signed ? "-" ~ str : str;
+    }
+
+};    // end toEngString()
 
 // UNREADY: toNumber. Description. Corner Cases. Context.
 /**

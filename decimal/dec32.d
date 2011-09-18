@@ -1143,8 +1143,16 @@ public:
      * Returns -1, 0 or 1, if this number is less than, equal to or
      * greater than the argument, respectively.
      */
-    const int opCmp(const Dec32 that) {
+    const int opCmp(T:Dec32)(const T that) {
         return compare!Dec32(this, that, context32);
+    }
+
+    /**
+     * Returns -1, 0 or 1, if this number is less than, equal to or
+     * greater than the argument, respectively.
+     */
+    const int opCmp(T)(const T that) if(isPromotable!T){
+        return opCmp!Dec32(Dec32(that));
     }
 
     unittest {
@@ -1158,7 +1166,7 @@ public:
     /**
      * Returns true if this number is equal to the specified number.
      */
-    const bool opEquals(ref const Dec32 that) {
+    const bool opEquals(T:Dec32)(const T that) {
         // quick bitwise check
         if (this.bits == that.bits) {
             if (this.isFinite) return true;
@@ -1175,7 +1183,28 @@ public:
         b = Dec32(105);
         assert(a == b);
     }
+    /**
+     * Returns true if this number is equal to the specified number.
+     */
+    const bool opEquals(T)(const T that) if(isPromotable!T) {
+        return opEquals!Dec32(Dec32(that));
+    }
 
+    unittest {
+        Dec32 a, b;
+        a = Dec32(105);
+        b = Dec32(105);
+		int c = 105;
+		assert(a == c);
+		real d = 105.0;
+		assert(a == d);
+		assert(a == 105);
+    }
+	
+	const bool isIdentical(const Dec32 that) {
+		return this.bits == that.bits;
+	}
+	
 //--------------------------------
 // assignment
 //--------------------------------
@@ -1312,19 +1341,35 @@ public:
         enum bool isPromotable = is(T:ulong) || is(T:real);
     }
 
-/*    const T opBinary(string op, T)(const T rhs) if(isPromotable!T)
+    const Dec32 opBinary(string op, T)(const T rhs) if(isPromotable!T)
     {
-    return rhs;
-    }*/
+//		Dec32 num = Dec32(rhs);
+    	return opBinary!(op,Dec32)(Dec32(rhs));
+    }
+
+	unittest {
+        writeln("Dec32 opBinary");
+		Dec32 num = Dec32(591.3);
+		Dec32 result = num * 5;
+		assert(result == Dec32(2956.5));
+		writeln("num = ", num);
+		writeln("result = ", result);
+		writeln("opBinary passed");
+	}
 
 //-----------------------------
 // operator assignment
 //-----------------------------
 
-    ref Dec32 opOpAssign(string op) (Dec32 rhs) {
+    ref Dec32 opOpAssign(string op, T:Dec32) (T rhs) {
         this = opBinary!op(rhs);
         return this;
     }
+
+    ref Dec32 opOpAssign(string op, T) (T rhs) if (isPromotable!T) {
+        this = opBinary!op(rhs);
+        return this;
+	}
 
     unittest {
         Dec32 op1, op2, actual, expect;
@@ -1337,6 +1382,11 @@ public:
         op1 *= op2;
         expect = -44.4843;
         actual = op1;
+        assert(expect == actual);
+		op1 = 95;
+		op1 %= 90;
+		actual = op1;
+		expect = 5;
         assert(expect == actual);
     }
 
