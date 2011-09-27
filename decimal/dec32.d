@@ -1200,11 +1200,11 @@ public:
 		assert(a == d);
 		assert(a == 105);
     }
-	
+
 	const bool isIdentical(const Dec32 that) {
 		return this.bits == that.bits;
 	}
-	
+
 //--------------------------------
 // assignment
 //--------------------------------
@@ -1270,11 +1270,26 @@ public:
         expect = 135;
         actual = ++num;
         assert(actual == expect);
-        num = 1.00E8;
+        num = 1.00E12;
         expect = num;
-// TODO:   actual = --num; // fails!
-//        actual = num--;
-//        assert(actual == expect);
+writeln("1 expect = ", expect.toAbstract);
+        actual = --num; // fails!
+writeln("1 actual = ", actual.toAbstract);
+writeln("2 num = ", num.toAbstract);
+        actual = num--;
+writeln("2 actual = ", actual.toAbstract);
+writeln("3 num = ", num.toAbstract);
+        num = 1.00E12;
+        expect = num;
+writeln("3 expect = ", expect.toAbstract);
+        actual = ++num; // fails!
+writeln("3 actual = ", actual);
+writeln("3 actual = ", actual.toAbstract);
+writeln("4 num = ", num.toAbstract);
+        actual = num++;
+writeln("4 actual = ", actual.toAbstract);
+writeln("4 num = ", num.toAbstract);
+        assert(actual == expect);
         num = Dec32(9999999, 90);
         expect = num;
         actual = num++;

@@ -679,6 +679,7 @@ public:
             return 0;
         }
         ulong copy = mant;
+        // if too large for explicit representation, round
         if (copy > C_MAX_IMPLICIT) {
             int expo = 0;
             uint digits = numDigits(copy);
@@ -1338,9 +1339,8 @@ public:
         assert(actual == expect);
         num = 1.00E8;
         expect = num;
-// TODO:   actual = --num; // fails!
-//        actual = num--;
-//        assert(actual == expect);
+        actual = num--;
+        assert(actual == expect);
         num = Dec64(9999999, 90);
         expect = num;
         actual = num++;

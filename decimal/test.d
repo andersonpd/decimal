@@ -1699,8 +1699,8 @@ unittest {
     num = 1.00E8;
     expect = num;
 // TODO:   actual = --num; // fails!
-//        actual = num--;
-//        assert(actual == expect);
+        actual = num--;
+        assert(actual == expect);
     num = Decimal(9999999, 90);
     expect = num;
     actual = num++;

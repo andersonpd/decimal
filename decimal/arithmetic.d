@@ -801,6 +801,7 @@ public int compareSignal(T) (const T op1, const T op2,
 // UNREADY: compareTotal
 /// Returns 0 if the numbers are equal and have the same representation
 // NOTE: no context
+// TODO: just compare signs, coefficients and exponenents.
 public int compareTotal(T)(const T op1, const T op2) if (isDecimal!T) {
 
     int ret1 =  1;
@@ -811,28 +812,21 @@ public int compareTotal(T)(const T op1, const T op2) if (isDecimal!T) {
         return !op1.sign ? ret1 : ret2;
     }
 
-    // if numbers are signed swap the return values
+    // if both numbers are signed swap the return values
     if (op1.sign) {
         ret1 = -1;
         ret2 =  1;
     }
 
-    // if either is quiet...
-    if (op1.isQuiet || op2.isQuiet) {
-        if (op1.isQuiet && op2.isQuiet) {
-            // TODO: should compare payloads
-            return 0;
+    // if either is zero...
+    if (op1.isZero || op2.isZero) {
+        // if both are zero compare exponents
+        if (op1.isZero && op2.isZero) {
+            auto result = op1.exponent - op2.exponent;
+            if (result == 0) return 0;
+            return (result > 0) ? ret1 : ret2;
         }
-        return op1.isQuiet ? ret1 : ret2;
-    }
-
-    // if either is signaling...
-    if (op1.isSignaling || op2.isSignaling) {
-        if (op1.isSignaling && op2.isSignaling) {
-            // TODO: should compare payloads
-            return 0;
-        }
-        return op1.isSignaling ? ret1 : ret2;
+        return op1.isZero ? ret1 : ret2;
     }
 
     // if either is infinite...
@@ -843,23 +837,53 @@ public int compareTotal(T)(const T op1, const T op2) if (isDecimal!T) {
         return op1.isInfinite ? ret1 : ret2;
     }
 
-    // if the (finite) numbers have different magnitudes...
-    int diff = (op1.exponent + op1.digits) - (op2.exponent + op2.digits);
-    if (diff > 0) return ret1;
-    if (diff < 0) return ret2;
+    // if either is quiet...
+    if (op1.isQuiet || op2.isQuiet) {
+        // if both are quiet compare payloads.
+        if (op1.isQuiet && op2.isQuiet) {
+            auto result = op1.payload - op2.payload;
+            if (result == 0) return 0;
+            return (result > 0) ? ret1 : ret2;
+        }
+        return op1.isQuiet ? ret1 : ret2;
+    }
 
-    // same exponent -- any difference is in the coefficient
+    // if either is signaling...
+    if (op1.isSignaling || op2.isSignaling) {
+        // if both are signaling compare payloads.
+        if (op1.isSignaling && op2.isSignaling) {
+            auto result = op1.payload - op2.payload;
+            if (result == 0) return 0;
+            return (result > 0) ? ret1 : ret2;
+        }
+        return op1.isSignaling ? ret1 : ret2;
+    }
+
+    // if both exponents are equal, any difference is in the coefficient
     if (op1.exponent == op2.exponent) {
         auto result = op1.coefficient - op2.coefficient;
         if (result == 0) return 0;
         return (result > 0) ? ret1 : ret2;
     }
 
-    // align the exponents for comparison
-    T copy1 = copyAbs!T(op1);
-    T copy2 = copyAbs!T(op2);
-    alignOps!T(copy1, copy2);
-    auto result = copy1.coefficient - copy2.coefficient;
+    // if the (finite) numbers have different magnitudes...
+    int diff = (op1.exponent + op1.digits) - (op2.exponent + op2.digits);
+    if (diff > 0) return ret1;
+    if (diff < 0) return ret2;
+
+
+    // we know the numbers have the same magnitude;
+    // align the coefficients for comparison
+    diff = op1.exponent - op2.exponent;
+    BigInt mant1 = op1.coefficient;
+    BigInt mant2 = op2.coefficient;
+    if (diff > 0) {
+        mant1 = decShl(mant1, diff);
+    }
+    else if (diff < 0) {
+        mant2 = decShl(mant2, -diff);
+    }
+    auto result = mant1 - mant2;
 
     // if equal after alignment, compare the original exponents
     if (result == 0) {
@@ -1025,35 +1049,33 @@ const(T) minMagnitude(T)(const T op1, const T op2,
  * than -precision or greater than precision, an INVALID_OPERATION is signaled.
  * An infinite number is returned unchanged.
  */
-public T shift(T)(const T op1, const int op2, DecimalContext context)
+public T shift(T)(const T op1, const int n, DecimalContext context)
         if (isDecimal!T) {
 
-    T result;
+    T op2;
     // check for NaN operand
-    if (invalidOperand!T(op1, result, context)) {
-        return result;
+    if (invalidOperand!T(op1, op2, context)) {
+        return op2;
     }
-    if (op2 < -context.precision || op2 > context.precision) {
-        result = flagInvalid!T(context);
-        return result;
+    if (n < -context.precision || n > context.precision) {
+        op2 = flagInvalid!T(context);
+        return op2;
     }
     if (op1.isInfinite) {
         return op1.dup;
     }
-    if (op2 == 0) {
+    if (n == 0) {
         return op1.dup;
     }
-    result = op1.dup;
-    if (op2 > 0) {
-        decShl(result.coefficient, op2);
+    Decimal shifted = toDecimal!T(op1);
+    BigInt pow10 = BigInt(10)^^std.math.abs(n);
+    if (n > 0) {
+        shifted.coefficient = shifted.coefficient * pow10;
     }
     else {
-        decShr(result.coefficient, -op2);
+        shifted.coefficient = shifted.coefficient / pow10;
     }
-    result.exponent = result.exponent + op2;
-    result.digits = result.digits + op2;
-
-    return result;
+    return T(shifted);
 }
 
 unittest {
@@ -1114,48 +1136,49 @@ public T rotate(T)(const T op1, const int op2, DecimalContext context)
  */
 public T add(T)(const T op1, const T op2, DecimalContext context,
         bool rounded = true) if (isDecimal!T) {
-    T augend = op1.dup;
-    T addend = op2.dup;
-    T sum;    // sum is initialized to quiet NaN
+    T result = T.nan;    // sum is initialized to quiet NaN
 
     // check for NaN operand(s)
-    if (isInvalidBinaryOp!T(augend, addend, sum, context)) {
-        return sum;
+    if (isInvalidBinaryOp!T(op1, op2, result, context)) {
+        return result;
     }
     // if both operands are infinite
-    if (augend.isInfinite && addend.isInfinite) {
+    if (op1.isInfinite && op2.isInfinite) {
         // (+inf) + (-inf) => invalid operation
-        if (augend.sign != addend.sign) {
+        if (op1.sign != op2.sign) {
             return flagInvalid!T(context);
         }
         // both infinite with same sign
-        return augend;
+        return op1.dup;
     }
     // TODO: is this check redundant?
-    if (isInvalidAddition(augend, addend, sum, context)) {
-        return sum;
+    if (isInvalidAddition!T(op1, op2, result, context)) {
+        return result;
     }
     // only augend is infinite,
-    if (augend.isInfinite) {
-        return augend;
+    if (op1.isInfinite) {
+        return op1.dup;
     }
     // only addend is infinite
-    if (addend.isInfinite) {
-        return addend;
+    if (op2.isInfinite) {
+        return op2.dup;
     }
     // add(0, 0)
-    if (augend.isZero && addend.isZero) {
-        sum = augend;
-        sum.sign = augend.sign && addend.sign;
-        return sum;
+    if (op1.isZero && op2.isZero) {
+        result = op1;
+        result.sign = op1.sign && op2.sign;
+        return result;
     }
-    // TODO: this can never return zero, right?
-    // align the operands
-    alignOps!T(augend, addend);
-    // at this point, the result will be finite and not zero
-    // (before rounding)
-    sum = T.zero;
 
+    // TODO: add(0,f) or add(f,0)?
+
+    // at this point, the result will be finite and not zero.
+    // calculate in big decimal and convert before return
+    Decimal sum = Decimal.zero;
+    Decimal augend = toDecimal!T(op1);
+    Decimal addend = toDecimal!T(op2);
+    // align the operands
+    alignOps(augend, addend, context);
     // if operands have the same sign...
     if (augend.sign == addend.sign) {
         sum.coefficient = augend.coefficient + addend.coefficient;
@@ -1178,12 +1201,13 @@ public T add(T)(const T op1, const T op2, DecimalContext context,
     sum.digits = numDigits(sum.coefficient);
     sum.exponent = augend.exponent;
 
+    result = T(sum);
     // round the result
     if (rounded) {
-        round(sum, context);
+        round(result, context);
     }
-    return sum;
-}    // end add(augend, addend)
+    return result;
+}    // end add(op1, op2)
 
 // TODO: these tests need to be cleaned up to rely less on strings
 // and to check the NaN, Inf combinations better.
@@ -1208,6 +1232,7 @@ unittest {
  */
 public T subtract(T) (const T op1, const T op2,
         DecimalContext context, const bool rounded = true) if (isDecimal!T) {
+    // TODO: get rid of this.
     T result = add!T(op1, copyNegate!T(op2), context , rounded);
     return add!T(op1, copyNegate!T(op2), context , rounded);
 }    // end subtract(op1, op2)
@@ -1570,14 +1595,14 @@ unittest {
  * to the value of the larger exponent, and adjusting the
  * coefficient so the value remains the same.
  */
-private void alignOps(T)(ref T op1, ref T op2) if (isDecimal!T) {
+private void alignOps(ref Decimal op1, ref Decimal op2, DecimalContext context) {
     int diff = op1.exponent - op2.exponent;
     if (diff > 0) {
-        op1.coefficient = decShl(op1.coefficient, cast(uint)diff);
+        op1.coefficient = decShl(op1.coefficient, diff);
         op1.exponent = op2.exponent;
     }
     else if (diff < 0) {
-        op2.coefficient = decShl(op2.coefficient, cast(uint)-diff);
+        op2.coefficient = decShl(op2.coefficient, -diff);
         op2.exponent = op1.exponent;
     }
 }
@@ -1656,7 +1681,7 @@ private bool invalidOperand(T)(const T op1, ref T result,
  *
  *    -- General Decimal Arithmetic Specification, p. 52, "Invalid operation"
  */
-private bool isInvalidAddition(T) (T op1, T op2, ref T result,
+private bool isInvalidAddition(T) (const T op1, const T op2, ref T result,
         DecimalContext context) {
     if (isInvalidBinaryOp!T(op1, op2, result, context)) {
         return true;

@@ -75,9 +75,6 @@ public int sgn(const BigInt num) {
 // UNREADY: round. Description. Private or public?
 public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
 
-//    writeln("num = ", num);
-
-    //writeln("context.precision = ", context.precision);
     // no rounding of special values
     if (!num.isFinite) return;
 
@@ -128,9 +125,7 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
         context.setFlag(ROUNDED);
         return;
     }
-//    writeln("rounding by mode");
     roundByMode(num, context);
-//    writeln("num = ", num);
     // check for underflow
     if (num.isSubnormal /*&& num.isInexact*/) {
         context.setFlag(SUBNORMAL);
@@ -145,7 +140,6 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
     }
     // check for zero
     if (is(T : Decimal)) {
-//        if (num.sval == SV.NONE && num.coefficient == BigInt(0)) {
         if (num.coefficient == 0) {
             num.zero;
         }
@@ -169,8 +163,10 @@ unittest {
     assert(after.toString() == "1.00E+4");
     before = Decimal(1234567890);
     after = before;
+writeln("before = ", before);
     contextX.precision = 3;
-    round(after, contextX);;
+    round(after, contextX);
+writeln("after = ", after);
     assert(after.toString() == "1.23E+9");
     after = before;
     contextX.precision = 4;
@@ -225,10 +221,8 @@ unittest {
 private void roundByMode(T)(ref T num, ref DecimalContext context)
         if (isDecimal!T) {
 
-//    writeln("roundByMode");
     uint digits = num.digits;
     T remainder = getRemainder(num, context);
-//    writeln("remainder = ", remainder);
 
 
     // if the number wasn't rounded...
@@ -241,31 +235,22 @@ private void roundByMode(T)(ref T num, ref DecimalContext context)
     }
     switch (context.rounding) {
         case Rounding.DOWN:
-//            writeln("DOWN");
             return;
         case Rounding.HALF_UP:
-//            writeln("HALF_UP");
             if (firstDigit(remainder.coefficient) >= 5) {
                 increment(num, context);
             }
             return;
         case Rounding.HALF_EVEN:
-//            writeln("HALF_EVEN");
-//            writeln("remainder = ", remainder);
             T five = T(5, remainder.digits + remainder.exponent - 1);
-//            writeln("five = ", five);
-            int result = decimal.arithmetic.compare(remainder, five, context, false);
-//            writeln("result = ", result);
+            int result = decimal.arithmetic.compare!T(remainder, five, context, false);
             if (result > 0) {
-//                writeln("result > 0");
                 increment(num, context);
                 return;
             }
             if (result < 0) {
-//                writeln("result < 0");
                 return;
             }
-//            writeln("result == 0");
             // remainder == 5
             // if last digit is odd...
             if (lastDigit(num.coefficient) % 2) {
@@ -275,27 +260,23 @@ private void roundByMode(T)(ref T num, ref DecimalContext context)
             }
             return;
         case Rounding.CEILING:
-//            writeln("CEILING");
             auto temp = T.zero;
             if (!num.sign && (remainder != temp)) {
                 increment(num, context);
             }
             return;
         case Rounding.FLOOR:
-//            writeln("FLOOR");
             auto temp = T.zero;
             if (num.sign && remainder != temp) {
                 increment(num, context);
             }
             return;
         case Rounding.HALF_DOWN:
-//            writeln("HALF_DOWN");
             if (firstDigit(remainder.coefficient) > 5) {
                 increment(num, context);
             }
             return;
         case Rounding.UP:
-//            writeln("UP");
             auto temp = T.zero;
             if (remainder != temp) {
                 increment(num, context);
@@ -342,20 +323,15 @@ unittest {
  */
 private T getRemainder(T)(ref T num, ref DecimalContext context)
         if (isDecimal!T){
-//    writeln("getRemainder");
     // TODO: should be setZero(remainder);
     T remainder = T.zero;
-//    writeln("remainder = ", remainder);
 
     int diff = num.digits - context.precision;
     if (diff <= 0) {
         return remainder;
     }
     context.setFlag(ROUNDED);
-//    writeln("rounded");
     // the context can be zero when...??
-//    writeln("context.precision = ", context.precision);
-
     if (context.precision == 0) {
         num = T.zero(num.sign);
     } else {
@@ -363,10 +339,6 @@ private T getRemainder(T)(ref T num, ref DecimalContext context)
         auto dividend = num.coefficient;
         auto quotient = dividend/divisor;
         auto modulo = dividend - quotient*divisor;
-//writeln("divisor = ", divisor);
-//writeln("dividend = ", dividend);
-//writeln("quotient = ", quotient);
-//writeln("modulo = ", modulo);
         if (modulo != 0) {
             remainder.zero;
             remainder.digits = diff;
@@ -382,9 +354,6 @@ private T getRemainder(T)(ref T num, ref DecimalContext context)
         context.setFlag(INEXACT);
     }
 
-//    writeln("num = ", num);
-//    writeln("remainder = ", remainder);
-//    writeln("exit getRemainder");
     return remainder;
 }
 
@@ -547,10 +516,10 @@ private ulong clipRemainder(ref ulong num, ref uint digits, uint precision) {
     // if (remainder != 0) {...} ?
     //context.setFlag(ROUNDED);
 
-    // TODO: This is a fictitious case .. the context can be zero when...??
     if (precision == 0) {
         num = 0;
     } else {
+        // FIXTHIS: potential overflow.
         ulong divisor = 10L^^diff;
         ulong dividend = num;
         ulong quotient = dividend / divisor;
@@ -673,7 +642,9 @@ unittest {
  * Shifts the number left by the specified number of decimal digits.
  * If n <= 0 the number is returned unchanged.
  */
-public T decShl(T)(T num, const int n) if (is (T:BigInt) || is(T:ulong)){
+/*public T decShl(T)(T num, const int n) if (is (T:BigInt) || is(T:ulong) || is(T:uint)) {
+writeln("n = ", n);
+writeln("A num = ", num);
     if (n <= 0) { return num; }
     static if (is(T:BigInt)) {
         BigInt fives = 1;
@@ -682,13 +653,72 @@ public T decShl(T)(T num, const int n) if (is (T:BigInt) || is(T:ulong)){
         }
         num = num << n;
         num *= fives;
+writeln("B num = ", num);
+        return num;
+    }
+    else if (is(T:uint)) {
+        uint scale = 10U^^n;
+writeln("scale = ", scale);
+writeln("num * scale = ", num * scale);
+        num = num * scale;
+writeln("C num = ", num);
         return num;
     }
     else {
-        long scale = 10UL^^n;
-        num *= scale;
+        ulong scale = 10UL^^n;
+writeln("scale = ", scale);
+writeln("num * scale = ", num * scale);
+        num = num * scale;
+writeln("D num = ", num);
         return num;
     }
+}*/
+
+/**
+ * Shifts the number left by the specified number of decimal digits.
+ * If n <= 0 the number is returned unchanged.
+ */
+public BigInt decShl(BigInt num, const int n) {
+//writeln("n = ", n);
+    if (n <= 0) { return num; }
+    BigInt fives = 1;
+    for (int i = 0; i < n; i++) {
+        fives *= 5;
+    }
+    num = num << n;
+    num *= fives;
+//writeln("A num = ", num);
+    return num;
+}
+
+/**
+ * Shifts the number left by the specified number of decimal digits.
+ * If n <= 0 the number is returned unchanged.
+ */
+public ulong decShl(ulong num, const int n) {
+//writeln("n = ", n);
+    if (n <= 0) { return num; }
+    ulong scale = 10UL^^n;
+//writeln("scale = ", scale);
+//writeln("num * scale = ", num * scale);
+    num = num * scale;
+//writeln("B num = ", num);
+    return num;
+}
+
+/**
+ * Shifts the number left by the specified number of decimal digits.
+ * If n <= 0 the number is returned unchanged.
+ */
+public uint decShl(uint num, const int n) {
+//writeln("n = ", n);
+    if (n <= 0) { return num; }
+    uint scale = 10U^^n;
+//writeln("scale = ", scale);
+//writeln("num * scale = ", num * scale);
+    num = num * scale;
+//writeln("C num = ", num);
+    return num;
 }
 
 unittest {
