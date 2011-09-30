@@ -25,14 +25,7 @@ import std.array: insertInPlace;
 import std.bigint;
 import std.bitmanip;
 import std.conv;
-import std.stdio;
 import std.string;
-
-unittest {
-    writeln("---------------------");
-    writeln("conv..........testing");
-    writeln("---------------------");
-}
 
 //--------------------------------
 //  conversions
@@ -63,10 +56,11 @@ T to(T:string)(const BigInt num) {
 public T toSmallDecimal(T,U)(const U num) if (isDecimal!T) {
 
     static if(is(typeof(num) == T)) {return num.dup;}
-    static if(is(typeof(num) == Decimal)) {return T(num);}
+    static if(is(typeof(num) == BigDecimal)) {return T(num);}
 
     if (num.isFinite) {
-        // TODO: should use ulong instead of long
+        // NOTE: BigInt.toLong returns a long instead of a ulong
+        // It would be better to handle the BigInt properly
         ulong mant;
         if (is(typeof(num.coefficient) == BigInt)) {
             mant = num.coefficient.toLong();
@@ -91,31 +85,31 @@ public T toSmallDecimal(T,U)(const U num) if (isDecimal!T) {
 /**
  * Converts any decimal to a big decimal
  */
-public Decimal toDecimal(T)(const T num) if (isDecimal!T) {
+public BigDecimal toDecimal(T)(const T num) if (isDecimal!T) {
 
-    static if(is(typeof(num) == Decimal)) {return num.dup;}
+    static if(is(typeof(num) == BigDecimal)) {return num.dup;}
 
     bool sign = num.sign;
     if (num.isFinite) {
         auto mant = num.coefficient;
         int  expo = num.exponent;
-        return Decimal(sign, mant, expo);
+        return BigDecimal(sign, mant, expo);
     }
     else if (num.isInfinite) {
-        return Decimal.infinity(sign);
+        return BigDecimal.infinity(sign);
     }
     else if (num.isSignaling) {
-        return Decimal.snan(num.payload);
+        return BigDecimal.snan(num.payload);
     }
     else if (num.isQuiet) {
-        return Decimal.nan(num.payload);
+        return BigDecimal.nan(num.payload);
     }
-    return Decimal.nan;
+    return BigDecimal.nan;
 }
 
 unittest {
     Dec32 small;
-    Decimal big;
+    BigDecimal big;
     small = 5;
     big = toDecimal!Dec32(small);
     assert(big.toString == small.toString);
@@ -125,14 +119,14 @@ unittest {
  * Detect whether T is a decimal type.
  */
 public template isDecimal(T) {
-    enum bool isDecimal = is(T:Dec32) || is(T:Dec64) || is(T:Decimal);
+    enum bool isDecimal = is(T:Dec32) || is(T:Dec64) || is(T:BigDecimal);
 }
 
 /**
  * Detect whether T is a big decimal type.
  */
 public template isBigDecimal(T) {
-    enum bool isBigDecimal = is(T:Decimal);
+    enum bool isBigDecimal = is(T:BigDecimal);
 }
 
 /**
@@ -144,34 +138,31 @@ public template isSmallDecimal(T) {
 
 unittest {
     assert(isSmallDecimal!Dec32);
-    assert(!isSmallDecimal!Decimal);
+    assert(!isSmallDecimal!BigDecimal);
     assert(isDecimal!Dec32);
-    assert(isDecimal!Decimal);
+    assert(isDecimal!BigDecimal);
     assert(!isBigDecimal!Dec32);
-    assert(isBigDecimal!Decimal);
+    assert(isBigDecimal!BigDecimal);
 }
 
-// UNREADY: toSciString. Description. Unit Tests.
 /**
- * Converts a Decimal number to a string representation.
+ * Converts a BigDecimal number to a scientific string representation.
  */
 public string toSciString(T)(const T num) if (isDecimal!T) {
     return toStdString!T(num, false);
 };    // end toSciString()
 
-// UNREADY: toEngString. Description. Unit Tests.
 /**
- * Converts a Decimal number to a string representation.
+ * Converts a BigDecimal number to an engineering string representation.
  */
 public string toEngString(T)(const T num) if (isDecimal!T) {
     return toStdString!T(num, true);
 };    // end toEngString()
 
-// UNREADY: toStdString. Description. Unit Tests.
 /**
- * Converts a Decimal number to a string representation.
+ * Converts a BigDecimal number to one of two standard string representations.
  */
-public string toStdString(T)
+private string toStdString(T)
         (const T num, bool engineering = false) if (isDecimal!T) {
 
     auto mant = num.coefficient;
@@ -200,7 +191,6 @@ public string toStdString(T)
 
     // string representation of finite numbers
     string temp = to!string(mant);
-//writeln("temp = ", temp);
     char[] cstr = temp.dup;
     int clen = cstr.length;
     int adjx = expo + clen - 1;
@@ -309,22 +299,22 @@ unittest {
     assert(toSciString!Dec32(num) == "Infinity");
     assert(num.toAbstract() == "[0,inf]");
     string str = "1.23E+3";
-    Decimal dec = Decimal(str);
-    assert(toEngString!Decimal(dec) == str);
+    BigDecimal dec = BigDecimal(str);
+    assert(toEngString!BigDecimal(dec) == str);
     str = "123E+3";
-    dec = Decimal(str);
-    assert(toEngString!Decimal(dec) == str);
+    dec = BigDecimal(str);
+    assert(toEngString!BigDecimal(dec) == str);
     str = "12.3E-9";
-    dec = Decimal(str);
-    assert(toEngString!Decimal(dec) == str);
+    dec = BigDecimal(str);
+    assert(toEngString!BigDecimal(dec) == str);
     str = "-123E-12";
-    dec = Decimal(str);
-    assert(toEngString!Decimal(dec) == str);
+    dec = BigDecimal(str);
+    assert(toEngString!BigDecimal(dec) == str);
 }
 
-// UNREADY: toStdString. Description. Unit Tests.
+// NOTE: Doesn't work yet, returns scientific string.
 /**
- * Converts a Decimal number to a string representation.
+ * Converts a BigDecimal number to a string representation.
  */
 public string writeTo(T)
 	(const T num, string fmt = "") if (isDecimal!T) {
@@ -355,7 +345,6 @@ public string writeTo(T)
 
     // string representation of finite numbers
     string temp = to!string(mant);
-//writeln("temp = ", temp);
     char[] cstr = temp.dup;
     int clen = cstr.length;
     int adjx = expo + clen - 1;
@@ -438,13 +427,12 @@ public string writeTo(T)
 
 };    // end toEngString()
 
-// UNREADY: toNumber. Description. Corner Cases. Context.
 /**
- * Converts a string into a Decimal.
+ * Converts a string into a BigDecimal.
  */
-public Decimal toNumber(const string inStr) {
+public BigDecimal toNumber(const string inStr) {
 
-    Decimal num;
+    BigDecimal num;
     num.sign = false;
 
     // strip, copy, tolower
@@ -463,7 +451,7 @@ public Decimal toNumber(const string inStr) {
     // check for NaN
     if (startsWith(str,"nan")) {
         bool signed = num.sign;
-        num = Decimal(SV.QNAN, num.sign );
+        num = BigDecimal(SV.QNAN, num.sign );
         // if no payload, return
         if (str == "nan") {
             return num;
@@ -483,7 +471,7 @@ public Decimal toNumber(const string inStr) {
 
     // check for sNaN
     if (startsWith(str,"snan")) {
-        num = Decimal.snan;
+        num = BigDecimal.snan;
         if (str == "snan") {
             num.payload = 0; // BigInt(0);
             return num;
@@ -507,18 +495,18 @@ public Decimal toNumber(const string inStr) {
 
     // check for infinity
     if (str == "inf" || str == "infinity") {
-        num = Decimal.infinity(num.sign);
+        num = BigDecimal.infinity(num.sign);
         return num;
     };
 
     // at this point, num must be finite
-    num = Decimal.zero(num.sign);
+    num = BigDecimal.zero(num.sign);
     // check for exponent
     int pos = indexOf(str, 'e');
     if (pos > 0) {
         // if it's just a trailing 'e', return NaN
         if (pos == str.length - 1) {
-            num = Decimal.nan;
+            num = BigDecimal.nan;
             return num;
         }
         // split the string into coefficient and exponent
@@ -538,14 +526,14 @@ public Decimal toNumber(const string inStr) {
 
         // ensure it's not now empty
         if (xstr.length < 1) {
-            num = Decimal.nan;
+            num = BigDecimal.nan;
             return num;
         }
 
         // ensure exponent is all digits
         foreach(char c; xstr) {
             if (!isDigit(c)) {
-                num = Decimal.nan;
+                num = BigDecimal.nan;
             return num;
             }
         }
@@ -557,7 +545,7 @@ public Decimal toNumber(const string inStr) {
 
         // make sure it will fit into an int
         if (xstr.length > 10) {
-            num = Decimal.nan;
+            num = BigDecimal.nan;
             return num;
         }
         if (xstr.length == 10) {
@@ -565,7 +553,7 @@ public Decimal toNumber(const string inStr) {
             // then see if the long value is too big (or small)
             long lex = std.conv.to!long(xstr);
             if ((xneg && (-lex < int.min)) || lex > int.max) {
-            num = Decimal.nan;
+            num = BigDecimal.nan;
         return num;
             }
             num.exponent = cast(int) lex;
@@ -581,7 +569,6 @@ public Decimal toNumber(const string inStr) {
     else {
         num.exponent = 0;
     }
-//writeln("num  3 = ", num);
     // remove trailing decimal point
     if (endsWith(str, ".")) {
         str = str[0..$-1];
@@ -602,14 +589,14 @@ public Decimal toNumber(const string inStr) {
 
     // ensure string is not empty
     if (str.length < 1) {
-        num = Decimal.nan;
+        num = BigDecimal.nan;
         return num;
     }
 
     // ensure string is all digits
     foreach(char c; str) {
         if (!isDigit(c)) {
-            num = Decimal.nan;
+            num = BigDecimal.nan;
             return num;
         }
     }
@@ -621,18 +608,21 @@ public Decimal toNumber(const string inStr) {
 }
 
 unittest {
-    Decimal f = Decimal("1.0");
+    BigDecimal f = BigDecimal("1.0");
     assert(f.toString() == "1.0");
-    f = Decimal(".1");
+    f = BigDecimal(".1");
     assert(f.toString() == "0.1");
-    f = Decimal("-123");
+    f = BigDecimal("-123");
     assert(f.toString() == "-123");
-    f = Decimal("1.23E3");
+    f = BigDecimal("1.23E3");
     assert(f.toString() == "1.23E+3");
-    f = Decimal("1.23E-3");
+    f = BigDecimal("1.23E-3");
     assert(f.toString() == "0.00123");
 }
 
+/**
+ * Returns an abstract string representation of a number.
+ */
 public string toAbstract(T)(const T num) if (isDecimal!T)
 {
     if (num.isFinite) {
@@ -657,7 +647,11 @@ public string toAbstract(T)(const T num) if (isDecimal!T)
     return "[0,qNAN]";
 }
 
-    public string toExact(T)(const T num) if (isDecimal!T)
+/**
+ * Returns a full, exact representation of a number. Similar to toAbstract,
+ * but it provides a valid string that can be converted back into a number.
+ */
+public string toExact(T)(const T num) if (isDecimal!T)
     {
         if (num.isFinite) {
             return format("%s%sE%s%02d", num.sign ? "-" : "+",
@@ -697,9 +691,5 @@ writeln("num.toExact = ", num.toExact);
         writeln("passed");
     }
 
-unittest {
-    writeln("----------------------");
-    writeln("conv..........finished");
-    writeln("----------------------");
-}
+
 

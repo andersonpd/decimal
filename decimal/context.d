@@ -169,9 +169,6 @@ public struct DecimalContext {
 
 };    // end struct DecimalContext
 
-// default context
-//public immutable DecimalContext DEFAULT_CONTEXT = DecimalContext();
-
 //  stack
 public struct ContextStack {
 

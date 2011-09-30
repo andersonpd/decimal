@@ -362,11 +362,11 @@ public:
     }
 
     /**
-     * Creates a Dec32 from a Decimal
+     * Creates a Dec32 from a BigDecimal
      */
-    public this(const Decimal num) {
+    public this(const BigDecimal num) {
 
-        Decimal big = plus!Decimal(num, context32);
+        BigDecimal big = plus!BigDecimal(num, context32);
         if (big.isFinite) {
             this = zero;
             this.coefficient = cast(ulong)big.coefficient.toLong;
@@ -390,7 +390,7 @@ public:
     }
 
    unittest {
-        Decimal dec = 0;
+        BigDecimal dec = 0;
         Dec32 num = dec;
         assert(dec.toString == num.toString);
         dec = 1;
@@ -415,7 +415,7 @@ public:
      * Creates a Dec32 from a string.
      */
     public this(const string str) {
-        Decimal big = Decimal(str);
+        BigDecimal big = BigDecimal(str);
         this(big);
     }
 
@@ -936,22 +936,22 @@ public:
 //--------------------------------
 
     /**
-     * Converts a Dec32 to a Decimal
+     * Converts a Dec32 to a BigDecimal
      */
-    const Decimal toDecimal() {
+    const BigDecimal toDecimal() {
         if (isFinite) {
-            return Decimal(sign, BigInt(coefficient), exponent);
+            return BigDecimal(sign, BigInt(coefficient), exponent);
         }
         if (isInfinite) {
-            return Decimal.infinity(sign);
+            return BigDecimal.infinity(sign);
         }
         // number is a NaN
-        Decimal dec;
+        BigDecimal dec;
         if (isQuiet) {
-            dec = Decimal.nan(sign);
+            dec = BigDecimal.nan(sign);
         }
         if (isSignaling) {
-            dec = Decimal.snan(sign);
+            dec = BigDecimal.snan(sign);
         }
         if (payload) {
             dec.payload(payload);
@@ -961,8 +961,8 @@ public:
 
     unittest {
         Dec32 num = Dec32("12345E+17");
-        Decimal expected = Decimal("12345E+17");
-        Decimal actual = num.toDecimal;
+        BigDecimal expected = BigDecimal("12345E+17");
+        BigDecimal actual = num.toDecimal;
         assert(actual == expected);
     }
 

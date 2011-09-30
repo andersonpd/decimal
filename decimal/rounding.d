@@ -18,7 +18,7 @@
 
 module decimal.rounding;
 
-import decimal.arithmetic: copyNegate, equals;
+import decimal.arithmetic: compare, copyNegate, equals;
 import decimal.context;
 import decimal.conv;
 import decimal.dec32;
@@ -36,18 +36,6 @@ private BigInt tens[18];
 private BigInt fives[18];
 
 private static DecimalContext testContextR = DecimalContext().dup;
-/*private static context = DEFAULT_CONTEXT.dup;
-
-private static ContextStack contextStack;
-
-private static void pushContext(DecimalContext context) {
-     contextStack.push(context);
-}
-
-private static DecimalContext popContext() {
-    return contextStack.pop;
-}
-*/
 
 //-----------------------------
 // helper functions
@@ -139,7 +127,7 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
         }
     }
     // check for zero
-    if (is(T : Decimal)) {
+    if (is(T : BigDecimal)) {
         if (num.coefficient == 0) {
             num.zero;
         }
@@ -154,14 +142,14 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
 } // end round()
 
 unittest {
-    Decimal before = Decimal(9999);
-    Decimal after = before;
+    BigDecimal before = BigDecimal(9999);
+    BigDecimal after = before;
     DecimalContext contextX;
     contextX.precision = 3;
     round(after, contextX);
 //    writeln("after.toString = ", after.toString);
     assert(after.toString() == "1.00E+4");
-    before = Decimal(1234567890);
+    before = BigDecimal(1234567890);
     after = before;
 writeln("before = ", before);
     contextX.precision = 3;
@@ -215,8 +203,6 @@ writeln("after = ", after);
 // private rounding routines
 //--------------------------------
 
-// TODO: this version has the same problem as the long version.
-// TODO: Move into round routine.
 // UNREADY: roundByMode. Description. Order.
 private void roundByMode(T)(ref T num, ref DecimalContext context)
         if (isDecimal!T) {
@@ -243,7 +229,7 @@ private void roundByMode(T)(ref T num, ref DecimalContext context)
             return;
         case Rounding.HALF_EVEN:
             T five = T(5, remainder.digits + remainder.exponent - 1);
-            int result = decimal.arithmetic.compare!T(remainder, five, context, false);
+            int result = compare!T(remainder, five, context, false);
             if (result > 0) {
                 increment(num, context);
                 return;
@@ -251,11 +237,9 @@ private void roundByMode(T)(ref T num, ref DecimalContext context)
             if (result < 0) {
                 return;
             }
-            // remainder == 5
+            // result == 0 so remainder == 5
             // if last digit is odd...
             if (lastDigit(num.coefficient) % 2) {
-            // TODO: isn't this just num.coefficient % 2?
-            // I can't imagine the other is more efficient
                 increment(num, context);
             }
             return;
@@ -291,7 +275,7 @@ unittest {
     pushContext(testContextR);
     testContextR.precision = 5;
     testContextR.rounding = Rounding.HALF_EVEN;
-    Decimal num;
+    BigDecimal num;
     num = 1000;
     roundByMode(num, testContextR);
     assert(num.coefficient == 1000 && num.exponent == 0 && num.digits == 4);
@@ -315,7 +299,6 @@ unittest {
     testContextR = popContext;
 }
 
-// UNREADY: getRemainder. Order. Unit tests.
 /**
  * Clips the coefficient of the number to the specified precision.
  * Returns the (unsigned) remainder for adjustments based on rounding mode.
@@ -323,7 +306,6 @@ unittest {
  */
 private T getRemainder(T)(ref T num, ref DecimalContext context)
         if (isDecimal!T){
-    // TODO: should be setZero(remainder);
     T remainder = T.zero;
 
     int diff = num.digits - context.precision;
@@ -360,31 +342,25 @@ private T getRemainder(T)(ref T num, ref DecimalContext context)
 unittest {
     pushContext(testContextR);
     testContextR.precision = 5;
-    Decimal num, acrem, exnum, exrem;
-    num = Decimal(1234567890123456L);
+    BigDecimal num, acrem, exnum, exrem;
+    num = BigDecimal(1234567890123456L);
     acrem = getRemainder(num, testContextR);
-    exnum = Decimal("1.2345E+15");
-//writeln("acrem = ", acrem);
-//writeln("exnum = ", exnum);
-/*acrem = 717200064
-exnum = 1.2345E+15*/
+    exnum = BigDecimal("1.2345E+15");
     assert(num == exnum);
     exrem = 67890123456;
     assert(acrem == exrem);
     testContextR = popContext();
 }
 
-// UNREADY: increment. Order.
 /**
  * Increments the coefficient by 1. If this causes an overflow, divides by 10.
  */
-private void increment(T:Decimal)(ref T num, const DecimalContext context) {
-//private void increment(ref Decimal num, const DecimalContext context) {
+private void increment(T:BigDecimal)(ref T num, const DecimalContext context) {
     num.coefficient = num.coefficient + 1;
     // check if the num was all nines --
     // did the coefficient roll over to 1000...?
-    Decimal test1 = Decimal(1, num.digits + num.exponent);
-    Decimal test2 = num;
+    BigDecimal test1 = BigDecimal(1, num.digits + num.exponent);
+    BigDecimal test2 = num;
     test2.digits++;
     int comp = decimal.arithmetic.compare(test1, test2, context, false);
     if (comp == 0) {
@@ -397,7 +373,7 @@ private void increment(T:Decimal)(ref T num, const DecimalContext context) {
 }
 
 unittest {
-    Decimal num, expect;
+    BigDecimal num, expect;
     num = 10;
     expect = 11;
     increment(num, testContextR);
@@ -412,7 +388,6 @@ unittest {
     assert(num == expect);
 }
 
-// UNREADY: setExponent. Description. Order.
 public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
         const DecimalContext context) {
 
@@ -501,7 +476,6 @@ unittest {
     assert(num == 99999 && expo == 0 && digits == 5);
 }
 
-// UNREADY: getRemainder. Order. Unit tests.
 /**
  * Clips the coefficient of the number to the specified precision.
  * Returns the (unsigned) remainder for adjustments based on rounding mode.
@@ -519,7 +493,7 @@ private ulong clipRemainder(ref ulong num, ref uint digits, uint precision) {
     if (precision == 0) {
         num = 0;
     } else {
-        // FIXTHIS: potential overflow.
+        // can't overflow -- diff <= 19
         ulong divisor = 10L^^diff;
         ulong dividend = num;
         ulong quotient = dividend / divisor;
@@ -542,6 +516,47 @@ unittest {
     assert(num == exnum);
     exrem = 67890123456L;
     assert(acrem == exrem);
+
+    num = 12345768901234567L;
+    digits = 17; precision = 5;
+    acrem = clipRemainder(num, digits, precision);
+    exnum = 12345L;
+    assert(num == exnum);
+    exrem = 768901234567L;
+    assert(acrem == exrem);
+
+    num = 123456789012345678L;
+    digits = 18; precision = 5;
+    acrem = clipRemainder(num, digits, precision);
+    exnum = 12345L;
+    assert(num == exnum);
+    exrem = 6789012345678L;
+    assert(acrem == exrem);
+
+    num = 1234567890123456789L;
+    digits = 19; precision = 5;
+    acrem = clipRemainder(num, digits, precision);
+    exnum = 12345L;
+    assert(num == exnum);
+    exrem = 67890123456789L;
+    assert(acrem == exrem);
+
+    num = 1234567890123456789L;
+    digits = 19; precision = 4;
+    acrem = clipRemainder(num, digits, precision);
+    exnum = 1234L;
+    assert(num == exnum);
+    exrem = 567890123456789L;
+    assert(acrem == exrem);
+
+    num = 9223372036854775807L;
+    digits = 19; precision = 1;
+    acrem = clipRemainder(num, digits, precision);
+    exnum = 9L;
+    assert(num == exnum);
+    exrem = 223372036854775807L;
+    assert(acrem == exrem);
+
 }
 
 /**
@@ -598,12 +613,12 @@ unittest {
  * Returns the number of digits in the number.
  */
 public int numDigits(const BigInt big) {
-    BigInt billion = Decimal.pow10(9);
-    BigInt quintillion = Decimal.pow10(18);
+    BigInt billion = BigDecimal.pow10(9);
+    BigInt quintillion = BigDecimal.pow10(18);
     BigInt dig = cast(BigInt)big;
     int count = 0;
     while (dig > quintillion) {
-        dig = decShr(dig, 18);
+        dig /= quintillion;
         count += 18;
     }
     long n = dig.toLong;
@@ -619,16 +634,15 @@ unittest {
  * Returns the first digit of the number.
  */
 public int firstDigit(const BigInt big) {
-    BigInt billion = Decimal.pow10(9);
-    BigInt quintillion = Decimal.pow10(18);
+    BigInt billion = BigDecimal.pow10(9);
+    BigInt quintillion = BigDecimal.pow10(18);
     BigInt dig = cast()big;
     while (dig > quintillion) {
-        dig = decShr(dig, 18);
+        dig /= quintillion;
     }
     if (dig > billion) {
-        dig = decShr(dig, 9);
+        dig /= billion;
     }
-
     long n = dig.toLong();
     return firstDigit(n);
 }
@@ -637,42 +651,6 @@ unittest {
     BigInt big = BigInt("82345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678905");
     assert(firstDigit(big) == 8);
 }
-
-/**
- * Shifts the number left by the specified number of decimal digits.
- * If n <= 0 the number is returned unchanged.
- */
-/*public T decShl(T)(T num, const int n) if (is (T:BigInt) || is(T:ulong) || is(T:uint)) {
-writeln("n = ", n);
-writeln("A num = ", num);
-    if (n <= 0) { return num; }
-    static if (is(T:BigInt)) {
-        BigInt fives = 1;
-        for (int i = 0; i < n; i++) {
-            fives *= 5;
-        }
-        num = num << n;
-        num *= fives;
-writeln("B num = ", num);
-        return num;
-    }
-    else if (is(T:uint)) {
-        uint scale = 10U^^n;
-writeln("scale = ", scale);
-writeln("num * scale = ", num * scale);
-        num = num * scale;
-writeln("C num = ", num);
-        return num;
-    }
-    else {
-        ulong scale = 10UL^^n;
-writeln("scale = ", scale);
-writeln("num * scale = ", num * scale);
-        num = num * scale;
-writeln("D num = ", num);
-        return num;
-    }
-}*/
 
 /**
  * Shifts the number left by the specified number of decimal digits.
@@ -687,7 +665,6 @@ public BigInt decShl(BigInt num, const int n) {
     }
     num = num << n;
     num *= fives;
-//writeln("A num = ", num);
     return num;
 }
 
@@ -696,13 +673,9 @@ public BigInt decShl(BigInt num, const int n) {
  * If n <= 0 the number is returned unchanged.
  */
 public ulong decShl(ulong num, const int n) {
-//writeln("n = ", n);
     if (n <= 0) { return num; }
     ulong scale = 10UL^^n;
-//writeln("scale = ", scale);
-//writeln("num * scale = ", num * scale);
     num = num * scale;
-//writeln("B num = ", num);
     return num;
 }
 
@@ -711,13 +684,9 @@ public ulong decShl(ulong num, const int n) {
  * If n <= 0 the number is returned unchanged.
  */
 public uint decShl(uint num, const int n) {
-//writeln("n = ", n);
     if (n <= 0) { return num; }
     uint scale = 10U^^n;
-//writeln("scale = ", scale);
-//writeln("num * scale = ", num * scale);
     num = num * scale;
-//writeln("C num = ", num);
     return num;
 }
 
@@ -726,7 +695,6 @@ unittest {
     int n;
     m = 12345;
     n = 2;
-//    writeln("decShl(m,n) = ", decShl(m,n));
     assert(decShl(m,n) == 1234500);
     m = 1234567890;
     n = 7;
@@ -737,47 +705,6 @@ unittest {
     m = 12;
     n = 4;
     assert(decShl(m,n) == 120000);
-}
-
-/**
- * Shifts the number right by the specified number of decimal digits.
- * If n <= 0 the number is returned unchanged.
- */
-public BigInt decShr(BigInt big, const uint n) {
-    if (n <= 0) { return big; }
-
-    BigInt fives = 1;
-    for (int i = 0; i < n; i++) {
-        fives *= 5;
-    }
-
-    big = big >> n;
-    if (big == 0) {
-        return big;
-    }
-    big /= fives;
-    return big;
-}
-
-unittest {
-    BigInt m;
-    int n;
-    m = 12345;
-    n = 2;
-//    writeln("decShr(m,n) = ", decShr(m,n));
-    assert(decShr(m,n) == 123);
-    m = 12345678901234567;
-    n = 7;
-    assert(decShr(m,n) == 1234567890);
-    m = 12;
-    n = 2;
-    assert(decShr(m,n) == 0);
-    m = 12;
-    n = 4;
-    assert(decShr(m,n) == 0);
-    m = long.max;
-    n = 18;
-    assert(decShr(m,n) == 9);
 }
 
 /**
@@ -852,52 +779,6 @@ unittest {
     n = long.max;
     assert(lastDigit(n) == 7);
 }
-
-/**
- * Shifts the number right by the specified number of decimal digits.
- * If n <= 0 the number is returned unchanged. If n > 18 zero is returned.
- */
-public ulong decShr(ulong num, int n) {
-    if (n <= 0) { return num; }
-    if (n > 18) { return 0; }
-    long scale = 10UL^^n;
-    num /= scale;
-    return num;
-}
-
-unittest {
-    long m;
-    int n;
-    m = 12345;
-    n = 2;
-    assert(decShr(m,n) == 123);
-    m = 12345678901234567;
-    n = 7;
-    assert(decShr(m,n) == 1234567890);
-    m = 12;
-    n = 2;
-    assert(decShr(m,n) == 0);
-    m = 12;
-    n = 4;
-    assert(decShr(m,n) == 0);
-    m = long.max;
-    n = 18;
-    assert(decShr(m,n) == 9);
-}
-
-// TODO: check for overflow
-/**
- * Function:   decShl
- * Returns:    the shifted number
- * Parameters: num :the number to shift.
- *             n   :the number of digits to shift.
- */
-/*public ulong decShl(ulong num, int n) {
-    if (n <= 0) { return num; }
-    long scale = 10UL^^n;
-    num *= scale;
-    return num;
-}*/
 
 unittest {
     long m;
@@ -1051,21 +932,4 @@ unittest {
     n = long.max;
     assert(numDigits(n) == 19);
 }
-
-/*
-public long decShr(ref long num, uint n) {
-    for (int m = 0; m < n; m++) {
-        num /= 10;
-        if (num == 0) break;
-    }
-    return num;
-}
-
-public long decShl(ref long num, uint n) {
-    for (int m = 0; m < n; m++) {
-        num *= 10;
-    }
-    return num;
-}
-*/
 

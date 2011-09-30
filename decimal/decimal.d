@@ -47,7 +47,7 @@ unittest {
     writeln("-------------------");
 }
 
-alias Decimal.bigContext bigContext;
+alias BigDecimal.bigContext bigContext;
 
 // special values for NaN, Inf, etc.
 private static enum SV {NONE, ZERO, INF, QNAN, SNAN};
@@ -60,15 +60,15 @@ private static enum SV {NONE, ZERO, INF, QNAN, SNAN};
  * http://www.speleotrove.com/decimal. This specification conforms with
  * IEEE standard 754-2008.
  */
-struct Decimal {
+struct BigDecimal {
 
     private static DecimalContext bigContext = DecimalContext();
 
     // TODO: make these private
     private SV sval = SV.QNAN;        // special values: default value is quiet NaN
     private bool signed = false;        // true if the value is negative, false otherwise.
-    private int expo = 0;            // the exponent of the Decimal value
-    private BigInt mant;            // the coefficient of the Decimal value
+    private int expo = 0;            // the exponent of the BigDecimal value
+    private BigInt mant;            // the coefficient of the BigDecimal value
     // NOTE: not a uint -- causes math problems down the line.
     package int digits;                 // the number of decimal digits in this number.
                                      // (unless the number is a special value)
@@ -76,27 +76,27 @@ struct Decimal {
 private:
 
 // common decimal "numbers"
-    immutable Decimal NAN      = Decimal(SV.QNAN);
-    immutable Decimal SNAN     = Decimal(SV.SNAN);
-    immutable Decimal INFINITY = Decimal(SV.INF);
-    immutable Decimal NEG_INF  = Decimal(SV.INF, true);
-    immutable Decimal ZERO     = Decimal(SV.ZERO);
-    immutable Decimal NEG_ZERO = Decimal(SV.ZERO, true);
+    immutable BigDecimal NAN      = BigDecimal(SV.QNAN);
+    immutable BigDecimal SNAN     = BigDecimal(SV.SNAN);
+    immutable BigDecimal INFINITY = BigDecimal(SV.INF);
+    immutable BigDecimal NEG_INF  = BigDecimal(SV.INF, true);
+    immutable BigDecimal ZERO     = BigDecimal(SV.ZERO);
+    immutable BigDecimal NEG_ZERO = BigDecimal(SV.ZERO, true);
 
     immutable BigInt BIG_ZERO  = cast(immutable)BigInt(0);
 
-//    static immutable Decimal ONE  = cast(immutable)Decimal(1);
-//    static immutable Decimal TWO  = cast(immutable)Decimal(2);
-//    static immutable Decimal FIVE = cast(immutable)Decimal(5);
-//    static immutable Decimal TEN  = cast(immutable)Decimal(10);
+//    static immutable BigDecimal ONE  = cast(immutable)BigDecimal(1);
+//    static immutable BigDecimal TWO  = cast(immutable)BigDecimal(2);
+//    static immutable BigDecimal FIVE = cast(immutable)BigDecimal(5);
+//    static immutable BigDecimal TEN  = cast(immutable)BigDecimal(10);
 
 unittest {
-    Decimal num;
+    BigDecimal num;
     num = NAN;
     assert(num.toString == "NaN");
     num = SNAN;
     assert(num.toString == "sNaN");
-    assert("Decimal(SV.QNAN).toAbstract = ", NAN.toAbstract);
+    assert("BigDecimal(SV.QNAN).toAbstract = ", NAN.toAbstract);
     num = NEG_ZERO;
     assert(num.toString == "-0");
 }
@@ -120,7 +120,7 @@ public:
     }
 
     unittest {
-        Decimal num = Decimal(SV.INF, true);
+        BigDecimal num = BigDecimal(SV.INF, true);
         assert(num.toSciString == "-Infinity");
         assert(num.toAbstract() == "[1,inf]");
     }
@@ -143,14 +143,14 @@ public:
     }
 
     unittest {
-        Decimal num;
-        num = Decimal(true, BigInt(7254), 94);
+        BigDecimal num;
+        num = BigDecimal(true, BigInt(7254), 94);
         assert(num.toString == "-7.254E+97");
     }
 
     // UNREADY: this(const BigInt, const int). Flags.
     /**
-     * Constructs a Decimal from a BigInt coefficient and an
+     * Constructs a BigDecimal from a BigInt coefficient and an
      * optional integer exponent. The sign of the number is the sign
      * of the coefficient. The initial precision is determined by the number
      * of digits in the coefficient.
@@ -162,10 +162,10 @@ public:
     };
 
     unittest {
-        Decimal num;
-        num = Decimal(BigInt(7254), 94);
+        BigDecimal num;
+        num = BigDecimal(BigInt(7254), 94);
         assert(num.toString == "7.254E+97");
-        num = Decimal(BigInt(-7254));
+        num = BigDecimal(BigInt(-7254));
         assert(num.toString == "-7254");
     }
 
@@ -210,26 +210,26 @@ public:
     };
 
     unittest {
-        Decimal num;
+        BigDecimal num;
         string str;
-        num = Decimal(1, 12334, -5);
+        num = BigDecimal(1, 12334, -5);
         str = "-0.12334";
         assert(num.toString == str);
-        num = Decimal(-23456, 10);
+        num = BigDecimal(-23456, 10);
         str = "-2.3456E+14";
         assert(num.toString == str);
-        num = Decimal(234568901234);
+        num = BigDecimal(234568901234);
         str = "234568901234";
         assert(num.toString == str);
-        num = Decimal("123.457E+29");
+        num = BigDecimal("123.457E+29");
         str = "1.23457E+31";
         assert(num.toString == str);
         num = std.math.E;
         str = "2.71828183";
         assert(num.toString == str);
         num = std.math.LOG2;
-        Decimal copy = Decimal(num);
-        assert(compareTotal!Decimal(num, copy) == 0);
+        BigDecimal copy = BigDecimal(num);
+        assert(compareTotal!BigDecimal(num, copy) == 0);
     }
 
     // floating point constructors:
@@ -243,9 +243,9 @@ public:
         this(str);
     }
 
-    // UNREADY: this(Decimal). Flags. Unit Tests.
+    // UNREADY: this(BigDecimal). Flags. Unit Tests.
     // copy constructor
-    this(const Decimal that) {
+    this(const BigDecimal that) {
         this.signed = that.signed;
         this.sval   = that.sval;
         this.digits = that.digits;
@@ -257,13 +257,13 @@ public:
     /**
      * dup property
      */
-    const Decimal dup() {
-        return Decimal(this);
+    const BigDecimal dup() {
+        return BigDecimal(this);
     }
 
     unittest {
-        Decimal num = Decimal(std.math.PI);
-        Decimal copy = num.dup;
+        BigDecimal num = BigDecimal(std.math.PI);
+        BigDecimal copy = num.dup;
         assert(num == copy);
     }
 
@@ -271,9 +271,9 @@ public:
 // assignment
 //--------------------------------
 
-    // UNREADY: opAssign(T: Decimal)(const Decimal). Flags. Unit Tests.
-    /// Assigns a Decimal (makes a copy)
-    void opAssign(T:Decimal)(const T that) {
+    // UNREADY: opAssign(T: BigDecimal)(const BigDecimal). Flags. Unit Tests.
+    /// Assigns a BigDecimal (makes a copy)
+    void opAssign(T:BigDecimal)(const T that) {
         this.signed = that.signed;
         this.sval   = that.sval;
         this.digits = that.digits;
@@ -284,19 +284,19 @@ public:
     // UNREADY: opAssign(T)(const T). Flags.
     ///    Assigns a floating point value.
     void opAssign(T:BigInt)(const T that) {
-        this = Decimal(that);
+        this = BigDecimal(that);
     }
 
     // UNREADY: opAssign(T)(const T). Flags.
     ///    Assigns a floating point value.
     void opAssign(T:long)(const T that) {
-        this = Decimal(that);
+        this = BigDecimal(that);
     }
 
     // UNREADY: opAssign(T)(const T). Flags. Unit Tests.
     ///    Assigns a floating point value.
     void opAssign(T:real)(const T that) {
-        this = Decimal(that);
+        this = BigDecimal(that);
     }
 
     void opAssign(T)(const T that) if (isDecimal!T) {
@@ -306,9 +306,9 @@ public:
     unittest {
         import decimal.dec32;
 
-        Decimal num;
+        BigDecimal num;
         string str;
-        num = Decimal(1, 245, 8);
+        num = BigDecimal(1, 245, 8);
         str = "-2.45E+10";
         assert(num.toString == str);
         num = long.max;
@@ -333,37 +333,37 @@ public:
      * Converts a number to an abstract string representation.
      */
     public const string toAbstract() {
-        return decimal.conv.toAbstract!Decimal(this);
+        return decimal.conv.toAbstract!BigDecimal(this);
     }
 
 unittest {
-    Decimal num;
+    BigDecimal num;
     string str;
-    num = Decimal("-inf");
+    num = BigDecimal("-inf");
     str = "[1,inf]";
     assert(num.toAbstract == str);
-    num = Decimal("nan");
+    num = BigDecimal("nan");
     str = "[0,qNaN]";
     assert(num.toAbstract == str);
-    num = Decimal("snan1234");
+    num = BigDecimal("snan1234");
     str = "[0,sNaN1234]";
     assert(num.toAbstract == str);
 }
 
 // READY: toSciString.
 /**
- * Converts a Decimal to a string representation.
+ * Converts a BigDecimal to a string representation.
  */
 const string toSciString() {
-    return decimal.conv.toSciString!Decimal(this);
+    return decimal.conv.toSciString!BigDecimal(this);
 };
 
 // READY: toEngString.
 /**
- * Converts a Decimal to an engineering string representation.
+ * Converts a BigDecimal to an engineering string representation.
  */
 const string toEngString() {
-   return decimal.conv.toEngString!Decimal(this);
+   return decimal.conv.toEngString!BigDecimal(this);
 };
 
 /**
@@ -374,9 +374,9 @@ const string toString() {
 };
 
 unittest {
-    Decimal num;
+    BigDecimal num;
     string str;
-    num = Decimal(200000, 71);
+    num = BigDecimal(200000, 71);
     str = "2.00000E+76";
     assert(num.toString == str);
 }
@@ -449,11 +449,11 @@ unittest {
     }
 
     const string toExact() {
-        return decimal.conv.toExact!Decimal(this);
+        return decimal.conv.toExact!BigDecimal(this);
     }
 
     unittest {
-        Decimal num;
+        BigDecimal num;
         assert(num.toExact == "+NaN");
         num = +9999999E+90;
         assert(num.toExact == "+9999999E+90");
@@ -505,8 +505,8 @@ unittest {
 
     /// returns a number with the same exponent as this number
     /// and a coefficient of 1.
-    const Decimal quantum() {
-        return Decimal(1, this.expo);
+    const BigDecimal quantum() {
+        return BigDecimal(1, this.expo);
     }
 
     unittest {
@@ -519,14 +519,14 @@ unittest {
 //--------------------------------
 
     /// returns the default value for this type (NaN)
-    static Decimal init() {
+    static BigDecimal init() {
         return NAN.dup;
     }
 
     /// Returns NaN
-    static Decimal nan(uint payload = 0) {
+    static BigDecimal nan(uint payload = 0) {
         if (payload) {
-            Decimal dec = NAN.dup;
+            BigDecimal dec = NAN.dup;
             dec.payload = payload;
             return dec;
         }
@@ -534,9 +534,9 @@ unittest {
     }
 
     /// Returns signaling NaN
-    static Decimal snan(uint payload = 0) {
+    static BigDecimal snan(uint payload = 0) {
         if (payload) {
-            Decimal dec = SNAN.dup;
+            BigDecimal dec = SNAN.dup;
             dec.payload = payload;
             return dec;
         }
@@ -544,12 +544,12 @@ unittest {
     }
 
     /// Returns infinity.
-    static Decimal infinity(bool signed = false) {
+    static BigDecimal infinity(bool signed = false) {
         return signed ? NEG_INF.dup : INFINITY.dup;
     }
 
     /// Returns zero.
-    static Decimal zero(bool signed = false) {
+    static BigDecimal zero(bool signed = false) {
         return signed ? NEG_ZERO.dup : ZERO.dup;
     }
 
@@ -578,23 +578,23 @@ unittest {
 
     // Returns the maximum representable normal value in the current context.
     // TODO: this is a fairly expensive operation. Can it be fixed?
-    static Decimal max(DecimalContext context = bigContext) {
-        return Decimal(context.maxString);
+    static BigDecimal max(DecimalContext context = bigContext) {
+        return BigDecimal(context.maxString);
     }
 
     /// Returns the minimum representable normal value in this context.
-    static Decimal min_normal(DecimalContext context = bigContext) {
-        return Decimal(1, context.eMin);
+    static BigDecimal min_normal(DecimalContext context = bigContext) {
+        return BigDecimal(1, context.eMin);
     }
 
     /// Returns the minimum representable subnormal value in this context.
-    static Decimal min(DecimalContext context = bigContext) {
-        return Decimal(1, context.eTiny);
+    static BigDecimal min(DecimalContext context = bigContext) {
+        return BigDecimal(1, context.eTiny);
     }
 
     /// returns the smallest available increment to 1.0 in this context
-    static Decimal epsilon(DecimalContext context = bigContext) {
-        return Decimal(1, -context.precision);
+    static BigDecimal epsilon(DecimalContext context = bigContext) {
+        return BigDecimal(1, -context.precision);
     }
 
     static int min_10_exp(DecimalContext context = bigContext) {
@@ -619,14 +619,14 @@ unittest {
     /**
      * Returns the canonical form of the number.
      */
-    const Decimal canonical() {
+    const BigDecimal canonical() {
         return this.dup;
     }
 
     unittest {
-        Decimal num = Decimal("2.50");
+        BigDecimal num = BigDecimal("2.50");
         assert(num.isCanonical);
-        Decimal copy = num.canonical;
+        BigDecimal copy = num.canonical;
         assert(compareTotal(num, copy) == 0);
     }
 
@@ -638,12 +638,12 @@ unittest {
     }
 
     unittest {
-        Decimal num;
-        num = Decimal("0");
+        BigDecimal num;
+        num = BigDecimal("0");
         assert(num.isZero);
-        num = Decimal("2.50");
+        num = BigDecimal("2.50");
         assert(!num.isZero);
-        num = Decimal("-0E+2");
+        num = BigDecimal("-0E+2");
         assert(num.isZero);
     }
 
@@ -655,12 +655,12 @@ unittest {
     }
 
     unittest {
-        Decimal num;
-        num = Decimal("2.50");
+        BigDecimal num;
+        num = BigDecimal("2.50");
         assert(!num.isNaN);
-        num = Decimal("NaN");
+        num = BigDecimal("NaN");
         assert(num.isNaN);
-        num = Decimal("-sNaN");
+        num = BigDecimal("-sNaN");
         assert(num.isNaN);
     }
 
@@ -672,12 +672,12 @@ unittest {
     }
 
     unittest {
-        Decimal num;
-        num = Decimal("2.50");
+        BigDecimal num;
+        num = BigDecimal("2.50");
         assert(!num.isSignaling);
-        num = Decimal("NaN");
+        num = BigDecimal("NaN");
         assert(!num.isSignaling);
-        num = Decimal("sNaN");
+        num = BigDecimal("sNaN");
         assert(num.isSignaling);
     }
 
@@ -689,12 +689,12 @@ unittest {
     }
 
     unittest {
-        Decimal num;
-        num = Decimal("2.50");
+        BigDecimal num;
+        num = BigDecimal("2.50");
         assert(!num.isQuiet);
-        num = Decimal("NaN");
+        num = BigDecimal("NaN");
         assert(num.isQuiet);
-        num = Decimal("sNaN");
+        num = BigDecimal("sNaN");
         assert(!num.isQuiet);
     }
 
@@ -706,12 +706,12 @@ unittest {
     }
 
     unittest {
-        Decimal num;
-        num = Decimal("2.50");
+        BigDecimal num;
+        num = BigDecimal("2.50");
         assert(!num.isInfinite);
-        num = Decimal("-Inf");
+        num = BigDecimal("-Inf");
         assert(num.isInfinite);
-        num = Decimal("NaN");
+        num = BigDecimal("NaN");
         assert(!num.isInfinite);
     }
 
@@ -725,18 +725,18 @@ unittest {
     }
 
     unittest {
-        Decimal num;
-        num = Decimal("2.50");
+        BigDecimal num;
+        num = BigDecimal("2.50");
         assert(num.isFinite);
-        num = Decimal("-0.3");
+        num = BigDecimal("-0.3");
         assert(num.isFinite);
         num = 0;
         assert(num.isFinite);
-        num = Decimal("Inf");
+        num = BigDecimal("Inf");
         assert(!num.isFinite);
-        num = Decimal("-Inf");
+        num = BigDecimal("-Inf");
         assert(!num.isFinite);
-        num = Decimal("NaN");
+        num = BigDecimal("NaN");
         assert(!num.isFinite);
     }
 
@@ -750,7 +750,7 @@ unittest {
     }
 
     unittest {
-        Decimal num;
+        BigDecimal num;
         num = infinity(true);
         assert(num.isSpecial);
         num = snan(1234);
@@ -767,12 +767,12 @@ unittest {
     }
 
     unittest {
-        Decimal num;
-        num = Decimal("2.50");
+        BigDecimal num;
+        num = BigDecimal("2.50");
         assert(!num.isSigned);
-        num = Decimal("-12");
+        num = BigDecimal("-12");
         assert(num.isSigned);
-        num = Decimal("-0");
+        num = BigDecimal("-0");
         assert(num.isSigned);
     }
 
@@ -781,12 +781,12 @@ unittest {
     }
 
     unittest {
-        Decimal num;
-        num = Decimal("2.50");
+        BigDecimal num;
+        num = BigDecimal("2.50");
         assert(!num.isNegative);
-        num = Decimal("-12");
+        num = BigDecimal("-12");
         assert(num.isNegative);
-        num = Decimal("-0");
+        num = BigDecimal("-0");
         assert(num.isNegative);
     }
 
@@ -799,16 +799,16 @@ unittest {
     }
 
     unittest {
-        Decimal num;
-        num = Decimal("2.50");
+        BigDecimal num;
+        num = BigDecimal("2.50");
         assert(!num.isSubnormal);
-        num = Decimal("0.1E-99");
+        num = BigDecimal("0.1E-99");
         assert(num.isSubnormal);
-        num = Decimal("0.00");
+        num = BigDecimal("0.00");
         assert(!num.isSubnormal);
-        num = Decimal("-Inf");
+        num = BigDecimal("-Inf");
         assert(!num.isSubnormal);
-        num = Decimal("NaN");
+        num = BigDecimal("NaN");
         assert(!num.isSubnormal);
     }
 
@@ -823,16 +823,16 @@ unittest {
     }
 
     unittest {
-        Decimal num;
-        num = Decimal("2.50");
+        BigDecimal num;
+        num = BigDecimal("2.50");
         assert(num.isNormal);
-        num = Decimal("0.1E-99");
+        num = BigDecimal("0.1E-99");
         assert(!num.isNormal);
-        num = Decimal("0.00");
+        num = BigDecimal("0.00");
         assert(!num.isNormal);
-        num = Decimal("-Inf");
+        num = BigDecimal("-Inf");
         assert(!num.isNormal);
-        num = Decimal("NaN");
+        num = BigDecimal("NaN");
         assert(!num.isNormal);
     }
 
@@ -845,7 +845,7 @@ unittest {
      }
 
     unittest {
-        Decimal num;
+        BigDecimal num;
         num = 12345;
         assert(num.isIntegral);
         num = BigInt("123456098420234978023480");
@@ -866,12 +866,12 @@ unittest {
      * Returns -1, 0 or 1, if this number is less than, equal to or
      * greater than the argument, respectively.
      */
-    const int opCmp(const Decimal that) {
-        return compare!Decimal(this, that, bigContext);
+    const int opCmp(const BigDecimal that) {
+        return compare!BigDecimal(this, that, bigContext);
     }
 
     unittest {
-        Decimal num1, num2;
+        BigDecimal num1, num2;
         num1 = 105;
         num2 = 10.543;
         assert(num1 > num2);
@@ -882,19 +882,19 @@ unittest {
     }
 
     /**
-     * Returns true if this number is equal to the specified Decimal.
+     * Returns true if this number is equal to the specified BigDecimal.
      * A NaN is not equal to any number, not even to another NaN.
      * Infinities are equal if they have the same sign.
      * Zeros are equal regardless of sign.
      * Finite numbers are equal if they are numerically equal to the current precision.
-     * A Decimal may not be equal to itself (this != this) if it is a NaN.
+     * A BigDecimal may not be equal to itself (this != this) if it is a NaN.
      */
-    const bool opEquals (ref const Decimal that) {
-        return equals!Decimal(this, that, bigContext);
+    const bool opEquals (ref const BigDecimal that) {
+        return equals!BigDecimal(this, that, bigContext);
     }
 
     unittest {
-        Decimal num1, num2;
+        BigDecimal num1, num2;
         num1 = 105;
         num2 = 10.543;
         assert(num1 != num2);
@@ -906,24 +906,24 @@ unittest {
 // unary arithmetic operators
 //--------------------------------
 
-    const Decimal opUnary(string op)()
+    const BigDecimal opUnary(string op)()
     {
         static if (op == "+") {
-            return plus!Decimal(this, bigContext);
+            return plus!BigDecimal(this, bigContext);
         }
         else static if (op == "-") {
-            return minus!Decimal(this, bigContext);
+            return minus!BigDecimal(this, bigContext);
         }
         else static if (op == "++") {
-            return add!Decimal(this, Decimal(1), bigContext);
+            return add!BigDecimal(this, BigDecimal(1), bigContext);
         }
         else static if (op == "--") {
-            return subtract!Decimal(this, Decimal(1), bigContext);
+            return subtract!BigDecimal(this, BigDecimal(1), bigContext);
         }
     }
 
     unittest {
-        Decimal num, actual, expect;
+        BigDecimal num, actual, expect;
         num = 134;
         expect = num;
         actual = +num;
@@ -941,7 +941,7 @@ unittest {
 // TODO:   actual = --num; // fails!
 //        actual = num--;
 //        assert(actual == expect);
-        num = Decimal(9999999, 90);
+        num = BigDecimal(9999999, 90);
         expect = num;
         actual = num++;
         assert(actual == expect);
@@ -955,27 +955,27 @@ unittest {
 //  binary arithmetic operators
 //--------------------------------
 
-    const Decimal opBinary(string op)(const Decimal rhs)
+    const BigDecimal opBinary(string op)(const BigDecimal rhs)
     {
         static if (op == "+") {
-            return add!Decimal(this, rhs, bigContext);
+            return add!BigDecimal(this, rhs, bigContext);
         }
         else static if (op == "-") {
-            return subtract!Decimal(this, rhs, bigContext);
+            return subtract!BigDecimal(this, rhs, bigContext);
         }
         else static if (op == "*") {
-            return multiply!Decimal(this, rhs, bigContext);
+            return multiply!BigDecimal(this, rhs, bigContext);
         }
         else static if (op == "/") {
-            return divide!Decimal(this, rhs, bigContext);
+            return divide!BigDecimal(this, rhs, bigContext);
         }
         else static if (op == "%") {
-            return remainder!Decimal(this, rhs, bigContext);
+            return remainder!BigDecimal(this, rhs, bigContext);
         }
     }
 
     unittest {
-        Decimal op1, op2, actual, expect;
+        BigDecimal op1, op2, actual, expect;
         op1 = 4;
         op2 = 8;
         actual = op1 + op2;
@@ -1003,13 +1003,13 @@ unittest {
 // operator assignment
 //-----------------------------
 
-    ref Decimal opOpAssign(string op) (Decimal rhs) {
+    ref BigDecimal opOpAssign(string op) (BigDecimal rhs) {
         this = opBinary!op(rhs);
         return this;
     }
 
     unittest {
-        Decimal op1, op2, actual, expect;
+        BigDecimal op1, op2, actual, expect;
         op1 = 23.56;
         op2 = -2.07;
         op1 += op2;
@@ -1026,8 +1026,8 @@ unittest {
 // nextUp, nextDown, nextAfter
 //-----------------------------
 
-    const Decimal nextUp() {
-        return nextPlus!Decimal(this, bigContext);
+    const BigDecimal nextUp() {
+        return nextPlus!BigDecimal(this, bigContext);
     }
 
     unittest {
@@ -1035,8 +1035,8 @@ unittest {
         writeln("test missing");
     }
 
-    const Decimal nextDown() {
-        return nextMinus!Decimal(this, bigContext);
+    const BigDecimal nextDown() {
+        return nextMinus!BigDecimal(this, bigContext);
     }
 
     unittest {
@@ -1044,8 +1044,8 @@ unittest {
         writeln("test missing");
     }
 
-    const Decimal nextAfter(const Decimal num) {
-        return nextToward!Decimal(this, num, bigContext);
+    const BigDecimal nextAfter(const BigDecimal num) {
+        return nextToward!BigDecimal(this, num, bigContext);
     }
 
     unittest {
@@ -1066,7 +1066,7 @@ unittest {
         assert(pow10(3) == 1000);
     }
 
-}    // end struct Decimal
+}    // end struct BigDecimal
 
 unittest {
     writeln("-------------------");

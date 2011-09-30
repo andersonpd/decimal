@@ -80,18 +80,18 @@ public string classify(T)(const T num) if (isDecimal!T) {
 }
 
 unittest {
-    Decimal num;
-    num = Decimal("Inf");
+    BigDecimal num;
+    num = BigDecimal("Inf");
     assert(classify(num) == "+Infinity");
-    num = Decimal("1E-10");
+    num = BigDecimal("1E-10");
     assert(classify(num) == "+Normal");
-    num = Decimal("-0");
+    num = BigDecimal("-0");
     assert(classify(num) == "-Zero");
-    num = Decimal("-0.1E-99");
+    num = BigDecimal("-0.1E-99");
     assert(classify(num) == "-Subnormal");
-    num = Decimal("NaN");
+    num = BigDecimal("NaN");
     assert(classify(num) == "NaN");
-    num = Decimal("sNaN");
+    num = BigDecimal("sNaN");
     assert(classify(num) == "sNaN");
 }
 
@@ -108,12 +108,12 @@ public T copy(T)(const T num) if (isDecimal!T) {
 }
 
 unittest {
-    Decimal num, expect;
-    num  = Decimal("2.1");
-    expect = Decimal("2.1");
+    BigDecimal num, expect;
+    num  = BigDecimal("2.1");
+    expect = BigDecimal("2.1");
     assert(compareTotal(copy(num),expect) == 0);
-    num  = Decimal("-1.00");
-    expect = Decimal("-1.00");
+    num  = BigDecimal("-1.00");
+    expect = BigDecimal("-1.00");
     assert(compareTotal(copy(num),expect) == 0);
 }
 
@@ -128,12 +128,12 @@ public T copyAbs(T)(const T num) if (isDecimal!T) {
 }
 
 unittest {
-    Decimal num, expect;
+    BigDecimal num, expect;
     num  = 2.1;
     expect = 2.1;
     assert(compareTotal(copyAbs(num),expect) == 0);
-    num  = Decimal("-1.00");
-    expect = Decimal("1.00");
+    num  = BigDecimal("-1.00");
+    expect = BigDecimal("1.00");
     assert(compareTotal(copyAbs(num),expect) == 0);
 }
 
@@ -148,8 +148,8 @@ public T copyNegate(T)(const T num) if (isDecimal!T) {
 }
 
 unittest {
-    Decimal num  = "101.5";
-    Decimal expect = "-101.5";
+    BigDecimal num  = "101.5";
+    BigDecimal expect = "-101.5";
     assert(compareTotal(copyNegate(num),expect) == 0);
 }
 
@@ -164,7 +164,7 @@ public T copySign(T)(const T op1, const T op2) if (isDecimal!T) {
 }
 
 unittest {
-    Decimal num1, num2, expect;
+    BigDecimal num1, num2, expect;
     num1 = 1.50;
     num2 = 7.33;
     expect = 1.50;
@@ -223,81 +223,81 @@ public T quantize(T)(const T op1, const T op2,
 }
 
 unittest {
-    Decimal op1, op2, actual, expect;
+    BigDecimal op1, op2, actual, expect;
     string str;
-    op1 = Decimal("2.17");
-    op2 = Decimal("0.001");
-    expect = Decimal("2.170");
-    actual = quantize!Decimal(op1, op2, testContextA);
+    op1 = BigDecimal("2.17");
+    op2 = BigDecimal("0.001");
+    expect = BigDecimal("2.170");
+    actual = quantize!BigDecimal(op1, op2, testContextA);
     assert(actual == expect);
-    op1 = Decimal("2.17");
-    op2 = Decimal("0.01");
-    expect = Decimal("2.17");
-    actual = quantize(op1, op2, testContextA);
-    assert(actual == expect);
-    op1 = Decimal("2.17");
-    op2 = Decimal("0.1");
-    expect = Decimal("2.2");
+    op1 = BigDecimal("2.17");
+    op2 = BigDecimal("0.01");
+    expect = BigDecimal("2.17");
     actual = quantize(op1, op2, testContextA);
     assert(actual == expect);
-    op1 = Decimal("2.17");
-    op2 = Decimal("1e+0");
-    expect = Decimal("2");
+    op1 = BigDecimal("2.17");
+    op2 = BigDecimal("0.1");
+    expect = BigDecimal("2.2");
     actual = quantize(op1, op2, testContextA);
     assert(actual == expect);
-    op1 = Decimal("2.17");
-    op2 = Decimal("1e+1");
-    expect = Decimal("0E+1");
-    actual = quantize(op1, op2, testContextA);
-    assert(actual.toString() == expect.toString());
-    op1 = Decimal("-Inf");
-    op2 = Decimal("Infinity");
-    expect = Decimal("-Infinity");
+    op1 = BigDecimal("2.17");
+    op2 = BigDecimal("1e+0");
+    expect = BigDecimal("2");
     actual = quantize(op1, op2, testContextA);
     assert(actual == expect);
-    op1 = Decimal("2");
-    op2 = Decimal("Infinity");
-    expect = Decimal("NaN");
+    op1 = BigDecimal("2.17");
+    op2 = BigDecimal("1e+1");
+    expect = BigDecimal("0E+1");
     actual = quantize(op1, op2, testContextA);
     assert(actual.toString() == expect.toString());
-    op1 = Decimal("-0.1");
-    op2 = Decimal("1");
-    expect = Decimal("-0");
+    op1 = BigDecimal("-Inf");
+    op2 = BigDecimal("Infinity");
+    expect = BigDecimal("-Infinity");
+    actual = quantize(op1, op2, testContextA);
+    assert(actual == expect);
+    op1 = BigDecimal("2");
+    op2 = BigDecimal("Infinity");
+    expect = BigDecimal("NaN");
     actual = quantize(op1, op2, testContextA);
     assert(actual.toString() == expect.toString());
-    op1 = Decimal("-0");
-    op2 = Decimal("1e+5");
-    expect = Decimal("-0E+5");
+    op1 = BigDecimal("-0.1");
+    op2 = BigDecimal("1");
+    expect = BigDecimal("-0");
     actual = quantize(op1, op2, testContextA);
     assert(actual.toString() == expect.toString());
-    op1 = Decimal("+35236450.6");
-    op2 = Decimal("1e-2");
-    expect = Decimal("NaN");
+    op1 = BigDecimal("-0");
+    op2 = BigDecimal("1e+5");
+    expect = BigDecimal("-0E+5");
     actual = quantize(op1, op2, testContextA);
     assert(actual.toString() == expect.toString());
-    op1 = Decimal("-35236450.6");
-    op2 = Decimal("1e-2");
-    expect = Decimal("NaN");
+    op1 = BigDecimal("+35236450.6");
+    op2 = BigDecimal("1e-2");
+    expect = BigDecimal("NaN");
     actual = quantize(op1, op2, testContextA);
     assert(actual.toString() == expect.toString());
-    op1 = Decimal("217");
-    op2 = Decimal("1e-1");
-    expect = Decimal( "217.0");
+    op1 = BigDecimal("-35236450.6");
+    op2 = BigDecimal("1e-2");
+    expect = BigDecimal("NaN");
     actual = quantize(op1, op2, testContextA);
     assert(actual.toString() == expect.toString());
-    op1 = Decimal("217");
-    op2 = Decimal("1e+0");
-    expect = Decimal("217");
+    op1 = BigDecimal("217");
+    op2 = BigDecimal("1e-1");
+    expect = BigDecimal( "217.0");
     actual = quantize(op1, op2, testContextA);
     assert(actual.toString() == expect.toString());
-    op1 = Decimal("217");
-    op2 = Decimal("1e+1");
-    expect = Decimal("2.2E+2");
+    op1 = BigDecimal("217");
+    op2 = BigDecimal("1e+0");
+    expect = BigDecimal("217");
     actual = quantize(op1, op2, testContextA);
     assert(actual.toString() == expect.toString());
-    op1 = Decimal("217");
-    op2 = Decimal("1e+2");
-    expect = Decimal("2E+2");
+    op1 = BigDecimal("217");
+    op2 = BigDecimal("1e+1");
+    expect = BigDecimal("2.2E+2");
+    actual = quantize(op1, op2, testContextA);
+    assert(actual.toString() == expect.toString());
+    op1 = BigDecimal("217");
+    op2 = BigDecimal("1e+2");
+    expect = BigDecimal("2E+2");
     actual = quantize(op1, op2, testContextA);
     assert(actual.toString() == expect.toString());
     assert(actual == expect);
@@ -331,9 +331,9 @@ public T logb(T)(const T num, DecimalContext context) {
 }
 
 unittest {
-    Decimal num, expd;
-    num = Decimal("250");
-    expd = Decimal("2");
+    BigDecimal num, expd;
+    num = BigDecimal("250");
+    expd = BigDecimal("2");
     assert(logb(num, testContextA) == expd);
 }
 
@@ -368,9 +368,9 @@ public T scaleb(T)(const T op1, const T op2,
 }
 
 unittest {
-    auto num1 = Decimal("7.50");
-    auto num2 = Decimal("-2");
-    auto expd = Decimal("0.0750");
+    auto num1 = BigDecimal("7.50");
+    auto num2 = BigDecimal("-2");
+    auto expd = BigDecimal("0.0750");
     assert(scaleb(num1, num2, testContextA) == expd);
 }
 
@@ -415,9 +415,9 @@ public T reduce(T)(const T num, DecimalContext context) if (isDecimal!T) {
 }
 
 unittest {
-    Decimal num, red;
+    BigDecimal num, red;
     string str;
-    num = Decimal("1.200");
+    num = BigDecimal("1.200");
     str = "1.2";
     red = reduce(num, testContextA);
 writeln("str = ", str);
@@ -426,7 +426,6 @@ writeln("red = ", red);
     assert(red.toString == str);
 }
 
-// READY: abs
 /**
  *    Absolute value -- returns a copy and clears the negative sign, if needed.
  *    This operation rounds the number and may set flags.
@@ -435,8 +434,6 @@ writeln("red = ", red);
  *    To return the absolute value without rounding or setting flags
  *    use the "copyAbs" function.
  */
-/// Returns a new Decimal equal to the absolute value of this Decimal.
-// NOTE: flags only
 public T abs(T)(const T op1, DecimalContext context) if (isDecimal!T) {
     T result;
     if(invalidOperand!T(op1, result, context)) {
@@ -448,10 +445,10 @@ public T abs(T)(const T op1, DecimalContext context) if (isDecimal!T) {
 }
 
 unittest {
-    Decimal num;
-    Decimal expect;
-    num = Decimal("-Inf");
-    expect = Decimal("Inf");
+    BigDecimal num;
+    BigDecimal expect;
+    num = BigDecimal("-Inf");
+    expect = BigDecimal("Inf");
     assert(abs(num, testContextA) == expect);
     num = 101.5;
     expect = 101.5;
@@ -478,8 +475,8 @@ public T plus(T)(const T op1, DecimalContext context) if (isDecimal!T) {
 }
 
 unittest {
-    Decimal zero = Decimal.zero;
-    Decimal num, expect, actual;
+    BigDecimal zero = BigDecimal.zero;
+    BigDecimal num, expect, actual;
     num = 1.3;
     expect = add(zero, num, testContextA);
     actual = plus(num,testContextA);
@@ -506,8 +503,8 @@ public T minus(T)(const T op1, DecimalContext context) if (isDecimal!T) {
 }
 
 unittest {
-    Decimal zero = Decimal(0);
-    Decimal num, expect;
+    BigDecimal zero = BigDecimal(0);
+    BigDecimal num, expect;
     num = 1.3;
     expect = subtract(zero, num, testContextA);
     assert(minus(num, testContextA) == expect);
@@ -548,12 +545,12 @@ public T nextPlus(T)(const T op1, DecimalContext context) if (isDecimal!T) {
 }
 
 unittest {
-    Decimal num, expect;
+    BigDecimal num, expect;
     num = 1;
-    expect = Decimal("1.00000001");
+    expect = BigDecimal("1.00000001");
     assert(nextPlus(num, testContextA) == expect);
     num = 10;
-    expect = Decimal("10.0000001");
+    expect = BigDecimal("10.0000001");
     assert(nextPlus(num, testContextA) == expect);
 }
 
@@ -588,7 +585,7 @@ public T nextMinus(T)(const T op1, DecimalContext context) if (isDecimal!T) {
 }
 
 unittest {
-    Decimal num, expect;
+    BigDecimal num, expect;
     num = 1;
     expect = 0.999999999;
     assert(nextMinus(num, testContextA) == expect);
@@ -615,7 +612,7 @@ public T nextToward(T)(const T op1, const T op2,
 }
 
 unittest {
-    Decimal op1, op2, expect;
+    BigDecimal op1, op2, expect;
     op1 = 1;
     op2 = 2;
     expect = 1.00000001;
@@ -647,7 +644,7 @@ public bool sameQuantum(T)(const T op1, const T op2) if (isDecimal!T) {
 }
 
 unittest {
-    Decimal op1, op2;
+    BigDecimal op1, op2;
     op1 = 2.17;
     op2 = 0.001;
     assert(!sameQuantum(op1, op2));
@@ -715,14 +712,14 @@ unittest {
     assert(compare(op1, op2, testContextA) == 0);
 }
 
-// UNREADY: equals. Verify 'equals' is identical to 'compare == 0'.
 /**
- * Returns true if this Decimal is equal to the specified Decimal.
+ * Returns true if this decimal number is equal to the specified decimal number.
  * A NaN is not equal to any number, not even to another NaN.
  * Infinities are equal if they have the same sign.
  * Zeros are equal regardless of sign.
- * Finite numbers are equal if they are numerically equal to the current precision.
- * A Decimal is not equal to itself (this != this) if it is a NaN.
+ * Finite numbers are equal if they are numerically equal
+ * to the current precision.
+ * A decimal NaN is not equal to itself (this != this).
  */
 public bool equals(T)(const T op1, const T op2, DecimalContext context,
         const bool rounded = true) if (isDecimal!T) {
@@ -752,7 +749,7 @@ public bool equals(T)(const T op1, const T op2, DecimalContext context,
         return false;
     }
 
-    // TODO: this is a good test for Decimal but others should do a bitwise compare
+    // TODO: this is a good test for BigDecimal but others should do a bitwise compare
     // compare the numbers numerically
     int diff = (op1.exponent + op1.digits) - (op2.exponent + op2.digits);
     if (diff != 0) {
@@ -773,7 +770,7 @@ public bool equals(T)(const T op1, const T op2, DecimalContext context,
 
 // NOTE: change these to true opEquals calls.
 unittest {
-    Decimal op1, op2;
+    BigDecimal op1, op2;
     op1 = 123.4567;
     op2 = 123.4568;
     assert(op1 != op2);
@@ -894,18 +891,18 @@ public int compareTotal(T)(const T op1, const T op2) if (isDecimal!T) {
 }
 
 unittest {
-    Decimal op1, op2;
+    BigDecimal op1, op2;
     int result;
-    op1 = Decimal("12.30");
-    op2 = Decimal("12.3");
+    op1 = BigDecimal("12.30");
+    op2 = BigDecimal("12.3");
     result = compareTotal(op1, op2);
     assert(result == -1);
-    op1 = Decimal("12.30");
-    op2 = Decimal("12.30");
+    op1 = BigDecimal("12.30");
+    op2 = BigDecimal("12.30");
     result = compareTotal(op1, op2);
     assert(result == 0);
-    op1 = Decimal("12.3");
-    op2 = Decimal("12.300");
+    op1 = BigDecimal("12.3");
+    op2 = BigDecimal("12.300");
     result = compareTotal(op1, op2);
     assert(result == 1);
 }
@@ -961,7 +958,7 @@ const(T) max(T)(const T op1, const T op2,
 }
 
 unittest {
-    Decimal op1, op2;
+    BigDecimal op1, op2;
     op1 = 3;
     op2 = 2;
     assert(max(op1, op2, testContextA) == op1);
@@ -992,7 +989,7 @@ const(T) min(T)(const T op1, const T op2,
         DecimalContext context) if (isDecimal!T) {
     // if both are NaNs or either is an sNan, return NaN.
     if (op1.isNaN && op2.isNaN || op1.isSignaling || op2.isSignaling) {
-/*        Decimal result;
+/*        BigDecimal result;
         result.flags = INVALID_OPERATION;*/
         return T.nan;
     }
@@ -1022,7 +1019,7 @@ const(T) min(T)(const T op1, const T op2,
 }
 
 unittest {
-    Decimal op1, op2;
+    BigDecimal op1, op2;
     op1 = 3;
     op2 = 2;
     assert(min(op1, op2, testContextA) == op2);
@@ -1067,7 +1064,7 @@ public T shift(T)(const T op1, const int n, DecimalContext context)
     if (n == 0) {
         return op1.dup;
     }
-    Decimal shifted = toDecimal!T(op1);
+    BigDecimal shifted = toDecimal!T(op1);
     BigInt pow10 = BigInt(10)^^std.math.abs(n);
     if (n > 0) {
         shifted.coefficient = shifted.coefficient * pow10;
@@ -1079,9 +1076,9 @@ public T shift(T)(const T op1, const int n, DecimalContext context)
 }
 
 unittest {
-    Decimal num = 34;
+    BigDecimal num = 34;
     int digits = 8;
-    Decimal act = shift(num, digits, testContextA);
+    BigDecimal act = shift(num, digits, testContextA);
     num = 12;
     digits = 9;
     act = shift(num, digits, testContextA);
@@ -1132,7 +1129,7 @@ public T rotate(T)(const T op1, const int op2, DecimalContext context)
  *
  * This function corresponds to the "add and subtract" function
  * in the General Decimal Arithmetic Specification and is the basis
- * for the opAdd and opSub functions for the Decimal struct.
+ * for the opAdd and opSub functions for decimal numbers.
  */
 public T add(T)(const T op1, const T op2, DecimalContext context,
         bool rounded = true) if (isDecimal!T) {
@@ -1173,10 +1170,10 @@ public T add(T)(const T op1, const T op2, DecimalContext context,
     // TODO: add(0,f) or add(f,0)?
 
     // at this point, the result will be finite and not zero.
-    // calculate in big decimal and convert before return
-    Decimal sum = Decimal.zero;
-    Decimal augend = toDecimal!T(op1);
-    Decimal addend = toDecimal!T(op2);
+    // calculate in BigDecimal and convert before return
+    BigDecimal sum = BigDecimal.zero;
+    BigDecimal augend = toDecimal!T(op1);
+    BigDecimal addend = toDecimal!T(op2);
     // align the operands
     alignOps(augend, addend, context);
     // if operands have the same sign...
@@ -1228,7 +1225,7 @@ unittest {
  *
  * This function corresponds to the "add and subtract" function
  * in the General Decimal Arithmetic Specification and is the basis
- * for the opAdd and opSub functions for the Decimal struct.
+ * for the opAdd and opSub functions for decimal numbers.
  */
 public T subtract(T) (const T op1, const T op2,
         DecimalContext context, const bool rounded = true) if (isDecimal!T) {
@@ -1237,45 +1234,45 @@ public T subtract(T) (const T op1, const T op2,
     return add!T(op1, copyNegate!T(op2), context , rounded);
 }    // end subtract(op1, op2)
 
-// READY: multiply
 /**
  * Multiplies two numbers.
  *
  * This function corresponds to the "multiply" function
  * in the General Decimal Arithmetic Specification and is the basis
- * for the opMul function for the Decimal struct.
+ * for the opMul function for decimal numbers.
  */
 public T multiply(T)(const T op1, const T op2, DecimalContext context,
         const bool rounded = true) if (isDecimal!T) {
 
-    T product;
+    T result = T.nan;
     // if invalid, return NaN
-    if (isInvalidMultiplication!T(op1, op2, product, context)) {
-        return product;
+    if (isInvalidMultiplication!T(op1, op2, result, context)) {
+        return result;
     }
     // if either operand is infinite, return infinity
     if (op1.isInfinite || op2.isInfinite) {
-        product = T.infinity;
-        product.sign = op1.sign ^ op2.sign;
-        return product;
+        result = T.infinity;
+        result.sign = op1.sign ^ op2.sign;
+        return result;
     }
-    // product is finite
 
-    product = T.zero();
-//    product.coefficient = cast(BigInt)op1.coefficient * cast(BigInt)op2.coefficient;
+    // product is finite
+    BigDecimal product = BigDecimal.zero();
     product.coefficient = op1.coefficient * op2.coefficient;
     product.exponent = op1.exponent + op2.exponent;
     product.sign = op1.sign ^ op2.sign;
     product.digits = numDigits(product.coefficient);
+
+    result = T(product);
     if (rounded) {
         round(product, context);
     }
-    return product;
+    return result;
 }
 
 unittest {
-    Decimal op1, op2, result;
-    op1 = Decimal("1.20");
+    BigDecimal op1, op2, result;
+    op1 = BigDecimal("1.20");
     op2 = 3;
     result = multiply(op1, op2, testContextA);
     assert(result.toString() == "3.60");
@@ -1299,18 +1296,18 @@ public T fma(T)(const T op1, const T op2, const T op3,
 }
 
 unittest {
-    Decimal op1, op2, op3, result;
+    BigDecimal op1, op2, op3, result;
     op1 = 3; op2 = 5; op3 = 7;
     result = (fma(op1, op2, op3, testContextA));
-    assert(result == Decimal(22));
+    assert(result == BigDecimal(22));
     op1 = 3; op2 = -5; op3 = 7;
     result = (fma(op1, op2, op3, testContextA));
-    assert(result == Decimal(-8));
+    assert(result == BigDecimal(-8));
     op1 = 888565290;
     op2 = 1557.96930;
     op3 = -86087.7578;
     result = (fma(op1, op2, op3, testContextA));
-    assert(result == Decimal(1.38435736E+12));
+    assert(result == BigDecimal(1.38435736E+12));
 }
 
 /**
@@ -1319,7 +1316,7 @@ unittest {
  *
  * This function corresponds to the "divide" function
  * in the General Decimal Arithmetic Specification and is the basis
- * for the opDiv function for the Decimal struct.
+ * for the opDiv function for decimal numbers.
  */
 public T divide(T)(const T op1, const T op2,
         DecimalContext context, bool rounded = true) if (isDecimal!T) {
@@ -1332,10 +1329,10 @@ public T divide(T)(const T op1, const T op2,
     quotient= T.zero();
     // TODO: are two guard digits necessary? sufficient?
     context.precision += 2;
-    Decimal dividend = toDecimal!T(op1);
-    Decimal divisor  = toDecimal!T(op2);
-    Decimal working = Decimal.zero;
-//    working = Decimal.zero();
+    BigDecimal dividend = toDecimal!T(op1);
+    BigDecimal divisor  = toDecimal!T(op2);
+    BigDecimal working = BigDecimal.zero;
+//    working = BigDecimal.zero();
     int diff = dividend.exponent - divisor.exponent;
     if (diff > 0) {
         decShl(dividend.coefficient, diff);
@@ -1366,11 +1363,11 @@ public T divide(T)(const T op1, const T op2,
 unittest {
     pushContext(testContextA);
     testContextA.precision = 9;
-    Decimal op1, op2, actual, expect;
+    BigDecimal op1, op2, actual, expect;
     op1 = 1;
     op2 = 3;
     actual = divide(op1, op2, testContextA);
-    expect = Decimal(0.333333333);
+    expect = BigDecimal(0.333333333);
     assert(actual == expect);
     assert(actual.toString() == expect.toString());
     op1 = 1;
@@ -1417,7 +1414,7 @@ public T divideInteger(T)(const T op1, const T op2,
 }
 
 unittest {
-    Decimal op1, op2, actual, expect;
+    BigDecimal op1, op2, actual, expect;
     op1 = 2;
     op2 = 3;
     actual = divideInteger(op1, op2, testContextA);
@@ -1454,7 +1451,7 @@ public T remainder(T)(const T op1, const T op2,
 }
 
 unittest {
-    Decimal op1, op2, actual, expect;
+    BigDecimal op1, op2, actual, expect;
     op1 = 2.1;
     op2 = 3;
     actual = remainder(op1, op2, testContextA);
@@ -1506,7 +1503,7 @@ public T roundToIntegralExact(T)(const T num,
 }
 
 unittest {
-    Decimal num, expect, actual;
+    BigDecimal num, expect, actual;
     num = 2.1;
     expect = 2;
     actual = roundToIntegralExact(num, testContextA);
@@ -1579,23 +1576,22 @@ private T flagInvalid(T)(DecimalContext context, ushort payload = 0)
 }
 
 unittest {
-    Decimal num, expect, actual;
+    BigDecimal num, expect, actual;
     // FIXTHIS: Can't actually test payloads at this point.
-    num = Decimal("sNaN123");
-    expect = Decimal("NaN123");
-    actual = abs!Decimal(num, testContextA);
+    num = BigDecimal("sNaN123");
+    expect = BigDecimal("NaN123");
+    actual = abs!BigDecimal(num, testContextA);
     assert(actual.isQuiet);
     assert(testContextA.getFlag(INVALID_OPERATION));
 //    assert(actual.toAbstract == expect.toAbstract);
 }
 
-// UNREADY: alignOps. Unit tests. Todo.
 /**
  * Aligns the two operands by raising the smaller exponent
  * to the value of the larger exponent, and adjusting the
  * coefficient so the value remains the same.
  */
-private void alignOps(ref Decimal op1, ref Decimal op2, DecimalContext context) {
+private void alignOps(ref BigDecimal op1, ref BigDecimal op2, DecimalContext context) {
     int diff = op1.exponent - op2.exponent;
     if (diff > 0) {
         op1.coefficient = decShl(op1.coefficient, diff);
@@ -1605,6 +1601,15 @@ private void alignOps(ref Decimal op1, ref Decimal op2, DecimalContext context) 
         op2.coefficient = decShl(op2.coefficient, -diff);
         op2.exponent = op1.exponent;
     }
+}
+
+unittest {
+    BigDecimal op1, op2;
+    op1 = 1.3E35;
+    op2 = -17.4E29;
+    alignOps(op1, op2, bigContext);
+    assert(op1.coefficient == 13000000);
+    assert(op2.exponent == 28);
 }
 
 // UNREADY: isInvalidBinaryOp. Unit Tests. Payload.
