@@ -24,6 +24,7 @@ import decimal.arithmetic;
 import decimal.context;
 import decimal.decimal;
 import decimal.dec32;
+import decimal.dec64;
 import decimal.rounding;
 import decimal.conv;
 
@@ -182,19 +183,18 @@ unittest {
     writeln("num.toAbstract = ", num.toAbstract);
     assert(toSciString!Dec32(num) == "Infinity");
     assert(num.toAbstract() == "[0,inf]");
-/*    num = Dec32(true, SV.INF);
+    num = Dec32.infinity(true);
     assert(toSciString!Dec32(num) == "-Infinity");
     assert(num.toAbstract() == "[1,inf]");
-    num = Dec32(false, SV.QNAN);
+    num = Dec32("naN");
     assert(toSciString!Dec32(num) == "NaN");
-    assert(num.toAbstract() == "[0,qNaN]");*/
-    // TODO: This test doesn't pass because we the payload setter won't compile.
-//    num = Dec32(false, SV.QNAN, 123);
-//    assert(toSciString!Dec32(num) == "NaN123");
-//    assert(num.toAbstract() == "[0,qNaN,123]");
-/*    num = Dec32(true, SV.SNAN);
+    assert(num.toAbstract() == "[0,qNaN]");
+    num = Dec32.nan(123);
+    assert(toSciString!Dec32(num) == "NaN123");
+    assert(num.toAbstract() == "[0,qNaN,123]");
+    num = Dec32("-SNAN");
     assert(toSciString!Dec32(num) == "-sNaN");
-    assert(num.toAbstract() == "[1,sNaN]");*/
+    assert(num.toAbstract() == "[1,sNaN]");
     writeln("passed");
 }
 
@@ -612,6 +612,15 @@ unittest {
     str = "1.2E+2";
     red = reduce(num, testContext);
     assert(red.toString() == str);
+    writeln("passed");
+}
+
+unittest {
+    write("quantum......");
+    Dec64 num, qnum;
+    num = 23.14E-12;
+    qnum = 1E-14;
+    assert(quantum(num) == qnum);
     writeln("passed");
 }
 
@@ -1079,7 +1088,7 @@ unittest {
     op2 = BigDecimal(654321);
     result = op1 * op2;
 writeln("result = ", result);
-    assert(result.toString() == "428135971041");
+    assert(result.toString() == "4.28135971E+11");
     op1 = -1;
     op2 = BigDecimal("Infinity");
     result = op1 * op2;
@@ -1350,7 +1359,7 @@ unittest {
 
 unittest {
     writeln("---------------------");
-    writeln("BigDecimal.......testing");
+    writeln("BigDecimal....testing");
     writeln("---------------------");
 }
 
@@ -1475,7 +1484,7 @@ unittest {
 }
 
 unittest {
-	write("special values...");
+	write("spcl values..");
     BigDecimal num;
     num = BigDecimal.NAN;
     assert(num.toString == "NaN");
@@ -1488,7 +1497,7 @@ unittest {
 }
 
 unittest {
-    write("toExact...");
+    write("toExact......");
     BigDecimal num;
     assert(num.toExact == "+NaN");
     num = +9999999E+90;
@@ -1670,6 +1679,20 @@ unittest {
 }
 
 unittest {
+    write("sgn..........");
+    BigDecimal big;
+    big = -123;
+    assert(sgn(big) == -1);
+    big = 2345;
+    assert(sgn(big) == 1);
+    big = BigDecimal("0.0000");
+    assert(sgn(big) == 0);
+    big = BigDecimal.infinity(true);
+    assert(sgn(big) == -1);
+    writeln("passed");
+}
+
+unittest {
     write("opCmp........");
     BigDecimal num1, num2;
     num1 = 105;
@@ -1768,9 +1791,9 @@ unittest {
 }
 
 unittest {
-    writeln("-------------------");
-    writeln("BigDecimal....finished");
-    writeln("-------------------");
+    writeln("---------------------");
+    writeln("BigDecimal...finished");
+    writeln("---------------------");
 }
 
 unittest {
@@ -1788,7 +1811,7 @@ unittest {
 }
 
 unittest {
-    write("round..........");
+    write("round........");
     BigDecimal before = BigDecimal(9999);
     BigDecimal after = before;
     pushContext(testContext);
@@ -1845,21 +1868,21 @@ unittest {
 }
 
 unittest {
-    write("numDigits......");
+    write("numDigits....");
     BigInt big = BigInt("12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678905");
     assert(numDigits(big) == 101);
     writeln("passed");
 }
 
 unittest {
-    write("firstDigit.....");
+    write("firstDigit...");
     BigInt big = BigInt("82345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678905");
     assert(firstDigit(big) == 8);
     writeln("passed");
 }
 
 unittest {
-    write("decShl.........");
+    write("decShl.......");
     BigInt m;
     int n;
     m = 12345;
@@ -1879,7 +1902,7 @@ unittest {
 }
 
 unittest {
-    write("lastDigit......");
+    write("lastDigit....");
     BigInt n;
     n = 7;
     assert(lastDigit(n) == 7);
@@ -1909,7 +1932,7 @@ unittest {
 }
 
 unittest {
-    write("decShl.........");
+    write("decShl.......");
     long m;
     int n;
     m = 12345;
@@ -1931,7 +1954,7 @@ unittest {
 }
 
 unittest {
-    write("lastDigit......");
+    write("lastDigit....");
     long n;
     n = 7;
     assert(lastDigit(n) == 7);
@@ -1961,7 +1984,7 @@ unittest {
 }
 
 unittest {
-    write("firstDigit.....");
+    write("firstDigit...");
     long n;
     n = 7;
     assert(firstDigit(n) == 7);
@@ -1991,7 +2014,7 @@ unittest {
 }
 
 unittest {
-    write("numDigits......");
+    write("numDigits....");
     long n;
     n = 7;
     assert(numDigits(n) ==  1);
@@ -2024,7 +2047,7 @@ unittest {
     write("roundByMode....");
 //    DecimalContext context;
     context.precision = 5;
-    context.rounding = Rounding.HALF_EVEN;
+    context.rounding = RoundingMode.HALF_EVEN;
     BigDecimal num;
     num = 1000;
     roundByMode(num, context);
@@ -2038,11 +2061,11 @@ unittest {
     num = 1234550;
     roundByMode(num, context);
     assert(num.mant == 12346 && num.expo == 2 && num.digits == 5);
-    context.rounding = Rounding.DOWN;
+    context.rounding = RoundingMode.DOWN;
     num = 1234550;
     roundByMode(num, context);
     assert(num.mant == 12345 && num.expo == 2 && num.digits == 5);
-    context.rounding = Rounding.UP;
+    context.rounding = RoundingMode.UP;
     num = 1234550;
     roundByMode(num, context);
     assert(num.mant == 12346 && num.expo == 2 && num.digits == 5);
@@ -2085,10 +2108,10 @@ unittest {
 }*/
 
 unittest {
-    write("setExponent....");
+    write("setExponent..");
     pushContext(testContext);
     testContext.precision = 5;
-    testContext.rounding = Rounding.HALF_EVEN;
+    testContext.rounding = RoundingMode.HALF_EVEN;
     ulong num; uint digits; int expo;
     num = 1000;
     digits = numDigits(num);
@@ -2106,12 +2129,12 @@ unittest {
     digits = numDigits(num);
     expo = setExponent(false, num, digits, testContext);
     assert(num == 12346 && expo == 2 && digits == 5);
-    testContext.rounding = Rounding.DOWN;
+    testContext.rounding = RoundingMode.DOWN;
     num = 1234550;
     digits = numDigits(num);
     expo = setExponent(false, num, digits, testContext);
     assert(num == 12345 && expo == 2 && digits == 5);
-    testContext.rounding = Rounding.UP;
+    testContext.rounding = RoundingMode.UP;
     num = 1234550;
     digits = numDigits(num);
     expo = setExponent(false, num, digits, testContext);

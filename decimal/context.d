@@ -30,7 +30,7 @@ import std.string: format;
 /**
  * Enumeration of available rounding modes.
  */
-public enum Rounding {
+public enum RoundingMode {
     HALF_EVEN,
     HALF_DOWN,
     HALF_UP,
@@ -59,15 +59,15 @@ public enum : ubyte {
  */
 public struct DecimalContext {
 
-    public static ubyte traps = 0;
-    public static ubyte flags = 0;
+    private static ubyte traps = 0;
+    private static ubyte flags = 0;
 
     // TODO: make these private and add properties(?)
-    Rounding rounding = Rounding.HALF_EVEN;
+    RoundingMode rounding = RoundingMode.HALF_EVEN;
     uint precision = 9;
     int eMax =  99;     // largest normalized exponent
 
-    const DecimalContext dup() {
+    public const DecimalContext dup() {
         DecimalContext copy;
         copy.rounding = rounding;
         copy.precision = precision;
@@ -93,11 +93,13 @@ public struct DecimalContext {
         return cast(int)(precision/LOG2);
     }
 
+    /// Returns the smallest binary exponent.
     @property
     const int min_exp() {
         return cast(int)(eMin/LOG2);
     }
 
+    /// Returns the largest binary exponent.
     @property
     const int max_exp() {
         return cast(int)(eMax/LOG2);
@@ -111,13 +113,12 @@ public struct DecimalContext {
         return cstr;
     }
 
-    /// Sets (or resets?) the specified context flag(s).
+    /// Sets or resets the specified context flag(s).
     void setFlag(const ubyte flags, const bool value = true) {
         if (value) {
             this.flags |= flags;
             // TODO: if this flag is trapped an exception should be thrown.
         }
-        // TODO: can the user reset single flags?
         else {
             this.flags &= !flags;
         }
@@ -157,14 +158,14 @@ public struct DecimalContext {
         clearFlags;
         setFlag(!(INEXACT | ROUNDED | SUBNORMAL));
         precision = 9;
-        rounding = Rounding.HALF_UP;
+        rounding = RoundingMode.HALF_UP;
     }
 
     void setExtended(uint precision) {
         clearFlags;
         clearTraps;
         this.precision = precision;
-        rounding = Rounding.HALF_EVEN;
+        rounding = RoundingMode.HALF_EVEN;
     }
 
 };    // end struct DecimalContext

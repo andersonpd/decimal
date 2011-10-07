@@ -36,7 +36,7 @@ struct Dec32 {
     /// The global context for this type.
     private static decimal.context.DecimalContext context32 = {
         precision : 7,
-        rounding : Rounding.HALF_EVEN,
+        rounding : RoundingMode.HALF_EVEN,
         eMax : E_MAX
     };
 
@@ -366,6 +366,24 @@ public:
      */
     public this(const BigDecimal num) {
 
+        // check for special values
+        if (num.isInfinite) {
+            this = infinity(num.sign);
+            return;
+        }
+        if (num.isQuiet) {
+            this = nan();
+            this.sign = num.sign;
+            this.payload = num.payload;
+            return;
+        }
+        if (num.isSignaling) {
+            this = snan();
+            this.sign = num.sign;
+            this.payload = num.payload;
+            return;
+        }
+
         BigDecimal big = plus!BigDecimal(num, context32);
         if (big.isFinite) {
             this = zero;
@@ -375,18 +393,21 @@ public:
             return;
         }
         // check for special values
-        else if (big.isInfinite) {
+        if (big.isInfinite) {
             this = infinity(big.sign);
             return;
         }
-        else if (big.isQuiet) {
-            this = nan();
-            return;
-        }
-        else if (big.isSignaling) {
+        if (big.isSignaling) {
             this = snan();
+            this.payload = big.payload;
             return;
         }
+        if (big.isQuiet) {
+            this = nan();
+            this.payload = big.payload;
+            return;
+        }
+        this = nan;
     }
 
    unittest {
@@ -728,6 +749,7 @@ public:
         if (payload) {
             Dec32 result = NAN;
             result.payload = payload;
+            return result;
         }
         return NAN;
     }
@@ -736,6 +758,7 @@ public:
         if (payload) {
             Dec32 result = SNAN;
             result.payload = payload;
+            return result;
         }
         return SNAN;
     }

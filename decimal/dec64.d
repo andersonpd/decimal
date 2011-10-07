@@ -42,7 +42,7 @@ struct Dec64 {
     /// The global context for this type.
     private static decimal.context.DecimalContext context64 = {
         precision : 16,
-        rounding : Rounding.HALF_EVEN,
+        rounding : RoundingMode.HALF_EVEN,
         eMax : E_MAX
     };
 
@@ -794,6 +794,7 @@ public:
         if (payload) {
             Dec64 result = NAN;
             result.payload = payload;
+            return result;
         }
         return NAN;
     }
@@ -802,6 +803,7 @@ public:
         if (payload) {
             Dec64 result = SNAN;
             result.payload = payload;
+            return result;
         }
         return SNAN;
     }

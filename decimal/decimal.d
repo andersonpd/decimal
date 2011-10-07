@@ -492,28 +492,6 @@ unittest {
         return signed;
     }
 
-    /// returns the sign of this number
-    const int sgn() {
-        if (isZero) return 0;
-        return signed ? -1 : 1;
-    }
-
-    unittest {
-        write("sgn...");
-        writeln("test missing");
-    }
-
-    /// returns a number with the same exponent as this number
-    /// and a coefficient of 1.
-    const BigDecimal quantum() {
-        return BigDecimal(1, this.expo);
-    }
-
-    unittest {
-        write("quantum...");
-        writeln("test missing");
-    }
-
 //--------------------------------
 // floating point properties
 //--------------------------------
@@ -937,10 +915,13 @@ unittest {
         actual = ++num;
         assert(actual == expect);
         num = 1.00E8;
+        expect = num - BigDecimal(1); // TODO:why not an integer
+        actual = --num;
+        assert(actual == expect);
+        num = 1.00E8;
         expect = num;
-// TODO:   actual = --num; // fails!
-//        actual = num--;
-//        assert(actual == expect);
+        actual = num--;
+        assert(actual == expect);
         num = BigDecimal(9999999, 90);
         expect = num;
         actual = num++;
@@ -955,7 +936,7 @@ unittest {
 //  binary arithmetic operators
 //--------------------------------
 
-    const BigDecimal opBinary(string op)(const BigDecimal rhs)
+    const BigDecimal opBinary(string op, T:BigDecimal)(const T rhs)
     {
         static if (op == "+") {
             return add!BigDecimal(this, rhs, bigContext);
@@ -973,6 +954,26 @@ unittest {
             return remainder!BigDecimal(this, rhs, bigContext);
         }
     }
+
+/*    const BigDecimal opBinary(string op, T)(const T rhs)
+    {
+        return opBinary!(op, T)(BigDecimal(T));
+        static if (op == "+") {
+            return add!BigDecimal(this, rhs, bigContext);
+        }
+        else static if (op == "-") {
+            return subtract!BigDecimal(this, rhs, bigContext);
+        }
+        else static if (op == "*") {
+            return multiply!BigDecimal(this, rhs, bigContext);
+        }
+        else static if (op == "/") {
+            return divide!BigDecimal(this, rhs, bigContext);
+        }
+        else static if (op == "%") {
+            return remainder!BigDecimal(this, rhs, bigContext);
+        }
+    } */
 
     unittest {
         BigDecimal op1, op2, actual, expect;
@@ -1032,7 +1033,10 @@ unittest {
 
     unittest {
         write("nextUp...");
-        writeln("test missing");
+        BigDecimal big;
+        big = 123.45;
+        assert(big.nextUp == BigDecimal(123.450001));
+        writeln("passed");
     }
 
     const BigDecimal nextDown() {
@@ -1040,8 +1044,11 @@ unittest {
     }
 
     unittest {
-        write("nextMinus...");
-        writeln("test missing");
+        write("nextDown...");
+        BigDecimal big;
+        big = 123.45;
+        assert(big.nextDown == BigDecimal(123.449999));
+        writeln("passed");
     }
 
     const BigDecimal nextAfter(const BigDecimal num) {
@@ -1050,7 +1057,14 @@ unittest {
 
     unittest {
         write("nextAfter...");
-        writeln("test missing");
+        BigDecimal big, expect;
+        big = 123.45;
+        expect = big.nextUp;
+        assert(big.nextAfter(BigDecimal(123.46)) == expect);
+        big = 123.45;
+        expect = big.nextDown;
+        assert(big.nextAfter(BigDecimal(123.44)) == expect);
+        writeln("passed");
     }
 
     /**
@@ -1060,7 +1074,6 @@ unittest {
         BigInt num = 1;
         return decShl(num, n);
     }
-
 
     unittest {
         assert(pow10(3) == 1000);

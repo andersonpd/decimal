@@ -31,8 +31,8 @@ module decimal.arithmetic;
 import decimal.context;
 import decimal.conv : isDecimal, toDecimal;
 import decimal.decimal;
-import decimal.dec32;
 import decimal.rounding;
+
 import std.array: insertInPlace;
 import std.bigint;
 import std.conv;
@@ -393,8 +393,6 @@ public T reduce(T)(const T num, DecimalContext context) if (isDecimal!T) {
         return result;
     }
 
-    // TODO: is there a more efficient way to do this?
-    // Is checking the coefficient for trailing zeros easier to compute?
     BigInt temp = result.coefficient % 10;
     while (result.coefficient != 0 && temp == 0) {
         result.exponent = result.exponent + 1;
@@ -420,9 +418,6 @@ unittest {
     num = BigDecimal("1.200");
     str = "1.2";
     red = reduce(num, testContextA);
-writeln("str = ", str);
-writeln("red = ", red);
-
     assert(red.toString == str);
 }
 
@@ -455,6 +450,26 @@ unittest {
     assert(abs(num, testContextA) == expect);
     num = -101.5;
     assert(abs(num, testContextA) == expect);
+}
+
+/**
+ *  Returns the sign of the number: -1, 0, -1;
+ */
+public int sgn(T)(const T op1) if (isDecimal!T) {
+    if (op1.isZero) return 0;
+    return op1.isNegative ? -1 : 1;
+}
+
+unittest {
+    BigDecimal big;
+    big = -123;
+    assert(sgn(big) == -1);
+    big = 2345;
+    assert(sgn(big) == 1);
+    big = BigDecimal("0.0000");
+    assert(sgn(big) == 0);
+    big = BigDecimal.infinity(true);
+    assert(sgn(big) == -1);
 }
 
 /**
@@ -703,12 +718,12 @@ public int compare(T)(const T op1, const T op2, DecimalContext context,
 }
 
 unittest {
-    Dec32 op1, op2;
-    op1 = Dec32(2.1);
-    op2 = Dec32("3");
+    BigDecimal op1, op2;
+    op1 = BigDecimal(2.1);
+    op2 = BigDecimal("3");
     assert(compare(op1, op2, testContextA) == -1);
     op1 = 2.1;
-    op2 = Dec32(2.1);
+    op2 = BigDecimal(2.1);
     assert(compare(op1, op2, testContextA) == 0);
 }
 
@@ -1034,6 +1049,19 @@ const(T) minMagnitude(T)(const T op1, const T op2,
     return min(copyAbs!T(op1), copyAbs!T(op2), context);
 }
 
+/// Returns a number with the same exponent as this number
+/// and a coefficient of 1.
+const (T) quantum(T)(const T op1) if (isDecimal!T) {
+        return T(1, op1.exponent);
+    }
+
+unittest {
+    BigDecimal num, qnum;
+    num = 23.14E-12;
+    qnum = 1E-14;
+    assert(quantum(num) == qnum);
+}
+
 //------------------------------------------
 // binary arithmetic operations
 //------------------------------------------
@@ -1163,11 +1191,22 @@ public T add(T)(const T op1, const T op2, DecimalContext context,
     // add(0, 0)
     if (op1.isZero && op2.isZero) {
         result = op1;
+        result.exponent = std.algorithm.min(op1.exponent, op2.exponent);
         result.sign = op1.sign && op2.sign;
         return result;
     }
-
-    // TODO: add(0,f) or add(f,0)?
+    // add(0,f)
+    if (op1.isZero) {
+        result = op2;
+        result.exponent = std.algorithm.min(op1.exponent, op2.exponent);
+        return result;
+    }
+    // add(f,0)
+    if (op2.isZero) {
+        result = op1;
+        result.exponent = std.algorithm.min(op1.exponent, op2.exponent);
+        return result;
+    }
 
     // at this point, the result will be finite and not zero.
     // calculate in BigDecimal and convert before return
@@ -1206,16 +1245,14 @@ public T add(T)(const T op1, const T op2, DecimalContext context,
     return result;
 }    // end add(op1, op2)
 
-// TODO: these tests need to be cleaned up to rely less on strings
-// and to check the NaN, Inf combinations better.
 unittest {
-    Dec32 op1, op2, sum;
-    op1 = Dec32("12");
-    op2 = Dec32("7.00");
+    BigDecimal op1, op2, sum;
+    op1 = BigDecimal("12");
+    op2 = BigDecimal("7.00");
     sum = add(op1, op2, testContextA);
     assert(sum.toString() == "19.00");
-    op1 = Dec32("1E+2");
-    op2 = Dec32("1E+4");
+    op1 = BigDecimal("1E+2");
+    op2 = BigDecimal("1E+4");
     sum = add(op1, op2, testContextA);
     assert(sum.toString() == "1.01E+4");
 }
@@ -1229,8 +1266,6 @@ unittest {
  */
 public T subtract(T) (const T op1, const T op2,
         DecimalContext context, const bool rounded = true) if (isDecimal!T) {
-    // TODO: get rid of this.
-    T result = add!T(op1, copyNegate!T(op2), context , rounded);
     return add!T(op1, copyNegate!T(op2), context , rounded);
 }    // end subtract(op1, op2)
 
@@ -1257,15 +1292,24 @@ public T multiply(T)(const T op1, const T op2, DecimalContext context,
     }
 
     // product is finite
-    BigDecimal product = BigDecimal.zero();
-    product.coefficient = op1.coefficient * op2.coefficient;
-    product.exponent = op1.exponent + op2.exponent;
-    product.sign = op1.sign ^ op2.sign;
-    product.digits = numDigits(product.coefficient);
+    // mul(0,f) or (f,0)
+    if (op1.isZero || op2.isZero) {
+        result = T.zero;
+        result.exponent = op1.exponent + op2.exponent;
+        result.sign = op1.sign ^ op2.sign;
+    }
+    // product is non-zero
+    else {
+        BigDecimal product = BigDecimal.zero();
+        product.coefficient = op1.coefficient * op2.coefficient;
+        product.exponent = op1.exponent + op2.exponent;
+        product.sign = op1.sign ^ op2.sign;
+        product.digits = numDigits(product.coefficient);
+        result = T(product);
+    }
 
-    result = T(product);
     if (rounded) {
-        round(product, context);
+        round(result, context);
     }
     return result;
 }

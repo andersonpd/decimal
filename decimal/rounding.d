@@ -77,20 +77,20 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
     if (num.adjustedExponent > context.eMax) {
         context.setFlag(OVERFLOW);
         switch (context.rounding) {
-            case Rounding.HALF_UP:
-            case Rounding.HALF_EVEN:
-            case Rounding.HALF_DOWN:
-            case Rounding.UP:
+            case RoundingMode.HALF_UP:
+            case RoundingMode.HALF_EVEN:
+            case RoundingMode.HALF_DOWN:
+            case RoundingMode.UP:
                 bool sign = num.sign;
                 num = T.infinity;
                 num.sign = sign;
                 break;
-            case Rounding.DOWN:
+            case RoundingMode.DOWN:
                 bool sign = num.sign;
                 num = T.max;
                 num.sign = sign;
                 break;
-            case Rounding.CEILING:
+            case RoundingMode.CEILING:
                 if (num.sign) {
                     num = T.max;
                     num.sign = true;
@@ -99,7 +99,7 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
                     num = T.infinity;
                 }
                 break;
-            case Rounding.FLOOR:
+            case RoundingMode.FLOOR:
                 if (num.sign) {
                     num = T.infinity(true);
                 } else {
@@ -220,14 +220,14 @@ private void roundByMode(T)(ref T num, ref DecimalContext context)
         return;
     }
     switch (context.rounding) {
-        case Rounding.DOWN:
+        case RoundingMode.DOWN:
             return;
-        case Rounding.HALF_UP:
+        case RoundingMode.HALF_UP:
             if (firstDigit(remainder.coefficient) >= 5) {
                 increment(num, context);
             }
             return;
-        case Rounding.HALF_EVEN:
+        case RoundingMode.HALF_EVEN:
             T five = T(5, remainder.digits + remainder.exponent - 1);
             int result = compare!T(remainder, five, context, false);
             if (result > 0) {
@@ -243,24 +243,24 @@ private void roundByMode(T)(ref T num, ref DecimalContext context)
                 increment(num, context);
             }
             return;
-        case Rounding.CEILING:
+        case RoundingMode.CEILING:
             auto temp = T.zero;
             if (!num.sign && (remainder != temp)) {
                 increment(num, context);
             }
             return;
-        case Rounding.FLOOR:
+        case RoundingMode.FLOOR:
             auto temp = T.zero;
             if (num.sign && remainder != temp) {
                 increment(num, context);
             }
             return;
-        case Rounding.HALF_DOWN:
+        case RoundingMode.HALF_DOWN:
             if (firstDigit(remainder.coefficient) > 5) {
                 increment(num, context);
             }
             return;
-        case Rounding.UP:
+        case RoundingMode.UP:
             auto temp = T.zero;
             if (remainder != temp) {
                 increment(num, context);
@@ -274,7 +274,7 @@ private void roundByMode(T)(ref T num, ref DecimalContext context)
 unittest {
     pushContext(testContextR);
     testContextR.precision = 5;
-    testContextR.rounding = Rounding.HALF_EVEN;
+    testContextR.rounding = RoundingMode.HALF_EVEN;
     BigDecimal num;
     num = 1000;
     roundByMode(num, testContextR);
@@ -288,11 +288,11 @@ unittest {
     num = 1234550;
     roundByMode(num, testContextR);
     assert(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
-    testContextR.rounding = Rounding.DOWN;
+    testContextR.rounding = RoundingMode.DOWN;
     num = 1234550;
     roundByMode(num, testContextR);
     assert(num.coefficient == 12345 && num.exponent == 2 && num.digits == 5);
-    testContextR.rounding = Rounding.UP;
+    testContextR.rounding = RoundingMode.UP;
     num = 1234550;
     roundByMode(num, testContextR);
     assert(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
@@ -401,14 +401,14 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
     }
 
     switch (context.rounding) {
-        case Rounding.DOWN:
+        case RoundingMode.DOWN:
             break;
-        case Rounding.HALF_UP:
+        case RoundingMode.HALF_UP:
             if (firstDigit(remainder) >= 5) {
                 increment(mant, digits);
             }
             break;
-        case Rounding.HALF_EVEN:
+        case RoundingMode.HALF_EVEN:
             ulong first = firstDigit(remainder);
             if (first > 5) {
                 increment(mant, digits);
@@ -422,22 +422,22 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
                 increment(mant, digits);
             }
             break;
-        case Rounding.CEILING:
+        case RoundingMode.CEILING:
             if (!sign) {
                 increment(mant, digits);
             }
             break;
-        case Rounding.FLOOR:
+        case RoundingMode.FLOOR:
             if (sign) {
                 increment(mant, digits);
             }
             break;
-        case Rounding.HALF_DOWN:
+        case RoundingMode.HALF_DOWN:
             if (firstDigit(remainder) > 5) {
                 increment(mant, digits);
             }
             break;
-        case Rounding.UP:
+        case RoundingMode.UP:
             if (remainder != 0) {
                 increment(mant, digits);
             }
@@ -460,7 +460,7 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
 unittest {
     DecimalContext testContextR;
     testContextR.precision = 5;
-    testContextR.rounding = Rounding.HALF_EVEN;
+    testContextR.rounding = RoundingMode.HALF_EVEN;
     ulong num; uint digits; int expo;
     num = 1000;
     digits = numDigits(num);

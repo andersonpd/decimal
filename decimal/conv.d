@@ -433,7 +433,8 @@ public string writeTo(T)
 public BigDecimal toNumber(const string inStr) {
 
     BigDecimal num;
-    num.sign = false;
+    BigDecimal NAN = BigDecimal.nan;
+    bool sign = false;
 
     // strip, copy, tolower
     char[] str = strip(inStr).dup;
@@ -441,7 +442,7 @@ public BigDecimal toNumber(const string inStr) {
 
     // get sign, if any
     if (startsWith(str,"-")) {
-        num.sign = true;
+        sign = true;
         str = str[1..$];
     }
     else if (startsWith(str,"+")) {
@@ -450,64 +451,74 @@ public BigDecimal toNumber(const string inStr) {
 
     // check for NaN
     if (startsWith(str,"nan")) {
-        bool signed = num.sign;
-        num = BigDecimal(SV.QNAN, num.sign );
+        num = NAN;
+        num.sign = sign;
         // if no payload, return
         if (str == "nan") {
             return num;
         }
         // set payload
         str = str[3..$];
+        // payload has a max length of 6 digits
+        if (str.length > 6) return NAN;
         // ensure string is all digits
         foreach(char c; str) {
             if (!isDigit(c)) {
-                return num;
+                return NAN;
             }
         }
-        // convert string to payload
-        num.payload = std.conv.to!uint(str);
+        // convert string to number
+        uint payload = std.conv.to!uint(str);
+        // check for overflow
+        if (payload > ushort.max) {
+            return NAN;
+        }
+        num.payload = payload;
         return num;
     };
 
     // check for sNaN
     if (startsWith(str,"snan")) {
         num = BigDecimal.snan;
+        num.sign = sign;
         if (str == "snan") {
-            num.payload = 0; // BigInt(0);
+            num.payload = 0;
             return num;
         }
         // set payload
         str = str[4..$];
         // payload has a max length of 6 digits
-        if (str.length > 6) return num;
+        if (str.length > 6) return NAN;
         // ensure string is all digits
         foreach(char c; str) {
             if (!isDigit(c)) {
-                return num;
+                return NAN;
             }
         }
         // convert string to payload
         uint payload = std.conv.to!uint(str);
-        if (payload > ushort.max) return num;
+        // check for overflow
+        if (payload > ushort.max) {
+            return NAN;
+        }
         num.payload = payload;
         return num;
     };
 
     // check for infinity
     if (str == "inf" || str == "infinity") {
-        num = BigDecimal.infinity(num.sign);
+        num = BigDecimal.infinity(sign);
         return num;
     };
 
     // at this point, num must be finite
-    num = BigDecimal.zero(num.sign);
+    num = BigDecimal.zero(sign);
     // check for exponent
     int pos = indexOf(str, 'e');
     if (pos > 0) {
         // if it's just a trailing 'e', return NaN
         if (pos == str.length - 1) {
-            num = BigDecimal.nan;
-            return num;
+            return NAN;
         }
         // split the string into coefficient and exponent
         char[] xstr = str[pos+1..$];
@@ -526,15 +537,13 @@ public BigDecimal toNumber(const string inStr) {
 
         // ensure it's not now empty
         if (xstr.length < 1) {
-            num = BigDecimal.nan;
-            return num;
+            return NAN;
         }
 
         // ensure exponent is all digits
         foreach(char c; xstr) {
             if (!isDigit(c)) {
-                num = BigDecimal.nan;
-            return num;
+                return NAN;
             }
         }
 
@@ -545,16 +554,14 @@ public BigDecimal toNumber(const string inStr) {
 
         // make sure it will fit into an int
         if (xstr.length > 10) {
-            num = BigDecimal.nan;
-            return num;
+            return NAN;
         }
         if (xstr.length == 10) {
             // try to convert it to a long (should work) and
             // then see if the long value is too big (or small)
             long lex = std.conv.to!long(xstr);
             if ((xneg && (-lex < int.min)) || lex > int.max) {
-            num = BigDecimal.nan;
-        return num;
+                return NAN;
             }
             num.exponent = cast(int) lex;
         }
@@ -589,15 +596,13 @@ public BigDecimal toNumber(const string inStr) {
 
     // ensure string is not empty
     if (str.length < 1) {
-        num = BigDecimal.nan;
-        return num;
+        return NAN;
     }
 
     // ensure string is all digits
     foreach(char c; str) {
         if (!isDigit(c)) {
-            num = BigDecimal.nan;
-            return num;
+            return NAN;
         }
     }
     // convert coefficient string to BigInt
