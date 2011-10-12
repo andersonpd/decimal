@@ -147,14 +147,11 @@ unittest {
     DecimalContext contextX;
     contextX.precision = 3;
     round(after, contextX);
-//    writeln("after.toString = ", after.toString);
     assert(after.toString() == "1.00E+4");
     before = BigDecimal(1234567890);
     after = before;
-writeln("before = ", before);
     contextX.precision = 3;
     round(after, contextX);
-writeln("after = ", after);
     assert(after.toString() == "1.23E+9");
     after = before;
     contextX.precision = 4;

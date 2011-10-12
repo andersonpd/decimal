@@ -35,7 +35,6 @@ unittest {
     writeln("-------------------");
 }
 
-// (4) TODO: problem with unary ops (++).
 // (5) TODO: subnormal creation.
 struct Dec64 {
 
@@ -714,9 +713,13 @@ public:
     unittest {
         Dec64 num;
         assert(num.coefficient == 0);
-        // TODO: why doesn't 9.998743 work?
         num = 9.998742;
         assert(num.coefficient == 9998742);
+        num = 9.998743;
+        assert(num.coefficient == 9998742999999999);
+        // note the difference between real and string values!
+        num = Dec64("9.998743");
+        assert(num.coefficient == 9998743);
         num = Dec64(9999213,-6);
         assert(num.coefficient == 9999213);
         num = -125;
@@ -783,6 +786,8 @@ public:
     }
 
     static Dec64 max(const bool signed = false) {
+        Dec64 top = Dec64(C_MAX_IMPLICIT, E_LIMIT); //context64.maxString);//        return signed ? NEG_MAX : MAX;
+writeln("top = ", top);
         return signed ? NEG_MAX : MAX;
     }
 
@@ -814,7 +819,7 @@ public:
     static Dec64 snan()       { return SNAN; }
 
     static Dec64 epsilon()    { return Dec64(1, -7); }
-    static Dec64 max()        { return MAX; }
+    static Dec64 max()        { return Dec64(C_MAX_IMPLICIT, E_LIMIT); } //context64.maxString); }//MAX; }
     static Dec64 min_normal() { return Dec64(1, context64.eMin); }
     static Dec64 min()        { return Dec64(1, context64.eTiny); }
 
@@ -1065,7 +1070,6 @@ public:
             context64.setFlag(INVALID_OPERATION);
             return 0;
         }
-        // TODO: make these constants. (The compiler probably already does.)
         if (this > Dec64(long.max) || (isInfinite && !isSigned)) return long.max;
         if (this < Dec64(long.min) || (isInfinite &&  isSigned)) return long.min;
         quantize!Dec64(this, ONE, context64);
@@ -1118,39 +1122,23 @@ public:
     /**
      * Creates an exact representation of this number.
      */
-    const string toExact()
-    {
-        if (this.isFinite) {
-            return format("%s%016dE%s%02d", signed ? "-" : "+", coefficient,
-                    exponent < 0 ? "-" : "+", exponent);
-        }
-        if (this.isInfinite) {
-            return format("%s%s", signed ? "-" : "+", "Infinity");
-        }
-        if (this.isQuiet) {
-            if (payload) {
-                return format("%s%s%d", signed ? "-" : "+", "NaN", payload);
-            }
-            return format("%s%s", signed ? "-" : "+", "NaN");
-        }
-        // this.isSignaling
-        if (payload) {
-            return format("%s%s%d", signed ? "-" : "+", "sNaN", payload);
-        }
-        return format("%s%s", signed ? "-" : "+", "sNaN");
+    const string toExact() {
+        return decimal.conv.toExact!Dec64(this);
     }
 
+
     unittest {
-/*        Dec64 num;
+        Dec64 num;
         assert(num.toExact == "+NaN");
-        num = max;
-        assert(num.toExact == "+9999999E+90");
+        num = Dec64.max;
+writeln("num.toExact = ", num.toExact);
+//        assert(num.toExact == "+9999999E+90");
         num = 1;
-        assert(num.toExact == "+0000001E+00");
+        assert(num.toExact == "+1E+00");
         num = C_MAX_EXPLICIT;
-        assert(num.toExact == "+8388607E+00");
+        assert(num.toExact == "+9007199254740991E+00");
         num = infinity(true);
-        assert(num.toExact == "-Infinity");*/
+        assert(num.toExact == "-Infinity");
     }
 
     /**

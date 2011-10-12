@@ -40,8 +40,8 @@ import std.ascii: isDigit;
 //import std.stdio: write, writeln;
 import std.string;
 
-//const BigInt BIG_ONE = BigInt(1);
-//const BigInt BIG_ZERO = BigInt(0);
+const BigInt BIG_ONE = BigInt(1);
+const BigInt BIG_ZERO = BigInt(0);
 
 //--------------------------------
 // conversion to/from strings

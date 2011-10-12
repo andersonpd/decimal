@@ -47,6 +47,15 @@ T to(T:string)(const BigInt num) {
     string outbuff="";
     void sink(const(char)[] s) { outbuff ~= s; }
     num.toString(&sink, "%d");
+/*    string str = outbuff;
+    string t = munch(str, "0");
+    if (str.length == 0) str = "0";
+    if (str != outbuff) {
+writeln("outbuff = ", outbuff);
+writeln("str = ", str);
+        writeln(outbuff);
+        writeln(str);
+    }*/
     return outbuff;
 }
 
@@ -277,11 +286,11 @@ unittest {
     Dec32 num = Dec32(123); //(false, 123, 0);
     assert(toSciString!Dec32(num) == "123");
     assert(num.toAbstract() == "[0,123,0]");
-    writeln("num = ", num);
-    writeln("num.toAbstract = ", num.toAbstract);
+//    writeln("num = ", num);
+//    writeln("num.toAbstract = ", num.toAbstract);
     num = Dec32(-123, 0);
-    writeln("num = ", num);
-    writeln("num.toAbstract = ", num.toAbstract);
+//    writeln("num = ", num);
+//    writeln("num.toAbstract = ", num.toAbstract);
     assert(toSciString!Dec32(num) == "-123");
     assert(num.toAbstract() == "[1,123,0]");
     num = Dec32(123, 1);
@@ -294,8 +303,8 @@ unittest {
     assert(toSciString!Dec32(num) == "12.3");
     assert(num.toAbstract() == "[0,123,-1]");
     num = Dec32("inf");
-    writeln("num = ", num);
-    writeln("num.toAbstract = ", num.toAbstract);
+//    writeln("num = ", num);
+//    writeln("num.toAbstract = ", num.toAbstract);
     assert(toSciString!Dec32(num) == "Infinity");
     assert(num.toAbstract() == "[0,inf]");
     string str = "1.23E+3";
@@ -659,6 +668,8 @@ public string toAbstract(T)(const T num) if (isDecimal!T)
 public string toExact(T)(const T num) if (isDecimal!T)
     {
         if (num.isFinite) {
+//            string str = to!string(num.coefficient);
+//            writeln("str = ", str);
             return format("%s%sE%s%02d", num.sign ? "-" : "+",
                     to!string(num.coefficient),
                     num.exponent < 0 ? "-" : "+", num.exponent);
@@ -681,16 +692,17 @@ public string toExact(T)(const T num) if (isDecimal!T)
         return "+NaN";
     }
 
-    unittest {
+    // TODO: fix this unittest
+	unittest {
         write("toExact...");
         Dec32 num;
         assert(num.toExact == "+NaN");
         num = +9999999E+90;
         assert(num.toExact == "+9999999E+90");
         num = 1;
-writeln("num = ", num);
-writeln("num.toExact = ", num.toExact);
-//        assert(num.toExact == "+1E+00");
+//writeln("num = ", num);
+//writeln("num.toExact = ", num.toExact);
+        assert(num.toExact == "+1E+00");
         num = Dec32.infinity(true);
         assert(num.toExact == "-Infinity");
         writeln("passed");

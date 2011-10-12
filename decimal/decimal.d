@@ -385,8 +385,6 @@ unittest {
 // member properties
 //--------------------------------
 
-// TODO: make these true properties.
-
     /// returns the exponent of this number
     @property
     const int exponent() {
@@ -397,11 +395,6 @@ unittest {
     int exponent(int expo) {
         this.expo = expo;
         return this.expo;
-    }
-
-    unittest {
-        write("exponent...");
-        writeln("test missing");
     }
 
     @property
@@ -419,11 +412,6 @@ unittest {
     BigInt coefficient(long mant) {
         this.mant = BigInt(mant);
         return this.mant;
-    }
-
-    unittest {
-        write("coefficient.");
-        writeln("test missing");
     }
 
     @property
@@ -444,8 +432,18 @@ unittest {
     }
 
     unittest {
-        write("payload");
-        writeln("test missing");
+        BigDecimal big = -123.45E12;
+        assert(big.exponent == 10);
+        assert(big.coefficient == 12345);
+        assert(big.sign);
+        big.coefficient = 23456;
+        big.exponent = 12;
+        big.sign = false;
+        assert(big == BigDecimal(234.56E14));
+        big = nan;
+        assert(big.payload == 0);
+        big = snan(1250);
+        assert(big.payload == 1250);
     }
 
     const string toExact() {
@@ -1031,24 +1029,8 @@ unittest {
         return nextPlus!BigDecimal(this, bigContext);
     }
 
-    unittest {
-        write("nextUp...");
-        BigDecimal big;
-        big = 123.45;
-        assert(big.nextUp == BigDecimal(123.450001));
-        writeln("passed");
-    }
-
     const BigDecimal nextDown() {
         return nextMinus!BigDecimal(this, bigContext);
-    }
-
-    unittest {
-        write("nextDown...");
-        BigDecimal big;
-        big = 123.45;
-        assert(big.nextDown == BigDecimal(123.449999));
-        writeln("passed");
     }
 
     const BigDecimal nextAfter(const BigDecimal num) {
@@ -1056,15 +1038,17 @@ unittest {
     }
 
     unittest {
-        write("nextAfter...");
         BigDecimal big, expect;
+        big = 123.45;
+        assert(big.nextUp == BigDecimal(123.450001));
+        big = 123.45;
+        assert(big.nextDown == BigDecimal(123.449999));
         big = 123.45;
         expect = big.nextUp;
         assert(big.nextAfter(BigDecimal(123.46)) == expect);
         big = 123.45;
         expect = big.nextDown;
         assert(big.nextAfter(BigDecimal(123.44)) == expect);
-        writeln("passed");
     }
 
     /**

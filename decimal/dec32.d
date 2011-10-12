@@ -29,7 +29,6 @@ import decimal.context;
 import decimal.decimal;
 import decimal.rounding;
 
-// (4) TODO: problem with unary ops (++).
 // (5) TODO: subnormal creation.
 struct Dec32 {
 
@@ -1020,9 +1019,8 @@ public:
             context32.setFlag(INVALID_OPERATION);
             return 0;
         }
-        // TODO: make these constants. (The compiler probably already does.)
-        if (this > Dec32(long.max) || (isInfinite && !isSigned)) return long.max;
-        if (this < Dec32(long.min) || (isInfinite &&  isSigned)) return long.min;
+        if (this > long.max || (isInfinite && !isSigned)) return long.max;
+        if (this < long.min || (isInfinite &&  isSigned)) return long.min;
         quantize!Dec32(this, ONE, context32);
         n = coefficient;
         return signed ? -n : n;
@@ -1073,7 +1071,7 @@ public:
     /**
      * Creates an exact representation of this number.
      */
-    const string toExact()
+/*    const string toExact()
     {
         if (this.isFinite) {
             return format("%s%07dE%s%02d", signed ? "-" : "+", coefficient,
@@ -1093,7 +1091,11 @@ public:
             return format("%s%s%d", signed ? "-" : "+", "sNaN", payload);
         }
         return format("%s%s", signed ? "-" : "+", "sNaN");
+    }*/
+    const string toExact() {
+        return decimal.conv.toExact!Dec32(this);
     }
+
 
     unittest {
         Dec32 num;
@@ -1101,7 +1103,7 @@ public:
         num = max;
         assert(num.toExact == "+9999999E+90");
         num = 1;
-        assert(num.toExact == "+0000001E+00");
+        assert(num.toExact == "+1E+00");
         num = C_MAX_EXPLICIT;
         assert(num.toExact == "+8388607E+00");
         num = infinity(true);
@@ -1295,23 +1297,15 @@ public:
         assert(actual == expect);
         num = 1.00E12;
         expect = num;
-writeln("1 expect = ", expect.toAbstract);
-        actual = --num; // fails!
-writeln("1 actual = ", actual.toAbstract);
-writeln("2 num = ", num.toAbstract);
-        actual = num--;
-writeln("2 actual = ", actual.toAbstract);
-writeln("3 num = ", num.toAbstract);
-        num = 1.00E12;
+        actual = --num;
+		assert(expect == actual);
+		actual = num--;
+        assert(expect == actual);
+		num = 1.00E12;
         expect = num;
-writeln("3 expect = ", expect.toAbstract);
-        actual = ++num; // fails!
-writeln("3 actual = ", actual);
-writeln("3 actual = ", actual.toAbstract);
-writeln("4 num = ", num.toAbstract);
+        actual = ++num;
+        assert(expect == actual);
         actual = num++;
-writeln("4 actual = ", actual.toAbstract);
-writeln("4 num = ", num.toAbstract);
         assert(actual == expect);
         num = Dec32(9999999, 90);
         expect = num;

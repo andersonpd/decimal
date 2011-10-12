@@ -29,9 +29,9 @@ import decimal.rounding;
 import decimal.conv;
 
 unittest {
-    writeln("-------------------");
-    writeln("test........testing");
-    writeln("-------------------");
+    writeln("-----------------------------------------");
+    writeln("test..............................testing");
+    writeln("-----------------------------------------");
 }
 
 //--------------------------------
@@ -1679,6 +1679,23 @@ unittest {
 }
 
 unittest {
+    write("components...");
+    BigDecimal big = -123.45E12;
+    assert(big.exponent == 10);
+    assert(big.coefficient == 12345);
+    assert(big.sign);
+    big.coefficient = 23456;
+    big.exponent = 12;
+    big.sign = false;
+    assert(big == BigDecimal(234.56E14));
+    big = BigDecimal.nan;
+    assert(big.payload == 0);
+    big = BigDecimal.snan(1250);
+    assert(big.payload == 1250);
+    writeln("passed");
+}
+
+unittest {
     write("sgn..........");
     BigDecimal big;
     big = -123;
@@ -1787,6 +1804,22 @@ unittest {
     expect = -44.4843;
     actual = op1;
     assert(expect == actual);
+    writeln("passed");
+}
+
+unittest {
+    write("next.........");
+    BigDecimal big, expect;
+    big = 123.45;
+    assert(big.nextUp == BigDecimal(123.450001));
+    big = 123.45;
+    assert(big.nextDown == BigDecimal(123.449999));
+    big = 123.45;
+    expect = big.nextUp;
+    assert(big.nextAfter(BigDecimal(123.46)) == expect);
+    big = 123.45;
+    expect = big.nextDown;
+    assert(big.nextAfter(BigDecimal(123.44)) == expect);
     writeln("passed");
 }
 
@@ -2531,7 +2564,7 @@ unittest {
     num = Dec32.max;
     assert(num.toExact == "+9999999E+90");
     num = 1;
-    assert(num.toExact == "+0000001E+00");
+    assert(num.toExact == "+1E+00");
     num = Dec32.infinity(true);
     assert(num.toExact == "-Infinity");
     writeln("passed");
