@@ -22,16 +22,16 @@ import std.bigint;
 import std.stdio;
 import decimal.arithmetic;
 import decimal.context;
-import decimal.decimal;
+import decimal.big;
 import decimal.dec32;
 import decimal.dec64;
 import decimal.rounding;
 import decimal.conv;
 
 unittest {
-    writeln("-----------------------------------------");
-    writeln("test..............................testing");
-    writeln("-----------------------------------------");
+    writeln("---------------------------");
+    writeln("test................testing");
+    writeln("---------------------------");
 }
 
 //--------------------------------
@@ -358,6 +358,19 @@ unittest {
     f = BigDecimal("Fred");
     expectEquals(f.toString(), "NaN") ? passed++ : failed++;
     writefln("unittest %s: passed %d; failed %d", title, passed, failed);
+}
+
+unittest {
+    write("toExact...");
+    Dec32 num;
+    assert(num.toExact == "+NaN");
+    num = Dec32.max;
+    assert(num.toExact == "+9999999E+90");
+    num = 1;
+    assert(num.toExact == "+1E+00");
+    num = Dec32.infinity(true);
+    assert(num.toExact == "-Infinity");
+    writeln("passed");
 }
 
 unittest {
@@ -1839,6 +1852,7 @@ unittest {
     writeln("---------------------");
     writeln("digits.......finished");
     writeln("---------------------");
+    writeln("---------------------");
     writeln("rounding......testing");
     writeln("---------------------");
 }
@@ -2220,7 +2234,6 @@ unittest {
     writeln("---------------------");
     writeln("rounding.....finished");
     writeln("---------------------");
-    writeln();
 }
 
 unittest {
@@ -2591,9 +2604,9 @@ unittest {
 }
 
 unittest {
-    writeln("---------------------");
-    writeln("test.........finished");
-    writeln("---------------------");
+    writeln("---------------------------");
+    writeln("test...............finished");
+    writeln("---------------------------");
 }
 
 

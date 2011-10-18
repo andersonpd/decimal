@@ -30,15 +30,19 @@ module decimal.arithmetic;
 
 import decimal.context;
 import decimal.conv : isDecimal, toDecimal;
-import decimal.decimal;
+import decimal.big;
 import decimal.rounding;
 
 import std.array: insertInPlace;
 import std.bigint;
-import std.conv;
 import std.ascii: isDigit;
-//import std.stdio: write, writeln;
 import std.string;
+
+unittest {
+    writeln("-------------------");
+    writeln("arithmetic..testing");
+    writeln("-------------------");
+}
 
 const BigInt BIG_ONE = BigInt(1);
 const BigInt BIG_ZERO = BigInt(0);
@@ -1801,5 +1805,10 @@ private bool isInvalidDivision(T)(const T dividend, const T divisor,
     return false;
 }
 
-//--------------------------------
+unittest {
+    writeln("-------------------");
+    writeln("arithmetic.finished");
+    writeln("-------------------");
+}
+
 

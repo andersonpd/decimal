@@ -23,6 +23,13 @@ import std.math: LOG2;
 import std.array: replicate;
 import std.string: format;
 
+unittest {
+    import std.stdio;
+    writeln("-------------------");
+    writeln("context.....testing");
+    writeln("-------------------");
+}
+
 //--------------------------
 // DecimalContext struct
 //--------------------------
@@ -210,4 +217,11 @@ public static DecimalContext popContext() {
 //--------------------------
 // End of DecimalContext struct
 //--------------------------
+
+unittest {
+    import std.stdio;
+    writeln("-------------------");
+    writeln("context....finished");
+    writeln("-------------------");
+}
 

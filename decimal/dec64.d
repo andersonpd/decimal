@@ -20,18 +20,17 @@ module decimal.dec64;
 import std.array: insertInPlace;
 import std.bigint;
 import std.bitmanip;
-import std.conv;
-import std.stdio;
 import std.string;
 
 import decimal.arithmetic;
 import decimal.context;
-import decimal.decimal;
+import decimal.big;
+import decimal.dec32;
 import decimal.rounding;
 
 unittest {
     writeln("-------------------");
-    writeln("Dec64.......testing");
+    writeln("dec64.......testing");
     writeln("-------------------");
 }
 
@@ -264,9 +263,9 @@ private:
         NEG_ZRO = 0xB1C0000000000000,
 
         // The value of the largest representable positive number.
-        POS_MAX = 0x77F8967FFFFFFFFF,
+        POS_MAX = 0x77FB86F26FC0FFFF, //  0x77F8967FFFFFFFFF
         // The value of the largest representable negative number.
-        NEG_MAX = 0xF7F8967FFFFFFFFF
+        NEG_MAX = 0xF7FB86F26FC0FFFF
     }
 
 public:
@@ -786,8 +785,8 @@ public:
     }
 
     static Dec64 max(const bool signed = false) {
-        Dec64 top = Dec64(C_MAX_IMPLICIT, E_LIMIT); //context64.maxString);//        return signed ? NEG_MAX : MAX;
-writeln("top = ", top);
+//        Dec64 top = Dec64(C_MAX_IMPLICIT, E_LIMIT); //context64.maxString);//        return signed ? NEG_MAX : MAX;
+//writeln("top = ", top);
         return signed ? NEG_MAX : MAX;
     }
 
@@ -813,29 +812,25 @@ writeln("top = ", top);
         return SNAN;
     }
 
+
     // floating point properties
     static Dec64 init()       { return NAN; }
-    static Dec64 nan()        { return NAN; }
-    static Dec64 snan()       { return SNAN; }
-
-    static Dec64 epsilon()    { return Dec64(1, -7); }
-    static Dec64 max()        { return Dec64(C_MAX_IMPLICIT, E_LIMIT); } //context64.maxString); }//MAX; }
+    static Dec64 epsilon()    { return Dec64(1, -context64.precision); }
     static Dec64 min_normal() { return Dec64(1, context64.eMin); }
-    static Dec64 min()        { return Dec64(1, context64.eTiny); }
+    static Dec64 min()        { return Dec64(1, context64.eMin); } //context64.eTiny); }
 
-    static int dig()        { return 7; }
-    static int mant_dig()   { return 24; }
+    static int dig()        { return context64.precision; }
+    static int mant_dig()   { return cast(int)context64.mant_dig;; }
     static int max_10_exp() { return context64.eMax; }
     static int min_10_exp() { return context64.eMin; }
     static int max_exp()    { return cast(int)(context64.eMax/LOG2); }
     static int min_exp()    { return cast(int)(context64.eMin/LOG2); }
 
     /// Returns the maximum number of decimal digits in this context.
-    static uint precision(DecimalContext context = context64) {
-        return context.precision;
-    }
+    static uint precision() { return context64.precision; }
 
-    /// Returns the maximum number of decimal digits in this context.
+
+/*    /// Returns the maximum number of decimal digits in this context.
     static uint dig(DecimalContext context = context64) {
         return context.precision;
     }
@@ -876,7 +871,7 @@ writeln("top = ", top);
 
     static int max_10_exp(DecimalContext context = context64) {
         return context.eMax;
-    }
+    }*/
 
 //--------------------------------
 //  classification properties
@@ -1131,12 +1126,14 @@ writeln("top = ", top);
         Dec64 num;
         assert(num.toExact == "+NaN");
         num = Dec64.max;
-writeln("num.toExact = ", num.toExact);
-//        assert(num.toExact == "+9999999E+90");
+        assert(num.toExact == "+9999999999999999E+369");
+        num = Dec64.min;
         num = 1;
         assert(num.toExact == "+1E+00");
         num = C_MAX_EXPLICIT;
         assert(num.toExact == "+9007199254740991E+00");
+        num = C_MAX_IMPLICIT;
+        assert(num.toExact == "+9999999999999999E+00");
         num = infinity(true);
         assert(num.toExact == "-Infinity");
     }
@@ -1393,8 +1390,8 @@ writeln("num.toExact = ", num.toExact);
     /**
      * Detect whether T is a decimal type.
      */
-    public template isPromotable(T) {
-        enum bool isPromotable = is(T:ulong) || is(T:real);
+    private template isPromotable(T) {
+        enum bool isPromotable = is(T:ulong) || is(T:real) || is(T:Dec32);
     }
 
     const Dec64 opBinary(string op, T)(const T rhs) if(isPromotable!T)
@@ -1454,10 +1451,11 @@ writeln("num.toExact = ", num.toExact);
         assert(pow10(n) == 1000);
     }
 
+}   // end Dec64 struct
+
 unittest {
     writeln("-------------------");
-    writeln("Dec64......finished");
+    writeln("dec64......finished");
     writeln("-------------------");
 }
-}   // end Dec64 struct
 

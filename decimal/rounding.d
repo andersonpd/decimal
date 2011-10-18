@@ -23,14 +23,16 @@ import decimal.context;
 import decimal.conv;
 import decimal.dec32;
 import decimal.dec64;
-import decimal.decimal;
+import decimal.big;
 import std.array: insertInPlace;
-import std.bigint;
-import std.conv;
 import std.ascii: isDigit;
-import std.stdio: write, writeln;
-import std.string;
-import std.typecons: Tuple;
+import std.bigint;
+
+unittest {
+    writeln("-------------------");
+    writeln("rounding....testing");
+    writeln("-------------------");
+}
 
 private BigInt tens[18];
 private BigInt fives[18];
@@ -81,19 +83,14 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
             case RoundingMode.HALF_EVEN:
             case RoundingMode.HALF_DOWN:
             case RoundingMode.UP:
-                bool sign = num.sign;
-                num = T.infinity;
-                num.sign = sign;
+                num = T.infinity(num.sign);
                 break;
             case RoundingMode.DOWN:
-                bool sign = num.sign;
-                num = T.max;
-                num.sign = sign;
+                num = T.max(num.sign);
                 break;
             case RoundingMode.CEILING:
                 if (num.sign) {
-                    num = T.max;
-                    num.sign = true;
+                    num = T.max(true);
                 }
                 else {
                     num = T.infinity;
@@ -929,4 +926,11 @@ unittest {
     n = long.max;
     assert(numDigits(n) == 19);
 }
+
+unittest {
+    writeln("-------------------");
+    writeln("rounding...finished");
+    writeln("-------------------");
+}
+
 

@@ -20,13 +20,18 @@ module decimal.conv;
 
 import decimal.dec32;
 import decimal.dec64;
-import decimal.decimal;
+import decimal.big;
 import std.array: insertInPlace;
 import std.bigint;
 import std.bitmanip;
 import std.conv;
 import std.string;
 
+unittest {
+    writeln("-------------------");
+    writeln("conv........testing");
+    writeln("-------------------");
+}
 //--------------------------------
 //  conversions
 //--------------------------------
@@ -59,25 +64,20 @@ writeln("str = ", str);
     return outbuff;
 }
 
+// TODO: need to replace this with one toDecimal template
 /**
  * Converts any decimal to a small decimal
  */
 public T toSmallDecimal(T,U)(const U num) if (isDecimal!T) {
 
     static if(is(typeof(num) == T)) {return num.dup;}
-    static if(is(typeof(num) == BigDecimal)) {return T(num);}
+//    static if(is(typeof(num) == BigDecimal)) {return T(num);}
 
+    bool sign = num.sign;
     if (num.isFinite) {
-        // NOTE: BigInt.toLong returns a long instead of a ulong
-        // It would be better to handle the BigInt properly
-        ulong mant;
-        if (is(typeof(num.coefficient) == BigInt)) {
-            mant = num.coefficient.toLong();
-        }
-        else {
-            mant = num.coefficient;
-        }
-        return T(num.sign, mant, num.exponent);
+        auto mant = num.coefficient;
+        int  expo = num.exponent;
+        return T(sign, mant, expo);
     }
     else if (num.isInfinite) {
         return T.infinity(sign);
@@ -692,21 +692,10 @@ public string toExact(T)(const T num) if (isDecimal!T)
         return "+NaN";
     }
 
-    // TODO: fix this unittest
-	unittest {
-        write("toExact...");
-        Dec32 num;
-        assert(num.toExact == "+NaN");
-        num = +9999999E+90;
-        assert(num.toExact == "+9999999E+90");
-        num = 1;
-//writeln("num = ", num);
-//writeln("num.toExact = ", num.toExact);
-        assert(num.toExact == "+1E+00");
-        num = Dec32.infinity(true);
-        assert(num.toExact == "-Infinity");
-        writeln("passed");
-    }
-
+unittest {
+    writeln("-------------------");
+    writeln("conv.........tested");
+    writeln("-------------------");
+}
 
 

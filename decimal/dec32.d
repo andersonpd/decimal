@@ -21,15 +21,19 @@ import std.array: insertInPlace;
 import std.bigint;
 import std.bitmanip;
 import std.conv;
-import std.stdio;
 import std.string;
 
 import decimal.arithmetic;
 import decimal.context;
-import decimal.decimal;
+import decimal.big;
 import decimal.rounding;
 
-// (5) TODO: subnormal creation.
+unittest {
+    writeln("-------------------");
+    writeln("dec32.......testing");
+    writeln("-------------------");
+}
+
 struct Dec32 {
 
     /// The global context for this type.
@@ -764,11 +768,11 @@ public:
 
     // floating point properties
     static Dec32 init()       { return NAN; }
-    static Dec32 nan()        { return NAN; }
-    static Dec32 snan()       { return SNAN; }
+//    static Dec32 nan()        { return NAN; }
+//    static Dec32 snan()       { return SNAN; }
 
     static Dec32 epsilon()    { return Dec32(1, -7); }
-    static Dec32 max()        { return MAX; }
+//    static Dec32 max()        { return MAX; }
     static Dec32 min_normal() { return Dec32(1, context32.eMin); }
     static Dec32 min()        { return Dec32(1, context32.eTiny); }
 
@@ -808,8 +812,9 @@ public:
     }
 
     /// Returns the minimum representable subnormal value in this context.
-    // (5) TODO: does this set the subnormal flag?
-    // Do others do the same on creation??
+    /// NOTE: Creation of this number will not set the
+    /// subnormal flag until it is used. The operations will
+    /// set the flags as needed.
     static Dec32 min(DecimalContext context = context32) {
         return Dec32(1, context.eTiny);
     }
@@ -957,6 +962,7 @@ public:
 //  conversions
 //--------------------------------
 
+    // TODO: move all this to conv...
     /**
      * Converts a Dec32 to a BigDecimal
      */
@@ -1367,26 +1373,21 @@ public:
     }
 
     /**
-     * Detect whether T is a decimal type.
+     * Detect whether T is promotable to decimal32 type.
      */
-    public template isPromotable(T) {
+    private template isPromotable(T) {
         enum bool isPromotable = is(T:ulong) || is(T:real);
     }
 
     const Dec32 opBinary(string op, T)(const T rhs) if(isPromotable!T)
     {
-//		Dec32 num = Dec32(rhs);
     	return opBinary!(op,Dec32)(Dec32(rhs));
     }
 
 	unittest {
-        writeln("Dec32 opBinary");
 		Dec32 num = Dec32(591.3);
 		Dec32 result = num * 5;
 		assert(result == Dec32(2956.5));
-		writeln("num = ", num);
-		writeln("result = ", result);
-		writeln("opBinary passed");
 	}
 
 //-----------------------------
@@ -1436,4 +1437,11 @@ public:
     }
 
 }   // end Dec32 struct
+
+unittest {
+    writeln("-------------------");
+    writeln("dec32......finished");
+    writeln("-------------------");
+}
+
 
