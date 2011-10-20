@@ -20,7 +20,7 @@ module decimal.conv;
 
 import decimal.dec32;
 import decimal.dec64;
-import decimal.big;
+import decimal.decimal;
 import std.array: insertInPlace;
 import std.bigint;
 import std.bitmanip;
@@ -597,7 +597,7 @@ public BigDecimal toNumber(const string inStr) {
     // remove internal decimal point
     int point = indexOf(str, '.');
     if (point >= 0) {
-        // excise the point and adjust exponent
+        // excise the point and adjust the exponent
         str = str[0..point] ~ str[point+1..$];
         int diff = str.length - point;
         num.exponent = num.exponent - diff;

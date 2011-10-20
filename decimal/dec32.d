@@ -25,7 +25,7 @@ import std.string;
 
 import decimal.arithmetic;
 import decimal.context;
-import decimal.big;
+import decimal.decimal;
 import decimal.rounding;
 
 unittest {

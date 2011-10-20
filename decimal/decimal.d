@@ -462,23 +462,13 @@ unittest {
     }
 
     /// returns the adjusted exponent of this number
-    const int adjustedExponent() {
+    @property const int adjustedExponent() {
         return expo + digits - 1;
-    }
-
-    unittest {
-        write("adjustedExponent...");
-        writeln("test missing");
     }
 
     /// returns the number of decimal digits in the coefficient of this number
     const int getDigits() {
         return this.digits;
-    }
-
-    unittest {
-        write("getDigits...");
-        writeln("test missing");
     }
 
     @property const bool sign() {
@@ -556,6 +546,13 @@ unittest {
     // TODO: this is a fairly expensive operation. Can it be fixed?
     static BigDecimal max(DecimalContext context = bigContext) {
         return BigDecimal(context.maxString);
+    }
+
+    // Returns the maximum representable normal value in the current context.
+    // TODO: this is a fairly expensive operation. Can it be fixed?
+    static BigDecimal max(const bool sign, DecimalContext context = bigContext) {
+        BigDecimal result = BigDecimal(context.maxString);
+        return sign ? -result : result;
     }
 
     /// Returns the minimum representable normal value in this context.
@@ -1067,7 +1064,7 @@ unittest {
 
 unittest {
     writeln("-------------------");
-    writeln("decimal....finsihed");
+    writeln("decimal....finished");
     writeln("-------------------");
 }
 

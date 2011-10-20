@@ -22,7 +22,7 @@ import std.bigint;
 import std.stdio;
 import decimal.arithmetic;
 import decimal.context;
-import decimal.big;
+import decimal.decimal;
 import decimal.dec32;
 import decimal.dec64;
 import decimal.rounding;

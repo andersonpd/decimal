@@ -23,7 +23,7 @@ import decimal.context;
 import decimal.conv;
 import decimal.dec32;
 import decimal.dec64;
-import decimal.big;
+import decimal.decimal;
 import std.array: insertInPlace;
 import std.ascii: isDigit;
 import std.bigint;
@@ -34,8 +34,11 @@ unittest {
     writeln("-------------------");
 }
 
-private BigInt tens[18];
-private BigInt fives[18];
+// NOTE: it would be nice to make these const, but the BigInt class
+// complains about casting. They are private so I know they won't change,
+// but it's inconvenient
+private BigInt BILLION = BigInt(1_000_000_000);
+private BigInt QUINTILLION = BigInt(1_000_000_000_000_000_000);
 
 private static DecimalContext testContextR = DecimalContext().dup;
 
@@ -89,19 +92,10 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
                 num = T.max(num.sign);
                 break;
             case RoundingMode.CEILING:
-                if (num.sign) {
-                    num = T.max(true);
-                }
-                else {
-                    num = T.infinity;
-                }
+                num = num.sign ? T.max(true) : T.infinity;
                 break;
             case RoundingMode.FLOOR:
-                if (num.sign) {
-                    num = T.infinity(true);
-                } else {
-                    num = T.max;
-                }
+                num = num.sign ? T.infinity(true) : T.max;
                 break;
             default:
                 break;
@@ -119,8 +113,20 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
             num.coefficient = 0;
             num.exponent = context.eTiny;
         } else if (diff > 0) {
-            // TODO: do something about this
-            writeln("We got a tiny one!");
+            // the precision is decreased by the difference above.
+            DecimalContext tmpContext = context;
+            tmpContext.precision -= diff;
+            tmpContext.rounding = RoundingMode.CEILING;
+            ulong mant;
+            static if (is(typeof(num.coefficient) == BigInt)) {
+                mant = num.coefficient.toLong;
+            }
+            else {
+                mant = num.coefficient;
+            }
+            uint digits = num.digits;
+            setExponent(num.sign, mant, digits, tmpContext);
+            num = T(num.sign, mant, num.exponent);
         }
     }
     // check for zero
@@ -190,7 +196,37 @@ unittest {
     contextX.precision = 3;
     round(after, contextX);;
     assert(after.toAbstract() == "[0,125,2]");
-//    contextX = popContext();
+    Dec32 m = Dec32.min_normal * Dec32(8888888);
+    Dec32 a = Dec32(0.1);
+writeln("a = ", a.toAbstract);
+    Dec32 b = Dec32.min_normal * Dec32(8888888);
+writeln("b = ", b.toAbstract);
+    Dec32 c = a * b;
+writeln("c = ", c.toAbstract);
+    Dec32 d = a * a * b;
+writeln("d = ", d.toAbstract);
+    Dec32 e = a * a * a * b;
+writeln("e = ", e.toAbstract);
+    Dec32 f = a * a * a * a * b;
+writeln("f = ", f.toAbstract);
+    Dec32 g = a * a * a * a * a * b;
+writeln("g = ", g.toAbstract);
+    Dec32 h = a * a * a * a * a * a * b;
+writeln("h = ", h.toAbstract);
+    Dec32 i = a * a * a * a * a * a * a * b;
+writeln("i = ", i.toAbstract);
+// TUDO: problem with subtraction.
+// sub = sub - Dec32(1);//BigDecimal(1); doesn't wotk with Dec32 either!
+//sub = sub - 1;  // doesn't work BigDecimal op int
+//sub--;  // doesn't work, don't know why
+//Dec32 ans = sub + sub;
+//writeln("ans = ", ans.toAbstract);
+/*sub = Dec32.min_normal;
+writeln("sub = ", sub.toAbstract);
+sub = Dec32.min_normal - Dec32.min;// * 50;
+writeln("sub = ", sub.toAbstract);
+Dec32 abc = Dec32.min + Dec32.min;
+writeln("abc = ", abc);*/
 }
 
 //--------------------------------
@@ -223,6 +259,7 @@ private void roundByMode(T)(ref T num, ref DecimalContext context)
             return;
         case RoundingMode.HALF_EVEN:
             T five = T(5, remainder.digits + remainder.exponent - 1);
+            // TODO: should this be compareTotal
             int result = compare!T(remainder, five, context, false);
             if (result > 0) {
                 increment(num, context);
@@ -495,8 +532,6 @@ private ulong clipRemainder(ref ulong num, ref uint digits, uint precision) {
         remainder = dividend - quotient*divisor;
         digits = precision;
     }
-    // TODO: num.digits == precision.
-    // TODO: num.exponent == diff;
     return remainder;
 }
 
@@ -597,22 +632,16 @@ unittest {
     assert(digits == 4);
 }
 
-// TODO: preload the powers of ten and powers of five (& powers of 2?)
-// TODO: compare benchmarks for division by chunks of a quintillion vs. tens.
-// TODO: compare benchmarks for division by powers of 10 vs. 2s * 5s.
-
 // BigInt versions
 
 /**
  * Returns the number of digits in the number.
  */
 public int numDigits(const BigInt big) {
-    BigInt billion = BigDecimal.pow10(9);
-    BigInt quintillion = BigDecimal.pow10(18);
     BigInt dig = cast(BigInt)big;
     int count = 0;
-    while (dig > quintillion) {
-        dig /= quintillion;
+    while (dig > QUINTILLION) {
+        dig /= QUINTILLION;
         count += 18;
     }
     long n = dig.toLong;
@@ -628,14 +657,12 @@ unittest {
  * Returns the first digit of the number.
  */
 public int firstDigit(const BigInt big) {
-    BigInt billion = BigDecimal.pow10(9);
-    BigInt quintillion = BigDecimal.pow10(18);
     BigInt dig = cast()big;
-    while (dig > quintillion) {
-        dig /= quintillion;
+    while (dig > QUINTILLION) {
+        dig /= QUINTILLION;
     }
-    if (dig > billion) {
-        dig /= billion;
+    if (dig > BILLION) {
+        dig /= BILLION;
     }
     long n = dig.toLong();
     return firstDigit(n);

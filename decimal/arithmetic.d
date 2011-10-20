@@ -30,7 +30,7 @@ module decimal.arithmetic;
 
 import decimal.context;
 import decimal.conv : isDecimal, toDecimal;
-import decimal.big;
+import decimal.decimal;
 import decimal.rounding;
 
 import std.array: insertInPlace;
