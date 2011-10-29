@@ -11,10 +11,10 @@
  * Authors: Paul D. Anderson
  */
 
-/*          Copyright Paul D. Anderson 2009 - 2011.
+/*		  Copyright Paul D. Anderson 2009 - 2011.
  * Distributed under the Boost Software License, Version 1.0.
- *    (See accompanying file LICENSE_1_0.txt or copy at
- *          http://www.boost.org/LICENSE_1_0.txt)
+ *	(See accompanying file LICENSE_1_0.txt or copy at
+ *		  http://www.boost.org/LICENSE_1_0.txt)
  */
 
 module decimal.context;
@@ -24,10 +24,10 @@ import std.array: replicate;
 import std.string: format;
 
 unittest {
-    import std.stdio;
-    writeln("-------------------");
-    writeln("context.....testing");
-    writeln("-------------------");
+	import std.stdio;
+	writeln("-------------------");
+	writeln("context.......begin");
+	writeln("-------------------");
 }
 
 //--------------------------
@@ -38,27 +38,27 @@ unittest {
  * Enumeration of available rounding modes.
  */
 public enum RoundingMode {
-    HALF_EVEN,
-    HALF_DOWN,
-    HALF_UP,
-    DOWN,
-    UP,
-    FLOOR,
-    CEILING,
+	HALF_EVEN,
+	HALF_DOWN,
+	HALF_UP,
+	DOWN,
+	UP,
+	FLOOR,
+	CEILING,
 }
 
 /**
  * Enumeration of available signals.
  */
 public enum : ubyte {
-      CLAMPED           = 0x01,
-      DIVISION_BY_ZERO  = 0x02,
-      INEXACT           = 0x04,
-      INVALID_OPERATION = 0x08,
-      OVERFLOW          = 0x10,
-      ROUNDED           = 0x20,
-      SUBNORMAL         = 0x40,
-      UNDERFLOW         = 0x80
+	  CLAMPED		   = 0x01,
+	  DIVISION_BY_ZERO  = 0x02,
+	  INEXACT		   = 0x04,
+	  INVALID_OPERATION = 0x08,
+	  OVERFLOW		  = 0x10,
+	  ROUNDED		   = 0x20,
+	  SUBNORMAL		 = 0x40,
+	  UNDERFLOW		 = 0x80
 }
 
 /**
@@ -66,162 +66,162 @@ public enum : ubyte {
  */
 public struct DecimalContext {
 
-    private static ubyte traps = 0;
-    private static ubyte flags = 0;
+	private static ubyte traps = 0;
+	private static ubyte flags = 0;
 
-    // TODO: make these private and add properties(?)
-    RoundingMode rounding = RoundingMode.HALF_EVEN;
-    uint precision = 9;
-    int eMax =  99;     // largest normalized exponent
+	// TODO: make these private and add properties(?)
+	RoundingMode rounding = RoundingMode.HALF_EVEN;
+	uint precision = 9;
+	int eMax =  99;	 // largest normalized exponent
 
-    public const DecimalContext dup() {
-        DecimalContext copy;
-        copy.rounding = rounding;
-        copy.precision = precision;
-        copy.eMax = eMax;
-        return copy;
-    }
+	public const DecimalContext dup() {
+		DecimalContext copy;
+		copy.rounding = rounding;
+		copy.precision = precision;
+		copy.eMax = eMax;
+		return copy;
+	}
 
-    /// smallest normalized exponent
-    @property
-    const int eMin() {
-        return 1 - eMax;
-    }
+	/// smallest normalized exponent
+	@property
+	const int eMin() {
+		return 1 - eMax;
+	}
 
-    /// smallest non-normalized exponent
-    @property
-    const int eTiny() {
-        return eMin - (precision - 1);
-    }
+	/// smallest non-normalized exponent
+	@property
+	const int eTiny() {
+		return eMin - (precision - 1);
+	}
 
-    /// Returns the number of binary digits in this context.
-    @property
-    const uint mant_dig() {
-        return cast(int)(precision/LOG2);
-    }
+	/// Returns the number of binary digits in this context.
+	@property
+	const uint mant_dig() {
+		return cast(int)(precision/LOG2);
+	}
 
-    /// Returns the smallest binary exponent.
-    @property
-    const int min_exp() {
-        return cast(int)(eMin/LOG2);
-    }
+	/// Returns the smallest binary exponent.
+	@property
+	const int min_exp() {
+		return cast(int)(eMin/LOG2);
+	}
 
-    /// Returns the largest binary exponent.
-    @property
-    const int max_exp() {
-        return cast(int)(eMax/LOG2);
-    }
+	/// Returns the largest binary exponent.
+	@property
+	const int max_exp() {
+		return cast(int)(eMax/LOG2);
+	}
 
-    // Returns the maximum representable normal value in the current context.
-    // TODO: this is a fairly expensive operation. Can it be fixed?
-    const string maxString() {
-        string cstr = "9." ~ replicate("9", precision-1)
-            ~ "E" ~ format("%d", eMax);
-        return cstr;
-    }
+	// Returns the maximum representable normal value in the current context.
+	// TODO: this is a fairly expensive operation. Can it be fixed?
+	const string maxString() {
+		string cstr = "9." ~ replicate("9", precision-1)
+			~ "E" ~ format("%d", eMax);
+		return cstr;
+	}
 
-    /// Sets or resets the specified context flag(s).
-    void setFlag(const ubyte flags, const bool value = true) {
-        if (value) {
-            this.flags |= flags;
-            // TODO: if this flag is trapped an exception should be thrown.
-        }
-        else {
-            this.flags &= !flags;
-        }
-    }
+	/// Sets or resets the specified context flag(s).
+	void setFlag(const ubyte flags, const bool value = true) {
+		if (value) {
+			this.flags |= flags;
+			// TODO: if this flag is trapped an exception should be thrown.
+		}
+		else {
+			this.flags &= !flags;
+		}
+	}
 
-    /// Gets the value of the specified context flag.
-    const bool getFlag(const ubyte flag) {
-        return (this.flags & flag) == flag;
-    }
+	/// Gets the value of the specified context flag.
+	const bool getFlag(const ubyte flag) {
+		return (this.flags & flag) == flag;
+	}
 
-    /// Clears all the context flags.
-    void clearFlags() {
-        flags = 0;
-    }
+	/// Clears all the context flags.
+	void clearFlags() {
+		flags = 0;
+	}
 
-    /// Sets or resets the specified context trap(s).
-    void setTrap(const ubyte traps, const bool value = true) {
-        if (value) {
-            this.traps |= traps;
-        }
-        else {
-            this.traps &= !traps;
-        }
-    }
+	/// Sets or resets the specified context trap(s).
+	void setTrap(const ubyte traps, const bool value = true) {
+		if (value) {
+			this.traps |= traps;
+		}
+		else {
+			this.traps &= !traps;
+		}
+	}
 
-    /// Gets the value of the specified context trap.
-    const bool getTrap(const ubyte trap) {
-        return (this.traps & trap) == trap;
-    }
+	/// Gets the value of the specified context trap.
+	const bool getTrap(const ubyte trap) {
+		return (this.traps & trap) == trap;
+	}
 
-    /// Clears all the context traps.
-    void clearTraps() {
-        traps = 0;
-    }
+	/// Clears all the context traps.
+	void clearTraps() {
+		traps = 0;
+	}
 
-    void setBasic() {
-        clearFlags;
-        setFlag(!(INEXACT | ROUNDED | SUBNORMAL));
-        precision = 9;
-        rounding = RoundingMode.HALF_UP;
-    }
+	void setBasic() {
+		clearFlags;
+		setFlag(!(INEXACT | ROUNDED | SUBNORMAL));
+		precision = 9;
+		rounding = RoundingMode.HALF_UP;
+	}
 
-    void setExtended(uint precision) {
-        clearFlags;
-        clearTraps;
-        this.precision = precision;
-        rounding = RoundingMode.HALF_EVEN;
-    }
+	void setExtended(uint precision) {
+		clearFlags;
+		clearTraps;
+		this.precision = precision;
+		rounding = RoundingMode.HALF_EVEN;
+	}
 
-};    // end struct DecimalContext
+};	// 	 struct DecimalContext
 
 //  stack
 public struct ContextStack {
 
-    private DecimalContext[] stack;
+	private DecimalContext[] stack;
 
-    @property
-    bool isEmpty() {
-        return stack.length == 0;
-    }
+	@property
+	bool isEmpty() {
+		return stack.length == 0;
+	}
 
-    @property
-    ref DecimalContext top() {
-        return stack[$ - 1];
-    }
+	@property
+	ref DecimalContext top() {
+		return stack[$ - 1];
+	}
 
-    void push(DecimalContext value) {
-        stack ~= value;
-    }
+	void push(DecimalContext value) {
+		stack ~= value;
+	}
 
-    DecimalContext pop() {
-        DecimalContext value = top;
-        stack.length = stack.length - 1;
-        return value;
-    }
+	DecimalContext pop() {
+		DecimalContext value = top;
+		stack.length = stack.length - 1;
+		return value;
+	}
 }
 
 private static ContextStack contextStack;
 
 public static void pushContext(DecimalContext context) {
-     contextStack.push(context);
+	 contextStack.push(context);
 }
 
 public static DecimalContext popContext() {
-    return contextStack.pop;
+	return contextStack.pop;
 }
 
 
 //--------------------------
-// End of DecimalContext struct
+// 	 of DecimalContext struct
 //--------------------------
 
 unittest {
-    import std.stdio;
-    writeln("-------------------");
-    writeln("context....finished");
-    writeln("-------------------");
+	import std.stdio;
+	writeln("-------------------");
+	writeln("context.........end");
+	writeln("-------------------");
 }
 

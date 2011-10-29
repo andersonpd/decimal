@@ -463,6 +463,8 @@ unittest {
 
     /// returns the adjusted exponent of this number
     @property const int adjustedExponent() {
+//writeln("b. expo = ", expo);
+//writeln("b. digits = ", digits);
         return expo + digits - 1;
     }
 
@@ -766,9 +768,9 @@ unittest {
     /**
      * Returns true if this number is subnormal.
      */
-    const bool isSubnormal() {
+    const bool isSubnormal(DecimalContext context = bigContext) {
         if (!isFinite) return false;
-        return adjustedExponent < bigContext.eMin;
+        return adjustedExponent < context.eMin;
     }
 
     unittest {
@@ -788,9 +790,9 @@ unittest {
     /**
      * Returns true if this number is normal.
      */
-    const bool isNormal() {
+    const bool isNormal(DecimalContext context = bigContext) {
         if (isFinite && !isZero) {
-            return adjustedExponent >= bigContext.eMin;
+            return adjustedExponent >= context.eMin;
         }
         return false;
     }

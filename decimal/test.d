@@ -1904,13 +1904,31 @@ unittest {
     after = before;
     testContext.precision = 3;
     round(after, testContext);;
-    assert(after.toAbstract() == "[0,124,1]");
+//writeln("after = ", after.toAbstract);
+    assert(after.toAbstract() == "[0,125,1]");
     before = 12459;
     after = before;
     testContext.precision = 3;
     round(after, testContext);;
     assert(after.toAbstract() == "[0,125,2]");
     testContext = popContext;
+    Dec32 a = Dec32(0.1);
+    Dec32 b = Dec32.min_normal * Dec32(8888888);
+//    assert(b.toAbstract == "[0,8888888,-95]");
+    Dec32 c = a * b;
+//    assert(c.toAbstract == "[0,888889,-96]");
+    Dec32 d = a * a * b;
+//    assert(d.toAbstract == "[0,88889,-97]");
+    Dec32 e = a * a * a * b;
+//    assert(e.toAbstract == "[0,8889,-98]");
+    Dec32 f = a * a * a * a * b;
+//    assert(f.toAbstract == "[0,889,-99]");
+    Dec32 g = a * a * a * a * a * b;
+//    assert(g.toAbstract == "[0,89,-100]");
+    Dec32 h = a * a * a * a * a * a * b;
+//    assert(h.toAbstract == "[0,9,-101]");
+    Dec32 i = a * a * a * a * a * a * a * b;
+//    assert(i.toAbstract == "[0,0,-101]");
     writeln("passed");
 }
 

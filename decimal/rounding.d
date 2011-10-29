@@ -30,7 +30,7 @@ import std.bigint;
 
 unittest {
     writeln("-------------------");
-    writeln("rounding....testing");
+    writeln("rounding......begin");
     writeln("-------------------");
 }
 
@@ -71,11 +71,36 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
     // no rounding of special values
     if (!num.isFinite) return;
 
+    // no rounding of zeros
+    if (num.isZero) {
+        if (num.exponent < context.eMin) {
+            context.setFlag(SUBNORMAL);
+            if (num.exponent < context.eTiny) {
+                num.exponent = context.eTiny;
+//                context.setFlag(CLAMPED);   // TODO: is this right?
+            }
+        }
+        return;
+    }
+
     // check for subnormal
-    bool subnormal = false;
-    if (num.isSubnormal()) {
+    if (num.isSubnormal(context)) {
         context.setFlag(SUBNORMAL);
-        subnormal = true;
+        int diff = context.eMin - num.adjustedExponent;
+        // decrease the precision and round
+        int precision = context.precision - diff;
+        if (num.digits > precision) {
+            pushContext(context);
+            context.precision = precision;
+            roundByMode(num, context);
+            context = popContext;
+        }
+        // subnormal rounding to zero == clamped (Spec. p. 51)
+        if (num.isZero) {
+            num.exponent = context.eTiny;
+            context.setFlag(CLAMPED);
+        }
+        return;
     }
 
     // check for overflow
@@ -105,40 +130,11 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
         return;
     }
     roundByMode(num, context);
-    // check for underflow
-    if (num.isSubnormal /*&& num.isInexact*/) {
-        context.setFlag(SUBNORMAL);
-        int diff = context.eTiny - num.adjustedExponent;
-        if (diff > num.digits) {
-            num.coefficient = 0;
-            num.exponent = context.eTiny;
-        } else if (diff > 0) {
-            // the precision is decreased by the difference above.
-            DecimalContext tmpContext = context;
-            tmpContext.precision -= diff;
-            tmpContext.rounding = RoundingMode.CEILING;
-            ulong mant;
-            static if (is(typeof(num.coefficient) == BigInt)) {
-                mant = num.coefficient.toLong;
-            }
-            else {
-                mant = num.coefficient;
-            }
-            uint digits = num.digits;
-            setExponent(num.sign, mant, digits, tmpContext);
-            num = T(num.sign, mant, num.exponent);
-        }
-    }
     // check for zero
-    if (is(T : BigDecimal)) {
+    static if (is(T : BigDecimal)) {
         if (num.coefficient == 0) {
-            num.zero;
+            num.zero(num.sign);
         }
-    }
-    // subnormal rounding to zero == clamped
-    // Spec. p. 51
-    if (subnormal && num.isZero) {
-        context.setFlag(CLAMPED);
     }
     return;
 
@@ -190,31 +186,30 @@ unittest {
     after = before;
     contextX.precision = 3;
     round(after, contextX);;
-    assert(after.toAbstract() == "[0,124,1]");
+    assert(after.toAbstract() == "[0,125,1]");
     before = 12459;
     after = before;
     contextX.precision = 3;
     round(after, contextX);;
     assert(after.toAbstract() == "[0,125,2]");
-    Dec32 m = Dec32.min_normal * Dec32(8888888);
     Dec32 a = Dec32(0.1);
-writeln("a = ", a.toAbstract);
-    Dec32 b = Dec32.min_normal * Dec32(8888888);
-writeln("b = ", b.toAbstract);
+    Dec32 b = Dec32.min * Dec32(8888888);
+    assert(b.toAbstract == "[0,8888888,-101]");
     Dec32 c = a * b;
-writeln("c = ", c.toAbstract);
-    Dec32 d = a * a * b;
-writeln("d = ", d.toAbstract);
-    Dec32 e = a * a * a * b;
-writeln("e = ", e.toAbstract);
-    Dec32 f = a * a * a * a * b;
-writeln("f = ", f.toAbstract);
-    Dec32 g = a * a * a * a * a * b;
-writeln("g = ", g.toAbstract);
-    Dec32 h = a * a * a * a * a * a * b;
-writeln("h = ", h.toAbstract);
-    Dec32 i = a * a * a * a * a * a * a * b;
-writeln("i = ", i.toAbstract);
+    assert(c.toAbstract == "[0,888889,-101]");
+    Dec32 d = a * c;
+    assert(d.toAbstract == "[0,88889,-101]");
+    Dec32 e = a * d;
+    assert(e.toAbstract == "[0,8889,-101]");
+    Dec32 f = a * e;
+    assert(f.toAbstract == "[0,889,-101]");
+    Dec32 g = a * f;
+    assert(g.toAbstract == "[0,89,-101]");
+    Dec32 h = a * g;
+    assert(h.toAbstract == "[0,9,-101]");
+    Dec32 i = a * h;
+    assert(i.toAbstract == "[0,0,-101]");
+
 // TUDO: problem with subtraction.
 // sub = sub - Dec32(1);//BigDecimal(1); doesn't wotk with Dec32 either!
 //sub = sub - 1;  // doesn't work BigDecimal op int
@@ -222,11 +217,11 @@ writeln("i = ", i.toAbstract);
 //Dec32 ans = sub + sub;
 //writeln("ans = ", ans.toAbstract);
 /*sub = Dec32.min_normal;
-writeln("sub = ", sub.toAbstract);
+//writeln("sub = ", sub.toAbstract);
 sub = Dec32.min_normal - Dec32.min;// * 50;
-writeln("sub = ", sub.toAbstract);
+//writeln("sub = ", sub.toAbstract);
 Dec32 abc = Dec32.min + Dec32.min;
-writeln("abc = ", abc);*/
+//writeln("abc = ", abc);*/
 }
 
 //--------------------------------
@@ -258,19 +253,17 @@ private void roundByMode(T)(ref T num, ref DecimalContext context)
             }
             return;
         case RoundingMode.HALF_EVEN:
-            T five = T(5, remainder.digits + remainder.exponent - 1);
-            // TODO: should this be compareTotal
-            int result = compare!T(remainder, five, context, false);
-            if (result > 0) {
+            ulong first = firstDigit(remainder.coefficient);
+            if (first > 5) {
                 increment(num, context);
-                return;
+                break;
             }
-            if (result < 0) {
-                return;
+            if (first < 5) {
+                break;
             }
-            // result == 0 so remainder == 5
+            // remainder == 5
             // if last digit is odd...
-            if (lastDigit(num.coefficient) % 2) {
+            if (first & 1) {
                 increment(num, context);
             }
             return;
@@ -443,6 +436,7 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
             ulong first = firstDigit(remainder);
             if (first > 5) {
                 increment(mant, digits);
+                break;
             }
             if (first < 5) {
                 break;
@@ -480,7 +474,9 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
     // this can only be true if the number was all 9s and rolled over;
     // e.g., 999 + 1 = 1000. So clip a zero and increment the exponent.
     if (digits > context.precision) {
+//writeln("mant5 = ", mant);
         mant /= 10;
+//writeln("mant6 = ", mant);
         expo++;
         digits--;
     }
@@ -678,7 +674,6 @@ unittest {
  * If n <= 0 the number is returned unchanged.
  */
 public BigInt decShl(BigInt num, const int n) {
-//writeln("n = ", n);
     if (n <= 0) { return num; }
     BigInt fives = 1;
     for (int i = 0; i < n; i++) {
@@ -818,56 +813,6 @@ unittest {
     assert(decShl(m,n) == 120000);
 }
 
-/+alias Tuple!(int, "first", int, "count") NumInfo;
-
-public NumInfo numberInfo(const long num) {
-    ulong n = std.math.abs(num);
-    int count = 1;
-    for(int i = 0; i < 6; i++) {
-        while (n >= ultens[i]) {
-            n /= ultens[i];
-            count += ulpwrs[i];
-        }
-    }
-    return NumInfo(cast(int)n, count);
-}
-
-unittest {
-    write("numberInfo.....");
-    NumInfo info;
-    info = numberInfo(7);
-    assert(info.first == 7);
-    assert(info.count == 1);
-    info = numberInfo(-13);
-    assert(info.first == 1);
-    assert(info.count == 2);
-    long n;
-    n = -13;
-    assert(firstDigit(n) == 1);
-    n = 999;
-    assert(firstDigit(n) == 9);
-    n = -9999;
-    assert(firstDigit(n) == 9);
-    n = 25987;
-    assert(firstDigit(n) == 2);
-    n = -5008617;
-    assert(firstDigit(n) == 5);
-    n = 3234567890;
-    assert(firstDigit(n) == 3);
-    n = -10000000000;
-    assert(firstDigit(n) == 1);
-    n = 823456789012345;
-    assert(firstDigit(n) == 8);
-    n = 4234567890123456;
-    assert(firstDigit(n) == 4);
-    n = 623456789012345678;
-    assert(firstDigit(n) == 6);
-    n = long.max;
-    assert(firstDigit(n) == 9);
-    writeln("passed");
-}
-+/
-
 public int firstDigit(const long num) {
     ulong n = std.math.abs(num);
     for(int i = 0; i < 6; i++) {
@@ -956,7 +901,7 @@ unittest {
 
 unittest {
     writeln("-------------------");
-    writeln("rounding...finished");
+    writeln("rounding........end");
     writeln("-------------------");
 }
 

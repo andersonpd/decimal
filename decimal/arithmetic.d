@@ -1312,6 +1312,7 @@ public T multiply(T)(const T op1, const T op2, DecimalContext context,
         result = T(product);
     }
 
+    // only needs rounding if
     if (rounded) {
         round(result, context);
     }

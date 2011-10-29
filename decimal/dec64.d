@@ -979,25 +979,25 @@ public:
     /**
      * Returns true if this number is subnormal.
      */
-    const bool isSubnormal() {
+    const bool isSubnormal(DecimalContext context = context64) {
         if (isSpecial) return false;
-        return adjustedExponent < E_MIN;
+        return adjustedExponent < context.eMin;
     }
 
     /**
      * Returns true if this number is normal.
      */
-    const bool isNormal() {
+    const bool isNormal(DecimalContext context = context64) {
         if (isSpecial) return false;
-        return adjustedExponent >= E_MIN;
+        return adjustedExponent >= context.eMin;
     }
 
     /**
      * Returns the value of the adjusted exponent.
      */
-     const int adjustedExponent() {
-        return exponent - digits + 1;
-     }
+    const int adjustedExponent() {
+        return exponent + digits - 1;
+    }
 
 //--------------------------------
 //  conversions
