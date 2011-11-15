@@ -77,7 +77,6 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
 			context.setFlag(SUBNORMAL);
 			if (num.exponent < context.eTiny) {
 				num.exponent = context.eTiny;
-//				  context.setFlag(CLAMPED);   // TODO: is this right?
 			}
 		}
 		return;
@@ -589,7 +588,7 @@ unittest {
  * Re-calculates the number of digits -- the increment may have caused
  * an increase in the number of digits, i.e., input number was all 9s.
  */
-private void increment(T)(ref T num, const DecimalContext context) if (isSmallDecimal!T) {
+private void increment(T)(ref T num, const DecimalContext context) if (isFixedDecimal!T) {
 	num.coefficient = num.coefficient + 1;
 	num.digits = numDigits(num.coefficient);
 }
@@ -599,7 +598,7 @@ private void increment(T)(ref T num, const DecimalContext context) if (isSmallDe
  * Re-calculates the number of digits -- the increment may have caused
  * an increase in the number of digits, i.e., input number was all 9s.
  */
-private void increment(T:ulong)(ref T num, ref uint digits) { //const DecimalContext context) if (isSmallDecimal!T) {
+private void increment(T:ulong)(ref T num, ref uint digits) { //const DecimalContext context) if (isFixedDecimal!T) {
 //private void incrementLong(ref ulong num, ref uint digits) {
 	num++;
 	digits = numDigits(num);

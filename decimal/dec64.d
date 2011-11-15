@@ -996,7 +996,7 @@ public:
 	/**
 	 * Converts a Dec64 to a BigDecimal
 	 */
-	const BigDecimal toDecimal() {
+	const BigDecimal toBigDecimal() {
 		if (isFinite) {
 			return BigDecimal(sign, BigInt(coefficient), exponent);
 		}
@@ -1020,7 +1020,7 @@ public:
 	unittest {
 		Dec64 num = Dec64("12345E+17");
 		BigDecimal expected = BigDecimal("12345E+17");
-		BigDecimal actual = num.toDecimal;
+		BigDecimal actual = num.toBigDecimal;
 		assert(actual == expected);
 	}
 

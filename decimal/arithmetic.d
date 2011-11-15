@@ -29,7 +29,7 @@
 module decimal.arithmetic;
 
 import decimal.context;
-import decimal.conv : isDecimal, toDecimal;
+import decimal.conv : isDecimal, toBigDecimal;
 import decimal.decimal;
 import decimal.rounding;
 
@@ -1096,7 +1096,7 @@ public T shift(T)(const T op1, const int n, DecimalContext context)
 	if (n == 0) {
 		return op1.dup;
 	}
-	BigDecimal shifted = toDecimal!T(op1);
+	BigDecimal shifted = toBigDecimal!T(op1);
 	BigInt pow10 = BigInt(10)^^std.math.abs(n);
 	if (n > 0) {
 		shifted.coefficient = shifted.coefficient * pow10;
@@ -1215,8 +1215,8 @@ public T add(T)(const T op1, const T op2, DecimalContext context,
 	// at this point, the result will be finite and not zero.
 	// calculate in BigDecimal and convert before return
 	BigDecimal sum = BigDecimal.zero;
-	BigDecimal augend = toDecimal!T(op1);
-	BigDecimal addend = toDecimal!T(op2);
+	BigDecimal augend = toBigDecimal!T(op1);
+	BigDecimal addend = toBigDecimal!T(op2);
 	// align the operands
 	alignOps(augend, addend, context);
 	// if operands have the same sign...
@@ -1378,8 +1378,8 @@ public T divide(T)(const T op1, const T op2,
 	quotient= T.zero();
 	// TODO: are two guard digits necessary? sufficient?
 	context.precision += 2;
-	BigDecimal dividend = toDecimal!T(op1);
-	BigDecimal divisor	= toDecimal!T(op2);
+	BigDecimal dividend = toBigDecimal!T(op1);
+	BigDecimal divisor	= toBigDecimal!T(op2);
 	BigDecimal working = BigDecimal.zero;
 //	  working = BigDecimal.zero();
 	int diff = dividend.exponent - divisor.exponent;

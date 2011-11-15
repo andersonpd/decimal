@@ -300,7 +300,7 @@ public:
 	}
 
 	void opAssign(T)(const T that) if (isDecimal!T) {
-		this = decimal.conv.toDecimal!T(that);
+		this = decimal.conv.toBigDecimal!T(that);
 	}
 
 	unittest {

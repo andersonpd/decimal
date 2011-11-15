@@ -55,14 +55,12 @@ T to(T:string)(const BigInt num) {
 	return outbuff;
 }
 
-// TODO: need to replace this with one toDecimal template
 /**
- * Converts any decimal to a small decimal
+ * Converts any decimal to another decimal
  */
-public T toSmallDecimal(T,U)(const U num) if (isDecimal!T) {
+public T toDecimal(T,U)(const U num) if (isDecimal!T) {
 
 	static if(is(typeof(num) == T)) {return num.dup;}
-//	static if(is(typeof(num) == BigDecimal)) {return T(num);}
 
 	bool sign = num.sign;
 	if (num.isFinite) {
@@ -85,7 +83,7 @@ public T toSmallDecimal(T,U)(const U num) if (isDecimal!T) {
 /**
  * Converts any decimal to a big decimal
  */
-public BigDecimal toDecimal(T)(const T num) if (isDecimal!T) {
+public BigDecimal toBigDecimal(T)(const T num) if (isDecimal!T) {
 
 	static if(is(typeof(num) == BigDecimal)) {return num.dup;}
 
@@ -111,7 +109,7 @@ unittest {
 	Dec32 small;
 	BigDecimal big;
 	small = 5;
-	big = toDecimal!Dec32(small);
+	big = toBigDecimal!Dec32(small);
 	assert(big.toString == small.toString);
 }
 
@@ -132,13 +130,13 @@ public template isBigDecimal(T) {
 /**
  * Detect whether T is a small decimal type.
  */
-public template isSmallDecimal(T) {
-	enum bool isSmallDecimal = is(T:Dec32) || is(T: Dec64);
+public template isFixedDecimal(T) {
+	enum bool isFixedDecimal = is(T:Dec32) || is(T:Dec64);
 }
 
 unittest {
-	assert(isSmallDecimal!Dec32);
-	assert(!isSmallDecimal!BigDecimal);
+	assert(isFixedDecimal!Dec32);
+	assert(!isFixedDecimal!BigDecimal);
 	assert(isDecimal!Dec32);
 	assert(isDecimal!BigDecimal);
 	assert(!isBigDecimal!Dec32);
