@@ -18,6 +18,7 @@
 
 module decimal.conv;
 
+import decimal.context;
 import decimal.dec32;
 import decimal.dec64;
 import decimal.decimal;
@@ -110,7 +111,7 @@ unittest {
 	BigDecimal big;
 	small = 5;
 	big = toBigDecimal!Dec32(small);
-	assert(big.toString == small.toString);
+	assertTrue(big.toString == small.toString);
 }
 
 /**
@@ -135,12 +136,12 @@ public template isFixedDecimal(T) {
 }
 
 unittest {
-	assert(isFixedDecimal!Dec32);
-	assert(!isFixedDecimal!BigDecimal);
-	assert(isDecimal!Dec32);
-	assert(isDecimal!BigDecimal);
-	assert(!isBigDecimal!Dec32);
-	assert(isBigDecimal!BigDecimal);
+	assertTrue(isFixedDecimal!Dec32);
+	assertTrue(!isFixedDecimal!BigDecimal);
+	assertTrue(isDecimal!Dec32);
+	assertTrue(isDecimal!BigDecimal);
+	assertTrue(!isBigDecimal!Dec32);
+	assertTrue(isBigDecimal!BigDecimal);
 }
 
 /**
@@ -273,35 +274,35 @@ private string toStdString(T)
 
 unittest {
 	Dec32 num = Dec32(123); //(false, 123, 0);
-	assert(toSciString!Dec32(num) == "123");
-	assert(num.toAbstract() == "[0,123,0]");
+	assertTrue(toSciString!Dec32(num) == "123");
+	assertTrue(num.toAbstract() == "[0,123,0]");
 	num = Dec32(-123, 0);
-	assert(toSciString!Dec32(num) == "-123");
-	assert(num.toAbstract() == "[1,123,0]");
+	assertTrue(toSciString!Dec32(num) == "-123");
+	assertTrue(num.toAbstract() == "[1,123,0]");
 	num = Dec32(123, 1);
-	assert(toSciString!Dec32(num) == "1.23E+3");
-	assert(num.toAbstract() == "[0,123,1]");
+	assertTrue(toSciString!Dec32(num) == "1.23E+3");
+	assertTrue(num.toAbstract() == "[0,123,1]");
 	num = Dec32(123, 3);
-	assert(toSciString!Dec32(num) == "1.23E+5");
-	assert(num.toAbstract() == "[0,123,3]");
+	assertTrue(toSciString!Dec32(num) == "1.23E+5");
+	assertTrue(num.toAbstract() == "[0,123,3]");
 	num = Dec32(123, -1);
-	assert(toSciString!Dec32(num) == "12.3");
-	assert(num.toAbstract() == "[0,123,-1]");
+	assertTrue(toSciString!Dec32(num) == "12.3");
+	assertTrue(num.toAbstract() == "[0,123,-1]");
 	num = Dec32("inf");
-	assert(toSciString!Dec32(num) == "Infinity");
-	assert(num.toAbstract() == "[0,inf]");
+	assertTrue(toSciString!Dec32(num) == "Infinity");
+	assertTrue(num.toAbstract() == "[0,inf]");
 	string str = "1.23E+3";
 	BigDecimal dec = BigDecimal(str);
-	assert(toEngString!BigDecimal(dec) == str);
+	assertTrue(toEngString!BigDecimal(dec) == str);
 	str = "123E+3";
 	dec = BigDecimal(str);
-	assert(toEngString!BigDecimal(dec) == str);
+	assertTrue(toEngString!BigDecimal(dec) == str);
 	str = "12.3E-9";
 	dec = BigDecimal(str);
-	assert(toEngString!BigDecimal(dec) == str);
+	assertTrue(toEngString!BigDecimal(dec) == str);
 	str = "-123E-12";
 	dec = BigDecimal(str);
-	assert(toEngString!BigDecimal(dec) == str);
+	assertTrue(toEngString!BigDecimal(dec) == str);
 }
 
 // NOTE: Doesn't work yet, returns scientific string.
@@ -606,15 +607,15 @@ public BigDecimal toNumber(const string inStr) {
 
 unittest {
 	BigDecimal f = BigDecimal("1.0");
-	assert(f.toString() == "1.0");
+	assertTrue(f.toString() == "1.0");
 	f = BigDecimal(".1");
-	assert(f.toString() == "0.1");
+	assertTrue(f.toString() == "0.1");
 	f = BigDecimal("-123");
-	assert(f.toString() == "-123");
+	assertTrue(f.toString() == "-123");
 	f = BigDecimal("1.23E3");
-	assert(f.toString() == "1.23E+3");
+	assertTrue(f.toString() == "1.23E+3");
 	f = BigDecimal("1.23E-3");
-	assert(f.toString() == "0.00123");
+	assertTrue(f.toString() == "0.00123");
 }
 
 /**

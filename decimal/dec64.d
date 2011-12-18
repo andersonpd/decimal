@@ -34,15 +34,7 @@ unittest {
 	writeln("-------------------");
 }
 
-// (5) TODO: subnormal creation.
 struct Dec64 {
-
-	/// The global context for this type.
-	private static decimal.context.DecimalContext context64 = {
-		precision : 16,
-		rounding : RoundingMode.HALF_EVEN,
-		eMax : E_MAX
-	};
 
 private:
 	// The total number of bits in the decimal number.
@@ -108,7 +100,7 @@ private:
 			// = bitLength - payloadBits - specialBits - signBit;
 
 	// length of the coefficient in decimal digits.
-	immutable int C_LENGTH = 16;
+	immutable int PRECISION = 16;
 	// The maximum coefficient that fits in an explicit number.
 	immutable ulong C_MAX_EXPLICIT = 0x1FFFFFFFFFFFFF; // = 8388607; 36028797018963968
 	// The maximum coefficient allowed in an implicit number.
@@ -130,6 +122,10 @@ private:
 	// The min and max adjusted exponents.
 	immutable int E_MAX =  386; 	 // E_LIMIT + C_LENGTH - 1
 	immutable int E_MIN = -385; 	 // = 1 - E_MAX
+
+	/// The global context for this type.
+	private static DecimalContext
+        context64 = DecimalContext(PRECISION, E_MAX, Rounding.HALF_EVEN);
 
 	// union providing different views of the number representation.
 	union {
@@ -183,49 +179,49 @@ private:
 
 unittest {
 	Dec64 num;
-	assert(num.toHexString == "0x7C00000000000000");
+	assertTrue(num.toHexString == "0x7C00000000000000");
 	num.pyldNaN = 1;
 	// NOTE: this test should fail when bitmanip is fixed.
-	assert(num.toHexString != "0x7C00000000000001");
-	assert(num.toHexString == "0x0000000000000001");
+	assertTrue(num.toHexString != "0x7C00000000000001");
+	assertTrue(num.toHexString == "0x0000000000000001");
 	num.bits = ulong.max;
-	assert(num.toHexString == "0xFFFFFFFFFFFFFFFF");
+	assertTrue(num.toHexString == "0xFFFFFFFFFFFFFFFF");
 	num.pyldNaN = 2;
 	// NOTE: this test should fail when bitmanip is fixed.
-	assert(num.toHexString != "0xFFFFFFFFFFFF0002");
-	assert(num.toHexString == "0x00000000FFFF0002");
+	assertTrue(num.toHexString != "0xFFFFFFFFFFFF0002");
+	assertTrue(num.toHexString == "0x00000000FFFF0002");
 	num.bits = ulong.max;
-	assert(num.toHexString == "0xFFFFFFFFFFFFFFFF");
+	assertTrue(num.toHexString == "0xFFFFFFFFFFFFFFFF");
 	num.testNaN = 0b10;
-	assert(num.toHexString == "0x85FFFFFFFFFFFFFF");
+	assertTrue(num.toHexString == "0x85FFFFFFFFFFFFFF");
 	num.bits = ulong.max;
-	assert(num.toHexString == "0xFFFFFFFFFFFFFFFF");
+	assertTrue(num.toHexString == "0xFFFFFFFFFFFFFFFF");
 	num = nan;
-	assert(num.toHexString == "0x7C00000000000000");
+	assertTrue(num.toHexString == "0x7C00000000000000");
 	num.pyldNaN = ushort.max;
 	// NOTE: this test should fail when bitmanip is fixed.
-	assert(num.toHexString == "0x000000000000FFFF");
+	assertTrue(num.toHexString == "0x000000000000FFFF");
 	num = nan;
-	assert(num.toHexString == "0x7C00000000000000");
+	assertTrue(num.toHexString == "0x7C00000000000000");
 	num.padInf = ushort.max;
 	// NOTE: This works as expected;
-	assert(num.toHexString == "0x7C0000000000FFFF");
+	assertTrue(num.toHexString == "0x7C0000000000FFFF");
 	num = nan;
-	assert(num.toHexString == "0x7C00000000000000");
+	assertTrue(num.toHexString == "0x7C00000000000000");
 	num.padSpcl = ushort.max;
-	assert(num.toHexString == "0x780000000000FFFF");
+	assertTrue(num.toHexString == "0x780000000000FFFF");
 	num = nan;
-	assert(num.toHexString == "0x7C00000000000000");
+	assertTrue(num.toHexString == "0x7C00000000000000");
 	num.bits = num.bits | 0xFFFF;
-	assert(num.toHexString == "0x7C0000000000FFFF");
+	assertTrue(num.toHexString == "0x7C0000000000FFFF");
 	num = nan;
-	assert(num.toHexString == "0x7C00000000000000");
+	assertTrue(num.toHexString == "0x7C00000000000000");
 	num.mantEx = uint.max;
-	assert(num.toHexString == "0x7C000000FFFFFFFF");
+	assertTrue(num.toHexString == "0x7C000000FFFFFFFF");
 	num = nan;
-	assert(num.toHexString == "0x7C00000000000000");
+	assertTrue(num.toHexString == "0x7C00000000000000");
 	num.mantIm = uint.max;
-	assert(num.toHexString == "0x7C000000FFFFFFFF");
+	assertTrue(num.toHexString == "0x7C000000FFFFFFFF");
 }
 
 //--------------------------------
@@ -295,45 +291,45 @@ public:
 	unittest {
 		Dec64 num;
 		num = Dec64(SV.POS_SIG);
-		assert(num.isSignaling);
-		assert(num.isNaN);
-		assert(!num.isNegative);
-		assert(!num.isNormal);
+		assertTrue(num.isSignaling);
+		assertTrue(num.isNaN);
+		assertTrue(!num.isNegative);
+		assertTrue(!num.isNormal);
 		num = Dec64(SV.NEG_SIG);
-		assert(num.isSignaling);
-		assert(num.isNaN);
-		assert(num.isNegative);
-		assert(!num.isNormal);
+		assertTrue(num.isSignaling);
+		assertTrue(num.isNaN);
+		assertTrue(num.isNegative);
+		assertTrue(!num.isNormal);
 		num = Dec64(SV.POS_NAN);
-		assert(!num.isSignaling);
-		assert(num.isNaN);
-		assert(!num.isNegative);
-		assert(!num.isNormal);
+		assertTrue(!num.isSignaling);
+		assertTrue(num.isNaN);
+		assertTrue(!num.isNegative);
+		assertTrue(!num.isNormal);
 		num = Dec64(SV.NEG_NAN);
-		assert(!num.isSignaling);
-		assert(num.isNaN);
-		assert(num.isNegative);
-		assert(num.isQuiet);
+		assertTrue(!num.isSignaling);
+		assertTrue(num.isNaN);
+		assertTrue(num.isNegative);
+		assertTrue(num.isQuiet);
 		num = Dec64(SV.POS_INF);
-		assert(num.isInfinite);
-		assert(!num.isNaN);
-		assert(!num.isNegative);
-		assert(!num.isNormal);
+		assertTrue(num.isInfinite);
+		assertTrue(!num.isNaN);
+		assertTrue(!num.isNegative);
+		assertTrue(!num.isNormal);
 		num = Dec64(SV.NEG_INF);
-		assert(!num.isSignaling);
-		assert(num.isInfinite);
-		assert(num.isNegative);
-		assert(!num.isFinite);
+		assertTrue(!num.isSignaling);
+		assertTrue(num.isInfinite);
+		assertTrue(num.isNegative);
+		assertTrue(!num.isFinite);
 		num = Dec64(SV.POS_ZRO);
-		assert(num.isFinite);
-		assert(num.isZero);
-		assert(!num.isNegative);
-		assert(num.isNormal);
+		assertTrue(num.isFinite);
+		assertTrue(num.isZero);
+		assertTrue(!num.isNegative);
+		assertTrue(num.isNormal);
 		num = Dec64(SV.NEG_ZRO);
-		assert(!num.isSignaling);
-		assert(num.isZero);
-		assert(num.isNegative);
-		assert(num.isFinite);
+		assertTrue(!num.isSignaling);
+		assertTrue(num.isZero);
+		assertTrue(num.isNegative);
+		assertTrue(num.isFinite);
 	}
 
 	/**
@@ -349,15 +345,15 @@ public:
 	unittest {
 		Dec64 num;
 		num = Dec64(1234567890L);
-		assert(num.toString == "1234567890"); //1.234567890E+9");
+		assertTrue(num.toString == "1234567890"); //1.234567890E+9");
 		num = Dec64(0);
-		assert(num.toString == "0");
+		assertTrue(num.toString == "0");
 		num = Dec64(1);
-		assert(num.toString == "1");
+		assertTrue(num.toString == "1");
 		num = Dec64(-1);
-		assert(num.toString == "-1");
+		assertTrue(num.toString == "-1");
 		num = Dec64(5);
-		assert(num.toString == "5");
+		assertTrue(num.toString == "5");
 	}
 
 	/**
@@ -371,19 +367,19 @@ public:
 	unittest {
 		Dec64 num;
 		num = Dec64(1234567890L, 5);
-		assert(num.toString == "1.234567890E+14");
+		assertTrue(num.toString == "1.234567890E+14");
 		num = Dec64(0, 2);
-		assert(num.toString == "0E+2");
+		assertTrue(num.toString == "0E+2");
 		num = Dec64(1, 75);
-		assert(num.toString == "1E+75");
+		assertTrue(num.toString == "1E+75");
 		num = Dec64(-1, -75);
-		assert(num.toString == "-1E-75");
+		assertTrue(num.toString == "-1E-75");
 		num = Dec64(5, -3);
-		assert(num.toString == "0.005");
+		assertTrue(num.toString == "0.005");
 		num = Dec64(true, 1234567890L, 5);
-		assert(num.toString == "-1.234567890E+14");
+		assertTrue(num.toString == "-1.234567890E+14");
 		num = Dec64(0, 0, 2);
-		assert(num.toString == "0E+2");
+		assertTrue(num.toString == "0E+2");
 	}
 
 	/**
@@ -397,19 +393,19 @@ public:
 	unittest {
 		Dec64 num;
 		num = Dec64(1234567890L, 5);
-		assert(num.toString == "1.234567890E+14");
+		assertTrue(num.toString == "1.234567890E+14");
 		num = Dec64(0, 2);
-		assert(num.toString == "0E+2");
+		assertTrue(num.toString == "0E+2");
 		num = Dec64(1, 75);
-		assert(num.toString == "1E+75");
+		assertTrue(num.toString == "1E+75");
 		num = Dec64(-1, -75);
-		assert(num.toString == "-1E-75");
+		assertTrue(num.toString == "-1E-75");
 		num = Dec64(5, -3);
-		assert(num.toString == "0.005");
+		assertTrue(num.toString == "0.005");
 		num = Dec64(true, 1234567890L, 5);
-		assert(num.toString == "-1.234567890E+14");
+		assertTrue(num.toString == "-1.234567890E+14");
 		num = Dec64(0, 0, 2);
-		assert(num.toString == "0E+2");
+		assertTrue(num.toString == "0E+2");
 	}
 
 	/**
@@ -443,23 +439,23 @@ public:
    unittest {
 		BigDecimal dec = 0;
 		Dec64 num = dec;
-		assert(dec.toString == num.toString);
+		assertTrue(dec.toString == num.toString);
 		dec = 1;
 		num = dec;
-		assert(dec.toString == num.toString);
+		assertTrue(dec.toString == num.toString);
 		dec = -1;
 		num = dec;
-		assert(dec.toString == num.toString);
+		assertTrue(dec.toString == num.toString);
 		dec = -16000;
 		num = dec;
-		assert(dec.toString == num.toString);
+		assertTrue(dec.toString == num.toString);
 		dec = uint.max;
 		num = dec;
-		assert(num.toString == "4294967295");
-		assert(dec.toString == "4294967295");
+		assertTrue(num.toString == "4294967295");
+		assertTrue(dec.toString == "4294967295");
 		dec = 9999999E+12;
 		num = dec;
-		assert(dec.toString == num.toString);
+		assertTrue(dec.toString == num.toString);
 	}
 
 	/**
@@ -473,11 +469,11 @@ public:
 	unittest {
 		Dec64 num;
 		num = Dec64("1.234568E+9");
-		assert(num.toString == "1.234568E+9");
+		assertTrue(num.toString == "1.234568E+9");
 		num = Dec64("NaN");
-		assert(num.isQuiet && num.isSpecial && num.isNaN);
+		assertTrue(num.isQuiet && num.isSpecial && num.isNaN);
 		num = Dec64("-inf");
-		assert(num.isInfinite && num.isSpecial && num.isNegative);
+		assertTrue(num.isInfinite && num.isSpecial && num.isNegative);
 	}
 
 	/**
@@ -498,11 +494,11 @@ public:
 		float f = 1.2345E+16f;
 		Dec64 actual = Dec64(f);
 		Dec64 expect = Dec64("1.234499980283085E+16");
-		assert(expect == actual);
+		assertTrue(expect == actual);
 		real r = 1.2345E+16;
 		actual = Dec64(r);
 		expect = Dec64("1.2345E+16");
-		assert(expect == actual);
+		assertTrue(expect == actual);
 	}
 
 	/**
@@ -567,21 +563,34 @@ public:
 
 	unittest {
 		Dec64 num;
+        int expected, actual;
 		// reals
 		num = std.math.PI;
-		assert(num.exponent = -15);
+        expected = -15;
+        actual = num.exponent;
+		expectEquals(expected, actual);
 		num = 9.75E9;
-		assert(num.exponent = 87);
+        expected = 0;
+        actual = num.exponent;
+		expectEquals(expected, actual);
 		// explicit
 		num = 8388607;
-		assert(num.exponent = 0);
+        expected = 0;
+        actual = num.exponent;
+		expectEquals(expected, actual);
 		// implicit
 		num = 8388610;
-		assert(num.exponent = 0);
+        expected = 0;
+        actual = num.exponent;
+		expectEquals(expected, actual);
 		num = 9.999998E23;
-		assert(num.exponent = 17);
+        expected = 17;
+        actual = num.exponent;
+		expectEquals(expected, actual);
 		num = 9.999999E23;
-		assert(num.exponent = 17);
+        expected = 8;
+        actual = num.exponent;
+		expectEquals(expected, actual);
 	}
 
 	/// Sets the exponent of this number.
@@ -597,7 +606,7 @@ public:
 		// check for overflow
 		if (expo > context64.eMax) {
 			this = signed ? NEG_INF : INFINITY;
-			context64.setFlag(OVERFLOW);
+			context64.setFlags(OVERFLOW);
 			return 0;
 		}
 		// check for underflow
@@ -607,8 +616,8 @@ public:
 			if (expo < context64.eTiny) {
 				this = signed ? NEG_ZERO : ZERO;
 				expoEx = context64.eTiny + BIAS;
-				context64.setFlag(SUBNORMAL);
-				context64.setFlag(UNDERFLOW);
+				context64.setFlags(SUBNORMAL);
+				context64.setFlags(UNDERFLOW);
 				return context64.eTiny;
 			}
 			// at this point the exponent is between eMin and eTiny.
@@ -626,7 +635,7 @@ public:
 		}
 		// if this point is reached the number is either infinity or NaN;
 		// these have undefined exponent values.
-		context64.setFlag(INVALID_OPERATION);
+		context64.setFlags(INVALID_OPERATION);
 		this = nan;
 		return 0;
 	}
@@ -635,12 +644,12 @@ public:
 		Dec64 num;
 		num = Dec64(-12000,5);
 		num.exponent = 10;
-		assert(num.exponent == 10);
+		assertTrue(num.exponent == 10);
 		num = Dec64(-9000053,-14);
 		num.exponent = -27;
-		assert(num.exponent == -27);
+		assertTrue(num.exponent == -27);
 		num = infinity;
-		assert(num.exponent == 0);
+		assertTrue(num.exponent == 0);
 	}
 
 	/// Returns the coefficient of this number.
@@ -665,7 +674,7 @@ public:
 		// if not finite, convert to NaN and return 0.
 		if (!this.isFinite) {
 			this = nan;
-			context64.setFlag(INVALID_OPERATION);
+			context64.setFlags(INVALID_OPERATION);
 			return 0;
 		}
 		ulong copy = mant;
@@ -703,20 +712,20 @@ public:
 
 	unittest {
 		Dec64 num;
-		assert(num.coefficient == 0);
+		assertTrue(num.coefficient == 0);
 		num = 9.998742;
-		assert(num.coefficient == 9998742);
+		assertTrue(num.coefficient == 9998742);
 		num = 9.998743;
-		assert(num.coefficient == 9998742999999999);
+		assertTrue(num.coefficient == 9998742999999999);
 		// note the difference between real and string values!
 		num = Dec64("9.998743");
-		assert(num.coefficient == 9998743);
+		assertTrue(num.coefficient == 9998743);
 		num = Dec64(9999213,-6);
-		assert(num.coefficient == 9999213);
+		assertTrue(num.coefficient == 9999213);
 		num = -125;
-		assert(num.coefficient == 125);
+		assertTrue(num.coefficient == 125);
 		num = -99999999;
-		assert(num.coefficient == 99999999);
+		assertTrue(num.coefficient == 99999999);
 	}
 
 	/// Returns the number of digits in this number's coefficient.
@@ -758,14 +767,14 @@ public:
 
 	unittest {
 		Dec64 num;
-		assert(num.payload == 0);
+		assertTrue(num.payload == 0);
 		num = snan;
-		assert(num.payload == 0);
+		assertTrue(num.payload == 0);
 		num.payload = 234;
-		assert(num.payload == 234);
-		assert(num.toString == "sNaN234");
+		assertTrue(num.payload == 234);
+		assertTrue(num.toString == "sNaN234");
 		num = 1234567;
-		assert(num.payload == 0);
+		assertTrue(num.payload == 0);
 	}
 
 //--------------------------------
@@ -809,12 +818,12 @@ public:
 	static Dec64 min_normal() { return Dec64(1, context64.eMin); }
 	static Dec64 min()		  { return Dec64(1, context64.eMin); } //context64.eTiny); }
 
-	static int dig()		{ return context64.precision; }
+/*	static int dig()		{ return context64.precision; }
 	static int mant_dig()	{ return cast(int)context64.mant_dig;; }
 	static int max_10_exp() { return context64.eMax; }
 	static int min_10_exp() { return context64.eMin; }
 	static int max_exp()	{ return cast(int)(context64.eMax/LOG2); }
-	static int min_exp()	{ return cast(int)(context64.eMin/LOG2); }
+	static int min_exp()	{ return cast(int)(context64.eMin/LOG2); }*/
 
 	/// Returns the maximum number of decimal digits in this context.
 	static uint precision() { return context64.precision; }
@@ -844,8 +853,6 @@ public:
 	}
 
 	/// Returns the minimum representable subnormal value in this context.
-	// (5) TODO: does this set the subnormal flag?
-	// Do others do the same on creation??
 	static Dec64 min(DecimalContext context = context64) {
 		return Dec64(1, context.eTiny);
 	}
@@ -1021,13 +1028,13 @@ public:
 		Dec64 num = Dec64("12345E+17");
 		BigDecimal expected = BigDecimal("12345E+17");
 		BigDecimal actual = num.toBigDecimal;
-		assert(actual == expected);
+		assertTrue(actual == expected);
 	}
 
 	const int toInt() {
 		int n;
 		if (isNaN) {
-			context64.setFlag(INVALID_OPERATION);
+			context64.setFlags(INVALID_OPERATION);
 			return 0;
 		}
 		if (this > Dec64(int.max) || (isInfinite && !isSigned)) return int.max;
@@ -1040,19 +1047,19 @@ public:
 	unittest {
 		Dec64 num;
 		num = 12345;
-		assert(num.toInt == 12345);
+		assertTrue(num.toInt == 12345);
 		num = 1.0E6;
-		assert(num.toInt == 1000000);
+		assertTrue(num.toInt == 1000000);
 		num = -1.0E60;
-		assert(num.toInt == int.min);
+		assertTrue(num.toInt == int.min);
 		num = NEG_INF;
-		assert(num.toInt == int.min);
+		assertTrue(num.toInt == int.min);
 	}
 
 	const long toLong() {
 		long n;
 		if (isNaN) {
-			context64.setFlag(INVALID_OPERATION);
+			context64.setFlags(INVALID_OPERATION);
 			return 0;
 		}
 		if (this > Dec64(long.max) || (isInfinite && !isSigned)) return long.max;
@@ -1065,15 +1072,15 @@ public:
 	unittest {
 		Dec64 num;
 		num = -12345;
-		assert(num.toLong == -12345);
+		assertTrue(num.toLong == -12345);
 		num = 2 * int.max;
-		assert(num.toLong == 2 * int.max);
+		assertTrue(num.toLong == 2 * int.max);
 		num = 1.0E6;
-		assert(num.toLong == 1000000);
+		assertTrue(num.toLong == 1000000);
 		num = -1.0E60;
-		assert(num.toLong == long.min);
+		assertTrue(num.toLong == long.min);
 		num = NEG_INF;
-		assert(num.toLong == long.min);
+		assertTrue(num.toLong == long.min);
 	}
 
 	/**
@@ -1101,7 +1108,7 @@ public:
 		string str;
 		str = "-12.345E-42";
 		Dec64 num = Dec64(str);
-		assert(num.toString == "-1.2345E-41");
+		assertTrue(num.toString == "-1.2345E-41");
 	}
 
 	/**
@@ -1114,18 +1121,18 @@ public:
 
 	unittest {
 		Dec64 num;
-		assert(num.toExact == "+NaN");
+		assertTrue(num.toExact == "+NaN");
 		num = Dec64.max;
-		assert(num.toExact == "+9999999999999999E+369");
+		assertTrue(num.toExact == "+9999999999999999E+369");
 		num = Dec64.min;
 		num = 1;
-		assert(num.toExact == "+1E+00");
+		assertTrue(num.toExact == "+1E+00");
 		num = C_MAX_EXPLICIT;
-		assert(num.toExact == "+9007199254740991E+00");
+		assertTrue(num.toExact == "+9007199254740991E+00");
 		num = C_MAX_IMPLICIT;
-		assert(num.toExact == "+9999999999999999E+00");
+		assertTrue(num.toExact == "+9999999999999999E+00");
 		num = infinity(true);
-		assert(num.toExact == "-Infinity");
+		assertTrue(num.toExact == "-Infinity");
 	}
 
 	/**
@@ -1155,7 +1162,7 @@ public:
 	unittest {
 		Dec64 num;
 		num = Dec64("-25.67E+2");
-		assert(num.toAbstract == "[1,2567,0]");
+		assertTrue(num.toAbstract == "[1,2567,0]");
 	}
 
 	/**
@@ -1174,8 +1181,8 @@ public:
 
 	unittest {
 		Dec64 num = 12345;
-		assert(num.toHexString == "0x31C0000000003039");
-		assert(num.toBinaryString ==
+		assertTrue(num.toHexString == "0x31C0000000003039");
+		assertTrue(num.toBinaryString ==
 			"0011000111000000000000000000000000000000000000000011000000111001");
 	}
 
@@ -1203,8 +1210,8 @@ public:
 		Dec64 a, b;
 		a = Dec64(104.0);
 		b = Dec64(105.0);
-		assert(a < b);
-		assert(b > a);
+		assertTrue(a < b);
+		assertTrue(b > a);
 	}
 
 	/**
@@ -1225,7 +1232,7 @@ public:
 		Dec64 a, b;
 		a = Dec64(105);
 		b = Dec64(105);
-		assert(a == b);
+		assertTrue(a == b);
 	}
 	/**
 	 * Returns true if this number is equal to the specified number.
@@ -1239,10 +1246,10 @@ public:
 		a = Dec64(105);
 		b = Dec64(105);
 		int c = 105;
-		assert(a == c);
+		assertTrue(a == c);
 		real d = 105.0;
-		assert(a == d);
-		assert(a == 105);
+		assertTrue(a == d);
+		assertTrue(a == 105);
 	}
 
 	const bool isIdentical(const Dec64 that) {
@@ -1263,7 +1270,7 @@ public:
 		Dec64 rhs, lhs;
 		rhs = Dec64(270E-5);
 		lhs = rhs;
-		assert(lhs == rhs);
+		assertTrue(lhs == rhs);
 	}
 
 	// (7) UNREADY: opAssign(T)(const T). Flags.
@@ -1275,9 +1282,9 @@ public:
 	unittest {
 		Dec64 rhs;
 		rhs = 332089;
-		assert(rhs.toString == "332089");
+		assertTrue(rhs.toString == "332089");
 		rhs = 3.1415E+3;
-		assert(rhs.toString == "3141.5");
+		assertTrue(rhs.toString == "3141.5");
 	}
 
 //--------------------------------
@@ -1305,27 +1312,27 @@ public:
 		num = 134;
 		expect = num;
 		actual = +num;
-		assert(actual == expect);
+		assertTrue(actual == expect);
 		num = 134.02;
 		expect = -134.02;
 		actual = -num;
-		assert(actual == expect);
+		assertTrue(actual == expect);
 		num = 134;
 		expect = 135;
 		actual = ++num;
-		assert(actual == expect);
+		assertTrue(actual == expect);
 		num = 1.00E8;
 		expect = num;
 		actual = num--;
-		assert(actual == expect);
+		assertTrue(actual == expect);
 		num = Dec64(9999999, 90);
 		expect = num;
 		actual = num++;
-		assert(actual == expect);
+		assertTrue(actual == expect);
 		num = 12.35;
 		expect = 11.35;
 		actual = --num;
-		assert(actual == expect);
+		assertTrue(actual == expect);
 	}
 
 //--------------------------------
@@ -1358,23 +1365,23 @@ public:
 		op2 = 8;
 		actual = op1 + op2;
 		expect = 12;
-		assert(expect == actual);
+		assertTrue(expect == actual);
 		actual = op1 - op2;
 		expect = -4;
-		assert(expect == actual);
+		assertTrue(expect == actual);
 		actual = op1 * op2;
 		expect = 32;
-		assert(expect == actual);
+		assertTrue(expect == actual);
 		op1 = 5;
 		op2 = 2;
 		actual = op1 / op2;
 		expect = 2.5;
-		assert(expect == actual);
+		assertTrue(expect == actual);
 		op1 = 10;
 		op2 = 3;
 		actual = op1 % op2;
 		expect = 1;
-		assert(expect == actual);
+		assertTrue(expect == actual);
 	}
 
 	/**
@@ -1392,7 +1399,7 @@ public:
 	unittest {
 		Dec64 num = Dec64(591.3);
 		Dec64 result = num * 5;
-		assert(result == Dec64(2956.5));
+		assertTrue(result == Dec64(2956.5));
 	}
 
 //-----------------------------
@@ -1416,16 +1423,16 @@ public:
 		op1 += op2;
 		expect = 21.49;
 		actual = op1;
-		assert(expect == actual);
+		assertTrue(expect == actual);
 		op1 *= op2;
 		expect = -44.4843;
 		actual = op1;
-		assert(expect == actual);
+		assertTrue(expect == actual);
 		op1 = 95;
 		op1 %= 90;
 		actual = op1;
 		expect = 5;
-		assert(expect == actual);
+		assertTrue(expect == actual);
 	}
 
 	/**
@@ -1438,7 +1445,7 @@ public:
 	unittest {
 		int n;
 		n = 3;
-		assert(pow10(n) == 1000);
+		assertTrue(pow10(n) == 1000);
 	}
 
 }	// end Dec64 struct

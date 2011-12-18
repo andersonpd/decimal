@@ -40,8 +40,6 @@ unittest {
 private BigInt BILLION = BigInt(1_000_000_000);
 private BigInt QUINTILLION = BigInt(1_000_000_000_000_000_000);
 
-private static DecimalContext testContextR = DecimalContext().dup;
-
 //-----------------------------
 // helper functions
 //-----------------------------
@@ -64,8 +62,6 @@ public int sgn(const BigInt num) {
 	return 0;
 }
 
-//TODO: add ref context flags to parameters.
-// UNREADY: round. Description. Private or public?
 public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
 
 	// no rounding of special values
@@ -74,7 +70,7 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
 	// no rounding of zeros
 	if (num.isZero) {
 		if (num.exponent < context.eMin) {
-			context.setFlag(SUBNORMAL);
+			context.setFlags(SUBNORMAL);
 			if (num.exponent < context.eTiny) {
 				num.exponent = context.eTiny;
 			}
@@ -84,48 +80,46 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
 
 	// check for subnormal
 	if (num.isSubnormal(context)) {
-		context.setFlag(SUBNORMAL);
+		context.setFlags(SUBNORMAL);
 		int diff = context.eMin - num.adjustedExponent;
 		// decrease the precision and round
 		int precision = context.precision - diff;
 		if (num.digits > precision) {
-			pushContext(context);
-			context.precision = precision;
-			roundByMode(num, context);
-			context = popContext;
+			DecimalContext tempContext = context.setPrecision(precision);
+			roundByMode(num, tempContext);
 		}
 		// subnormal rounding to zero == clamped (Spec. p. 51)
 		if (num.isZero) {
 			num.exponent = context.eTiny;
-			context.setFlag(CLAMPED);
+			context.setFlags(CLAMPED);
 		}
 		return;
 	}
 
 	// check for overflow
 	if (num.adjustedExponent > context.eMax) {
-		context.setFlag(OVERFLOW);
+		context.setFlags(OVERFLOW);
 		switch (context.rounding) {
-			case RoundingMode.HALF_UP:
-			case RoundingMode.HALF_EVEN:
-			case RoundingMode.HALF_DOWN:
-			case RoundingMode.UP:
+			case Rounding.HALF_UP:
+			case Rounding.HALF_EVEN:
+			case Rounding.HALF_DOWN:
+			case Rounding.UP:
 				num = T.infinity(num.sign);
 				break;
-			case RoundingMode.DOWN:
+			case Rounding.DOWN:
 				num = T.max(num.sign);
 				break;
-			case RoundingMode.CEILING:
+			case Rounding.CEILING:
 				num = num.sign ? T.max(true) : T.infinity;
 				break;
-			case RoundingMode.FLOOR:
+			case Rounding.FLOOR:
 				num = num.sign ? T.infinity(true) : T.max;
 				break;
 			default:
 				break;
 		}
-		context.setFlag(INEXACT);
-		context.setFlag(ROUNDED);
+		context.setFlags(INEXACT);
+		context.setFlags(ROUNDED);
 		return;
 	}
 	roundByMode(num, context);
@@ -142,85 +136,66 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
 unittest {
 	BigDecimal before = BigDecimal(9999);
 	BigDecimal after = before;
-	DecimalContext contextX;
-	contextX.precision = 3;
-	round(after, contextX);
-	assert(after.toString() == "1.00E+4");
+	DecimalContext ctx3 = DecimalContext(3, 99, Rounding.HALF_EVEN);
+	round(after, ctx3);
+	assertTrue(after.toString() == "1.00E+4");
 	before = BigDecimal(1234567890);
 	after = before;
-	contextX.precision = 3;
-	round(after, contextX);
-	assert(after.toString() == "1.23E+9");
+	round(after, ctx3);
+	assertTrue(after.toString() == "1.23E+9");
 	after = before;
-	contextX.precision = 4;
-	round(after, contextX);;
-	assert(after.toString() == "1.235E+9");
+	DecimalContext ctx4 = DecimalContext(4, 99, Rounding.HALF_EVEN);
+	round(after, ctx4);;
+	assertTrue(after.toString() == "1.235E+9");
 	after = before;
-	contextX.precision = 5;
-	round(after, contextX);;
-	assert(after.toString() == "1.2346E+9");
+	DecimalContext ctx5 = DecimalContext(5, 99, Rounding.HALF_EVEN);
+	round(after, ctx5);;
+	assertTrue(after.toString() == "1.2346E+9");
 	after = before;
-	contextX.precision = 6;
-	round(after, contextX);;
-	assert(after.toString() == "1.23457E+9");
+	DecimalContext ctx6 = DecimalContext(6, 99, Rounding.HALF_EVEN);
+	round(after, ctx6);;
+	assertTrue(after.toString() == "1.23457E+9");
 	after = before;
-	contextX.precision = 7;
-	round(after, contextX);;
-	assert(after.toString() == "1.234568E+9");
+	DecimalContext ctx7 = DecimalContext(7, 99, Rounding.HALF_EVEN);
+	round(after, ctx7);;
+	assertTrue(after.toString() == "1.234568E+9");
 	after = before;
-	contextX.precision = 8;
-	round(after, contextX);;
-	assert(after.toString() == "1.2345679E+9");
+	DecimalContext ctx8 = DecimalContext(8, 99, Rounding.HALF_EVEN);
+	round(after, ctx8);;
+	assertTrue(after.toString() == "1.2345679E+9");
 	before = 1235;
 	after = before;
-	contextX.precision = 3;
-	round(after, contextX);;
-	assert(after.toAbstract() == "[0,124,1]");
+	round(after, ctx3);;
+	assertTrue(after.toAbstract() == "[0,124,1]");
 	before = 12359;
 	after = before;
-	contextX.precision = 3;
-	round(after, contextX);;
-	assert(after.toAbstract() == "[0,124,2]");
+	round(after, ctx3);;
+	assertTrue(after.toAbstract() == "[0,124,2]");
 	before = 1245;
 	after = before;
-	contextX.precision = 3;
-	round(after, contextX);;
-	assert(after.toAbstract() == "[0,125,1]");
+	round(after, ctx3);
+	assertTrue(after.toAbstract() == "[0,125,1]");
 	before = 12459;
 	after = before;
-	contextX.precision = 3;
-	round(after, contextX);;
-	assert(after.toAbstract() == "[0,125,2]");
+	round(after, ctx3);;
+	assertTrue(after.toAbstract() == "[0,125,2]");
 	Dec32 a = Dec32(0.1);
 	Dec32 b = Dec32.min * Dec32(8888888);
-	assert(b.toAbstract == "[0,8888888,-101]");
+	assertTrue(b.toAbstract == "[0,8888888,-101]");
 	Dec32 c = a * b;
-	assert(c.toAbstract == "[0,888889,-101]");
+	assertTrue(c.toAbstract == "[0,888889,-101]");
 	Dec32 d = a * c;
-	assert(d.toAbstract == "[0,88889,-101]");
+	assertTrue(d.toAbstract == "[0,88889,-101]");
 	Dec32 e = a * d;
-	assert(e.toAbstract == "[0,8889,-101]");
+	assertTrue(e.toAbstract == "[0,8889,-101]");
 	Dec32 f = a * e;
-	assert(f.toAbstract == "[0,889,-101]");
+	assertTrue(f.toAbstract == "[0,889,-101]");
 	Dec32 g = a * f;
-	assert(g.toAbstract == "[0,89,-101]");
+	assertTrue(g.toAbstract == "[0,89,-101]");
 	Dec32 h = a * g;
-	assert(h.toAbstract == "[0,9,-101]");
+	assertTrue(h.toAbstract == "[0,9,-101]");
 	Dec32 i = a * h;
-	assert(i.toAbstract == "[0,0,-101]");
-
-// TUDO: problem with subtraction.
-// sub = sub - Dec32(1);//BigDecimal(1); doesn't wotk with Dec32 either!
-//sub = sub - 1;  // doesn't work BigDecimal op int
-//sub--;  // doesn't work, don't know why
-//Dec32 ans = sub + sub;
-//writeln("ans = ", ans.toAbstract);
-/*sub = Dec32.min_normal;
-//writeln("sub = ", sub.toAbstract);
-sub = Dec32.min_normal - Dec32.min;// * 50;
-//writeln("sub = ", sub.toAbstract);
-Dec32 abc = Dec32.min + Dec32.min;
-//writeln("abc = ", abc);*/
+	assertTrue(i.toAbstract == "[0,0,-101]");
 }
 
 //--------------------------------
@@ -244,14 +219,14 @@ private void roundByMode(T)(ref T num, ref DecimalContext context)
 		return;
 	}
 	switch (context.rounding) {
-		case RoundingMode.DOWN:
+		case Rounding.DOWN:
 			return;
-		case RoundingMode.HALF_UP:
+		case Rounding.HALF_UP:
 			if (firstDigit(remainder.coefficient) >= 5) {
 				increment(num, context);
 			}
 			return;
-		case RoundingMode.HALF_EVEN:
+		case Rounding.HALF_EVEN:
 			ulong first = firstDigit(remainder.coefficient);
 			if (first > 5) {
 				increment(num, context);
@@ -266,24 +241,24 @@ private void roundByMode(T)(ref T num, ref DecimalContext context)
 				increment(num, context);
 			}
 			return;
-		case RoundingMode.CEILING:
+		case Rounding.CEILING:
 			auto temp = T.zero;
 			if (!num.sign && (remainder != temp)) {
 				increment(num, context);
 			}
 			return;
-		case RoundingMode.FLOOR:
+		case Rounding.FLOOR:
 			auto temp = T.zero;
 			if (num.sign && remainder != temp) {
 				increment(num, context);
 			}
 			return;
-		case RoundingMode.HALF_DOWN:
+		case Rounding.HALF_DOWN:
 			if (firstDigit(remainder.coefficient) > 5) {
 				increment(num, context);
 			}
 			return;
-		case RoundingMode.UP:
+		case Rounding.UP:
 			auto temp = T.zero;
 			if (remainder != temp) {
 				increment(num, context);
@@ -295,31 +270,28 @@ private void roundByMode(T)(ref T num, ref DecimalContext context)
 } // end roundByMode()
 
 unittest {
-	pushContext(testContextR);
-	testContextR.precision = 5;
-	testContextR.rounding = RoundingMode.HALF_EVEN;
+	DecimalContext ctxHE = DecimalContext(5, 99, Rounding.HALF_EVEN);
 	BigDecimal num;
 	num = 1000;
-	roundByMode(num, testContextR);
-	assert(num.coefficient == 1000 && num.exponent == 0 && num.digits == 4);
+	roundByMode(num, ctxHE);
+	assertTrue(num.coefficient == 1000 && num.exponent == 0 && num.digits == 4);
 	num = 1000000;
-	roundByMode(num, testContextR);
-	assert(num.coefficient == 10000 && num.exponent == 2 && num.digits == 5);
+	roundByMode(num, ctxHE);
+	assertTrue(num.coefficient == 10000 && num.exponent == 2 && num.digits == 5);
 	num = 99999;
-	roundByMode(num, testContextR);
-	assert(num.coefficient == 99999 && num.exponent == 0 && num.digits == 5);
+	roundByMode(num, ctxHE);
+	assertTrue(num.coefficient == 99999 && num.exponent == 0 && num.digits == 5);
 	num = 1234550;
-	roundByMode(num, testContextR);
-	assert(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
-	testContextR.rounding = RoundingMode.DOWN;
+	roundByMode(num, ctxHE);
+	assertTrue(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
+	DecimalContext ctxDN = ctxHE.setRounding(Rounding.DOWN);
 	num = 1234550;
-	roundByMode(num, testContextR);
-	assert(num.coefficient == 12345 && num.exponent == 2 && num.digits == 5);
-	testContextR.rounding = RoundingMode.UP;
+	roundByMode(num, ctxDN);
+	assertTrue(num.coefficient == 12345 && num.exponent == 2 && num.digits == 5);
+	DecimalContext ctxUP = ctxHE.setRounding(Rounding.UP);
 	num = 1234550;
-	roundByMode(num, testContextR);
-	assert(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
-	testContextR = popContext;
+	roundByMode(num, ctxUP);
+	assertTrue(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
 }
 
 /**
@@ -335,7 +307,7 @@ private T getRemainder(T)(ref T num, ref DecimalContext context)
 	if (diff <= 0) {
 		return remainder;
 	}
-	context.setFlag(ROUNDED);
+	context.setFlags(ROUNDED);
 	// the context can be zero when...??
 	if (context.precision == 0) {
 		num = T.zero(num.sign);
@@ -356,23 +328,21 @@ private T getRemainder(T)(ref T num, ref DecimalContext context)
 	}
 	auto temp = T.zero;
 	if (remainder != temp) {
-		context.setFlag(INEXACT);
+		context.setFlags(INEXACT);
 	}
 
 	return remainder;
 }
 
 unittest {
-	pushContext(testContextR);
-	testContextR.precision = 5;
+	DecimalContext ctx5 = testContext.setPrecision(5);
 	BigDecimal num, acrem, exnum, exrem;
 	num = BigDecimal(1234567890123456L);
-	acrem = getRemainder(num, testContextR);
+	acrem = getRemainder(num, ctx5);
 	exnum = BigDecimal("1.2345E+15");
-	assert(num == exnum);
+	assertTrue(num == exnum);
 	exrem = 67890123456;
-	assert(acrem == exrem);
-	testContextR = popContext();
+	assertTrue(acrem == exrem);
 }
 
 /**
@@ -399,16 +369,16 @@ unittest {
 	BigDecimal num, expect;
 	num = 10;
 	expect = 11;
-	increment(num, testContextR);
-	assert(num == expect);
+	increment(num, testContext);
+	assertTrue(num == expect);
 	num = 19;
 	expect = 20;
-	increment(num, testContextR);
-	assert(num == expect);
+	increment(num, testContext);
+	assertTrue(num == expect);
 	num = 999;
 	expect = 1000;
-	increment(num, testContextR);
-	assert(num == expect);
+	increment(num, testContext);
+	assertTrue(num == expect);
 }
 
 public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
@@ -424,14 +394,14 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
 	}
 
 	switch (context.rounding) {
-		case RoundingMode.DOWN:
+		case Rounding.DOWN:
 			break;
-		case RoundingMode.HALF_UP:
+		case Rounding.HALF_UP:
 			if (firstDigit(remainder) >= 5) {
 				increment(mant, digits);
 			}
 			break;
-		case RoundingMode.HALF_EVEN:
+		case Rounding.HALF_EVEN:
 			ulong first = firstDigit(remainder);
 			if (first > 5) {
 				increment(mant, digits);
@@ -446,22 +416,22 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
 				increment(mant, digits);
 			}
 			break;
-		case RoundingMode.CEILING:
+		case Rounding.CEILING:
 			if (!sign) {
 				increment(mant, digits);
 			}
 			break;
-		case RoundingMode.FLOOR:
+		case Rounding.FLOOR:
 			if (sign) {
 				increment(mant, digits);
 			}
 			break;
-		case RoundingMode.HALF_DOWN:
+		case Rounding.HALF_DOWN:
 			if (firstDigit(remainder) > 5) {
 				increment(mant, digits);
 			}
 			break;
-		case RoundingMode.UP:
+		case Rounding.UP:
 			if (remainder != 0) {
 				increment(mant, digits);
 			}
@@ -484,22 +454,20 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
 } // end setExponent()
 
 unittest {
-	DecimalContext testContextR;
-	testContextR.precision = 5;
-	testContextR.rounding = RoundingMode.HALF_EVEN;
+	DecimalContext ctx = testContext.setPrecision(5);
 	ulong num; uint digits; int expo;
 	num = 1000;
 	digits = numDigits(num);
-	expo = setExponent(false, num, digits, testContextR);
-	assert(num == 1000 && expo == 0 && digits == 4);
+	expo = setExponent(false, num, digits, ctx);
+	assertTrue(num == 1000 && expo == 0 && digits == 4);
 	num = 1000000;
 	digits = numDigits(num);
-	expo = setExponent(false, num, digits, testContextR);
-	assert(num == 10000 && expo == 2 && digits == 5);
+	expo = setExponent(false, num, digits, ctx);
+	assertTrue(num == 10000 && expo == 2 && digits == 5);
 	num = 99999;
 	digits = numDigits(num);
-	expo = setExponent(false, num, digits, testContextR);
-	assert(num == 99999 && expo == 0 && digits == 5);
+	expo = setExponent(false, num, digits, ctx);
+	assertTrue(num == 99999 && expo == 0 && digits == 5);
 }
 
 /**
@@ -514,7 +482,7 @@ private ulong clipRemainder(ref ulong num, ref uint digits, uint precision) {
 		return remainder;
 	}
 	// if (remainder != 0) {...} ?
-	//context.setFlag(ROUNDED);
+	//context.setFlags(ROUNDED);
 
 	if (precision == 0) {
 		num = 0;
@@ -537,49 +505,49 @@ unittest {
 	digits = 16; precision = 5;
 	acrem = clipRemainder(num, digits, precision);
 	exnum = 12345L;
-	assert(num == exnum);
+	assertTrue(num == exnum);
 	exrem = 67890123456L;
-	assert(acrem == exrem);
+	assertTrue(acrem == exrem);
 
 	num = 12345768901234567L;
 	digits = 17; precision = 5;
 	acrem = clipRemainder(num, digits, precision);
 	exnum = 12345L;
-	assert(num == exnum);
+	assertTrue(num == exnum);
 	exrem = 768901234567L;
-	assert(acrem == exrem);
+	assertTrue(acrem == exrem);
 
 	num = 123456789012345678L;
 	digits = 18; precision = 5;
 	acrem = clipRemainder(num, digits, precision);
 	exnum = 12345L;
-	assert(num == exnum);
+	assertTrue(num == exnum);
 	exrem = 6789012345678L;
-	assert(acrem == exrem);
+	assertTrue(acrem == exrem);
 
 	num = 1234567890123456789L;
 	digits = 19; precision = 5;
 	acrem = clipRemainder(num, digits, precision);
 	exnum = 12345L;
-	assert(num == exnum);
+	assertTrue(num == exnum);
 	exrem = 67890123456789L;
-	assert(acrem == exrem);
+	assertTrue(acrem == exrem);
 
 	num = 1234567890123456789L;
 	digits = 19; precision = 4;
 	acrem = clipRemainder(num, digits, precision);
 	exnum = 1234L;
-	assert(num == exnum);
+	assertTrue(num == exnum);
 	exrem = 567890123456789L;
-	assert(acrem == exrem);
+	assertTrue(acrem == exrem);
 
 	num = 9223372036854775807L;
 	digits = 19; precision = 1;
 	acrem = clipRemainder(num, digits, precision);
 	exnum = 9L;
-	assert(num == exnum);
+	assertTrue(num == exnum);
 	exrem = 223372036854775807L;
-	assert(acrem == exrem);
+	assertTrue(acrem == exrem);
 
 }
 
@@ -611,20 +579,20 @@ unittest {
 	expect = 11;
 	digits = numDigits(num);
 	increment(num, digits);
-	assert(num == expect);
-	assert(digits == 2);
+	assertTrue(num == expect);
+	assertTrue(digits == 2);
 	num = 19;
 	expect = 20;
 	digits = numDigits(num);
 	increment(num, digits);
-	assert(num == expect);
-	assert(digits == 2);
+	assertTrue(num == expect);
+	assertTrue(digits == 2);
 	num = 999;
 	expect = 1000;
 	digits = numDigits(num);
 	increment(num, digits);
-	assert(num == expect);
-	assert(digits == 4);
+	assertTrue(num == expect);
+	assertTrue(digits == 4);
 }
 
 // BigInt versions
@@ -645,7 +613,7 @@ public int numDigits(const BigInt big) {
 
 unittest {
 	BigInt big = BigInt("12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678905");
-	assert(numDigits(big) == 101);
+	assertTrue(numDigits(big) == 101);
 }
 
 /**
@@ -665,7 +633,7 @@ public int firstDigit(const BigInt big) {
 
 unittest {
 	BigInt big = BigInt("82345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678905");
-	assert(firstDigit(big) == 8);
+	assertTrue(firstDigit(big) == 8);
 }
 
 /**
@@ -710,16 +678,16 @@ unittest {
 	int n;
 	m = 12345;
 	n = 2;
-	assert(decShl(m,n) == 1234500);
+	assertTrue(decShl(m,n) == 1234500);
 	m = 1234567890;
 	n = 7;
-	assert(decShl(m,n) == BigInt(12345678900000000));
+	assertTrue(decShl(m,n) == BigInt(12345678900000000));
 	m = 12;
 	n = 2;
-	assert(decShl(m,n) == 1200);
+	assertTrue(decShl(m,n) == 1200);
 	m = 12;
 	n = 4;
-	assert(decShl(m,n) == 120000);
+	assertTrue(decShl(m,n) == 120000);
 }
 
 /**
@@ -742,57 +710,57 @@ public uint lastDigit(/*const*/ BigInt big) {
 unittest {
 	long n;
 	n = 7;
-	assert(lastDigit(n) == 7);
+	assertTrue(lastDigit(n) == 7);
 	n = -13;
-	assert(lastDigit(n) == 3);
+	assertTrue(lastDigit(n) == 3);
 	n = 999;
-	assert(lastDigit(n) == 9);
+	assertTrue(lastDigit(n) == 9);
 	n = -9999;
-	assert(lastDigit(n) == 9);
+	assertTrue(lastDigit(n) == 9);
 	n = 25987;
-	assert(lastDigit(n) == 7);
+	assertTrue(lastDigit(n) == 7);
 	n = -5008615;
-	assert(lastDigit(n) == 5);
+	assertTrue(lastDigit(n) == 5);
 	n = 3234567893;
-	assert(lastDigit(n) == 3);
+	assertTrue(lastDigit(n) == 3);
 	n = -10000000000;
-	assert(lastDigit(n) == 0);
+	assertTrue(lastDigit(n) == 0);
 	n = 823456789012348;
-	assert(lastDigit(n) == 8);
+	assertTrue(lastDigit(n) == 8);
 	n = 4234567890123456;
-	assert(lastDigit(n) == 6);
+	assertTrue(lastDigit(n) == 6);
 	n = 623456789012345674;
-	assert(lastDigit(n) == 4);
+	assertTrue(lastDigit(n) == 4);
 	n = long.max;
-	assert(lastDigit(n) == 7);
+	assertTrue(lastDigit(n) == 7);
 }
 
 unittest {
 	BigInt n;
 	n = 7;
-	assert(lastDigit(n) == 7);
+	assertTrue(lastDigit(n) == 7);
 	n = -13;
-	assert(lastDigit(n) == 3);
+	assertTrue(lastDigit(n) == 3);
 	n = 999;
-	assert(lastDigit(n) == 9);
+	assertTrue(lastDigit(n) == 9);
 	n = -9999;
-	assert(lastDigit(n) == 9);
+	assertTrue(lastDigit(n) == 9);
 	n = 25987;
-	assert(lastDigit(n) == 7);
+	assertTrue(lastDigit(n) == 7);
 	n = -5008615;
-	assert(lastDigit(n) == 5);
+	assertTrue(lastDigit(n) == 5);
 	n = 3234567893;
-	assert(lastDigit(n) == 3);
+	assertTrue(lastDigit(n) == 3);
 	n = -10000000000;
-	assert(lastDigit(n) == 0);
+	assertTrue(lastDigit(n) == 0);
 	n = 823456789012348;
-	assert(lastDigit(n) == 8);
+	assertTrue(lastDigit(n) == 8);
 	n = 4234567890123456;
-	assert(lastDigit(n) == 6);
+	assertTrue(lastDigit(n) == 6);
 	n = 623456789012345674;
-	assert(lastDigit(n) == 4);
+	assertTrue(lastDigit(n) == 4);
 	n = long.max;
-	assert(lastDigit(n) == 7);
+	assertTrue(lastDigit(n) == 7);
 }
 
 unittest {
@@ -800,16 +768,16 @@ unittest {
 	int n;
 	m = 12345;
 	n = 2;
-	assert(decShl(m,n) == 1234500);
+	assertTrue(decShl(m,n) == 1234500);
 	m = 1234567890;
 	n = 7;
-	assert(decShl(m,n) == 12345678900000000);
+	assertTrue(decShl(m,n) == 12345678900000000);
 	m = 12;
 	n = 2;
-	assert(decShl(m,n) == 1200);
+	assertTrue(decShl(m,n) == 1200);
 	m = 12;
 	n = 4;
-	assert(decShl(m,n) == 120000);
+	assertTrue(decShl(m,n) == 120000);
 }
 
 public int firstDigit(const long num) {
@@ -825,29 +793,29 @@ public int firstDigit(const long num) {
 unittest {
 	long n;
 	n = 7;
-	assert(firstDigit(n) == 7);
+	assertTrue(firstDigit(n) == 7);
 	n = -13;
-	assert(firstDigit(n) == 1);
+	assertTrue(firstDigit(n) == 1);
 	n = 999;
-	assert(firstDigit(n) == 9);
+	assertTrue(firstDigit(n) == 9);
 	n = -9999;
-	assert(firstDigit(n) == 9);
+	assertTrue(firstDigit(n) == 9);
 	n = 25987;
-	assert(firstDigit(n) == 2);
+	assertTrue(firstDigit(n) == 2);
 	n = -5008617;
-	assert(firstDigit(n) == 5);
+	assertTrue(firstDigit(n) == 5);
 	n = 3234567890;
-	assert(firstDigit(n) == 3);
+	assertTrue(firstDigit(n) == 3);
 	n = -10000000000;
-	assert(firstDigit(n) == 1);
+	assertTrue(firstDigit(n) == 1);
 	n = 823456789012345;
-	assert(firstDigit(n) == 8);
+	assertTrue(firstDigit(n) == 8);
 	n = 4234567890123456;
-	assert(firstDigit(n) == 4);
+	assertTrue(firstDigit(n) == 4);
 	n = 623456789012345678;
-	assert(firstDigit(n) == 6);
+	assertTrue(firstDigit(n) == 6);
 	n = long.max;
-	assert(firstDigit(n) == 9);
+	assertTrue(firstDigit(n) == 9);
 }
 
 private ulong p10(const uint n) {
@@ -873,29 +841,29 @@ public int numDigits(const long num) {
 unittest {
 	long n;
 	n = 7;
-	assert(numDigits(n) ==	1);
+	assertTrue(numDigits(n) ==	1);
 	n = -13;
-	assert(numDigits(n) ==	2);
+	assertTrue(numDigits(n) ==	2);
 	n = 999;
-	assert(numDigits(n) ==	3);
+	assertTrue(numDigits(n) ==	3);
 	n = -9999;
-	assert(numDigits(n) ==	4);
+	assertTrue(numDigits(n) ==	4);
 	n = 25987;
-	assert(numDigits(n) ==	5);
+	assertTrue(numDigits(n) ==	5);
 	n = -2008617;
-	assert(numDigits(n) ==	7);
+	assertTrue(numDigits(n) ==	7);
 	n = 1234567890;
-	assert(numDigits(n) == 10);
+	assertTrue(numDigits(n) == 10);
 	n = -10000000000;
-	assert(numDigits(n) == 11);
+	assertTrue(numDigits(n) == 11);
 	n = 123456789012345;
-	assert(numDigits(n) == 15);
+	assertTrue(numDigits(n) == 15);
 	n = 1234567890123456;
-	assert(numDigits(n) == 16);
+	assertTrue(numDigits(n) == 16);
 	n = 123456789012345678;
-	assert(numDigits(n) == 18);
+	assertTrue(numDigits(n) == 18);
 	n = long.max;
-	assert(numDigits(n) == 19);
+	assertTrue(numDigits(n) == 19);
 }
 
 unittest {
