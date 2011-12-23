@@ -85,8 +85,8 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
 		// decrease the precision and round
 		int precision = context.precision - diff;
 		if (num.digits > precision) {
-			DecimalContext tempContext = context.setPrecision(precision);
-			roundByMode(num, tempContext);
+			auto ctx = context.setPrecision(precision);
+			roundByMode(num, ctx);
 		}
 		// subnormal rounding to zero == clamped (Spec. p. 51)
 		if (num.isZero) {

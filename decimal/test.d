@@ -34,67 +34,9 @@ unittest {
 	writeln("---------------------------");
 }
 
-
-//--------------------------------
-// unit test methods
-//--------------------------------
-
-/*template TestTemplate(T) {
-	bool isEqual(T)(T actual, T expected, string label, string message = "") {
-		bool equal = (expected == actual);
-		if (!equal) {
-			writeln("TestTemplate ", label, ": Expected [", expected, "] but found [", actual, "]. ", message);
-		}
-		return equal;
-	}
-}
-
-
-bool expectEquals(T)(T expected, T actual,
-		string file = __FILE__, int line = __LINE__ ) {
-	if (expected == actual) {
-		return true;
-	}
-	writeln("failed at ", std.path.basename(file), "(", line, "):",
-			" expected \"", expected, "\"",
-			" but found \"", actual, "\".");
-	return false;
-}
-
-bool assertTrue(bool actual, string file = __FILE__, int line = __LINE__ ) {
-	return expectEquals(true, actual, file, line);
-}
-
-
-unittest {
-	writeln("test...");
-	expectEquals(1,2);
-	assertTrue(false);
-	writeln("test missing");
-}*/
-
 //--------------------------------
 // unit tests
 //--------------------------------
-
-/*unittest {
-	bool passed = true;
-	long n = 12345;
-	TestTemplate!long.isEqual!uint(lastDigit(n), 5, "digits 1");
-	TestTemplate!long.isEqual(numDigits(n), 5, "digits 2");
-	TestTemplate!long.isEqual(firstDigit(n), 1, "digits 3");
-	TestTemplate!long.isEqual(firstDigit(n), 8, "digits 4");
-	BigInt big = BigInt("12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678905");
-	TestTemplate!long.isEqual!uint(lastDigit(big), 5, "digits 5");
-	TestTemplate!long.isEqual(numDigits(big), 101, "digits 6");
-	TestTemplate!long.isEqual(numDigits(big), 22, "digits 7");
-	TestTemplate!long.isEqual(firstDigit(n), 1, "digits 8");
-//	  assertTrue(lastDigit(big) == 5);
-//	  assertTrue(numDigits(big) == 101);
-//	  assertTrue(firstDigit(big) == 1);
-}*/
-
-//private DecimalContext testContext = DecimalContext();
 
 unittest {
 	writeln("---------------------");
@@ -270,83 +212,83 @@ unittest {
 	BigDecimal f;
 	string str = "0";
 	f = BigDecimal(str);
-	expectEquals(f.toString(), str) ? passed++ : failed++;
-	expectEquals(f.toAbstract(), "[0,0,0]") ? passed++ : failed++;
+	assertEqual(f.toString(), str) ? passed++ : failed++;
+	assertEqual(f.toAbstract(), "[0,0,0]") ? passed++ : failed++;
 	str = "0.00";
 	f = BigDecimal(str);
-	expectEquals(f.toString(), str) ? passed++ : failed++;
-	expectEquals(f.toAbstract(), "[0,0,-2]") ? passed++ : failed++;
+	assertEqual(f.toString(), str) ? passed++ : failed++;
+	assertEqual(f.toAbstract(), "[0,0,-2]") ? passed++ : failed++;
 	str = "0.0";
 	f = BigDecimal(str);
-	expectEquals(f.toString(), str) ? passed++ : failed++;
-	expectEquals(f.toAbstract(), "[0,0,-1]") ? passed++ : failed++;
+	assertEqual(f.toString(), str) ? passed++ : failed++;
+	assertEqual(f.toAbstract(), "[0,0,-1]") ? passed++ : failed++;
 	f = BigDecimal("0.");
-	expectEquals(f.toString(), "0") ? passed++ : failed++;
-	expectEquals(f.toAbstract(), "[0,0,0]") ? passed++ : failed++;
+	assertEqual(f.toString(), "0") ? passed++ : failed++;
+	assertEqual(f.toAbstract(), "[0,0,0]") ? passed++ : failed++;
 	f = BigDecimal(".0");
-	expectEquals(f.toString(), "0.0") ? passed++ : failed++;
-	expectEquals(f.toAbstract(), "[0,0,-1]") ? passed++ : failed++;
+	assertEqual(f.toString(), "0.0") ? passed++ : failed++;
+	assertEqual(f.toAbstract(), "[0,0,-1]") ? passed++ : failed++;
 	str = "1.0";
 	f = BigDecimal(str);
-	expectEquals(f.toString(), str) ? passed++ : failed++;
-	expectEquals(f.toAbstract(), "[0,10,-1]") ? passed++ : failed++;
+	assertEqual(f.toString(), str) ? passed++ : failed++;
+	assertEqual(f.toAbstract(), "[0,10,-1]") ? passed++ : failed++;
 	str = "1.";
 	f = BigDecimal(str);
-	expectEquals(f.toString(), "1") ? passed++ : failed++;
-	expectEquals(f.toAbstract(), "[0,1,0]") ? passed++ : failed++;
+	assertEqual(f.toString(), "1") ? passed++ : failed++;
+	assertEqual(f.toAbstract(), "[0,1,0]") ? passed++ : failed++;
 	str = ".1";
 	f = BigDecimal(str);
-	expectEquals(f.toString(), "0.1") ? passed++ : failed++;
-	expectEquals(f.toAbstract(), "[0,1,-1]") ? passed++ : failed++;
+	assertEqual(f.toString(), "0.1") ? passed++ : failed++;
+	assertEqual(f.toAbstract(), "[0,1,-1]") ? passed++ : failed++;
 	f = BigDecimal("123");
-	expectEquals(f.toString(), "123") ? passed++ : failed++;
+	assertEqual(f.toString(), "123") ? passed++ : failed++;
 	f = BigDecimal("-123");
-	expectEquals(f.toString(), "-123") ? passed++ : failed++;
+	assertEqual(f.toString(), "-123") ? passed++ : failed++;
 	f = BigDecimal("1.23E3");
-	expectEquals(f.toString(), "1.23E+3") ? passed++ : failed++;
+	assertEqual(f.toString(), "1.23E+3") ? passed++ : failed++;
 	f = BigDecimal("1.23E");
-	expectEquals(f.toString(), "NaN") ? passed++ : failed++;
+	assertEqual(f.toString(), "NaN") ? passed++ : failed++;
 	f = BigDecimal("1.23E-");
-	expectEquals(f.toString(), "NaN") ? passed++ : failed++;
+	assertEqual(f.toString(), "NaN") ? passed++ : failed++;
 	f = BigDecimal("1.23E+");
-	expectEquals(f.toString(), "NaN") ? passed++ : failed++;
+	assertEqual(f.toString(), "NaN") ? passed++ : failed++;
 	f = BigDecimal("1.23E+3");
-	expectEquals(f.toString(), "1.23E+3") ? passed++ : failed++;
+	assertEqual(f.toString(), "1.23E+3") ? passed++ : failed++;
 	f = BigDecimal("1.23E3B");
-	expectEquals(f.toString(), "NaN") ? passed++ : failed++;
+	assertEqual(f.toString(), "NaN") ? passed++ : failed++;
 	f = BigDecimal("12.3E+007");
-	expectEquals(f.toString(), "1.23E+8") ? passed++ : failed++;
+	assertEqual(f.toString(), "1.23E+8") ? passed++ : failed++;
 	f = BigDecimal("12.3E+70000000000");
-	expectEquals(f.toString(), "NaN") ? passed++ : failed++;
+	assertEqual(f.toString(), "NaN") ? passed++ : failed++;
 	f = BigDecimal("12.3E+7000000000");
-	expectEquals(f.toString(), "NaN") ? passed++ : failed++;
+	assertEqual(f.toString(), "NaN") ? passed++ : failed++;
 	f = BigDecimal("12.3E+700000000");
-	expectEquals(f.toString(), "1.23E+700000001") ? passed++ : failed++;
+	assertEqual(f.toString(), "1.23E+700000001") ? passed++ : failed++;
 	f = BigDecimal("12.3E-700000000");
-	expectEquals(f.toString(), "1.23E-699999999") ? passed++ : failed++;
+	assertEqual(f.toString(), "1.23E-699999999") ? passed++ : failed++;
 	// NOTE: since there will still be adjustments -- maybe limit to 99999999?
 	f = BigDecimal("12.0");
-	expectEquals(f.toString(), "12.0") ? passed++ : failed++;
+	assertEqual(f.toString(), "12.0") ? passed++ : failed++;
 	f = BigDecimal("12.3");
-	expectEquals(f.toString(), "12.3") ? passed++ : failed++;
+	assertEqual(f.toString(), "12.3") ? passed++ : failed++;
 	f = BigDecimal("1.23E-3");
-	expectEquals(f.toString(), "0.00123") ? passed++ : failed++;
+	assertEqual(f.toString(), "0.00123") ? passed++ : failed++;
 	f = BigDecimal("0.00123");
-	expectEquals(f.toString(), "0.00123") ? passed++ : failed++;
+	assertEqual(f.toString(), "0.00123") ? passed++ : failed++;
 	f = BigDecimal("-1.23E-12");
-	expectEquals(f.toString(), "-1.23E-12") ? passed++ : failed++;
+	assertEqual(f.toString(), "-1.23E-12") ? passed++ : failed++;
 	f = BigDecimal("-0");
-	expectEquals(f.toString(), "-0") ? passed++ : failed++;
+	assertEqual(f.toString(), "-0") ? passed++ : failed++;
 	f = BigDecimal("inf");
-	expectEquals(f.toString(), "Infinity") ? passed++ : failed++;
+	assertEqual(f.toString(), "Infinity") ? passed++ : failed++;
 	f = BigDecimal("NaN");
-	expectEquals(f.toString(), "NaN") ? passed++ : failed++;
+	assertEqual(f.toString(), "NaN") ? passed++ : failed++;
 	f = BigDecimal("-NaN");
-	expectEquals(f.toString(), "-NaN") ? passed++ : failed++;
+	assertEqual(f.toString(), "-NaN") ? passed++ : failed++;
 	f = BigDecimal("sNaN");
-	expectEquals(f.toString(), "sNaN") ? passed++ : failed++;
+	assertEqual(f.toString(), "sNaN") ? passed++ : failed++;
 	f = BigDecimal("Fred");
-	expectEquals(f.toString(), "NaN") ? passed++ : failed++;
+	assertEqual(f.toString(), "NaN") ? passed++ : failed++;
 	writefln("unittest %s: passed %d; failed %d", title, passed, failed);*/
 }
 
@@ -377,7 +319,7 @@ unittest {
 
 unittest {
 	write("radix........");
-	expectEquals(10, radix);
+	assertEqual(10, radix);
     writeln("passed");
 }
 
@@ -385,31 +327,31 @@ unittest {
 	write("class........");
 	BigDecimal num;
 	num = BigDecimal("Infinity");
-	expectEquals(classify(num), "+Infinity");
+	assertEqual(classify(num), "+Infinity");
 	num = BigDecimal("1E-10");
-	expectEquals(classify(num), "+Normal");
+	assertEqual(classify(num), "+Normal");
 	num = BigDecimal("2.50");
-	expectEquals(classify(num), "+Normal");
+	assertEqual(classify(num), "+Normal");
 	num = BigDecimal("0.1E-99");
-	expectEquals(classify(num), "+Subnormal");
+	assertEqual(classify(num), "+Subnormal");
 	num = BigDecimal("0");
-	expectEquals(classify(num), "+Zero");
+	assertEqual(classify(num), "+Zero");
 	num = BigDecimal("-0");
-	expectEquals(classify(num), "-Zero");
+	assertEqual(classify(num), "-Zero");
 	num = BigDecimal("-0.1E-99");
-	expectEquals(classify(num), "-Subnormal");
+	assertEqual(classify(num), "-Subnormal");
 	num = BigDecimal("-1E-10");
-	expectEquals(classify(num), "-Normal");
+	assertEqual(classify(num), "-Normal");
 	num = BigDecimal("-2.50");
-	expectEquals(classify(num), "-Normal");
+	assertEqual(classify(num), "-Normal");
 	num = BigDecimal("-Infinity");
-	expectEquals(classify(num), "-Infinity");
+	assertEqual(classify(num), "-Infinity");
 	num = BigDecimal("NaN");
-	expectEquals(classify(num), "NaN");
+	assertEqual(classify(num), "NaN");
 	num = BigDecimal("-NaN");
-	expectEquals(classify(num), "NaN");
+	assertEqual(classify(num), "NaN");
 	num = BigDecimal("sNaN");
-	expectEquals(classify(num), "sNaN");
+	assertEqual(classify(num), "sNaN");
 	writeln("passed");
 }
 
@@ -474,22 +416,22 @@ unittest {
 	op2 = 0.001;
 	expd = BigDecimal("2.170");
 	result = quantize(op1, op2, testContext);
-	expectEquals(expd, result);
+	assertEqual(expd, result);
 	op1 = 2.17;
 	op2 = 0.01;
 	expd = 2.17;
 	result = quantize(op1, op2, testContext);
-	expectEquals(expd, result);
+	assertEqual(expd, result);
 	op1 = 2.17;
 	op2 = 0.1;
 	expd = 2.2;
 	result = quantize(op1, op2, testContext);
-	expectEquals(expd, result);
+	assertEqual(expd, result);
 	op1 = 2.17;
 	op2 = BigDecimal("1E+0");
 	expd = 2;
 	result = quantize(op1, op2, testContext);
-	expectEquals(expd, result);
+	assertEqual(expd, result);
 	op1 = 2.17;
 	op2 = BigDecimal("1E+1");
 	expd = BigDecimal("0E+1");
@@ -499,7 +441,7 @@ unittest {
 	op2 = BigDecimal("Infinity");
 	expd = BigDecimal("-Infinity");
 	result = quantize(op1, op2, testContext);
-	expectEquals(expd, result);
+	assertEqual(expd, result);
 	op1 = 2;
 	op2 = BigDecimal("Infinity");
 	expd = BigDecimal("NaN");
@@ -545,7 +487,7 @@ unittest {
 	expd = BigDecimal("2E+2");
 	result = quantize(op1, op2, testContext);
 	assertTrue(result.toString() == expd.toString());
-	expectEquals(expd, result);
+	assertEqual(expd, result);
 	writeln("passed");
 }
 
@@ -1838,7 +1780,7 @@ unittest {
 	DecimalContext ctx7 = testContext.setPrecision(7);
 	DecimalContext ctx8 = testContext.setPrecision(8);
 	round(after, ctx3);
-	expectEquals("1.00E+4", after.toString());
+	assertEqual("1.00E+4", after.toString());
 	before = BigDecimal(1234567890);
 	after = before;
 	round(after, ctx3);

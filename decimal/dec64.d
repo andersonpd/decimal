@@ -275,6 +275,8 @@ public:
 	immutable Dec64 NEG_MAX  = Dec64(SV.NEG_MAX);
 	immutable Dec64 ONE 	 = Dec64( 1);
 	immutable Dec64 NEG_ONE  = Dec64(-1);
+    immutable Dec64 TRUE     = ONE;
+    immutable Dec64 FALSE    = ZERO;
 
 //--------------------------------
 //	constructors
@@ -340,6 +342,17 @@ public:
 		this = zero;
 		signed = n < 0;
 		coefficient = std.math.abs(n);
+	}
+
+	/**
+	 * Creates a Dec64 from a boolean value.
+	 */
+	public this(const bool value)
+	{
+		this = zero;
+        if (value) {
+        	coefficient = 1;
+        }
 	}
 
 	unittest {
@@ -568,29 +581,29 @@ public:
 		num = std.math.PI;
         expected = -15;
         actual = num.exponent;
-		expectEquals(expected, actual);
+		assertEqual(expected, actual);
 		num = 9.75E9;
         expected = 0;
         actual = num.exponent;
-		expectEquals(expected, actual);
+		assertEqual(expected, actual);
 		// explicit
 		num = 8388607;
         expected = 0;
         actual = num.exponent;
-		expectEquals(expected, actual);
+		assertEqual(expected, actual);
 		// implicit
 		num = 8388610;
         expected = 0;
         actual = num.exponent;
-		expectEquals(expected, actual);
+		assertEqual(expected, actual);
 		num = 9.999998E23;
         expected = 17;
         actual = num.exponent;
-		expectEquals(expected, actual);
+		assertEqual(expected, actual);
 		num = 9.999999E23;
         expected = 8;
         actual = num.exponent;
-		expectEquals(expected, actual);
+		assertEqual(expected, actual);
 	}
 
 	/// Sets the exponent of this number.
@@ -989,9 +1002,21 @@ public:
 		return adjustedExponent >= context.eMin;
 	}
 
+    const bool isTrue() {
+        return coefficient != 0;
+    }
+
+    const bool isFalse() {
+        return coefficient == 0;
+    }
+
+    const bool isZeroCoefficient() {
+        return coefficient == 0;
+    }
 	/**
 	 * Returns the value of the adjusted exponent.
 	 */
+     // TODO: what if this is special?
 	const int adjustedExponent() {
 		return exponent + digits - 1;
 	}

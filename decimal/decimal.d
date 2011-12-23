@@ -120,6 +120,17 @@ public:
 	}
 
 	/**
+	 * Creates a BigDecimal from a boolean value.
+	 */
+	public this(const bool value)
+	{
+		this = zero;
+        if (value) {
+        	coefficient = 1;
+        }
+	}
+
+	/**
 	 * Constructs a number from a sign, a BigInt coefficient and
 	 * an optional(?) integer exponent.
 	 * The sign of the number is the value of the sign parameter,
@@ -133,6 +144,8 @@ public:
 		this.signed = sign;
 		this.mant = big;
 		this.expo = exponent;
+        // TODO: If we specify the number of digits this can be CTFE.
+        // The numDigits call is not CTFE.
 		this.digits = numDigits(this.mant);
 	}
 
@@ -186,7 +199,7 @@ public:
 	unittest {
 	}
 
-	// UNREADY: this(const long, const int). Flags. Unit Tests.
+	// UNREADY: this(const long). Flags. Unit Tests.
 	/**
 	 * Constructs a number from an long coefficient
 	 * and an optional integer exponent.
@@ -220,7 +233,7 @@ public:
 		assertTrue(num.toString == str);
 		num = std.math.E;
 		str = "2.71828183";
-		expectEquals!string(str, num.toString);
+		assertEqual!string(str, num.toString);
 		num = std.math.LOG2;
 		BigDecimal copy = BigDecimal(num);
 		assertTrue(compareTotal!BigDecimal(num, copy) == 0);
@@ -310,7 +323,7 @@ public:
 		assertTrue(num.toString == str);
 		num = real.max;
 		str = "1.1897315E+4932";
-		expectEquals!string(str, num.toString);
+		assertEqual!string(str, num.toString);
 		num = Dec32.max;
 		str = "9.999999E+96";
 		assertTrue(num.toString == str);
@@ -427,14 +440,14 @@ unittest {
 
 	unittest {
 		BigDecimal big = -123.45E12;
-		expectEquals!int(10, big.exponent);
-		expectEquals!BigInt(BigInt(12345), big.coefficient);
+		assertEqual!int(10, big.exponent);
+		assertEqual!BigInt(BigInt(12345), big.coefficient);
 //		assertTrue(big.coefficient == 12345);
 		assertTrue(big.sign);
 		big.coefficient = 23456;
 		big.exponent = 12;
 		big.sign = false;
-		expectEquals!BigDecimal(BigDecimal(234.56E14),big);
+		assertEqual!BigDecimal(BigDecimal(234.56E14),big);
 		big = nan;
 		assertTrue(big.payload == 0);
 		big = snan(1250);
@@ -449,7 +462,7 @@ unittest {
 		BigDecimal num;
 		assertTrue(num.toExact == "+NaN");
 		num = +9999999E+90;
-		expectEquals!string("+9999999E+90", num.toExact);
+		assertEqual!string("+9999999E+90", num.toExact);
 		num = 1;
 		assertTrue(num.toExact == "+1E+00");
 		num = infinity(true);
@@ -895,31 +908,31 @@ unittest {
 		num = 134;
 		expect = num;
 		actual = +num;
-		expectEquals!BigDecimal(expect, actual);
+		assertEqual!BigDecimal(expect, actual);
 		num = 134.02;
 		expect = -134.02;
 		actual = -num;
-		expectEquals!BigDecimal(expect, actual);
+		assertEqual!BigDecimal(expect, actual);
 		num = 134;
 		expect = 135;
 		actual = ++num;
-		expectEquals!BigDecimal(expect, actual);
+		assertEqual!BigDecimal(expect, actual);
 		num = 1.00E8;
 		expect = num - BigDecimal(1); // TODO:why not an integer
 		actual = --num;
-		expectEquals!BigDecimal(expect, actual);
+		assertEqual!BigDecimal(expect, actual);
 		num = 1.00E8;
 		expect = num;
 		actual = num--;
-		expectEquals!BigDecimal(expect, actual);
+		assertEqual!BigDecimal(expect, actual);
 		num = BigDecimal(9999999, 90);
 		expect = num;
 		actual = num++;
-		expectEquals!BigDecimal(expect, actual);
+		assertEqual!BigDecimal(expect, actual);
 		num = 12.35;
 		expect = 11.35;
 		actual = --num;
-		expectEquals!BigDecimal(expect, actual);
+		assertEqual!BigDecimal(expect, actual);
 	}
 
 //--------------------------------
@@ -971,23 +984,23 @@ unittest {
 		op2 = 8;
 		actual = op1 + op2;
 		expect = 12;
-		expectEquals!BigDecimal(expect, actual);
+		assertEqual!BigDecimal(expect, actual);
 		actual = op1 - op2;
 		expect = -4;
-		expectEquals!BigDecimal(expect, actual);
+		assertEqual!BigDecimal(expect, actual);
 		actual = op1 * op2;
 		expect = 32;
-		expectEquals!BigDecimal(expect, actual);
+		assertEqual!BigDecimal(expect, actual);
 		op1 = 5;
 		op2 = 2;
 		actual = op1 / op2;
 		expect = 2.5;
-		expectEquals!BigDecimal(expect, actual);
+		assertEqual!BigDecimal(expect, actual);
 		op1 = 10;
 		op2 = 3;
 		actual = op1 % op2;
 		expect = 1;
-		expectEquals!BigDecimal(expect, actual);
+		assertEqual!BigDecimal(expect, actual);
 	}
 
 //-----------------------------
@@ -1006,11 +1019,11 @@ unittest {
 		op1 += op2;
 		expect = 21.49;
 		actual = op1;
-		expectEquals!BigDecimal(expect, actual);
+		assertEqual!BigDecimal(expect, actual);
 		op1 *= op2;
 		expect = -44.4843;
 		actual = op1;
-		expectEquals!BigDecimal(expect, actual);
+		assertEqual!BigDecimal(expect, actual);
 	}
 
 //-----------------------------

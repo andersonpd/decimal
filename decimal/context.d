@@ -58,7 +58,7 @@ public enum : ubyte {
     UNDERFLOW          = 0x80
 }
 
-bool expectEquals(T)(T expected, T actual,
+bool assertEqual(T)(T expected, T actual,
 		string file = __FILE__, int line = __LINE__ ) {
 	if (expected == actual) {
 		return true;
@@ -70,7 +70,11 @@ bool expectEquals(T)(T expected, T actual,
 }
 
 bool assertTrue(bool actual, string file = __FILE__, int line = __LINE__ ) {
-	return expectEquals(true, actual, file, line);
+	return assertEqual(true, actual, file, line);
+}
+
+bool assertFalse(bool actual, string file = __FILE__, int line = __LINE__ ) {
+	return assertEqual(false, actual, file, line);
 }
 
 
@@ -85,8 +89,6 @@ public struct DecimalContext {
 
     /// length of coefficient in (decimal) digits
     immutable uint precision;
-    /// maximum absolute value of the exponent
-    immutable int eLimit;
     /// maximum value of the adjusted exponent
     immutable int eMax;
     /// smallest normalized exponent
@@ -99,10 +101,9 @@ public struct DecimalContext {
     /// constructs a context with the specified parameters
     public this(immutable uint precision, immutable int eMax, immutable Rounding rounding) {
         this.precision = precision;
-        this.eMax = eMax; // + eMin;
-        this.eMin = 1 - eMax; //-eLimit/2;
+        this.eMax = eMax;
+        this.eMin = 1 - eMax;
         this.eTiny = eMin - precision + 1;
-        this.eLimit = eMax - eMin;
         this.rounding = rounding;
     }
 
@@ -120,23 +121,7 @@ public struct DecimalContext {
         return DecimalContext(this.precision, this.eMax, rounding);
     }
 
-/*    /// Returns a copy of the context with a new precision
-    public DecimalContext setPrecision(DecimalContext source, immutable uint precision) {
-        return DecimalContext(precision, source.eMax, source.rounding);
-    }
-
-    /// Returns a copy of the context with a new exponent limit
-    public DecimalContext setMaxExponent(DecimalContext source, immutable int eLimit) {
-        return DecimalContext(source.precision, eLimit, source.rounding);
-    }
-    /// Returns a copy of the context with a new rounding mode
-    public DecimalContext setRounding(DecimalContext source, immutable Rounding rounding) {
-        return DecimalContext(source.precision, source.eLimit, rounding);
-    }*/
-
-
     // Returns the maximum representable normal value in the current context.
-    // TODO: this is a fairly expensive operation. Can it be fixed?
     const string maxString() {
         string cstr = "9." ~ replicate("9", precision-1)
             ~ "E" ~ format("%d", eMax);

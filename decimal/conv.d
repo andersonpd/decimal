@@ -674,6 +674,7 @@ public string toExact(T)(const T num) if (isDecimal!T)
 		return "+NaN";
 	}
 
+
 unittest {
 	writeln("-------------------");
 	writeln("conv............end");

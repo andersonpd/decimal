@@ -124,7 +124,7 @@ private:
 	immutable int E_MIN = -95;		// = 1 - E_MAX
 
 	/// The context for this type.
-	private static DecimalContext
+	public static DecimalContext
         context32 = DecimalContext(PRECISION, E_MAX, Rounding.HALF_EVEN);
 
 	// union providing different views of the number representation.
@@ -214,10 +214,37 @@ private:
 		// The value of the largest representable positive number.
 		POS_MAX = 0x77F8967F,
 		// The value of the largest representable negative number.
-		NEG_MAX = 0xF7F8967F
+		NEG_MAX = 0xF7F8967F,
+
+        // common small integers
+        POS_ONE = 0x32800001,
+        NEG_ONE = 0xB2800001,
+        POS_TWO = 0x32800002,
+        NEG_TWO = 0xB2800002,
+        POS_FIV = 0x32800005,
+        NEG_FIV = 0xB2800005,
+        POS_TEN = 0x3280000A,
+        NEG_TEN = 0xB280000A,
+
+        // pi and related values
+        PI = 0x2FAFEFD9,
+        PI_2 = 0x2F97F7EC,
+        PI_4 = 0x2F77D79E,
+        SQRT_PI = 0x2F9B0BA6,
+        PI_SQR = 0x6BF69924,
+
+        // logarithms
+        E = 0x2FA97A4A,
+        LN2 = 0x2F69C410,
+        LN10 = 0x2FA32279,
+
+        // roots and squares of common values
+        SQRT2   = 0x2F959446,
+        SQRT1_2 = 0x2F6BE55C
 	}
 
 public:
+    // special values
 	immutable Dec32 NAN 	 = Dec32(SV.POS_NAN);
 	immutable Dec32 SNAN	 = Dec32(SV.POS_SIG);
 	immutable Dec32 INFINITY = Dec32(SV.POS_INF);
@@ -226,8 +253,33 @@ public:
 	immutable Dec32 NEG_ZERO = Dec32(SV.NEG_ZRO);
 	immutable Dec32 MAX 	 = Dec32(SV.POS_MAX);
 	immutable Dec32 NEG_MAX  = Dec32(SV.NEG_MAX);
-	immutable Dec32 ONE 	 = Dec32( 1);
-	immutable Dec32 NEG_ONE  = Dec32(-1);
+
+    // small integers
+	immutable Dec32 ONE 	 = Dec32(SV.POS_ONE);
+	immutable Dec32 NEG_ONE  = Dec32(SV.NEG_ONE);
+	immutable Dec32 TWO 	 = Dec32(SV.POS_TWO);
+	immutable Dec32 NEG_TWO  = Dec32(SV.NEG_TWO);
+	immutable Dec32 FIVE 	 = Dec32(SV.POS_FIV);
+	immutable Dec32 NEG_FIVE = Dec32(SV.NEG_FIV);
+	immutable Dec32 TEN 	 = Dec32(SV.POS_TEN);
+	immutable Dec32 NEG_TEN  = Dec32(SV.NEG_TEN);
+
+    // mathamatical constants
+	immutable Dec32 PI 	     = Dec32(SV.PI);
+	immutable Dec32 PI_2 	 = Dec32(SV.PI_2);
+	immutable Dec32 PI_4 	 = Dec32(SV.PI_4);
+	immutable Dec32 SQRT_PI  = Dec32(SV.SQRT_PI);
+	immutable Dec32 PI_SQR   = Dec32(SV.PI_SQR);
+
+	immutable Dec32 E 	     = Dec32(SV.E);
+    immutable Dec32 LN2      = Dec32(SV.LN2);
+    immutable Dec32 LN10     = Dec32(SV.LN10);
+    immutable Dec32 SQRT2    = Dec32(SV.SQRT2);
+    immutable Dec32 SQRT1_2  = Dec32(SV.SQRT1_2);
+
+    // boolean constants
+    immutable Dec32 TRUE     = ONE;
+    immutable Dec32 FALSE    = ZERO;
 
 //--------------------------------
 //	constructors
@@ -307,6 +359,17 @@ public:
 		assertTrue(num.toString == "-1");
 		num = Dec32(5);
 		assertTrue(num.toString == "5");
+	}
+
+	/**
+	 * Creates a Dec32 from a boolean value.
+	 */
+	public this(const bool value)
+	{
+		this = zero;
+        if (value) {
+        	coefficient = 1;
+        }
 	}
 
 	/**
@@ -766,11 +829,7 @@ public:
 
 	// floating point properties
 	static Dec32 init() 	  { return NAN; }
-//	  static Dec32 nan()		{ return NAN; }
-//	  static Dec32 snan()		{ return SNAN; }
-
 	static Dec32 epsilon()	  { return Dec32(1, -7); }
-//	  static Dec32 max()		{ return MAX; }
 	static Dec32 min_normal() { return Dec32(1, context32.eMin); }
 	static Dec32 min()		  { return Dec32(1, context32.eTiny); }
 
@@ -873,6 +932,13 @@ public:
 	}
 
 	/**
+	 * Returns true if the coefficient of this number is zero.
+	 */
+	const bool coefficientIsZero() {
+		return coefficient == 0;
+	}
+
+	/**
 	 * Returns true if this number is a quiet or signaling NaN.
 	 */
 	const bool isNaN() {
@@ -933,6 +999,17 @@ public:
 		return signed;
 	}
 
+    const bool isTrue() {
+        return coefficient != 0;
+    }
+
+    const bool isFalse() {
+        return coefficient == 0;
+    }
+
+    const bool isZeroCoefficient() {
+        return coefficient == 0;
+    }
 	/**
 	 * Returns true if this number is subnormal.
 	 */
