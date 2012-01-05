@@ -10,10 +10,10 @@
  * License: <a href="http://www.boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
  * Authors: Paul D. Anderson
  */
-/*		  Copyright Paul D. Anderson 2009 - 2011.
+/*        Copyright Paul D. Anderson 2009 - 2011.
  * Distributed under the Boost Software License, Version 1.0.
- *	(See accompanying file LICENSE_1_0.txt or copy at
- *		  http://www.boost.org/LICENSE_1_0.txt)
+ *  (See accompanying file LICENSE_1_0.txt or copy at
+ *        http://www.boost.org/LICENSE_1_0.txt)
  */
 
 module decimal.conv;
@@ -33,6 +33,7 @@ unittest {
 	writeln("conv..........begin");
 	writeln("-------------------");
 }
+
 //--------------------------------
 //  conversions
 //--------------------------------
@@ -42,16 +43,18 @@ unittest {
  * NOTE: the 'int' version is needed because there are
  * routines that call 'int' or 'BigInt' based on the coefficient type.
  */
-T to(T:string)(const long n) {
+T to(T: string)(const long n) {
 	return format("%d", n);
 }
 
 /**
  * Temporary hack to allow to!string(BigInt).
  */
-T to(T:string)(const BigInt num) {
-	string outbuff="";
-	void sink(const(char)[] s) { outbuff ~= s; }
+T to(T: string)(const BigInt num) {
+	string outbuff = "";
+	void sink(const(char)[] s) {
+		outbuff ~= s;
+	}
 	num.toString(&sink, "%d");
 	return outbuff;
 }
@@ -59,23 +62,20 @@ T to(T:string)(const BigInt num) {
 /**
  * Converts any decimal to another decimal
  */
-public T toDecimal(T,U)(const U num) if (isDecimal!T) {
-
-	static if(is(typeof(num) == T)) {return num.dup;}
-
+public T toDecimal(T, U)(const U num) if(isDecimal!T) {
+	static if(is(typeof(num) == T)) {
+		return num.dup;
+	}
 	bool sign = num.sign;
-	if (num.isFinite) {
+	if(num.isFinite) {
 		auto mant = num.coefficient;
 		int  expo = num.exponent;
 		return T(sign, mant, expo);
-	}
-	else if (num.isInfinite) {
+	} else if(num.isInfinite) {
 		return T.infinity(sign);
-	}
-	else if (num.isSignaling) {
+	} else if(num.isSignaling) {
 		return T.snan(num.payload);
-	}
-	else if (num.isQuiet) {
+	} else if(num.isQuiet) {
 		return T.nan(num.payload);
 	}
 	return T.nan;
@@ -84,23 +84,20 @@ public T toDecimal(T,U)(const U num) if (isDecimal!T) {
 /**
  * Converts any decimal to a big decimal
  */
-public BigDecimal toBigDecimal(T)(const T num) if (isDecimal!T) {
-
-	static if(is(typeof(num) == BigDecimal)) {return num.dup;}
-
+public BigDecimal toBigDecimal(T)(const T num) if(isDecimal!T) {
+	static if(is(typeof(num) == BigDecimal)) {
+		return num.dup;
+	}
 	bool sign = num.sign;
-	if (num.isFinite) {
+	if(num.isFinite) {
 		auto mant = num.coefficient;
 		int  expo = num.exponent;
 		return BigDecimal(sign, mant, expo);
-	}
-	else if (num.isInfinite) {
+	} else if(num.isInfinite) {
 		return BigDecimal.infinity(sign);
-	}
-	else if (num.isSignaling) {
+	} else if(num.isSignaling) {
 		return BigDecimal.snan(num.payload);
-	}
-	else if (num.isQuiet) {
+	} else if(num.isQuiet) {
 		return BigDecimal.nan(num.payload);
 	}
 	return BigDecimal.nan;
@@ -118,21 +115,21 @@ unittest {
  * Detect whether T is a decimal type.
  */
 public template isDecimal(T) {
-	enum bool isDecimal = is(T:Dec32) || is(T:Dec64) || is(T:BigDecimal);
+enum bool isDecimal = is(T: Dec32) || is(T: Dec64) || is(T: BigDecimal);
 }
 
 /**
  * Detect whether T is a big decimal type.
  */
 public template isBigDecimal(T) {
-	enum bool isBigDecimal = is(T:BigDecimal);
+enum bool isBigDecimal = is(T: BigDecimal);
 }
 
 /**
  * Detect whether T is a small decimal type.
  */
 public template isFixedDecimal(T) {
-	enum bool isFixedDecimal = is(T:Dec32) || is(T:Dec64);
+enum bool isFixedDecimal = is(T: Dec32) || is(T: Dec64) || !is(T: BigDecimal);
 }
 
 unittest {
@@ -147,65 +144,61 @@ unittest {
 /**
  * Converts a BigDecimal number to a scientific string representation.
  */
-public string toSciString(T)(const T num) if (isDecimal!T) {
+
+public string toSciString(T)(const T num) if(isDecimal!T) {
 	return toStdString!T(num, false);
-};	// end toSciString()
+};  // end toSciString()
 
 /**
  * Converts a BigDecimal number to an engineering string representation.
  */
-public string toEngString(T)(const T num) if (isDecimal!T) {
+public string toEngString(T)(const T num) if(isDecimal!T) {
 	return toStdString!T(num, true);
-};	// end toEngString()
+}  // end toEngString()
 
 /**
  * Converts a BigDecimal number to one of two standard string representations.
  */
 private string toStdString(T)
-		(const T num, bool engineering = false) if (isDecimal!T) {
 
+(const T num, bool engineering = false) if(isDecimal!T) {
 	auto mant = num.coefficient;
 	int  expo = num.exponent;
 	bool signed = num.isSigned;
-
 	// string representation of special values
-	if (num.isSpecial) {
+	if(num.isSpecial) {
 		string str;
-		if (num.isInfinite) {
+		if(num.isInfinite) {
 			str = "Infinity";
-		}
-		else if (num.isSignaling) {
+		} else if(num.isSignaling) {
 			str = "sNaN";
-		}
-		else {
+		} else {
 			str = "NaN";
 		}
 		// add payload to NaN, if present
-		if (num.isNaN && num.payload != 0) {
+		if(num.isNaN && num.payload != 0) {
 			str ~= to!string(num.payload);
 		}
 		// add sign, if present
 		return signed ? "-" ~ str : str;
 	}
-
 	// string representation of finite numbers
 	string temp = to!string(mant);
 	char[] cstr = temp.dup;
 	int clen = cstr.length;
 	int adjx = expo + clen - 1;
-
 	// if exponent is small, don't use exponential notation
-	if (expo <= 0 && adjx >= -6) {
+	if(expo <= 0 && adjx >= -6) {
 		// if exponent is not zero, insert a decimal point
-		if (expo != 0) {
+		if(expo != 0) {
 			int point = std.math.abs(expo);
 			// if coefficient is too small, pad with zeroes
-			if (point > clen) {
+			if(point > clen) {
 				cstr = rightJustify(cstr, point, '0');
 				clen = cstr.length;
 			}
 			// if no chars precede the decimal point, prefix a zero
-			if (point == clen) {
+			if(point == clen) {
 				cstr = "0." ~ cstr;
 			}
 			// otherwise insert a decimal point
@@ -215,62 +208,55 @@ private string toStdString(T)
 		}
 		return signed ? ("-" ~ cstr).idup : cstr.idup;
 	}
-
-	if (engineering) {
+	if(engineering) {
 		// use exponential notation
-		if (num.isZero) {
+		if(num.isZero) {
 			adjx += 2;
 		}
-
 		int mod = adjx % 3;
 		// the % operator rounds down; we need it to round to floor.
-		if (mod < 0) {
+		if(mod < 0) {
 			mod = -(mod + 3);
 		}
-
 		int dot = std.math.abs(mod) + 1;
 		adjx = adjx - dot + 1;
-
-		if (num.isZero) {
+		if(num.isZero) {
 			dot = 1;
 			clen = 3 - std.math.abs(mod);
 			cstr.length = 0;
-			for (int i = 0; i < clen; i++) {
+			for(int i = 0; i < clen; i++) {
 				cstr ~= '0';
 			}
 		}
-
-		while (dot > clen) {
+		while(dot > clen) {
 			cstr ~= '0';
 			clen++;
 		}
-		if (clen > dot) {
+		if(clen > dot) {
 			insertInPlace(cstr, dot, ".");
 		}
 		string str = cstr.idup;
-		if (adjx != 0) {
+		if(adjx != 0) {
 			string xstr = to!string(adjx);
-			if (adjx > 0) {
+			if(adjx > 0) {
 				xstr = '+' ~ xstr;
 			}
 			str = str ~ "E" ~ xstr;
 		}
 		return signed ? "-" ~ str : str;
-	}
-	else {
+	} else {
 		// use exponential notation
-		if (clen > 1) {
+		if(clen > 1) {
 			insertInPlace(cstr, 1, ".");
 		}
 		string xstr = to!string(adjx);
-		if (adjx >= 0) {
+		if(adjx >= 0) {
 			xstr = "+" ~ xstr;
 		}
 		string str = (cstr ~ "E" ~ xstr).idup;
 		return signed ? "-" ~ str : str;
 	}
-
-};	// end toEngString()
+};  // end toEngString()
 
 unittest {
 	Dec32 num = Dec32(123); //(false, 123, 0);
@@ -310,50 +296,45 @@ unittest {
  * Converts a BigDecimal number to a string representation.
  */
 public string writeTo(T)
-	(const T num, string fmt = "") if (isDecimal!T) {
 
+(const T num, string fmt = "") if(isDecimal!T) {
 	auto mant = num.coefficient;
 	int  expo = num.exponent;
 	bool signed = num.isSigned;
-
 	// string representation of special values
-	if (num.isSpecial) {
+	if(num.isSpecial) {
 		string str;
-		if (num.isInfinite) {
+		if(num.isInfinite) {
 			str = "Infinity";
-		}
-		else if (num.isSignaling) {
+		} else if(num.isSignaling) {
 			str = "sNaN";
-		}
-		else {
+		} else {
 			str = "NaN";
 		}
 		// add payload to NaN, if present
-		if (num.isNaN && num.payload != 0) {
+		if(num.isNaN && num.payload != 0) {
 			str ~= to!string(num.payload);
 		}
 		// add sign, if present
 		return signed ? "-" ~ str : str;
 	}
-
 	// string representation of finite numbers
 	string temp = to!string(mant);
 	char[] cstr = temp.dup;
 	int clen = cstr.length;
 	int adjx = expo + clen - 1;
-
 	// if exponent is small, don't use exponential notation
-	if (expo <= 0 && adjx >= -6) {
+	if(expo <= 0 && adjx >= -6) {
 		// if exponent is not zero, insert a decimal point
-		if (expo != 0) {
+		if(expo != 0) {
 			int point = std.math.abs(expo);
 			// if coefficient is too small, pad with zeroes
-			if (point > clen) {
+			if(point > clen) {
 				cstr = rightJustify(cstr, point, '0');
 				clen = cstr.length;
 			}
 			// if no chars precede the decimal point, prefix a zero
-			if (point == clen) {
+			if(point == clen) {
 				cstr = "0." ~ cstr;
 			}
 			// otherwise insert a decimal point
@@ -363,245 +344,220 @@ public string writeTo(T)
 		}
 		return signed ? ("-" ~ cstr).idup : cstr.idup;
 	}
-
-	if (engineering) {
+	if(engineering) {
 		// use exponential notation
-		if (num.isZero) {
+		if(num.isZero) {
 			adjx += 2;
 		}
-
 		int mod = adjx % 3;
 		// the % operator rounds down; we need it to round to floor.
-		if (mod < 0) {
+		if(mod < 0) {
 			mod = -(mod + 3);
 		}
-
 		int dot = std.math.abs(mod) + 1;
 		adjx = adjx - dot + 1;
-
-		if (num.isZero) {
+		if(num.isZero) {
 			dot = 1;
 			clen = 3 - std.math.abs(mod);
 			cstr.length = 0;
-			for (int i = 0; i < clen; i++) {
+			for(int i = 0; i < clen; i++) {
 				cstr ~= '0';
 			}
 		}
-
-		while (dot > clen) {
+		while(dot > clen) {
 			cstr ~= '0';
 			clen++;
 		}
-		if (clen > dot) {
+		if(clen > dot) {
 			insertInPlace(cstr, dot, ".");
 		}
 		string str = cstr.idup;
-		if (adjx != 0) {
+		if(adjx != 0) {
 			string xstr = to!string(adjx);
-			if (adjx > 0) {
+			if(adjx > 0) {
 				xstr = '+' ~ xstr;
 			}
 			str = str ~ "E" ~ xstr;
 		}
 		return signed ? "-" ~ str : str;
-	}
-	else {
+	} else {
 		// use exponential notation
-		if (clen > 1) {
+		if(clen > 1) {
 			insertInPlace(cstr, 1, ".");
 		}
 		string xstr = to!string(adjx);
-		if (adjx >= 0) {
+		if(adjx >= 0) {
 			xstr = "+" ~ xstr;
 		}
 		string str = (cstr ~ "E" ~ xstr).idup;
 		return signed ? "-" ~ str : str;
 	}
-
-};	// end toEngString()
+};  // end toEngString()
 
 /**
  * Converts a string into a BigDecimal.
  */
 public BigDecimal toNumber(const string inStr) {
-
 	BigDecimal num;
 	BigDecimal NAN = BigDecimal.nan;
 	bool sign = false;
-
 	// strip, copy, tolower
 	char[] str = strip(inStr).dup;
 	toLowerInPlace(str);
-
 	// get sign, if any
-	if (startsWith(str,"-")) {
+	if(startsWith(str, "-")) {
 		sign = true;
 		str = str[1..$];
-	}
-	else if (startsWith(str,"+")) {
+	} else if(startsWith(str, "+")) {
 		str = str[1..$];
 	}
-
 	// check for NaN
-	if (startsWith(str,"nan")) {
+	if(startsWith(str, "nan")) {
 		num = NAN;
 		num.sign = sign;
 		// if no payload, return
-		if (str == "nan") {
+		if(str == "nan") {
 			return num;
 		}
 		// set payload
 		str = str[3..$];
 		// payload has a max length of 6 digits
-		if (str.length > 6) return NAN;
+		if(str.length > 6) return NAN;
 		// ensure string is all digits
 		foreach(char c; str) {
-			if (!isDigit(c)) {
+			if(!isDigit(c)) {
 				return NAN;
 			}
 		}
 		// convert string to number
 		uint payload = std.conv.to!uint(str);
 		// check for overflow
-		if (payload > ushort.max) {
+		if(payload > ushort.max) {
 			return NAN;
 		}
 		num.payload = payload;
 		return num;
 	};
-
 	// check for sNaN
-	if (startsWith(str,"snan")) {
+	if(startsWith(str, "snan")) {
 		num = BigDecimal.snan;
 		num.sign = sign;
-		if (str == "snan") {
+		if(str == "snan") {
 			num.payload = 0;
 			return num;
 		}
 		// set payload
 		str = str[4..$];
 		// payload has a max length of 6 digits
-		if (str.length > 6) return NAN;
+		if(str.length > 6) return NAN;
 		// ensure string is all digits
 		foreach(char c; str) {
-			if (!isDigit(c)) {
+			if(!isDigit(c)) {
 				return NAN;
 			}
 		}
 		// convert string to payload
 		uint payload = std.conv.to!uint(str);
 		// check for overflow
-		if (payload > ushort.max) {
+		if(payload > ushort.max) {
 			return NAN;
 		}
 		num.payload = payload;
 		return num;
 	};
-
 	// check for infinity
-	if (str == "inf" || str == "infinity") {
+	if(str == "inf" || str == "infinity") {
 		num = BigDecimal.infinity(sign);
 		return num;
 	};
-
 	// at this point, num must be finite
 	num = BigDecimal.zero(sign);
 	// check for exponent
 	int pos = indexOf(str, 'e');
-	if (pos > 0) {
+	if(pos > 0) {
 		// if it's just a trailing 'e', return NaN
-		if (pos == str.length - 1) {
+		if(pos == str.length - 1) {
 			return NAN;
 		}
 		// split the string into coefficient and exponent
-		char[] xstr = str[pos+1..$];
+		char[] xstr = str[pos + 1..$];
 		str = str[0..pos];
 		// assume exponent is positive
 		bool xneg = false;
 		// check for minus sign
-		if (startsWith(xstr, "-")) {
+		if(startsWith(xstr, "-")) {
 			xneg = true;
 			xstr = xstr[1..$];
 		}
 		// check for plus sign
-		else if (startsWith(xstr, "+")) {
+		else if(startsWith(xstr, "+")) {
 			xstr = xstr[1..$];
 		}
-
 		// ensure it's not now empty
-		if (xstr.length < 1) {
+		if(xstr.length < 1) {
 			return NAN;
 		}
-
 		// ensure exponent is all digits
 		foreach(char c; xstr) {
-			if (!isDigit(c)) {
+			if(!isDigit(c)) {
 				return NAN;
 			}
 		}
-
 		// trim leading zeros
-		while (xstr[0] == '0' && xstr.length > 1) {
+		while(xstr[0] == '0' && xstr.length > 1) {
 			xstr = xstr[1..$];
 		}
-
 		// make sure it will fit into an int
-		if (xstr.length > 10) {
+		if(xstr.length > 10) {
 			return NAN;
 		}
-		if (xstr.length == 10) {
+		if(xstr.length == 10) {
 			// try to convert it to a long (should work) and
 			// then see if the long value is too big (or small)
 			long lex = std.conv.to!long(xstr);
-			if ((xneg && (-lex < int.min)) || lex > int.max) {
+			if((xneg && (-lex < int.min)) || lex > int.max) {
 				return NAN;
 			}
 			num.exponent = cast(int) lex;
-		}
-		else {
+		} else {
 			// everything should be copacetic at this point
 			num.exponent = std.conv.to!int(xstr);
 		}
-		if (xneg) {
+		if(xneg) {
 			num.exponent = -num.exponent;
 		}
-	}
-	else {
+	} else {
 		num.exponent = 0;
 	}
 	// remove trailing decimal point
-	if (endsWith(str, ".")) {
-		str = str[0..$-1];
+	if(endsWith(str, ".")) {
+		str = str[0..$ -1];
 	}
 	// strip leading zeros
-	while (str[0] == '0' && str.length > 1) {
+	while(str[0] == '0' && str.length > 1) {
 		str = str[1..$];
 	}
-
 	// remove internal decimal point
 	int point = indexOf(str, '.');
-	if (point >= 0) {
+	if(point >= 0) {
 		// excise the point and adjust the exponent
-		str = str[0..point] ~ str[point+1..$];
+		str = str[0..point] ~ str[point + 1..$];
 		int diff = str.length - point;
 		num.exponent = num.exponent - diff;
 	}
-
 	// ensure string is not empty
-	if (str.length < 1) {
+	if(str.length < 1) {
 		return NAN;
 	}
-
 	// ensure string is all digits
 	foreach(char c; str) {
-		if (!isDigit(c)) {
+		if(!isDigit(c)) {
 			return NAN;
 		}
 	}
 	// convert coefficient string to BigInt
 	num.coefficient = BigInt(str.idup);
 	num.digits = decimal.rounding.numDigits(num.coefficient);
-
 	return num;
 }
 
@@ -621,23 +577,23 @@ unittest {
 /**
  * Returns an abstract string representation of a number.
  */
-public string toAbstract(T)(const T num) if (isDecimal!T)
-{
-	if (num.isFinite) {
+
+public string toAbstract(T)(const T num) if(isDecimal!T) {
+	if(num.isFinite) {
 		return format("[%d,%s,%d]", num.sign ? 1 : 0,
-				to!string(num.coefficient), num.exponent);
+		              to!string(num.coefficient), num.exponent);
 	}
-	if (num.isInfinite) {
+	if(num.isInfinite) {
 		return format("[%d,%s]", num.sign ? 1 : 0, "inf");
 	}
-	if (num.isQuiet) {
-		if (num.payload) {
+	if(num.isQuiet) {
+		if(num.payload) {
 			return format("[%d,%s%d]", num.sign ? 1 : 0, "qNaN", num.payload);
 		}
 		return format("[%d,%s]", num.sign ? 1 : 0, "qNaN");
 	}
-	if (num.isSignaling) {
-		if (num.payload) {
+	if(num.isSignaling) {
+		if(num.payload) {
 			return format("[%d,%s%d]", num.sign ? 1 : 0, "sNaN", num.payload);
 		}
 		return format("[%d,%s]", num.sign ? 1 : 0, "sNaN");
@@ -649,30 +605,30 @@ public string toAbstract(T)(const T num) if (isDecimal!T)
  * Returns a full, exact representation of a number. Similar to toAbstract,
  * but it provides a valid string that can be converted back into a number.
  */
-public string toExact(T)(const T num) if (isDecimal!T)
-	{
-		if (num.isFinite) {
-			return format("%s%sE%s%02d", num.sign ? "-" : "+",
-					to!string(num.coefficient),
-					num.exponent < 0 ? "-" : "+", num.exponent);
-		}
-		if (num.isInfinite) {
-			return format("%s%s", num.sign ? "-" : "+", "Infinity");
-		}
-		if (num.isQuiet) {
-			if (num.payload) {
-				return format("%s%s%d", num.sign ? "-" : "+", "NaN", num.payload);
-			}
-			return format("%s%s", num.sign ? "-" : "+", "NaN");
-		}
-		if (num.isSignaling) {
-			if (num.payload) {
-				return format("%s%s%d", num.sign ? "-" : "+", "sNaN", num.payload);
-			}
-			return format("%s%s", num.sign ? "-" : "+", "sNaN");
-		}
-		return "+NaN";
+
+public string toExact(T)(const T num) if(isDecimal!T) {
+	if(num.isFinite) {
+		return format("%s%sE%s%02d", num.sign ? "-" : "+",
+		              to!string(num.coefficient),
+		              num.exponent < 0 ? "-" : "+", num.exponent);
 	}
+	if(num.isInfinite) {
+		return format("%s%s", num.sign ? "-" : "+", "Infinity");
+	}
+	if(num.isQuiet) {
+		if(num.payload) {
+			return format("%s%s%d", num.sign ? "-" : "+", "NaN", num.payload);
+		}
+		return format("%s%s", num.sign ? "-" : "+", "NaN");
+	}
+	if(num.isSignaling) {
+		if(num.payload) {
+			return format("%s%s%d", num.sign ? "-" : "+", "sNaN", num.payload);
+		}
+		return format("%s%s", num.sign ? "-" : "+", "sNaN");
+	}
+	return "+NaN";
+}
 
 
 unittest {

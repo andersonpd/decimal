@@ -26,6 +26,7 @@ import std.string;
 import decimal.arithmetic;
 import decimal.context;
 import decimal.decimal;
+import decimal.logical;
 import decimal.rounding;
 
 unittest {
@@ -178,7 +179,7 @@ private:
 	}
 
 //--------------------------------
-//	special values
+//	special bits
 //--------------------------------
 
 private:
@@ -189,6 +190,12 @@ private:
 	// The value of the (5) special bits when the number is infinity.
 	immutable uint INF_VAL = 0x1E;
 
+//--------------------------------
+//	special values and constants
+//--------------------------------
+
+// TODO: this needs to be cleaned up -- SV is not the best name
+private:
 	static enum SV : uint
 	{
 		// The value corresponding to a positive signaling NaN.
@@ -226,17 +233,28 @@ private:
         POS_TEN = 0x3280000A,
         NEG_TEN = 0xB280000A,
 
-        // pi and related values
-        PI = 0x2FAFEFD9,
-        PI_2 = 0x2F97F7EC,
-        PI_4 = 0x2F77D79E,
-        SQRT_PI = 0x2F9B0BA6,
-        PI_SQR = 0x6BF69924,
+		// pi and related values
+        PI       = 0x2FAFEFD9,
+        TAU      = 0x2FDFDFB2,
+        PI_2 	 = 0x2F97F7EC,
+        PI_SQR 	 = 0x6BF69924,
+        SQRT_PI  = 0x2F9B0BA6,
+        SQRT_2PI = 0x2F9B0BA6,
+		// 1/PI
+		// 1/SQRT_PI
+		// 1/SQRT_2PI
+
+        PHI     = 0x2F98B072,
+        GAMMA   = 0x2F58137D,
 
         // logarithms
-        E = 0x2FA97A4A,
-        LN2 = 0x2F69C410,
-        LN10 = 0x2FA32279,
+        E 		= 0x2FA97A4A,
+		LOG2_E 	= 0x2F960387,
+		LOG10_E = 0x2F4244A1,
+        LN2 	= 0x2F69C410,
+		LOG10_2 = 0x30007597,
+        LN10 	= 0x2FA32279,
+		LOG2_10 = 0x2FB2B048,
 
         // roots and squares of common values
         SQRT2   = 0x2F959446,
@@ -265,17 +283,23 @@ public:
 	immutable Dec32 NEG_TEN  = Dec32(SV.NEG_TEN);
 
     // mathamatical constants
+	immutable Dec32 TAU      = Dec32(SV.TAU);
 	immutable Dec32 PI 	     = Dec32(SV.PI);
 	immutable Dec32 PI_2 	 = Dec32(SV.PI_2);
-	immutable Dec32 PI_4 	 = Dec32(SV.PI_4);
+	immutable Dec32 PI_SQR 	 = Dec32(SV.PI_SQR);
 	immutable Dec32 SQRT_PI  = Dec32(SV.SQRT_PI);
-	immutable Dec32 PI_SQR   = Dec32(SV.PI_SQR);
+	immutable Dec32 SQRT_2PI = Dec32(SV.SQRT_2PI);
 
 	immutable Dec32 E 	     = Dec32(SV.E);
+	immutable Dec32 LOG2_E 	 = Dec32(SV.LOG2_E);
+	immutable Dec32 LOG10_E  = Dec32(SV.LOG10_E);
     immutable Dec32 LN2      = Dec32(SV.LN2);
+	immutable Dec32 LOG10_2  = Dec32(SV.LOG10_2);
     immutable Dec32 LN10     = Dec32(SV.LN10);
+	immutable Dec32 LOG2_10  = Dec32(SV.LOG2_10);
     immutable Dec32 SQRT2    = Dec32(SV.SQRT2);
-    immutable Dec32 SQRT1_2  = Dec32(SV.SQRT1_2);
+    immutable Dec32 PHI      = Dec32(SV.PHI);
+    immutable Dec32 GAMMA    = Dec32(SV.GAMMA);
 
     // boolean constants
     immutable Dec32 TRUE     = ONE;
@@ -348,7 +372,17 @@ public:
 	}
 
 	unittest {
-		Dec32 num;
+real L10_2 = std.math.log10(2.0);
+Dec32 LOG10_2 = Dec32(L10_2);
+writeln("L10_2 = ", L10_2);
+writeln("LOG10_2 = ", LOG10_2);
+writeln("LOG10_2.toHexString = ", LOG10_2.toHexString);
+real L2T = std.math.log2(10.0);
+Dec32 LOG2_10 = Dec32(L2T);
+writeln("L2T = ", L2T);
+writeln("LOG2_10 = ", LOG2_10);
+writeln("LOG2_10.toHexString = ", LOG2_10.toHexString);
+    	Dec32 num;
 		num = Dec32(1234567890L);
 		assertTrue(num.toString == "1.234568E+9");
 		num = Dec32(0);
@@ -524,6 +558,7 @@ public:
 			this.sign = cast(bool)std.math.signbit(r);
 			return;
 		}
+		// TODO: this won't do -- no rounding has occured.
 		string str = format("%.*G", cast(int)context32.precision, r);
 		this(str);
 	}
@@ -532,11 +567,11 @@ public:
 		float f = 1.2345E+16f;
 		Dec32 actual = Dec32(f);
 		Dec32 expect = Dec32("1.2345E+16");
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 		real r = 1.2345E+16;
 		actual = Dec32(r);
 		expect = Dec32("1.2345E+16");
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 	}
 
 	/**
@@ -1378,13 +1413,13 @@ public:
 		num = 1.00E12;
 		expect = num;
 		actual = --num;
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 		actual = num--;
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 		num = 1.00E12;
 		expect = num;
 		actual = ++num;
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 		actual = num++;
 		assertTrue(actual == expect);
 		num = Dec32(9999999, 90);
@@ -1402,7 +1437,6 @@ public:
 //--------------------------------
 
 	const T opBinary(string op, T:Dec32)(const T rhs)
-//	  const Dec32 opBinary(string op)(const Dec32 rhs)
 	{
 		static if (op == "+") {
 			return add!Dec32(this, rhs, context32);
@@ -1419,6 +1453,15 @@ public:
 		else static if (op == "%") {
 			return remainder!Dec32(this, rhs, context32);
 		}
+		else static if (op == "&") {
+			return and!Dec32(this, rhs, context32);
+		}
+		else static if (op == "|") {
+			return or!Dec32(this, rhs, context32);
+		}
+		else static if (op == "^") {
+			return xor!Dec32(this, rhs, context32);
+		}
 	}
 
 	unittest {
@@ -1427,23 +1470,34 @@ public:
 		op2 = 8;
 		actual = op1 + op2;
 		expect = 12;
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 		actual = op1 - op2;
 		expect = -4;
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 		actual = op1 * op2;
 		expect = 32;
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 		op1 = 5;
 		op2 = 2;
 		actual = op1 / op2;
 		expect = 2.5;
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 		op1 = 10;
 		op2 = 3;
 		actual = op1 % op2;
 		expect = 1;
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
+		op1 = Dec32("101");
+		op2 = Dec32("110");
+		actual = op1 & op2;
+		expect = 100;
+		assertEqual(expect,actual);
+		actual = op1 | op2;
+		expect = 111;
+		assertEqual(expect,actual);
+		actual = op1 ^ op2;
+		expect = 11;
+		assertEqual(expect,actual);
 	}
 
 	/**
@@ -1485,16 +1539,16 @@ public:
 		op1 += op2;
 		expect = 21.49;
 		actual = op1;
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 		op1 *= op2;
 		expect = -44.4843;
 		actual = op1;
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 		op1 = 95;
 		op1 %= 90;
 		actual = op1;
 		expect = 5;
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 	}
 
 	/**
@@ -1511,6 +1565,92 @@ public:
 	}
 
 }	// end Dec32 struct
+
+public real toReal(Dec32 arg) {
+	string str = arg.toSciString;
+	return to!real(str);
+}
+
+/*  NOTE: this causes a compiler error whereas the code above doesn't. Bug?
+public real toReal(Dec32 arg) {
+	string str = arg.toSciString;
+	return to!real(str);
+}
+*/
+
+unittest {
+	write("toReal...");
+	writeln("test missing");
+}
+
+public Dec32 exp(Dec32 arg) {
+	if (arg.isNaN) {
+		return Dec32.NAN;
+	}
+ 	if (arg.isInfinite) {
+	 	if (arg.isNegative) {
+			return Dec32.ZERO;
+		}
+		else {
+			return Dec32.INFINITY;
+		}
+	}
+	if (arg.isZero) {
+		return Dec32.ONE;
+	}
+	return Dec32(std.math.exp(toReal(arg)));
+}
+
+unittest {
+	write("exp...");
+	writeln("test missing");
+}
+
+public Dec32 ln(Dec32 arg) {
+	if (arg.isNegative || arg.isNaN) {
+		// set invalid op flag(?)
+		return Dec32.NAN;
+	}
+ 	if (arg.isInfinite) {
+		return Dec32.INFINITY;
+	}
+	if (arg.isZero) {
+		return Dec32.NEG_INF;
+	}
+	if (arg == Dec32.ONE) {
+		return Dec32.ZERO;
+	}
+	// TODO: check for a NaN? or special value?
+	return Dec32(std.math.log(toReal(arg)));
+}
+
+unittest {
+	write("ln...");
+	writeln("test missing");
+}
+
+public Dec32 log10(Dec32 arg) {
+	if (arg.isNegative || arg.isNaN) {
+		// set invalid op flag(?)
+		return Dec32.NAN;
+	}
+ 	if (arg.isInfinite) {
+		return Dec32.INFINITY;
+	}
+	if (arg.isZero) {
+		return Dec32.NEG_INF;
+	}
+	if (arg == Dec32.ONE) {
+		return Dec32.ZERO;
+	}
+	// TODO: check for a NaN? or special value?
+	return Dec32(std.math.log10(toReal(arg)));
+}
+
+unittest {
+	write("log10...");
+	writeln("test missing");
+}
 
 unittest {
 	writeln("-------------------");

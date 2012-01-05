@@ -17,7 +17,8 @@
 
 module decimal.dec64;
 
-import std.array: insertInPlace;
+import std.array:
+insertInPlace;
 import std.bigint;
 import std.bitmanip;
 import std.string;
@@ -72,7 +73,7 @@ private:
 	// Their number is the number of bits in a special value
 	// when the others (sign and special) are accounted for.
 	immutable uint spclPadBits = 59;
-			// = bitLength - specialBits - signBit;
+	// = bitLength - specialBits - signBit;
 
 	// The number of infinity bits, including the special bits.
 	// These bits are used to denote infinity.
@@ -83,7 +84,7 @@ private:
 	// Their number is the remaining number of bits in an infinity
 	// when all others (sign and infinity) are accounted for.
 	immutable uint infPadBits = 58;
-			// = bitLength - infinityBits - signBit;
+	// = bitLength - infinityBits - signBit;
 
 	// The number of nan bits, including the special bits.
 	// These bits are used to denote NaN.
@@ -97,7 +98,7 @@ private:
 	// Their number is the remaining number of bits in a NaN
 	// when all others (sign, nan and payload) are accounted for.
 	immutable uint nanPadBits = 41;
-			// = bitLength - payloadBits - specialBits - signBit;
+	// = bitLength - payloadBits - specialBits - signBit;
 
 	// length of the coefficient in decimal digits.
 	immutable int PRECISION = 16;
@@ -125,7 +126,7 @@ private:
 
 	/// The global context for this type.
 	private static DecimalContext
-        context64 = DecimalContext(PRECISION, E_MAX, Rounding.HALF_EVEN);
+	context64 = DecimalContext(PRECISION, E_MAX, Rounding.HALF_EVEN);
 
 	// union providing different views of the number representation.
 	union {
@@ -135,94 +136,94 @@ private:
 
 		// unsigned value and sign bit
 		mixin (bitfields!(
-			ulong, "uBits", unsignedBits,
-			bool, "signed", signBit)
-		);
+		           ulong, "uBits", unsignedBits,
+		           bool, "signed", signBit)
+		      );
 		// Ex = explicit finite number:
 		//	   full coefficient, exponent and sign
 		mixin (bitfields!(
-			ulong, "mantEx", explicitBits,
-			uint, "expoEx", expoBits,
-			bool, "signEx", signBit)
-		);
+		           ulong, "mantEx", explicitBits,
+		           uint, "expoEx", expoBits,
+		           bool, "signEx", signBit)
+		      );
 		// Im = implicit finite number:
 		//		partial coefficient, exponent, test bits and sign bit.
 		mixin (bitfields!(
-			ulong, "mantIm", implicitBits,
-			uint, "expoIm", expoBits,
-			uint, "testIm", testBits,
-			bool, "signIm", signBit)
-		);
+		           ulong, "mantIm", implicitBits,
+		           uint, "expoIm", expoBits,
+		           uint, "testIm", testBits,
+		           bool, "signIm", signBit)
+		      );
 		// Spcl = special values: non-finite numbers
 		//		unused bits, special bits and sign bit.
 		mixin (bitfields!(
-			ulong, "padSpcl",  spclPadBits,
-			uint, "testSpcl", specialBits,
-			bool, "signSpcl", signBit)
-		);
+		           ulong, "padSpcl",  spclPadBits,
+		           uint, "testSpcl", specialBits,
+		           bool, "signSpcl", signBit)
+		      );
 		// Inf = infinities:
 		//		payload, unused bits, infinitu bits and sign bit.
 		mixin (bitfields!(
-			uint, "padInf",  infPadBits,
-			ulong, "testInf", infinityBits,
-			bool, "signInf", signBit)
-		);
+		           uint, "padInf",  infPadBits,
+		           ulong, "testInf", infinityBits,
+		           bool, "signInf", signBit)
+		      );
 		// Nan = not-a-number: qNaN and sNan
 		//		payload, unused bits, nan bits and sign bit.
 		mixin (bitfields!(
-			ushort, "pyldNaN", payloadBits,
-			ulong, "padNaN",  nanPadBits,
-			uint, "testNaN", nanBits,
-			bool, "signNaN", signBit)
-		);
+		           ushort, "pyldNaN", payloadBits,
+		           ulong, "padNaN",  nanPadBits,
+		           uint, "testNaN", nanBits,
+		           bool, "signNaN", signBit)
+		      );
 	}
 
-unittest {
-	Dec64 num;
-	assertTrue(num.toHexString == "0x7C00000000000000");
-	num.pyldNaN = 1;
-	// NOTE: this test should fail when bitmanip is fixed.
-	assertTrue(num.toHexString != "0x7C00000000000001");
-	assertTrue(num.toHexString == "0x0000000000000001");
-	num.bits = ulong.max;
-	assertTrue(num.toHexString == "0xFFFFFFFFFFFFFFFF");
-	num.pyldNaN = 2;
-	// NOTE: this test should fail when bitmanip is fixed.
-	assertTrue(num.toHexString != "0xFFFFFFFFFFFF0002");
-	assertTrue(num.toHexString == "0x00000000FFFF0002");
-	num.bits = ulong.max;
-	assertTrue(num.toHexString == "0xFFFFFFFFFFFFFFFF");
-	num.testNaN = 0b10;
-	assertTrue(num.toHexString == "0x85FFFFFFFFFFFFFF");
-	num.bits = ulong.max;
-	assertTrue(num.toHexString == "0xFFFFFFFFFFFFFFFF");
-	num = nan;
-	assertTrue(num.toHexString == "0x7C00000000000000");
-	num.pyldNaN = ushort.max;
-	// NOTE: this test should fail when bitmanip is fixed.
-	assertTrue(num.toHexString == "0x000000000000FFFF");
-	num = nan;
-	assertTrue(num.toHexString == "0x7C00000000000000");
-	num.padInf = ushort.max;
-	// NOTE: This works as expected;
-	assertTrue(num.toHexString == "0x7C0000000000FFFF");
-	num = nan;
-	assertTrue(num.toHexString == "0x7C00000000000000");
-	num.padSpcl = ushort.max;
-	assertTrue(num.toHexString == "0x780000000000FFFF");
-	num = nan;
-	assertTrue(num.toHexString == "0x7C00000000000000");
-	num.bits = num.bits | 0xFFFF;
-	assertTrue(num.toHexString == "0x7C0000000000FFFF");
-	num = nan;
-	assertTrue(num.toHexString == "0x7C00000000000000");
-	num.mantEx = uint.max;
-	assertTrue(num.toHexString == "0x7C000000FFFFFFFF");
-	num = nan;
-	assertTrue(num.toHexString == "0x7C00000000000000");
-	num.mantIm = uint.max;
-	assertTrue(num.toHexString == "0x7C000000FFFFFFFF");
-}
+	unittest {
+		Dec64 num;
+		assertTrue(num.toHexString == "0x7C00000000000000");
+		num.pyldNaN = 1;
+		// NOTE: this test should fail when bitmanip is fixed.
+		assertTrue(num.toHexString != "0x7C00000000000001");
+		assertTrue(num.toHexString == "0x0000000000000001");
+		num.bits = ulong.max;
+		assertTrue(num.toHexString == "0xFFFFFFFFFFFFFFFF");
+		num.pyldNaN = 2;
+		// NOTE: this test should fail when bitmanip is fixed.
+		assertTrue(num.toHexString != "0xFFFFFFFFFFFF0002");
+		assertTrue(num.toHexString == "0x00000000FFFF0002");
+		num.bits = ulong.max;
+		assertTrue(num.toHexString == "0xFFFFFFFFFFFFFFFF");
+		num.testNaN = 0b10;
+		assertTrue(num.toHexString == "0x85FFFFFFFFFFFFFF");
+		num.bits = ulong.max;
+		assertTrue(num.toHexString == "0xFFFFFFFFFFFFFFFF");
+		num = nan;
+		assertTrue(num.toHexString == "0x7C00000000000000");
+		num.pyldNaN = ushort.max;
+		// NOTE: this test should fail when bitmanip is fixed.
+		assertTrue(num.toHexString == "0x000000000000FFFF");
+		num = nan;
+		assertTrue(num.toHexString == "0x7C00000000000000");
+		num.padInf = ushort.max;
+		// NOTE: This works as expected;
+		assertTrue(num.toHexString == "0x7C0000000000FFFF");
+		num = nan;
+		assertTrue(num.toHexString == "0x7C00000000000000");
+		num.padSpcl = ushort.max;
+		assertTrue(num.toHexString == "0x780000000000FFFF");
+		num = nan;
+		assertTrue(num.toHexString == "0x7C00000000000000");
+		num.bits = num.bits | 0xFFFF;
+		assertTrue(num.toHexString == "0x7C0000000000FFFF");
+		num = nan;
+		assertTrue(num.toHexString == "0x7C00000000000000");
+		num.mantEx = uint.max;
+		assertTrue(num.toHexString == "0x7C000000FFFFFFFF");
+		num = nan;
+		assertTrue(num.toHexString == "0x7C00000000000000");
+		num.mantIm = uint.max;
+		assertTrue(num.toHexString == "0x7C000000FFFFFFFF");
+	}
 
 //--------------------------------
 //	special values
@@ -236,8 +237,8 @@ private:
 	// The value of the (5) special bits when the number is infinity.
 	immutable uint INF_VAL = 0x1E;
 
-	static enum SV : ulong
-	{
+static enum SV :
+	ulong {
 		// The value corresponding to a positive signaling NaN.
 		POS_SIG = 0x7E00000000000000,
 		// The value corresponding to a negative signaling NaN.
@@ -259,7 +260,7 @@ private:
 		NEG_ZRO = 0xB1C0000000000000,
 
 		// The value of the largest representable positive number.
-		POS_MAX = 0x77FB86F26FC0FFFF, //  0x77F8967FFFFFFFFF
+		POS_MAX = 0x77FB86F26FC0FFFF, //  0x77F8967FFFFFFFFF TODO: why is this different?
 		// The value of the largest representable negative number.
 		NEG_MAX = 0xF7FB86F26FC0FFFF
 	}
@@ -275,8 +276,8 @@ public:
 	immutable Dec64 NEG_MAX  = Dec64(SV.NEG_MAX);
 	immutable Dec64 ONE 	 = Dec64( 1);
 	immutable Dec64 NEG_ONE  = Dec64(-1);
-    immutable Dec64 TRUE     = ONE;
-    immutable Dec64 FALSE    = ZERO;
+	immutable Dec64 TRUE     = ONE;
+	immutable Dec64 FALSE    = ZERO;
 
 //--------------------------------
 //	constructors
@@ -337,8 +338,7 @@ public:
 	/**
 	 * Creates a Dec64 from a long integer.
 	 */
-	public this(const long n)
-	{
+	public this(const long n) {
 		this = zero;
 		signed = n < 0;
 		coefficient = std.math.abs(n);
@@ -347,12 +347,11 @@ public:
 	/**
 	 * Creates a Dec64 from a boolean value.
 	 */
-	public this(const bool value)
-	{
+	public this(const bool value) {
 		this = zero;
-        if (value) {
-        	coefficient = 1;
-        }
+		if (value) {
+			coefficient = 1;
+		}
 	}
 
 	unittest {
@@ -438,18 +437,16 @@ public:
 		else if (big.isInfinite) {
 			this = infinity(big.sign);
 			return;
-		}
-		else if (big.isQuiet) {
+		} else if (big.isQuiet) {
 			this = nan();
 			return;
-		}
-		else if (big.isSignaling) {
+		} else if (big.isSignaling) {
 			this = snan();
 			return;
 		}
 	}
 
-   unittest {
+	unittest {
 		BigDecimal dec = 0;
 		Dec64 num = dec;
 		assertTrue(dec.toString == num.toString);
@@ -507,11 +504,11 @@ public:
 		float f = 1.2345E+16f;
 		Dec64 actual = Dec64(f);
 		Dec64 expect = Dec64("1.234499980283085E+16");
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 		real r = 1.2345E+16;
 		actual = Dec64(r);
 		expect = Dec64("1.2345E+16");
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 	}
 
 	/**
@@ -576,33 +573,33 @@ public:
 
 	unittest {
 		Dec64 num;
-        int expected, actual;
+		int expected, actual;
 		// reals
 		num = std.math.PI;
-        expected = -15;
-        actual = num.exponent;
+		expected = -15;
+		actual = num.exponent;
 		assertEqual(expected, actual);
 		num = 9.75E9;
-        expected = 0;
-        actual = num.exponent;
+		expected = 0;
+		actual = num.exponent;
 		assertEqual(expected, actual);
 		// explicit
 		num = 8388607;
-        expected = 0;
-        actual = num.exponent;
+		expected = 0;
+		actual = num.exponent;
 		assertEqual(expected, actual);
 		// implicit
 		num = 8388610;
-        expected = 0;
-        actual = num.exponent;
+		expected = 0;
+		actual = num.exponent;
 		assertEqual(expected, actual);
 		num = 9.999998E23;
-        expected = 17;
-        actual = num.exponent;
+		expected = 17;
+		actual = num.exponent;
 		assertEqual(expected, actual);
 		num = 9.999999E23;
-        expected = 8;
-        actual = num.exponent;
+		expected = 8;
+		actual = num.exponent;
 		assertEqual(expected, actual);
 	}
 
@@ -615,7 +612,7 @@ public:
 	/// this number is converted to zero, the exponent is set to eTiny
 	/// and the underflow flag is set.
 	@property
-	 int exponent(const int expo) {
+	int exponent(const int expo) {
 		// check for overflow
 		if (expo > context64.eMax) {
 			this = signed ? NEG_INF : INFINITY;
@@ -698,8 +695,7 @@ public:
 			expo = setExponent(sign, copy, digits, context64);
 			if (this.isExplicit) {
 				expoEx = expoEx + expo;
-			}
-			else {
+			} else {
 				expoIm = expoIm + expo;
 			}
 		}
@@ -711,8 +707,7 @@ public:
 			}
 			mantEx = cast(ulong)copy;
 			return mantEx;
-		}
-		else {	// copy <= C_MAX_IMPLICIT
+		} else {	// copy <= C_MAX_IMPLICIT
 			// if explicit, convert to implicit
 			if (this.isExplicit) {
 				expoIm = expoEx;
@@ -826,62 +821,72 @@ public:
 
 
 	// floating point properties
-	static Dec64 init() 	  { return NAN; }
-	static Dec64 epsilon()	  { return Dec64(1, -context64.precision); }
-	static Dec64 min_normal() { return Dec64(1, context64.eMin); }
-	static Dec64 min()		  { return Dec64(1, context64.eMin); } //context64.eTiny); }
+	static Dec64 init() 	  {
+		return NAN;
+	}
+	static Dec64 epsilon()	  {
+		return Dec64(1, -context64.precision);
+	}
+	static Dec64 min_normal() {
+		return Dec64(1, context64.eMin);
+	}
+	static Dec64 min()		  {
+		return Dec64(1, context64.eMin);
+	} //context64.eTiny); }
 
-/*	static int dig()		{ return context64.precision; }
-	static int mant_dig()	{ return cast(int)context64.mant_dig;; }
-	static int max_10_exp() { return context64.eMax; }
-	static int min_10_exp() { return context64.eMin; }
-	static int max_exp()	{ return cast(int)(context64.eMax/LOG2); }
-	static int min_exp()	{ return cast(int)(context64.eMin/LOG2); }*/
+	/*	static int dig()		{ return context64.precision; }
+		static int mant_dig()	{ return cast(int)context64.mant_dig;; }
+		static int max_10_exp() { return context64.eMax; }
+		static int min_10_exp() { return context64.eMin; }
+		static int max_exp()	{ return cast(int)(context64.eMax/LOG2); }
+		static int min_exp()	{ return cast(int)(context64.eMin/LOG2); }*/
 
 	/// Returns the maximum number of decimal digits in this context.
-	static uint precision() { return context64.precision; }
-
-
-/*	  /// Returns the maximum number of decimal digits in this context.
-	static uint dig(DecimalContext context = context64) {
-		return context.precision;
+	static uint precision() {
+		return context64.precision;
 	}
 
-	/// Returns the number of binary digits in this context.
-	static uint mant_dig(DecimalContext context = context64) {
-		return cast(int)context.mant_dig;
-	}
 
-	static int min_exp(DecimalContext context = context64) {
-		return context.min_exp;
-	}
+	/*	  /// Returns the maximum number of decimal digits in this context.
+		static uint dig(DecimalContext context = context64) {
+			return context.precision;
+		}
 
-	static int max_exp(DecimalContext context = context64) {
-		return context.max_exp;
-	}
+		/// Returns the number of binary digits in this context.
+		static uint mant_dig(DecimalContext context = context64) {
+			return cast(int)context.mant_dig;
+		}
 
-	/// Returns the minimum representable normal value in this context.
-	static Dec64 min_normal(DecimalContext context = context64) {
-		return Dec64(1, context.eMin);
-	}
+		static int min_exp(DecimalContext context = context64) {
+			return context.min_exp;
+		}
 
-	/// Returns the minimum representable subnormal value in this context.
-	static Dec64 min(DecimalContext context = context64) {
-		return Dec64(1, context.eTiny);
-	}
+		static int max_exp(DecimalContext context = context64) {
+			return context.max_exp;
+		}
 
-	/// returns the smallest available increment to 1.0 in this context
-	static Dec64 epsilon(DecimalContext context = context64) {
-		return Dec64(1, -context.precision);
-	}
+		/// Returns the minimum representable normal value in this context.
+		static Dec64 min_normal(DecimalContext context = context64) {
+			return Dec64(1, context.eMin);
+		}
 
-	static int min_10_exp(DecimalContext context = context64) {
-		return context.eMin;
-	}
+		/// Returns the minimum representable subnormal value in this context.
+		static Dec64 min(DecimalContext context = context64) {
+			return Dec64(1, context.eTiny);
+		}
 
-	static int max_10_exp(DecimalContext context = context64) {
-		return context.eMax;
-	}*/
+		/// returns the smallest available increment to 1.0 in this context
+		static Dec64 epsilon(DecimalContext context = context64) {
+			return Dec64(1, -context.precision);
+		}
+
+		static int min_10_exp(DecimalContext context = context64) {
+			return context.eMin;
+		}
+
+		static int max_10_exp(DecimalContext context = context64) {
+			return context.eMax;
+		}*/
 
 //--------------------------------
 //	classification properties
@@ -910,8 +915,7 @@ public:
 		if (this.isInfinite) {
 			copy.padInf = 0;
 			return copy;
-		}
-		else { /* isNaN */
+		} else { /* isNaN */
 			copy.signed = 0;
 			copy.padNaN = 0;
 			return copy;
@@ -1002,21 +1006,21 @@ public:
 		return adjustedExponent >= context.eMin;
 	}
 
-    const bool isTrue() {
-        return coefficient != 0;
-    }
+	const bool isTrue() {
+		return coefficient != 0;
+	}
 
-    const bool isFalse() {
-        return coefficient == 0;
-    }
+	const bool isFalse() {
+		return coefficient == 0;
+	}
 
-    const bool isZeroCoefficient() {
-        return coefficient == 0;
-    }
+	const bool isZeroCoefficient() {
+		return coefficient == 0;
+	}
 	/**
 	 * Returns the value of the adjusted exponent.
 	 */
-     // TODO: what if this is special?
+	// TODO: what if this is special?
 	const int adjustedExponent() {
 		return exponent + digits - 1;
 	}
@@ -1126,7 +1130,7 @@ public:
 	 * Converts a Dec64 to a string
 	 */
 	const public string toString() {
-		 return toSciString();
+		return toSciString();
 	}
 
 	unittest {
@@ -1163,8 +1167,7 @@ public:
 	/**
 	 * Creates an abstract representation of this number.
 	 */
-	const string toAbstract()
-	{
+	const string toAbstract() {
 		if (this.isFinite) {
 			return format("[%d,%s,%d]", signed ? 1 : 0, coefficient, exponent);
 		}
@@ -1194,7 +1197,7 @@ public:
 	 * Converts this number to a hexadecimal string representation.
 	 */
 	const string toHexString() {
-		 return format("0x%016X", bits);
+		return format("0x%016X", bits);
 	}
 
 	/**
@@ -1208,7 +1211,7 @@ public:
 		Dec64 num = 12345;
 		assertTrue(num.toHexString == "0x31C0000000003039");
 		assertTrue(num.toBinaryString ==
-			"0011000111000000000000000000000000000000000000000011000000111001");
+		"0011000111000000000000000000000000000000000000000011000000111001");
 	}
 
 //--------------------------------
@@ -1219,7 +1222,7 @@ public:
 	 * Returns -1, 0 or 1, if this number is less than, equal to or
 	 * greater than the argument, respectively.
 	 */
-	const int opCmp(T:Dec64)(const T that) {
+const int opCmp(T:Dec64)(const T that) {
 		return compare!Dec64(this, that, context64);
 	}
 
@@ -1227,7 +1230,7 @@ public:
 	 * Returns -1, 0 or 1, if this number is less than, equal to or
 	 * greater than the argument, respectively.
 	 */
-	const int opCmp(T)(const T that) if(isPromotable!T){
+	const int opCmp(T)(const T that) if(isPromotable!T) {
 		return opCmp!Dec64(Dec64(that));
 	}
 
@@ -1242,7 +1245,7 @@ public:
 	/**
 	 * Returns true if this number is equal to the specified number.
 	 */
-	const bool opEquals(T:Dec64)(const T that) {
+const bool opEquals(T:Dec64)(const T that) {
 		// quick bitwise check
 		if (this.bits == that.bits) {
 			if (this.isFinite) return true;
@@ -1287,7 +1290,7 @@ public:
 
 	// (7) UNREADY: opAssign(T: Dec64)(const Dec64). Flags. Unit Tests.
 	/// Assigns a Dec64 (copies that to this).
-	void opAssign(T:Dec64)(const T that) {
+void opAssign(T:Dec64)(const T that) {
 		this.intBits = that.intBits;
 	}
 
@@ -1316,18 +1319,14 @@ public:
 // unary operators
 //--------------------------------
 
-	const Dec64 opUnary(string op)()
-	{
+	const Dec64 opUnary(string op)() {
 		static if (op == "+") {
 			return plus!Dec64(this, context64);
-		}
-		else static if (op == "-") {
+		} else static if (op == "-") {
 			return minus!Dec64(this, context64);
-		}
-		else static if (op == "++") {
+		} else static if (op == "++") {
 			return add!Dec64(this, Dec64(1), context64);
-		}
-		else static if (op == "--") {
+		} else static if (op == "--") {
 			return subtract!Dec64(this, Dec64(1), context64);
 		}
 	}
@@ -1364,22 +1363,18 @@ public:
 // binary operators
 //--------------------------------
 
-	const T opBinary(string op, T:Dec64)(const T rhs)
+const T opBinary(string op, T:Dec64)(const T rhs)
 //	  const Dec64 opBinary(string op)(const Dec64 rhs)
 	{
 		static if (op == "+") {
 			return add!Dec64(this, rhs, context64);
-		}
-		else static if (op == "-") {
+		} else static if (op == "-") {
 			return subtract!Dec64(this, rhs, context64);
-		}
-		else static if (op == "*") {
+		} else static if (op == "*") {
 			return multiply!Dec64(this, rhs, context64);
-		}
-		else static if (op == "/") {
+		} else static if (op == "/") {
 			return divide!Dec64(this, rhs, context64);
-		}
-		else static if (op == "%") {
+		} else static if (op == "%") {
 			return remainder!Dec64(this, rhs, context64);
 		}
 	}
@@ -1390,34 +1385,33 @@ public:
 		op2 = 8;
 		actual = op1 + op2;
 		expect = 12;
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 		actual = op1 - op2;
 		expect = -4;
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 		actual = op1 * op2;
 		expect = 32;
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 		op1 = 5;
 		op2 = 2;
 		actual = op1 / op2;
 		expect = 2.5;
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 		op1 = 10;
 		op2 = 3;
 		actual = op1 % op2;
 		expect = 1;
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 	}
 
 	/**
 	 * Detect whether T is a decimal type.
 	 */
 	private template isPromotable(T) {
-		enum bool isPromotable = is(T:ulong) || is(T:real) || is(T:Dec32);
+enum bool isPromotable = is(T:ulong) || is(T:real) || is(T:Dec32);
 	}
 
-	const Dec64 opBinary(string op, T)(const T rhs) if(isPromotable!T)
-	{
+	const Dec64 opBinary(string op, T)(const T rhs) if(isPromotable!T) {
 		return opBinary!(op,Dec64)(Dec64(rhs));
 	}
 
@@ -1431,7 +1425,7 @@ public:
 // operator assignment
 //-----------------------------
 
-	ref Dec64 opOpAssign(string op, T:Dec64) (T rhs) {
+ref Dec64 opOpAssign(string op, T:Dec64) (T rhs) {
 		this = opBinary!op(rhs);
 		return this;
 	}
@@ -1448,16 +1442,16 @@ public:
 		op1 += op2;
 		expect = 21.49;
 		actual = op1;
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 		op1 *= op2;
 		expect = -44.4843;
 		actual = op1;
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 		op1 = 95;
 		op1 %= 90;
 		actual = op1;
 		expect = 5;
-		assertTrue(expect == actual);
+		assertEqual(expect,actual);
 	}
 
 	/**

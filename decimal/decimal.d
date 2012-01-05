@@ -16,10 +16,6 @@
  *			http://www.boost.org/LICENSE_1_0.txt)
  */
 
-// TODO: this(str): add tests for just over/under int.max, int.min
-
-// TODO: opEquals unit test should include numerically equal testing.
-
 // TODO: write some test cases for flag setting. test the add/sub/mul/div functions
 
 // TODO: to/from real or double (float) values needs definition and implementation.
@@ -212,6 +208,8 @@ public:
 
 	// UNREADY: this(const string). Flags. Unit Tests.
 	// construct from string representation
+// TODO: this(str): add tests for just over/under int.max, int.min
+
 	this(const string str) {
 		this = decimal.conv.toNumber(str);
 	};
@@ -558,6 +556,7 @@ unittest {
 
 	// Returns the maximum representable normal value in the current context.
 	// TODO: this is a fairly expensive operation. Can it be fixed?
+	// TODO: is this needed?
 	static BigDecimal max(const bool sign, DecimalContext context = bigContext) {
 		BigDecimal result = BigDecimal(context.maxString);
 		return sign ? -result : result;
@@ -918,7 +917,7 @@ unittest {
 		actual = ++num;
 		assertEqual!BigDecimal(expect, actual);
 		num = 1.00E8;
-		expect = num - BigDecimal(1); // TODO:why not an integer
+		expect = num - 1;
 		actual = --num;
 		assertEqual!BigDecimal(expect, actual);
 		num = 1.00E8;
@@ -958,25 +957,22 @@ unittest {
 		}
 	}
 
-/*	  const BigDecimal opBinary(string op, T)(const T rhs)
-	{
-		return opBinary!(op, T)(BigDecimal(T));
-		static if (op == "+") {
-			return add!BigDecimal(this, rhs, bigContext);
-		}
-		else static if (op == "-") {
-			return subtract!BigDecimal(this, rhs, bigContext);
-		}
-		else static if (op == "*") {
-			return multiply!BigDecimal(this, rhs, bigContext);
-		}
-		else static if (op == "/") {
-			return divide!BigDecimal(this, rhs, bigContext);
-		}
-		else static if (op == "%") {
-			return remainder!BigDecimal(this, rhs, bigContext);
-		}
-	} */
+	/**
+	 * Detect whether T is promotable to decimal32 type.
+	 */
+	private template isPromotable(T) {
+		enum bool isPromotable = is(T:ulong) || is(T:real);
+	}
+
+	const BigDecimal opBinary(string op, T)(const T rhs) if(isPromotable!T)	{
+		return opBinary!(op,BigDecimal)(BigDecimal(rhs));
+	}
+
+	unittest {
+		BigDecimal num = BigDecimal(591.3);
+		BigDecimal result = num * 5;
+		assertTrue(result == BigDecimal(2956.5));
+	}
 
 	unittest {
 		BigDecimal op1, op2, actual, expect;

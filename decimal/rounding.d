@@ -18,7 +18,7 @@
 
 module decimal.rounding;
 
-import decimal.arithmetic: compare, copyNegate, equals;
+import decimal.arithmetic:compare, copyNegate, equals;
 import decimal.context;
 import decimal.conv;
 import decimal.dec32;
@@ -100,23 +100,23 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
 	if (num.adjustedExponent > context.eMax) {
 		context.setFlags(OVERFLOW);
 		switch (context.rounding) {
-			case Rounding.HALF_UP:
-			case Rounding.HALF_EVEN:
-			case Rounding.HALF_DOWN:
-			case Rounding.UP:
-				num = T.infinity(num.sign);
-				break;
-			case Rounding.DOWN:
-				num = T.max(num.sign);
-				break;
-			case Rounding.CEILING:
-				num = num.sign ? T.max(true) : T.infinity;
-				break;
-			case Rounding.FLOOR:
-				num = num.sign ? T.infinity(true) : T.max;
-				break;
-			default:
-				break;
+		case Rounding.HALF_UP:
+		case Rounding.HALF_EVEN:
+		case Rounding.HALF_DOWN:
+		case Rounding.UP:
+			num = T.infinity(num.sign);
+			break;
+		case Rounding.DOWN:
+			num = T.max(num.sign);
+			break;
+		case Rounding.CEILING:
+			num = num.sign ? T.max(true) : T.infinity;
+			break;
+		case Rounding.FLOOR:
+			num = num.sign ? T.infinity(true) : T.max;
+			break;
+		default:
+			break;
 		}
 		context.setFlags(INEXACT);
 		context.setFlags(ROUNDED);
@@ -124,7 +124,7 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
 	}
 	roundByMode(num, context);
 	// check for zero
-	static if (is(T : BigDecimal)) {
+static if (is(T : BigDecimal)) {
 		if (num.coefficient == 0) {
 			num.zero(num.sign);
 		}
@@ -204,7 +204,7 @@ unittest {
 
 // UNREADY: roundByMode. Description. Order.
 private void roundByMode(T)(ref T num, ref DecimalContext context)
-		if (isDecimal!T) {
+if (isDecimal!T) {
 
 	uint digits = num.digits;
 	T remainder = getRemainder(num, context);
@@ -219,53 +219,53 @@ private void roundByMode(T)(ref T num, ref DecimalContext context)
 		return;
 	}
 	switch (context.rounding) {
-		case Rounding.DOWN:
-			return;
-		case Rounding.HALF_UP:
-			if (firstDigit(remainder.coefficient) >= 5) {
-				increment(num, context);
-			}
-			return;
-		case Rounding.HALF_EVEN:
-			ulong first = firstDigit(remainder.coefficient);
-			if (first > 5) {
-				increment(num, context);
-				break;
-			}
-			if (first < 5) {
-				break;
-			}
-			// remainder == 5
-			// if last digit is odd...
-			if (first & 1) {
-				increment(num, context);
-			}
-			return;
-		case Rounding.CEILING:
-			auto temp = T.zero;
-			if (!num.sign && (remainder != temp)) {
-				increment(num, context);
-			}
-			return;
-		case Rounding.FLOOR:
-			auto temp = T.zero;
-			if (num.sign && remainder != temp) {
-				increment(num, context);
-			}
-			return;
-		case Rounding.HALF_DOWN:
-			if (firstDigit(remainder.coefficient) > 5) {
-				increment(num, context);
-			}
-			return;
-		case Rounding.UP:
-			auto temp = T.zero;
-			if (remainder != temp) {
-				increment(num, context);
-			}
-			return;
-		default:
-			return;
+	case Rounding.DOWN:
+		return;
+	case Rounding.HALF_UP:
+		if (firstDigit(remainder.coefficient) >= 5) {
+			increment(num, context);
+		}
+		return;
+	case Rounding.HALF_EVEN:
+		ulong first = firstDigit(remainder.coefficient);
+		if (first > 5) {
+			increment(num, context);
+			break;
+		}
+		if (first < 5) {
+			break;
+		}
+		// remainder == 5
+		// if last digit is odd...
+		if (first & 1) {
+			increment(num, context);
+		}
+		return;
+	case Rounding.CEILING:
+		auto temp = T.zero;
+		if (!num.sign && (remainder != temp)) {
+			increment(num, context);
+		}
+		return;
+	case Rounding.FLOOR:
+		auto temp = T.zero;
+		if (num.sign && remainder != temp) {
+			increment(num, context);
+		}
+		return;
+	case Rounding.HALF_DOWN:
+		if (firstDigit(remainder.coefficient) > 5) {
+			increment(num, context);
+		}
+		return;
+	case Rounding.UP:
+		auto temp = T.zero;
+		if (remainder != temp) {
+			increment(num, context);
+		}
+		return;
+	default:
+		return;
 	}	 // end switch(mode)
 } // end roundByMode()
 
@@ -300,7 +300,7 @@ unittest {
  * Sets the ROUNDED and INEXACT flags.
  */
 private T getRemainder(T)(ref T num, ref DecimalContext context)
-		if (isDecimal!T){
+if (isDecimal!T) {
 	T remainder = T.zero;
 
 	int diff = num.digits - context.precision;
@@ -382,7 +382,7 @@ unittest {
 }
 
 public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
-		const DecimalContext context) {
+                        const DecimalContext context) {
 
 	uint inDigits = digits;
 	ulong remainder = clipRemainder(mant, digits, context.precision);
@@ -394,50 +394,50 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
 	}
 
 	switch (context.rounding) {
-		case Rounding.DOWN:
+	case Rounding.DOWN:
+		break;
+	case Rounding.HALF_UP:
+		if (firstDigit(remainder) >= 5) {
+			increment(mant, digits);
+		}
+		break;
+	case Rounding.HALF_EVEN:
+		ulong first = firstDigit(remainder);
+		if (first > 5) {
+			increment(mant, digits);
 			break;
-		case Rounding.HALF_UP:
-			if (firstDigit(remainder) >= 5) {
-				increment(mant, digits);
-			}
+		}
+		if (first < 5) {
 			break;
-		case Rounding.HALF_EVEN:
-			ulong first = firstDigit(remainder);
-			if (first > 5) {
-				increment(mant, digits);
-				break;
-			}
-			if (first < 5) {
-				break;
-			}
-			// remainder == 5
-			// if last digit is odd...
-			if (mant & 1) {
-				increment(mant, digits);
-			}
-			break;
-		case Rounding.CEILING:
-			if (!sign) {
-				increment(mant, digits);
-			}
-			break;
-		case Rounding.FLOOR:
-			if (sign) {
-				increment(mant, digits);
-			}
-			break;
-		case Rounding.HALF_DOWN:
-			if (firstDigit(remainder) > 5) {
-				increment(mant, digits);
-			}
-			break;
-		case Rounding.UP:
-			if (remainder != 0) {
-				increment(mant, digits);
-			}
-			break;
-		default:
-			break;
+		}
+		// remainder == 5
+		// if last digit is odd...
+		if (mant & 1) {
+			increment(mant, digits);
+		}
+		break;
+	case Rounding.CEILING:
+		if (!sign) {
+			increment(mant, digits);
+		}
+		break;
+	case Rounding.FLOOR:
+		if (sign) {
+			increment(mant, digits);
+		}
+		break;
+	case Rounding.HALF_DOWN:
+		if (firstDigit(remainder) > 5) {
+			increment(mant, digits);
+		}
+		break;
+	case Rounding.UP:
+		if (remainder != 0) {
+			increment(mant, digits);
+		}
+		break;
+	default:
+		break;
 	}	 // end switch(mode)
 
 	// this can only be true if the number was all 9s and rolled over;
@@ -455,7 +455,9 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
 
 unittest {
 	DecimalContext ctx = testContext.setPrecision(5);
-	ulong num; uint digits; int expo;
+	ulong num;
+	uint digits;
+	int expo;
 	num = 1000;
 	digits = numDigits(num);
 	expo = setExponent(false, num, digits, ctx);
@@ -502,7 +504,8 @@ unittest {
 	ulong num, acrem, exnum, exrem;
 	uint digits, precision;
 	num = 1234567890123456L;
-	digits = 16; precision = 5;
+	digits = 16;
+	precision = 5;
 	acrem = clipRemainder(num, digits, precision);
 	exnum = 12345L;
 	assertTrue(num == exnum);
@@ -510,7 +513,8 @@ unittest {
 	assertTrue(acrem == exrem);
 
 	num = 12345768901234567L;
-	digits = 17; precision = 5;
+	digits = 17;
+	precision = 5;
 	acrem = clipRemainder(num, digits, precision);
 	exnum = 12345L;
 	assertTrue(num == exnum);
@@ -518,7 +522,8 @@ unittest {
 	assertTrue(acrem == exrem);
 
 	num = 123456789012345678L;
-	digits = 18; precision = 5;
+	digits = 18;
+	precision = 5;
 	acrem = clipRemainder(num, digits, precision);
 	exnum = 12345L;
 	assertTrue(num == exnum);
@@ -526,7 +531,8 @@ unittest {
 	assertTrue(acrem == exrem);
 
 	num = 1234567890123456789L;
-	digits = 19; precision = 5;
+	digits = 19;
+	precision = 5;
 	acrem = clipRemainder(num, digits, precision);
 	exnum = 12345L;
 	assertTrue(num == exnum);
@@ -534,7 +540,8 @@ unittest {
 	assertTrue(acrem == exrem);
 
 	num = 1234567890123456789L;
-	digits = 19; precision = 4;
+	digits = 19;
+	precision = 4;
 	acrem = clipRemainder(num, digits, precision);
 	exnum = 1234L;
 	assertTrue(num == exnum);
@@ -542,7 +549,8 @@ unittest {
 	assertTrue(acrem == exrem);
 
 	num = 9223372036854775807L;
-	digits = 19; precision = 1;
+	digits = 19;
+	precision = 1;
 	acrem = clipRemainder(num, digits, precision);
 	exnum = 9L;
 	assertTrue(num == exnum);
@@ -641,7 +649,9 @@ unittest {
  * If n <= 0 the number is returned unchanged.
  */
 public BigInt decShl(BigInt num, const int n) {
-	if (n <= 0) { return num; }
+	if (n <= 0) {
+		return num;
+	}
 	BigInt fives = 1;
 	for (int i = 0; i < n; i++) {
 		fives *= 5;
@@ -656,7 +666,9 @@ public BigInt decShl(BigInt num, const int n) {
  * If n <= 0 the number is returned unchanged.
  */
 public ulong decShl(ulong num, const int n) {
-	if (n <= 0) { return num; }
+	if (n <= 0) {
+		return num;
+	}
 	ulong scale = 10UL^^n;
 	num = num * scale;
 	return num;
@@ -667,7 +679,9 @@ public ulong decShl(ulong num, const int n) {
  * If n <= 0 the number is returned unchanged.
  */
 public uint decShl(uint num, const int n) {
-	if (n <= 0) { return num; }
+	if (n <= 0) {
+		return num;
+	}
 	uint scale = 10U^^n;
 	num = num * scale;
 	return num;
