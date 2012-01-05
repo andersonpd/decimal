@@ -58,7 +58,7 @@ public int sgn(const BigInt num) {
 	BigInt zero = BigInt(0);
 	BigInt big = copy(num);
 	if (big < zero) return -1;
-	if (big < zero) return 1;
+	if (big > zero) return 1;
 	return 0;
 }
 
