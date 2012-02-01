@@ -1,7 +1,4 @@
-﻿// Written in the D programming language
-
-/**
- *
+﻿/**
  * A D programming language implementation of the
  * General Decimal Arithmetic Specification,
  * Version 1.70, (25 March 2009).
@@ -11,18 +8,16 @@
  * Authors: Paul D. Anderson
  */
 
-/*          Copyright Paul D. Anderson 2009 - 2011.
+/* Copyright Paul D. Anderson 2009 - 2012.
  * Distributed under the Boost Software License, Version 1.0.
- *    (See accompanying file LICENSE_1_0.txt or copy at
- *          http://www.boost.org/LICENSE_1_0.txt)
+ * (See accompanying file LICENSE_1_0.txt or copy at
+ *  http://www.boost.org/LICENSE_1_0.txt)
  */
 
 module decimal.context;
 
-import std.array:
-replicate;
-import std.string:
-format;
+import std.array: replicate;
+import std.string: format;
 import std.stdio;
 
 unittest {
@@ -31,6 +26,12 @@ unittest {
 	writeln("context.......begin");
 	writeln("-------------------");
 }
+
+//--------------------------
+// Radix
+//--------------------------
+
+immutable int radix = 10;
 
 //--------------------------
 // DecimalContext struct
@@ -47,18 +48,73 @@ public enum Rounding {
     CEILING,
 }
 
+/// Context for decimal mathematic operations
+public struct DecimalContext {
+
+	/// length of the coefficient in (decimal) digits
+	immutable uint precision;
+	/// maximum value of the adjusted exponent
+	immutable int eMax;
+	/// smallest normalized exponent
+	immutable int eMin;
+	/// smallest non-normalized exponent
+	immutable int eTiny;
+	/// rounding mode
+	immutable Rounding rounding;
+
+	/// constructs a context with the specified parameters
+	public this(immutable uint precision, immutable int eMax, immutable Rounding rounding) {
+		this.precision = precision;
+		this.eMax = eMax;
+		this.eMin = 1 - eMax;
+		this.eTiny = eMin - precision + 1;
+		this.rounding = rounding;
+	}
+
+	/// Returns a copy of the context with a new precision
+	public DecimalContext setPrecision(immutable uint precision) {
+		return DecimalContext(precision, this.eMax, this.rounding);
+	}
+
+	/// Returns a copy of the context with a new exponent limit
+	public DecimalContext setMaxExponent(immutable int eMax) {
+		return DecimalContext(this.precision, eMax, this.rounding);
+	}
+	/// Returns a copy of the context with a new rounding mode
+	public DecimalContext setRounding(immutable Rounding rounding) {
+		return DecimalContext(this.precision, this.eMax, rounding);
+	}
+
+	// TODO: is there a way to make this const w/in a context?
+	// TODO: This is only used by BigDecimal -- maybe should move it there?
+	// TODO: The mantissa is 10^^(precision - 1), so probably don't need
+	//			to implement as a string.
+	// Returns the maximum representable normal value in the current context.
+	const string maxString() {
+		string cstr = "9." ~ replicate("9", precision - 1)
+					~ "E" ~ format("%d", eMax);
+		return cstr;
+	}
+};
+// end struct DecimalContext
+
+
+//--------------------------
+// Context flags and trap-enablers
+//--------------------------
 
 /// Exceptional conditions.
-public enum :
-ubyte {
-	CLAMPED            = 0x01,
-	DIVISION_BY_ZERO   = 0x02,
-	INEXACT            = 0x04,
-	INVALID_OPERATION  = 0x08,
-	OVERFLOW           = 0x10,
-	ROUNDED            = 0x20,
-	SUBNORMAL          = 0x40,
-	UNDERFLOW          = 0x80
+/// The larger the value, the higher the precedence
+public enum : ubyte
+{
+	INVALID_OPERATION  = 0x80,
+	DIVISION_BY_ZERO   = 0x40,
+	OVERFLOW           = 0x20,
+	SUBNORMAL          = 0x10,
+	INEXACT            = 0x08,
+	ROUNDED            = 0x04,
+	UNDERFLOW          = 0x02,
+	CLAMPED            = 0x01
 }
 
 class DecimalException: object.Exception {
@@ -144,6 +200,18 @@ bool assertEqual(T)(T expected, T actual,
 	return false;
 }
 
+bool assertNotEqual(T)(T unexpected, T actual,
+                    string file = __FILE__, int line = __LINE__ ) {
+	if (unexpected == actual) {
+		writeln("failed at ", std.path.basename(file), "(", line, "):",
+	        	" \"", unexpected, "\" is equal to \"", actual, "\".");
+	//	        " expected value [\"", expected, "\]"",
+	//	        " and actual value [\"", actual, "\" are equal.");
+		return false;
+	}
+	return true;
+}
+
 bool assertTrue(bool actual, string file = __FILE__, int line = __LINE__ ) {
 	return assertEqual(true, actual, file, line);
 }
@@ -152,60 +220,10 @@ bool assertFalse(bool actual, string file = __FILE__, int line = __LINE__ ) {
 	return assertEqual(false, actual, file, line);
 }
 
+public struct ContextFlags {
 
-
-/// Context for decimal mathematic operations
-public struct DecimalContext {
-
-	/// exceptional condition signals
-	private static ubyte flags = 0;
-	/// exceptional condition trap enablers
-	private static ubyte traps = 0;
-
-	/// length of coefficient in (decimal) digits
-	immutable uint precision;
-	/// maximum value of the adjusted exponent
-	immutable int eMax;
-	/// smallest normalized exponent
-	immutable int eMin;
-	/// smallest non-normalized exponent
-	immutable int eTiny;
-	/// rounding mode
-	immutable Rounding rounding;
-
-	/// constructs a context with the specified parameters
-	public this(immutable uint precision, immutable int eMax, immutable Rounding rounding) {
-		this.precision = precision;
-		this.eMax = eMax;
-		this.eMin = 1 - eMax;
-		this.eTiny = eMin - precision + 1;
-		this.rounding = rounding;
-	}
-
-	/// Returns a copy of the context with a new precision
-	public DecimalContext setPrecision(immutable uint precision) {
-		return DecimalContext(precision, this.eMax, this.rounding);
-	}
-
-	/// Returns a copy of the context with a new exponent limit
-	public DecimalContext setMaxExponent(immutable int eMax) {
-		return DecimalContext(this.precision, eMax, this.rounding);
-	}
-	/// Returns a copy of the context with a new rounding mode
-	public DecimalContext setRounding(immutable Rounding rounding) {
-		return DecimalContext(this.precision, this.eMax, rounding);
-	}
-
-	// TODO: is there a way to make this const w/in a context?
-	// TODO: This is only used by BigDecimal -- maybe should move it there?
-	// TODO: The mantissa is 10^^(precision - 1), so probably don't need
-	//			to implement as a string.
-	// Returns the maximum representable normal value in the current context.
-	const string maxString() {
-		string cstr = "9." ~ replicate("9", precision - 1)
-					~ "E" ~ format("%d", eMax);
-		return cstr;
-	}
+	private static ubyte flags;
+	private static ubyte traps;
 
 	/// Sets or resets the specified context flag(s).
 	void setFlags(const ubyte flags, const bool value = true) {
@@ -220,43 +238,42 @@ public struct DecimalContext {
 		}
 	}
 
-	// TODO: These should be listed in priority order
-	// TODO: It may be more meaningful to have the setFlags routine
-	//	pass the line & file. Depends on how stack trace looks
-	const void checkFlags(const ubyte flags) {
-		if (flags & CLAMPED && traps & CLAMPED) {
-			throw new ClampedException("CLAMPED");
+	// Checks the state of the flags. If a flag is set and its
+	// trap-enabler is set, an exception is thrown.
+	 void checkFlags(const ubyte flags) {
+		if (flags & INVALID_OPERATION && traps & INVALID_OPERATION) {
+			throw new InvalidOperationException("INVALID_OPERATION");
 		}
 		if (flags & DIVISION_BY_ZERO && traps & DIVISION_BY_ZERO) {
 			throw new DivByZeroException("DIVISION_BY_ZERO");
 		}
-		if (flags & INEXACT && traps & INEXACT) {
-			throw new InexactException("INEXACT");
-		}
-		if (flags & INVALID_OPERATION && traps & INVALID_OPERATION) {
-			throw new InvalidOperationException("INVALID_OPERATION");
-		}
 		if (flags & OVERFLOW && traps & OVERFLOW) {
 			throw new OverflowException("OVERFLOW");
-		}
-		if (flags & ROUNDED && traps & ROUNDED) {
-			throw new RoundedException("ROUNDED");
 		}
 		if (flags & SUBNORMAL && traps & SUBNORMAL) {
 			throw new SubnormalException("SUBNORMAL");
 		}
+		if (flags & INEXACT && traps & INEXACT) {
+			throw new InexactException("INEXACT");
+		}
+		if (flags & ROUNDED && traps & ROUNDED) {
+			throw new RoundedException("ROUNDED");
+		}
 		if (flags & UNDERFLOW && traps & UNDERFLOW) {
 			throw new UnderflowException("UNDERFLOW");
+		}
+		if (flags & CLAMPED && traps & CLAMPED) {
+			throw new ClampedException("CLAMPED");
 		}
 	}
 
 	/// Gets the value of the specified context flag.
-	const bool getFlag(const ubyte flag) {
+	 bool getFlag(const ubyte flag) {
 		return (this.flags & flag) == flag;
 	}
 
 	/// Returns a snapshot of the context flags.
-	const ubyte getFlags() {
+	 ubyte getFlags() {
 		return flags;
 	}
 
@@ -275,12 +292,12 @@ public struct DecimalContext {
 	}
 
 	/// Returns the value of the specified trap.
-	const bool getTrap(const ubyte trap) {
+	 bool getTrap(const ubyte trap) {
 		return (this.traps & trap) == trap;
 	}
 
 	/// Returns a snapshot of traps.
-	const ubyte getTraps() {
+	public ubyte getTraps() {
 		return traps;
 	}
 
@@ -290,11 +307,12 @@ public struct DecimalContext {
 	}
 
 };
-// end struct DecimalContext
 
 static DecimalContext testContext = DecimalContext(9, 99, Rounding.HALF_EVEN);
 static DecimalContext basicContext = DecimalContext(9, 999, Rounding.HALF_UP);
-static DecimalContext extendedContext = DecimalContext(99, 999, Rounding.HALF_EVEN);
+static DecimalContext extendedContext = DecimalContext(99, 9999, Rounding.HALF_EVEN);
+
+static ContextFlags contextFlags;
 
 unittest {
 	import std.stdio;

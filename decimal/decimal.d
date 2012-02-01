@@ -1,7 +1,4 @@
-﻿// Written in the D programming language
-
-/**
- *
+﻿/**
  * A D programming language implementation of the
  * General Decimal Arithmetic Specification,
  * Version 1.70, (25 March 2009).
@@ -10,10 +7,11 @@
  * License: <a href="http://www.boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
  * Authors: Paul D. Anderson
  */
-/*			Copyright Paul D. Anderson 2009 - 2011.
+
+/* Copyright Paul D. Anderson 2009 - 2012.
  * Distributed under the Boost Software License, Version 1.0.
- *	  (See accompanying file LICENSE_1_0.txt or copy at
- *			http://www.boost.org/LICENSE_1_0.txt)
+ * (See accompanying file LICENSE_1_0.txt or copy at
+ *  http://www.boost.org/LICENSE_1_0.txt)
  */
 
 // TODO: write some test cases for flag setting. test the add/sub/mul/div functions
@@ -76,8 +74,9 @@ private:
 	immutable BigDecimal ZERO	  = BigDecimal(SV.NONE);
 	immutable BigDecimal NEG_ZERO = BigDecimal(SV.NONE, true);
 
-	immutable BigInt BIG_ZERO  = cast(immutable)BigInt(0);
+	immutable BigInt BIG_ZERO = cast(immutable)BigInt(0);
 	immutable BigInt BIG_ONE  = cast(immutable)BigInt(1);
+	immutable BigInt BIG_TWO  = cast(immutable)BigInt(2);
 
 //	static BigDecimal DONE = BigDecimal(BIG_ONE);
 //	static immutable BigDecimal TWO  = cast(immutable)BigDecimal(2);
@@ -548,6 +547,16 @@ unittest {
 		return cast (int)(context.eMax);
 	}
 
+/*	// TODO: is there a way to make this const w/in a context?
+	// TODO: This is only used by BigDecimal -- maybe should move it there?
+	// TODO: The mantissa is 10^^(precision - 1), so probably don't need
+	//			to implement as a string.
+	// Returns the maximum representable normal value in the current context.
+	const string maxString() {
+		string cstr = "9." ~ replicate("9", precision - 1)
+					~ "E" ~ format("%d", eMax);
+		return cstr;
+	}*/
 	// Returns the maximum representable normal value in the current context.
 	// TODO: this is a fairly expensive operation. Can it be fixed?
 	static BigDecimal max(DecimalContext context = bigContext) {
@@ -821,6 +830,7 @@ unittest {
 	 * that is, its fractional part is zero.
 	 */
 	 const bool isIntegral() {
+	 	// TODO: need to take trailing zeros into account
 		return expo >= 0;
 	 }
 

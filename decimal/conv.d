@@ -1,7 +1,4 @@
-// Written in the D programming language
-
 /**
- *
  * A D programming language implementation of the
  * General Decimal Arithmetic Specification,
  * Version 1.70, (25 March 2009).
@@ -10,10 +7,11 @@
  * License: <a href="http://www.boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
  * Authors: Paul D. Anderson
  */
-/*        Copyright Paul D. Anderson 2009 - 2011.
+
+/* Copyright Paul D. Anderson 2009 - 2012.
  * Distributed under the Boost Software License, Version 1.0.
- *  (See accompanying file LICENSE_1_0.txt or copy at
- *        http://www.boost.org/LICENSE_1_0.txt)
+ * (See accompanying file LICENSE_1_0.txt or copy at
+ *  http://www.boost.org/LICENSE_1_0.txt)
  */
 
 module decimal.conv;
@@ -62,7 +60,7 @@ T to(T: string)(const BigInt num) {
 /**
  * Converts any decimal to another decimal
  */
-public T toDecimal(T, U)(const U num) if(isDecimal!T) {
+public T toDecimal(T, U)(const U num) if (isDecimal!T) {
 	static if(is(typeof(num) == T)) {
 		return num.dup;
 	}
@@ -84,7 +82,7 @@ public T toDecimal(T, U)(const U num) if(isDecimal!T) {
 /**
  * Converts any decimal to a big decimal
  */
-public BigDecimal toBigDecimal(T)(const T num) if(isDecimal!T) {
+public BigDecimal toBigDecimal(T)(const T num) if (isDecimal!T) {
 	static if(is(typeof(num) == BigDecimal)) {
 		return num.dup;
 	}
@@ -145,14 +143,14 @@ unittest {
  * Converts a BigDecimal number to a scientific string representation.
  */
 
-public string toSciString(T)(const T num) if(isDecimal!T) {
+public string toSciString(T)(const T num) if (isDecimal!T) {
 	return toStdString!T(num, false);
 };  // end toSciString()
 
 /**
  * Converts a BigDecimal number to an engineering string representation.
  */
-public string toEngString(T)(const T num) if(isDecimal!T) {
+public string toEngString(T)(const T num) if (isDecimal!T) {
 	return toStdString!T(num, true);
 }  // end toEngString()
 
@@ -161,7 +159,7 @@ public string toEngString(T)(const T num) if(isDecimal!T) {
  */
 private string toStdString(T)
 
-(const T num, bool engineering = false) if(isDecimal!T) {
+(const T num, bool engineering = false) if (isDecimal!T) {
 	auto mant = num.coefficient;
 	int  expo = num.exponent;
 	bool signed = num.isSigned;
@@ -297,7 +295,7 @@ unittest {
  */
 public string writeTo(T)
 
-(const T num, string fmt = "") if(isDecimal!T) {
+(const T num, string fmt = "") if (isDecimal!T) {
 	auto mant = num.coefficient;
 	int  expo = num.exponent;
 	bool signed = num.isSigned;
@@ -578,7 +576,7 @@ unittest {
  * Returns an abstract string representation of a number.
  */
 
-public string toAbstract(T)(const T num) if(isDecimal!T) {
+public string toAbstract(T)(const T num) if (isDecimal!T) {
 	if(num.isFinite) {
 		return format("[%d,%s,%d]", num.sign ? 1 : 0,
 		              to!string(num.coefficient), num.exponent);
@@ -606,7 +604,7 @@ public string toAbstract(T)(const T num) if(isDecimal!T) {
  * but it provides a valid string that can be converted back into a number.
  */
 
-public string toExact(T)(const T num) if(isDecimal!T) {
+public string toExact(T)(const T num) if (isDecimal!T) {
 	if(num.isFinite) {
 		return format("%s%sE%s%02d", num.sign ? "-" : "+",
 		              to!string(num.coefficient),

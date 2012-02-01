@@ -1,7 +1,4 @@
-﻿// Written in the D programming language
-
-/**
- *
+﻿/**
  * A D programming language implementation of the
  * General Decimal Arithmetic Specification,
  * Version 1.70, (25 March 2009).
@@ -10,10 +7,11 @@
  * License: <a href="http://www.boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
  * Authors: Paul D. Anderson
  */
-/*			Copyright Paul D. Anderson 2009 - 2011.
+
+/* Copyright Paul D. Anderson 2009 - 2012.
  * Distributed under the Boost Software License, Version 1.0.
- *	  (See accompanying file LICENSE_1_0.txt or copy at
- *			http://www.boost.org/LICENSE_1_0.txt)
+ * (See accompanying file LICENSE_1_0.txt or copy at
+ *  http://www.boost.org/LICENSE_1_0.txt)
  */
 
 module decimal.rounding;
@@ -70,7 +68,7 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
 	// no rounding of zeros
 	if (num.isZero) {
 		if (num.exponent < context.eMin) {
-			context.setFlags(SUBNORMAL);
+			contextFlags.setFlags(SUBNORMAL);
 			if (num.exponent < context.eTiny) {
 				num.exponent = context.eTiny;
 			}
@@ -80,7 +78,7 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
 
 	// check for subnormal
 	if (num.isSubnormal(context)) {
-		context.setFlags(SUBNORMAL);
+		contextFlags.setFlags(SUBNORMAL);
 		int diff = context.eMin - num.adjustedExponent;
 		// decrease the precision and round
 		int precision = context.precision - diff;
@@ -91,14 +89,14 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
 		// subnormal rounding to zero == clamped (Spec. p. 51)
 		if (num.isZero) {
 			num.exponent = context.eTiny;
-			context.setFlags(CLAMPED);
+			contextFlags.setFlags(CLAMPED);
 		}
 		return;
 	}
 
 	// check for overflow
 	if (num.adjustedExponent > context.eMax) {
-		context.setFlags(OVERFLOW);
+		contextFlags.setFlags(OVERFLOW);
 		switch (context.rounding) {
 		case Rounding.HALF_UP:
 		case Rounding.HALF_EVEN:
@@ -118,8 +116,8 @@ public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
 		default:
 			break;
 		}
-		context.setFlags(INEXACT);
-		context.setFlags(ROUNDED);
+		contextFlags.setFlags(INEXACT);
+		contextFlags.setFlags(ROUNDED);
 		return;
 	}
 	roundByMode(num, context);
@@ -307,7 +305,7 @@ if (isDecimal!T) {
 	if (diff <= 0) {
 		return remainder;
 	}
-	context.setFlags(ROUNDED);
+	contextFlags.setFlags(ROUNDED);
 	// the context can be zero when...??
 	if (context.precision == 0) {
 		num = T.zero(num.sign);
@@ -328,7 +326,7 @@ if (isDecimal!T) {
 	}
 	auto temp = T.zero;
 	if (remainder != temp) {
-		context.setFlags(INEXACT);
+		contextFlags.setFlags(INEXACT);
 	}
 
 	return remainder;
@@ -484,7 +482,7 @@ private ulong clipRemainder(ref ulong num, ref uint digits, uint precision) {
 		return remainder;
 	}
 	// if (remainder != 0) {...} ?
-	//context.setFlags(ROUNDED);
+	//contextFlags.setFlags(ROUNDED);
 
 	if (precision == 0) {
 		num = 0;

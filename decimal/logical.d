@@ -1,19 +1,17 @@
-﻿// Written in the D programming language
-
-/**
- *
+﻿/**
  * A D programming language implementation of the
- * General T Arithmetic Specification,
+ * General Decimal Arithmetic Specification,
  * Version 1.70, (25 March 2009).
  * (http://www.speleotrove.com/decimal/decarith.pdf)
  *
  * License: <a href="http://www.boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
  * Authors: Paul D. Anderson
  */
-/*          Copyright Paul D. Anderson 2009 - 2011.
+
+/* Copyright Paul D. Anderson 2009 - 2012.
  * Distributed under the Boost Software License, Version 1.0.
- *    (See accompanying file LICENSE_1_0.txt or copy at
- *          http://www.boost.org/LICENSE_1_0.txt)
+ * (See accompanying file LICENSE_1_0.txt or copy at
+ *  http://www.boost.org/LICENSE_1_0.txt)
  */
 
 module decimal.logical;
@@ -30,6 +28,9 @@ unittest {
 	writeln("-------------------");
 }
 
+// TODO: move units tests to test.d
+// NOTE: arguments must be of the same type -- e.g. can't and Dec32 w/ Dec64
+
 /**
  * isLogical.
  */
@@ -40,84 +41,22 @@ public bool isLogicalString(const string str) {
 	return true;
 }
 
-public bool isLogical(T)(const T num) if(isDecimal!T) {
-	if(num.sign != 0 || num.exponent != 0) return false;
-	string str = to!string(num.coefficient);
+public bool isLogical(T)(const T arg) if (isDecimal!T) {
+	if(arg.sign != 0 || arg.exponent != 0) return false;
+	string str = to!string(arg.coefficient);
 	return isLogicalString(str);
 }
 
-private bool isLogicalOperand(T)(const T num, out string str) if(isDecimal!T) {
-	if(num.sign != 0 || num.exponent != 0) return false;
-	str = to!string(num.coefficient);
+private bool isLogicalOperand(T)(const T arg, out string str) if (isDecimal!T) {
+	if(arg.sign != 0 || arg.exponent != 0) return false;
+	str = to!string(arg.coefficient);
 	return isLogicalString(str);
 }
 
-/*public T toLogical(T)(const T num) if (isDecimal!T) {
-    T logical = num.dup;
-    logical.sign = 0;
-    logical.exponent = 0;
-    string str = to!string(logical.coefficient);
-    if (isLogicalString(str)) {
-        return logical;
-    }
-    char[] mant = new char[str.length];
-    for (int i = 0; i < str.length; i++) {
-        char ch = str[i];
-        mant[i] = (ch == '0') ? '0' : '1';
-    }
-    return T(mant.idup);
-}
-
-unittest {
-    import decimal.dec32;
-    write("isLogical....");
-    Dec32 num = Dec32("10101");
-    assertTrue(isLogical(num));
-    num = 3;
-    assertFalse(isLogical(num));
-    num = 10101;
-    assertTrue(isLogical(num));
-    num = -10101;
-    assertFalse(isLogical(num));
-    num = 10101E21;
-    assertFalse(isLogical(num));
-    writeln("passed");
-
-    write("toLogical....");
-    num = Dec32("10101");
-    string expect, actual;
-    expect = "10101";
-    actual = toLogical(num).toString;
-    assertEqual(expect, actual);
-    num = 3;
-    expect = "1";
-    actual = toLogical(num).toString;
-    assertEqual(expect, actual);
-    num = 10101;
-    expect = "10101";
-    actual = toLogical(num).toString;
-    assertEqual(expect, actual);
-    num = -10101;
-    expect = "10101";
-    actual = toLogical(num).toString;
-    assertEqual(expect, actual);
-    num = 12345;
-    expect = "11111";
-    actual = toLogical(num).toString;
-    assertEqual(expect, actual);
-    writeln("passed");
-}
-
-public T toLogical(T)(
-        const string str, DecimalContext context) if (isDecimal!T) {
-    string mant = str[$ - context.precision..$];
-    return T(mant.idup);
-}*/
-
-T invert(T: string)(T arg1) {
-	char[] result = new char[arg1.length];
-	for(int i = 0; i < arg1.length; i++) {
-		if(arg1[i] == '0') {
+T invert(T: string)(T arg) {
+	char[] result = new char[arg.length];
+	for(int i = 0; i < arg.length; i++) {
+		if(arg[i] == '0') {
 			result[i] = '1';
 		} else {
 			result[i] = '0';
@@ -125,9 +64,8 @@ T invert(T: string)(T arg1) {
 	}
 	return result.idup;
 }
-
 unittest {
-	write("invert...");
+	write("string invert...");
 	string str;
 	string expected, actual;
 	str = "0";
@@ -137,6 +75,41 @@ unittest {
 	str = "101010";
 	actual = invert(str);
 	expected = "010101";
+	assertEqual(expected, actual);
+	writeln("passed");
+}
+
+/**
+ * Decimal version of invert.
+ * Required by General Decimal Arithmetic Specification
+ */
+T invert(T)(T arg, DecimalContext context) if (isDecimal!T) {
+	string str;
+	if(!isLogicalOperand(arg, str)) {
+		contextFlags.setFlags(INVALID_OPERATION);
+		return T.nan;
+	}
+	return T(invert(str));
+}
+
+unittest {
+	write("decimal invert..");
+	import decimal.dec32;
+	Dec32 arg;
+	Dec32 expected, actual;
+	arg = Dec32.TRUE;
+	actual = invert(arg, Dec32.context32);
+	expected = Dec32.FALSE;
+	assertEqual(expected, actual);
+	actual = invert(actual, Dec32.context32);
+	expected = Dec32.TRUE;
+	assertEqual(expected, actual);
+	arg = Dec32("131010");
+	actual = invert(arg, Dec32.context32);
+	assertTrue(actual.isNaN);
+	arg = Dec32("101010");
+	actual = invert(arg, Dec32.context32);
+	expected = Dec32("010101");
 	assertEqual(expected, actual);
 	writeln("passed");
 }
@@ -225,9 +198,8 @@ T strXor(T: string)(const T arg1, const T arg2) {
 	return result.idup;
 }
 
-
 unittest {
-	write("string ops...");
+	write("string binary...");
 	string str1, str2;
 	string expected, actual;
 	str1 = "0";
@@ -277,55 +249,20 @@ unittest {
 	writeln("passed");
 }
 
-/**
- * T version of invert.
- * Required by General T Arithmetic Specification
- */
-T invert(T)(T arg, DecimalContext context) if(isDecimal!T) {
-	string str;
-	if(!isLogicalOperand(arg, str)) {
-		context.setFlags(INVALID_OPERATION);
-		return T.nan;
-	}
-	return T(invert(str));
-}
-
-unittest {
-	write("invert...");
-	import decimal.dec32;
-	Dec32 arg;
-	Dec32 expected, actual;
-	arg = Dec32.TRUE;
-	actual = invert(arg, Dec32.context32);
-	expected = Dec32.FALSE;
-	assertEqual(expected, actual);
-	actual = invert(actual, Dec32.context32);
-	expected = Dec32.TRUE;
-	assertEqual(expected, actual);
-	arg = Dec32("131010");
-	actual = invert(arg, Dec32.context32);
-	assertTrue(actual.isNaN);
-	arg = Dec32("101010");
-	actual = invert(arg, Dec32.context32);
-	expected = Dec32("010101");
-	assertEqual(expected, actual);
-	writeln("passed");
-}
-
 // TODO: add opBinary("&", "|", "^")
 /**
- * T version of and.
- * Required by General T Arithmetic Specification
+ * Decimal version of and.
+ * Required by General Decimal Arithmetic Specification
  */
 private T opLogical(string op, T)(const T arg1, const T arg2, DecimalContext context) {
 	string str1;
 	if(!isLogicalOperand(arg1, str1)) {
-		context.setFlags(INVALID_OPERATION);
+		contextFlags.setFlags(INVALID_OPERATION);
 		return T.nan;
 	}
 	string str2;
 	if(!isLogicalOperand(arg2, str2)) {
-		context.setFlags(INVALID_OPERATION);
+		contextFlags.setFlags(INVALID_OPERATION);
 		return T.nan;
 	}
 	static if(op == "and") {
@@ -341,24 +278,24 @@ private T opLogical(string op, T)(const T arg1, const T arg2, DecimalContext con
 }
 
 /**
- * T version of and.
- * Required by General T Arithmetic Specification
+ * Decimal version of and.
+ * Required by General Decimal Arithmetic Specification
  */
 public T and (T)(const T arg1, const T arg2, DecimalContext context) if (isDecimal!T) {
 	return opLogical!("and", T)(arg1, arg2, context);
 }
 
 /**
- * T version of or.
- * Required by General T Arithmetic Specification
+ * Decimal version of or.
+ * Required by General Decimal Arithmetic Specification
  */
 public T or (T)(const T arg1, const T arg2, DecimalContext context) if (isDecimal!T) {
 	return opLogical!("or", T)(arg1, arg2, context);
 }
 
 /**
- * T version of xor.
- * Required by General T Arithmetic Specification
+ * Decimal version of xor.
+ * Required by General Decimal Arithmetic Specification
  */
 
 public T xor(T)(const T arg1, const T arg2, DecimalContext context) if (isDecimal!T) {
@@ -367,7 +304,7 @@ public T xor(T)(const T arg1, const T arg2, DecimalContext context) if (isDecima
 
 unittest {
 	import decimal.dec32;
-	write("decimal ops.");
+	write("decimal binary..");
 	Dec32 arg1, arg2;
 	Dec32 expected, actual;
 
