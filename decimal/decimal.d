@@ -158,7 +158,7 @@ public:
 	 * of digits in the coefficient.
 	 */
 	this(const BigInt coefficient, const int exponent = 0) {
-		BigInt big = copy(coefficient);
+		BigInt big = mutable(coefficient);
 		bool sign = decimal.rounding.sgn(big) < 0;
 		this(sign, big, exponent);
 	};

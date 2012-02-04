@@ -131,7 +131,7 @@ private:
 	union {
 
 		// entire 32-bit unsigned integer
-		uint intBits = SV.POS_NAN;	  // set to the initial value: NaN
+		uint intBits = 0x7C000000;	  // set to the initial value: NaN
 
 		// unsigned value and sign bit
 		mixin (bitfields!(
@@ -197,32 +197,16 @@ private:
 private:
 	static enum SV : uint
 	{
-		// The value corresponding to a positive signaling NaN.
 		POS_SIG = 0x7E000000,
-		// The value corresponding to a negative signaling NaN.
 		NEG_SIG = 0xFE000000,
-
-		// The value corresponding to a positive quiet NaN.
 		POS_NAN = 0x7C000000,
-		// The value corresponding to a negative quiet NaN.
 		NEG_NAN = 0xFC000000,
-
-		// The value corresponding to positive infinity.
 		POS_INF = 0x78000000,
-		// The value corresponding to negative infinity.
 		NEG_INF = 0xF8000000,
-
-		// The value corresponding to positive zero. (+0)
 		POS_ZRO = 0x32800000,
-		// The value corresponding to negative zero. (-0)
 		NEG_ZRO = 0xB2800000,
-
-		// The value of the largest representable positive number.
 		POS_MAX = 0x77F8967F,
-		// The value of the largest representable negative number.
 		NEG_MAX = 0xF7F8967F,
-
-		// common small integers
 		POS_ONE = 0x32800001,
 		NEG_ONE = 0xB2800001,
 		POS_TWO = 0x32800002,
@@ -231,8 +215,6 @@ private:
 		NEG_FIV = 0xB2800005,
 		POS_TEN = 0x3280000A,
 		NEG_TEN = 0xB280000A,
-
-		// pi and related values
 		PI		 = 0x2FAFEFD9,
 		TAU 	 = 0x2FDFDFB2,
 		PI_2	 = 0x2F97F7EC,
@@ -242,11 +224,8 @@ private:
 		// 1/PI
 		// 1/SQRT_PI
 		// 1/SQRT_2PI
-
 		PHI 	= 0x2F98B072,
 		GAMMA	= 0x2F58137D,
-
-		// logarithms
 		E		= 0x2FA97A4A,
 		LOG2_E	= 0x2F960387,
 		LOG10_E = 0x2F4244A1,
@@ -254,8 +233,6 @@ private:
 		LOG10_2 = 0x30007597,
 		LN10	= 0x2FA32279,
 		LOG2_10 = 0x2FB2B048,
-
-		// roots and squares of common values
 		SQRT2	= 0x2F959446,
 		SQRT1_2 = 0x2F6BE55C
 	}
@@ -263,7 +240,9 @@ private:
 public:
 	// special values
 	immutable Dec32 NAN 	 = Dec32(SV.POS_NAN);
+	immutable Dec32 NEG_NAN  = Dec32(SV.NEG_NAN);
 	immutable Dec32 SNAN	 = Dec32(SV.POS_SIG);
+	immutable Dec32 NEG_SNAN = Dec32(SV.NEG_SIG);
 	immutable Dec32 INFINITY = Dec32(SV.POS_INF);
 	immutable Dec32 NEG_INF  = Dec32(SV.NEG_INF);
 	immutable Dec32 ZERO	 = Dec32(SV.POS_ZRO);
@@ -274,6 +253,12 @@ public:
 	// small integers
 	immutable Dec32 ONE 	 = Dec32(SV.POS_ONE);
 	immutable Dec32 NEG_ONE  = Dec32(SV.NEG_ONE);
+unittest {
+	write("one...");
+writeln("ONE = ", ONE);
+writeln("NEG_ONE = ", NEG_ONE);
+	writeln("test missing");
+}
 	immutable Dec32 TWO 	 = Dec32(SV.POS_TWO);
 	immutable Dec32 NEG_TWO  = Dec32(SV.NEG_TWO);
 	immutable Dec32 FIVE	 = Dec32(SV.POS_FIV);
@@ -285,7 +270,7 @@ public:
 	immutable Dec32 TAU 	 = Dec32(SV.TAU);
 	immutable Dec32 PI		 = Dec32(SV.PI);
 	immutable Dec32 PI_2	 = Dec32(SV.PI_2);
-	immutable Dec32 PI_SQR	 = Dec32(SV.PI_SQR);
+	immutable Dec32 PI_SQR	 = Dec32(0x6BF69924);
 	immutable Dec32 SQRT_PI  = Dec32(SV.SQRT_PI);
 	immutable Dec32 SQRT_2PI = Dec32(SV.SQRT_2PI);
 
@@ -318,42 +303,42 @@ public:
 	// this unit test uses private values
 	unittest {
 		Dec32 num;
-		num = Dec32(SV.POS_SIG);
+		num = Dec32(SNAN);
 		assertTrue(num.isSignaling);
 		assertTrue(num.isNaN);
 		assertTrue(!num.isNegative);
 		assertTrue(!num.isNormal);
-		num = Dec32(SV.NEG_SIG);
+		num = Dec32(NEG_SNAN);
 		assertTrue(num.isSignaling);
 		assertTrue(num.isNaN);
 		assertTrue(num.isNegative);
 		assertTrue(!num.isNormal);
-		num = Dec32(SV.POS_NAN);
+		num = Dec32(NAN);
 		assertTrue(!num.isSignaling);
 		assertTrue(num.isNaN);
 		assertTrue(!num.isNegative);
 		assertTrue(!num.isNormal);
-		num = Dec32(SV.NEG_NAN);
+		num = Dec32(NEG_NAN);
 		assertTrue(!num.isSignaling);
 		assertTrue(num.isNaN);
 		assertTrue(num.isNegative);
 		assertTrue(num.isQuiet);
-		num = Dec32(SV.POS_INF);
+		num = Dec32(INFINITY);
 		assertTrue(num.isInfinite);
 		assertTrue(!num.isNaN);
 		assertTrue(!num.isNegative);
 		assertTrue(!num.isNormal);
-		num = Dec32(SV.NEG_INF);
+		num = Dec32(NEG_INF);
 		assertTrue(!num.isSignaling);
 		assertTrue(num.isInfinite);
 		assertTrue(num.isNegative);
 		assertTrue(!num.isFinite);
-		num = Dec32(SV.POS_ZRO);
+		num = Dec32(ZERO);
 		assertTrue(num.isFinite);
 		assertTrue(num.isZero);
 		assertTrue(!num.isNegative);
 		assertTrue(num.isNormal);
-		num = Dec32(SV.NEG_ZRO);
+		num = Dec32(NEG_ZERO);
 		assertTrue(!num.isSignaling);
 		assertTrue(num.isZero);
 		assertTrue(num.isNegative);
@@ -1710,10 +1695,6 @@ public Dec32 log10(Dec32 arg) {
 unittest {
 	write("log10...");
 	writeln("test missing");
-}
-
-private bool isOdd(int n) {
-	return n & 1;
 }
 
 /// a decimal32 raised to an integer power

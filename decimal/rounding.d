@@ -19,12 +19,15 @@ module decimal.rounding;
 import decimal.arithmetic:compare, copyNegate, equals;
 import decimal.context;
 import decimal.conv;
-import decimal.dec32;
-import decimal.dec64;
-import decimal.decimal;
 import std.array: insertInPlace;
 import std.ascii: isDigit;
 import std.bigint;
+
+// NOTE: these imports are only needed for testing.
+import decimal.dec32;
+import decimal.dec64;
+// NOTE: this import is only used once outside of testing.
+import decimal.decimal;
 
 unittest {
 	writeln("-------------------");
@@ -35,6 +38,9 @@ unittest {
 // NOTE: it would be nice to make these const, but the BigInt class
 // complains about casting. They are private so I know they won't change,
 // but it's inconvenient
+private BigInt BIG_ZERO = BigInt(0);
+private BigInt BIG_ONE = BigInt(1);
+private BigInt BIG_TEN = BigInt(10);
 private BigInt BILLION = BigInt(1_000_000_000);
 private BigInt QUINTILLION = BigInt(1_000_000_000_000_000_000);
 
@@ -42,21 +48,20 @@ private BigInt QUINTILLION = BigInt(1_000_000_000_000_000_000);
 // helper functions
 //-----------------------------
 
-public BigInt abs(const BigInt num) {
-	BigInt big = copy(num);
-	return big < BigInt(0) ? -big : big;
-}
-
-public BigInt copy(const BigInt num) {
+public BigInt mutable(const BigInt num) {
 	BigInt big = cast(BigInt)num;
 	return big;
 }
 
+public BigInt abs(const BigInt num) {
+	BigInt big = mutable(num);
+	return big < BIG_ZERO ? -big : big;
+}
+
 public int sgn(const BigInt num) {
-	BigInt zero = BigInt(0);
-	BigInt big = copy(num);
-	if (big < zero) return -1;
-	if (big > zero) return 1;
+	BigInt big = mutable(num);
+	if (big < BIG_ZERO) return -1;
+	if (big > BIG_ZERO) return 1;
 	return 0;
 }
 
@@ -216,6 +221,9 @@ if (isDecimal!T) {
 	if (remainder.isZero) {
 		return;
 	}
+	//
+	// TODO: the first digit function now has a maxValue parameter for
+	// Dec32 & Dec64
 	switch (context.rounding) {
 	case Rounding.DOWN:
 		return;
@@ -225,7 +233,7 @@ if (isDecimal!T) {
 		}
 		return;
 	case Rounding.HALF_EVEN:
-		ulong first = firstDigit(remainder.coefficient);
+		int first = firstDigit(remainder.coefficient);
 		if (first > 5) {
 			increment(num, context);
 			break;
@@ -606,14 +614,20 @@ unittest {
 /**
  * Returns the number of digits in the number.
  */
-public int numDigits(const BigInt big) {
-	BigInt dig = cast(BigInt)big;
+public int numDigits(const BigInt arg) {
+
+	if (arg == 0) return 0;
+
+	BigInt big = mutable(arg);
+
+	if (big < BIG_TEN) return 1;
+
 	int count = 0;
-	while (dig > QUINTILLION) {
-		dig /= QUINTILLION;
+	while (big > QUINTILLION) {
+		big /= QUINTILLION;
 		count += 18;
 	}
-	long n = dig.toLong;
+	long n = big.toLong;
 	return count + numDigits(n);
 }
 
@@ -650,10 +664,7 @@ public BigInt decShl(BigInt num, const int n) {
 	if (n <= 0) {
 		return num;
 	}
-	BigInt fives = 1;
-	for (int i = 0; i < n; i++) {
-		fives *= 5;
-	}
+	BigInt fives = BigInt(5)^^n;
 	num = num << n;
 	num *= fives;
 	return num;
@@ -792,91 +803,200 @@ unittest {
 	assertTrue(decShl(m,n) == 120000);
 }
 
-public int firstDigit(const long num) {
-	ulong n = std.math.abs(num);
-	for(int i = 0; i < 6; i++) {
-		while (n >= ultens[i]) {
-			n /= ultens[i];
-		}
-	}
-	return cast(int)n;
+public bool isOdd(const ulong n) {
+	return n & 1;
 }
 
-unittest {
-	long n;
-	n = 7;
-	assertTrue(firstDigit(n) == 7);
-	n = -13;
-	assertTrue(firstDigit(n) == 1);
-	n = 999;
-	assertTrue(firstDigit(n) == 9);
-	n = -9999;
-	assertTrue(firstDigit(n) == 9);
-	n = 25987;
-	assertTrue(firstDigit(n) == 2);
-	n = -5008617;
-	assertTrue(firstDigit(n) == 5);
-	n = 3234567890;
-	assertTrue(firstDigit(n) == 3);
-	n = -10000000000;
-	assertTrue(firstDigit(n) == 1);
-	n = 823456789012345;
-	assertTrue(firstDigit(n) == 8);
-	n = 4234567890123456;
-	assertTrue(firstDigit(n) == 4);
-	n = 623456789012345678;
-	assertTrue(firstDigit(n) == 6);
-	n = long.max;
-	assertTrue(firstDigit(n) == 9);
-}
+///
+/// Returns the number of trailing zeros in binary.
+/// Algorithm adapted from Bit Twiddling Hacks  by Sean Eron Anderson
+/// (graphics.standford.edu/~seander/bithacks.html)
+///
+public int trailingZerosBinary(const uint arg) {
 
-private ulong p10(const uint n) {
-	return 10UL^^n;
-}
-
-private immutable ulong[6] ulpwrs = [18, 16, 8, 4, 2, 1];
-private immutable ulong[6] ultens = [p10(18), p10(16), p10(8), p10(4), p10(2), p10(1)];
-
-public int numDigits(const long num) {
-
-	ulong n = std.math.abs(num);
+	if (arg & 1) return 0;
+	int n = arg;
 	int count = 1;
-	for(int i = 0; i < 6; i++) {
-		while (n >= ultens[i]) {
-			n /= ultens[i];
-			count += ulpwrs[i];
-		}
+	if ((n & 0xFFFF) == 0) {
+		n >>= 16;
+		count += 16;
 	}
+	if ((n & 0xFF) == 0) {
+		n >>= 8;
+		count += 8;
+	}
+	if ((n & 0xF) == 0) {
+		n >>= 4;
+		count += 4;
+	}
+	if ((n & 0x3) == 0) {
+		n >>= 2;
+		count += 2;
+	}
+	count -= n & 1;
 	return count;
 }
 
+public static ulong[19] TENS = [10L^^0,
+		10L^^1,  10^^2,   10L^^3,  10L^^4,  10L^^5,  10L^^6,
+		10L^^7,  10L^^8,  10L^^9,  10L^^10, 10L^^11, 10L^^12,
+		10L^^13, 10L^^14, 10L^^15, 10L^^16, 10L^^17, 10L^^18];
+
+public int numDigits(const ulong n, const int maxValue = 19) {
+
+	// special cases:
+	if (n == 0) return 0;
+	if (n < 10) return 1;
+
+	if (n >= TENS[maxValue - 1]) return maxValue;
+
+	int min = 1;
+	int max = maxValue - 1;
+	while (min <= max) {
+		int mid = (min + max)/2;
+		if (n < TENS[mid]) {
+			max = mid - 1;
+		}
+		else {
+			min = mid + 1;
+		}
+	}
+	return min;
+}
+
 unittest {
 	long n;
 	n = 7;
-	assertTrue(numDigits(n) ==	1);
-	n = -13;
-	assertTrue(numDigits(n) ==	2);
+	int expect = 1;
+	int actual = numDigits(n);
+	assertEqual(expect, actual);
+	n = 13;
+	expect = 2;
+	actual = numDigits(n);
+	assertEqual(expect, actual);
 	n = 999;
-	assertTrue(numDigits(n) ==	3);
-	n = -9999;
-	assertTrue(numDigits(n) ==	4);
+	expect = 3;
+	actual = numDigits(n);
+	assertEqual(expect, actual);
+	n = 9999;
+	expect = 4;
+	actual = numDigits(n);
+	assertEqual(expect, actual);
 	n = 25987;
-	assertTrue(numDigits(n) ==	5);
-	n = -2008617;
-	assertTrue(numDigits(n) ==	7);
+	expect = 5;
+	actual = numDigits(n);
+	assertEqual(expect, actual);
+	n = 2008617;
+	expect = 7;
+	actual = numDigits(n);
+	assertEqual(expect, actual);
 	n = 1234567890;
-	assertTrue(numDigits(n) == 10);
-	n = -10000000000;
-	assertTrue(numDigits(n) == 11);
+	expect = 10;
+	actual = numDigits(n);
+	assertEqual(expect, actual);
+	n = 10000000000;
+	expect = 11;
+	actual = numDigits(n);
+	assertEqual(expect, actual);
 	n = 123456789012345;
-	assertTrue(numDigits(n) == 15);
+	expect = 15;
+	actual = numDigits(n);
+	assertEqual(expect, actual);
 	n = 1234567890123456;
-	assertTrue(numDigits(n) == 16);
+	expect = 16;
+	actual = numDigits(n);
+	assertEqual(expect, actual);
 	n = 123456789012345678;
-	assertTrue(numDigits(n) == 18);
+	expect = 18;
+	actual = numDigits(n);
+	assertEqual(expect, actual);
 	n = long.max;
-	assertTrue(numDigits(n) == 19);
+	expect = 19;
+	actual = numDigits(n);
+	assertEqual(expect, actual);
 }
+
+public int firstDigit(const ulong n, int maxValue = 19) {
+	if (n == 0) return 0;
+	if (n < 10) return cast(int) n;
+	int d = numDigits(n, maxValue);
+	return cast(int)(n/TENS[d-1]);
+}
+
+unittest {
+	long n;
+	n = 7;
+	int expected, actual;
+	expected = 7;
+	actual = firstDigit(n);
+	assertEqual(expected, actual);
+	n = 13;
+	expected = 1;
+	actual = firstDigit(n);
+	assertEqual(expected, actual);
+	n = 999;
+	expected = 9;
+	actual = firstDigit(n);
+	assertEqual(expected, actual);
+	n = 9999;
+	expected = 9;
+	actual = firstDigit(n);
+	assertEqual(expected, actual);
+	n = 25987;
+	expected = 2;
+	actual = firstDigit(n);
+	assertEqual(expected, actual);
+	n = 5008617;
+	expected = 5;
+	actual = firstDigit(n);
+	assertEqual(expected, actual);
+	n = 3234567890;
+	expected = 3;
+	actual = firstDigit(n);
+	assertEqual(expected, actual);
+	n = 10000000000;
+	expected = 1;
+	actual = firstDigit(n);
+	assertEqual(expected, actual);
+	n = 823456789012345;
+	expected = 8;
+	actual = firstDigit(n);
+	assertEqual(expected, actual);
+	n = 4234567890123456;
+	expected = 4;
+	actual = firstDigit(n);
+	assertEqual(expected, actual);
+	n = 623456789012345678;
+	expected = 6;
+	actual = firstDigit(n);
+	assertEqual(expected, actual);
+	n = long.max;
+	expected = 9;
+	actual = firstDigit(n);
+	assertEqual(expected, actual);
+}
+
+public int trailingZeros(const ulong n, const int maxValue = 19) {
+
+	// special cases:
+	if (n == 0) return 0;
+	if (n % 10) return 0;
+	if (n % 100) return 1;
+
+	int min = 3;
+	int max = maxValue - 1;
+	while (min <= max) {
+		int mid = (min + max)/2;
+		if (n % TENS[mid]) {
+			max = mid - 1;
+		}
+		else {
+			min = mid + 1;
+		}
+	}
+	return max;
+}
+
 
 unittest {
 	writeln("-------------------");

@@ -1352,19 +1352,16 @@ public T divide(T)(const T arg1, const T arg2,
 		return quotient;
 	}
 	quotient= T.zero();
-	// TODO: are two guard digits necessary? sufficient?
-    DecimalContext ctx = context.setPrecision(context.precision + 2);
 	BigDecimal dividend = toBigDecimal!T(arg1);
 	BigDecimal divisor	= toBigDecimal!T(arg2);
 	BigDecimal working = BigDecimal.zero;
-//	  working = BigDecimal.zero();
 	int diff = dividend.exponent - divisor.exponent;
 	if (diff > 0) {
 		decShl(dividend.coefficient, diff);
 		dividend.exponent = dividend.exponent - diff;
 		dividend.digits = dividend.digits + diff;
 	}
-	int shift = 2 + ctx.precision + divisor.digits - dividend.digits;
+	int shift = 4 + context.precision + divisor.digits - dividend.digits;
 	if (shift > 0) {
 		dividend.coefficient = decShl(dividend.coefficient, shift);
 		dividend.exponent = dividend.exponent - shift;
@@ -1374,7 +1371,6 @@ public T divide(T)(const T arg1, const T arg2,
 	working.exponent = dividend.exponent - divisor.exponent;
 	working.sign = dividend.sign ^ divisor.sign;
 	working.digits = numDigits(working.coefficient);
-//	context.precision -= 2;
 	if (rounded) {
 		round(working, context);
 		if (!contextFlags.getFlag(INEXACT)) {
