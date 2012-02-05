@@ -193,9 +193,12 @@ private:
 //	special values and constants
 //--------------------------------
 
-// TODO: this needs to be cleaned up -- SV is not the best name
+// Integer values passed to the constructors are not copied but are modified
+// and inserted into the sign, coefficient and exponent fields.
+// This enum is used to force the constructor to copy the bit pattern,
+// rather than treating it as a integer.
 private:
-	static enum SV : uint
+	static enum BITS : uint
 	{
 		POS_SIG = 0x7E000000,
 		NEG_SIG = 0xFE000000,
@@ -239,51 +242,45 @@ private:
 
 public:
 	// special values
-	immutable Dec32 NAN 	 = Dec32(SV.POS_NAN);
-	immutable Dec32 NEG_NAN  = Dec32(SV.NEG_NAN);
-	immutable Dec32 SNAN	 = Dec32(SV.POS_SIG);
-	immutable Dec32 NEG_SNAN = Dec32(SV.NEG_SIG);
-	immutable Dec32 INFINITY = Dec32(SV.POS_INF);
-	immutable Dec32 NEG_INF  = Dec32(SV.NEG_INF);
-	immutable Dec32 ZERO	 = Dec32(SV.POS_ZRO);
-	immutable Dec32 NEG_ZERO = Dec32(SV.NEG_ZRO);
-	immutable Dec32 MAX 	 = Dec32(SV.POS_MAX);
-	immutable Dec32 NEG_MAX  = Dec32(SV.NEG_MAX);
+	immutable Dec32 NAN 	 = Dec32(BITS.POS_NAN);
+	immutable Dec32 NEG_NAN  = Dec32(BITS.NEG_NAN);
+	immutable Dec32 SNAN	 = Dec32(BITS.POS_SIG);
+	immutable Dec32 NEG_SNAN = Dec32(BITS.NEG_SIG);
+	immutable Dec32 INFINITY = Dec32(BITS.POS_INF);
+	immutable Dec32 NEG_INF  = Dec32(BITS.NEG_INF);
+	immutable Dec32 ZERO	 = Dec32(BITS.POS_ZRO);
+	immutable Dec32 NEG_ZERO = Dec32(BITS.NEG_ZRO);
+	immutable Dec32 MAX 	 = Dec32(BITS.POS_MAX);
+	immutable Dec32 NEG_MAX  = Dec32(BITS.NEG_MAX);
 
 	// small integers
-	immutable Dec32 ONE 	 = Dec32(SV.POS_ONE);
-	immutable Dec32 NEG_ONE  = Dec32(SV.NEG_ONE);
-unittest {
-	write("one...");
-writeln("ONE = ", ONE);
-writeln("NEG_ONE = ", NEG_ONE);
-	writeln("test missing");
-}
-	immutable Dec32 TWO 	 = Dec32(SV.POS_TWO);
-	immutable Dec32 NEG_TWO  = Dec32(SV.NEG_TWO);
-	immutable Dec32 FIVE	 = Dec32(SV.POS_FIV);
-	immutable Dec32 NEG_FIVE = Dec32(SV.NEG_FIV);
-	immutable Dec32 TEN 	 = Dec32(SV.POS_TEN);
-	immutable Dec32 NEG_TEN  = Dec32(SV.NEG_TEN);
+	immutable Dec32 ONE 	 = Dec32(BITS.POS_ONE);
+	immutable Dec32 NEG_ONE  = Dec32(BITS.NEG_ONE);
+	immutable Dec32 TWO 	 = Dec32(BITS.POS_TWO);
+	immutable Dec32 NEG_TWO  = Dec32(BITS.NEG_TWO);
+	immutable Dec32 FIVE	 = Dec32(BITS.POS_FIV);
+	immutable Dec32 NEG_FIVE = Dec32(BITS.NEG_FIV);
+	immutable Dec32 TEN 	 = Dec32(BITS.POS_TEN);
+	immutable Dec32 NEG_TEN  = Dec32(BITS.NEG_TEN);
 
 	// mathamatical constants
-	immutable Dec32 TAU 	 = Dec32(SV.TAU);
-	immutable Dec32 PI		 = Dec32(SV.PI);
-	immutable Dec32 PI_2	 = Dec32(SV.PI_2);
-	immutable Dec32 PI_SQR	 = Dec32(0x6BF69924);
-	immutable Dec32 SQRT_PI  = Dec32(SV.SQRT_PI);
-	immutable Dec32 SQRT_2PI = Dec32(SV.SQRT_2PI);
+	immutable Dec32 TAU 	 = Dec32(BITS.TAU);
+	immutable Dec32 PI		 = Dec32(BITS.PI);
+	immutable Dec32 PI_2	 = Dec32(BITS.PI_2);
+	immutable Dec32 PI_SQR	 = Dec32(BITS.PI_SQR);
+	immutable Dec32 SQRT_PI  = Dec32(BITS.SQRT_PI);
+	immutable Dec32 SQRT_2PI = Dec32(BITS.SQRT_2PI);
 
-	immutable Dec32 E		 = Dec32(SV.E);
-	immutable Dec32 LOG2_E	 = Dec32(SV.LOG2_E);
-	immutable Dec32 LOG10_E  = Dec32(SV.LOG10_E);
-	immutable Dec32 LN2 	 = Dec32(SV.LN2);
-	immutable Dec32 LOG10_2  = Dec32(SV.LOG10_2);
-	immutable Dec32 LN10	 = Dec32(SV.LN10);
-	immutable Dec32 LOG2_10  = Dec32(SV.LOG2_10);
-	immutable Dec32 SQRT2	 = Dec32(SV.SQRT2);
-	immutable Dec32 PHI 	 = Dec32(SV.PHI);
-	immutable Dec32 GAMMA	 = Dec32(SV.GAMMA);
+	immutable Dec32 E		 = Dec32(BITS.E);
+	immutable Dec32 LOG2_E	 = Dec32(BITS.LOG2_E);
+	immutable Dec32 LOG10_E  = Dec32(BITS.LOG10_E);
+	immutable Dec32 LN2 	 = Dec32(BITS.LN2);
+	immutable Dec32 LOG10_2  = Dec32(BITS.LOG10_2);
+	immutable Dec32 LN10	 = Dec32(BITS.LN10);
+	immutable Dec32 LOG2_10  = Dec32(BITS.LOG2_10);
+	immutable Dec32 SQRT2	 = Dec32(BITS.SQRT2);
+	immutable Dec32 PHI 	 = Dec32(BITS.PHI);
+	immutable Dec32 GAMMA	 = Dec32(BITS.GAMMA);
 
 	// boolean constants
 	immutable Dec32 TRUE	 = ONE;
@@ -296,7 +293,7 @@ writeln("NEG_ONE = ", NEG_ONE);
 	/**
 	 * Creates a Dec32 from a special value.
 	 */
-	private this(const SV sv) {
+	private this(const BITS sv) {
 		intBits = sv;
 	}
 
@@ -351,20 +348,10 @@ writeln("NEG_ONE = ", NEG_ONE);
 	public this(const long n) {
 		this = zero;
 		signed = n < 0;
-		coefficient = std.math.abs(n);
+		coefficient = signed ? -n : n;
 	}
 
 	unittest {
-		real L10_2 = std.math.log10(2.0);
-		Dec32 LOG10_2 = Dec32(L10_2);
-		writeln("L10_2 = ", L10_2);
-		writeln("LOG10_2 = ", LOG10_2);
-		writeln("LOG10_2.toHexString = ", LOG10_2.toHexString);
-		real L2T = std.math.log2(10.0);
-		Dec32 LOG2_10 = Dec32(L2T);
-		writeln("L2T = ", L2T);
-		writeln("LOG2_10 = ", LOG2_10);
-		writeln("LOG2_10.toHexString = ", LOG2_10.toHexString);
 		Dec32 num;
 		num = Dec32(1234567890L);
 		assertTrue(num.toString == "1.234568E+9");
@@ -389,7 +376,7 @@ writeln("NEG_ONE = ", NEG_ONE);
 	}
 
 	/**
-	 * Creates a Dec32 from an long integer and an integer exponent.
+	 * Creates a Dec32 from a long integer coefficient and an int exponent.
 	 */
 	public this(const long mant, const int expo) {
 		this(mant);
@@ -415,8 +402,8 @@ writeln("NEG_ONE = ", NEG_ONE);
 	}
 
 	/**
-	 * Creates a Dec32 from a boolean sign, an unsigned long integer,
-	 * and an integer exponent.
+	 * Creates a Dec32 from a boolean sign, an unsigned long
+	 * coefficient, and an integer exponent.
 	 */
 	public this(const bool sign, const ulong mant, const int expo) {
 		this(mant, expo);

@@ -131,7 +131,7 @@ private:
 	union {
 
 		// entire 64-bit unsigned integer
-		ulong intBits = SV.POS_NAN;    // set to the initial value: NaN
+		ulong intBits = BITS.POS_NAN;    // set to the initial value: NaN
 
 		// unsigned value and sign bit
 		mixin (bitfields!(
@@ -241,9 +241,8 @@ private:
 //	special values and constants
 //--------------------------------
 
-// TODO: this needs to be cleaned up -- SV is not the best name
 private:
-	static enum SV : ulong
+	static enum BITS : ulong
 	{
 		// The value corresponding to a positive signaling NaN.
 		POS_SIG = 0x7E00000000000000,
@@ -311,46 +310,46 @@ private:
 */	}
 
 public:
-	immutable Dec64 NAN 	 = Dec64(SV.POS_NAN);
-	immutable Dec64 SNAN	 = Dec64(SV.POS_SIG);
-	immutable Dec64 INFINITY = Dec64(SV.POS_INF);
-	immutable Dec64 NEG_INF  = Dec64(SV.NEG_INF);
-	immutable Dec64 ZERO	 = Dec64(SV.POS_ZRO);
-	immutable Dec64 NEG_ZERO = Dec64(SV.NEG_ZRO);
-	immutable Dec64 MAX 	 = Dec64(SV.POS_MAX);
-	immutable Dec64 NEG_MAX  = Dec64(SV.NEG_MAX);
+	immutable Dec64 NAN 	 = Dec64(BITS.POS_NAN);
+	immutable Dec64 SNAN	 = Dec64(BITS.POS_SIG);
+	immutable Dec64 INFINITY = Dec64(BITS.POS_INF);
+	immutable Dec64 NEG_INF  = Dec64(BITS.NEG_INF);
+	immutable Dec64 ZERO	 = Dec64(BITS.POS_ZRO);
+	immutable Dec64 NEG_ZERO = Dec64(BITS.NEG_ZRO);
+	immutable Dec64 MAX 	 = Dec64(BITS.POS_MAX);
+	immutable Dec64 NEG_MAX  = Dec64(BITS.NEG_MAX);
 	immutable Dec64 ONE 	 = Dec64( 1);
 	immutable Dec64 NEG_ONE  = Dec64(-1);
 
 /*	Dec32 diff
 	// small integers
-	immutable Dec32 ONE 	 = Dec32(SV.POS_ONE);
-	immutable Dec32 NEG_ONE  = Dec32(SV.NEG_ONE);
-	immutable Dec32 TWO 	 = Dec32(SV.POS_TWO);
-	immutable Dec32 NEG_TWO  = Dec32(SV.NEG_TWO);
-	immutable Dec32 FIVE	 = Dec32(SV.POS_FIV);
-	immutable Dec32 NEG_FIVE = Dec32(SV.NEG_FIV);
-	immutable Dec32 TEN 	 = Dec32(SV.POS_TEN);
-	immutable Dec32 NEG_TEN  = Dec32(SV.NEG_TEN);
+	immutable Dec32 ONE 	 = Dec32(BITS.POS_ONE);
+	immutable Dec32 NEG_ONE  = Dec32(BITS.NEG_ONE);
+	immutable Dec32 TWO 	 = Dec32(BITS.POS_TWO);
+	immutable Dec32 NEG_TWO  = Dec32(BITS.NEG_TWO);
+	immutable Dec32 FIVE	 = Dec32(BITS.POS_FIV);
+	immutable Dec32 NEG_FIVE = Dec32(BITS.NEG_FIV);
+	immutable Dec32 TEN 	 = Dec32(BITS.POS_TEN);
+	immutable Dec32 NEG_TEN  = Dec32(BITS.NEG_TEN);
 
 	// mathamatical constants
-	immutable Dec32 TAU 	 = Dec32(SV.TAU);
-	immutable Dec32 PI		 = Dec32(SV.PI);
-	immutable Dec32 PI_2	 = Dec32(SV.PI_2);
-	immutable Dec32 PI_SQR	 = Dec32(SV.PI_SQR);
-	immutable Dec32 SQRT_PI  = Dec32(SV.SQRT_PI);
-	immutable Dec32 SQRT_2PI = Dec32(SV.SQRT_2PI);
+	immutable Dec32 TAU 	 = Dec32(BITS.TAU);
+	immutable Dec32 PI		 = Dec32(BITS.PI);
+	immutable Dec32 PI_2	 = Dec32(BITS.PI_2);
+	immutable Dec32 PI_SQR	 = Dec32(BITS.PI_SQR);
+	immutable Dec32 SQRT_PI  = Dec32(BITS.SQRT_PI);
+	immutable Dec32 SQRT_2PI = Dec32(BITS.SQRT_2PI);
 
-	immutable Dec32 E		 = Dec32(SV.E);
-	immutable Dec32 LOG2_E	 = Dec32(SV.LOG2_E);
-	immutable Dec32 LOG10_E  = Dec32(SV.LOG10_E);
-	immutable Dec32 LN2 	 = Dec32(SV.LN2);
-	immutable Dec32 LOG10_2  = Dec32(SV.LOG10_2);
-	immutable Dec32 LN10	 = Dec32(SV.LN10);
-	immutable Dec32 LOG2_10  = Dec32(SV.LOG2_10);
-	immutable Dec32 SQRT2	 = Dec32(SV.SQRT2);
-	immutable Dec32 PHI 	 = Dec32(SV.PHI);
-	immutable Dec32 GAMMA	 = Dec32(SV.GAMMA);
+	immutable Dec32 E		 = Dec32(BITS.E);
+	immutable Dec32 LOG2_E	 = Dec32(BITS.LOG2_E);
+	immutable Dec32 LOG10_E  = Dec32(BITS.LOG10_E);
+	immutable Dec32 LN2 	 = Dec32(BITS.LN2);
+	immutable Dec32 LOG10_2  = Dec32(BITS.LOG10_2);
+	immutable Dec32 LN10	 = Dec32(BITS.LN10);
+	immutable Dec32 LOG2_10  = Dec32(BITS.LOG2_10);
+	immutable Dec32 SQRT2	 = Dec32(BITS.SQRT2);
+	immutable Dec32 PHI 	 = Dec32(BITS.PHI);
+	immutable Dec32 GAMMA	 = Dec32(BITS.GAMMA);
 */
 	// boolean constants
 	immutable Dec64 TRUE	 = ONE;
@@ -363,49 +362,49 @@ public:
 	/**
 	 * Creates a Dec64 from a special value.
 	 */
-	private this(const SV sv) {
+	private this(const BITS sv) {
 		intBits = sv;
 	}
 
 	// this unit test uses private values
 	unittest {
 		Dec64 num;
-		num = Dec64(SV.POS_SIG);
+		num = Dec64(BITS.POS_SIG);
 		assertTrue(num.isSignaling);
 		assertTrue(num.isNaN);
 		assertTrue(!num.isNegative);
 		assertTrue(!num.isNormal);
-		num = Dec64(SV.NEG_SIG);
+		num = Dec64(BITS.NEG_SIG);
 		assertTrue(num.isSignaling);
 		assertTrue(num.isNaN);
 		assertTrue(num.isNegative);
 		assertTrue(!num.isNormal);
-		num = Dec64(SV.POS_NAN);
+		num = Dec64(BITS.POS_NAN);
 		assertTrue(!num.isSignaling);
 		assertTrue(num.isNaN);
 		assertTrue(!num.isNegative);
 		assertTrue(!num.isNormal);
-		num = Dec64(SV.NEG_NAN);
+		num = Dec64(BITS.NEG_NAN);
 		assertTrue(!num.isSignaling);
 		assertTrue(num.isNaN);
 		assertTrue(num.isNegative);
 		assertTrue(num.isQuiet);
-		num = Dec64(SV.POS_INF);
+		num = Dec64(BITS.POS_INF);
 		assertTrue(num.isInfinite);
 		assertTrue(!num.isNaN);
 		assertTrue(!num.isNegative);
 		assertTrue(!num.isNormal);
-		num = Dec64(SV.NEG_INF);
+		num = Dec64(BITS.NEG_INF);
 		assertTrue(!num.isSignaling);
 		assertTrue(num.isInfinite);
 		assertTrue(num.isNegative);
 		assertTrue(!num.isFinite);
-		num = Dec64(SV.POS_ZRO);
+		num = Dec64(BITS.POS_ZRO);
 		assertTrue(num.isFinite);
 		assertTrue(num.isZero);
 		assertTrue(!num.isNegative);
 		assertTrue(num.isNormal);
-		num = Dec64(SV.NEG_ZRO);
+		num = Dec64(BITS.NEG_ZRO);
 		assertTrue(!num.isSignaling);
 		assertTrue(num.isZero);
 		assertTrue(num.isNegative);
@@ -1573,8 +1572,11 @@ const bool opEquals(T:Dec64)(const T that) {
 // binary operators
 //--------------------------------
 
-const T opBinary(string op, T:Dec64)(const T rhs)
-//	  const Dec64 opBinary(string op)(const Dec64 rhs)
+	// NOTE: "const Dec64 opBinary(string op)(const Dec64 rhs)"
+	//     doesn't work becaus of a DMD compiler bug.
+
+	/// operations on Dec64 arguments
+	private const T opBinary(string op, T:Dec64)(const T rhs)
 	{
 		static if (op == "+") {
 			return add!Dec64(this, rhs, context64);
@@ -1586,6 +1588,14 @@ const T opBinary(string op, T:Dec64)(const T rhs)
 			return divide!Dec64(this, rhs, context64);
 		} else static if (op == "%") {
 			return remainder!Dec64(this, rhs, context64);
+		} else static if (op == "%") {
+			return remainder!Dec32(this, rhs, context64);
+		} else static if (op == "&") {
+			return and!Dec64(this, rhs, context64);
+		} else static if (op == "|") {
+			return or!Dec64(this, rhs, context64);
+		} else static if (op == "^") {
+			return xor!Dec64(this, rhs, context64);
 		}
 	}
 
@@ -1614,13 +1624,13 @@ const T opBinary(string op, T:Dec64)(const T rhs)
 		assertEqual(expect,actual);
 	}
 
-	/**
-	 * Detect whether T is a decimal type.
-	 */
+	 /// Can T be promoted to a Dec64?
 	private template isPromotable(T) {
 		enum bool isPromotable = is(T:ulong) || is(T:real) || is(T:Dec32);
 	}
 
+	// TODO: fix this to pass integers without promotion
+	/// operations on promotable arguments
 	const Dec64 opBinary(string op, T)(const T rhs) if(isPromotable!T) {
 		return opBinary!(op,Dec64)(Dec64(rhs));
 	}
@@ -1635,12 +1645,12 @@ const T opBinary(string op, T:Dec64)(const T rhs)
 // operator assignment
 //-----------------------------
 
-ref Dec64 opOpAssign(string op, T:Dec64) (T rhs) {
+	private ref Dec64 opOpAssign(string op, T:Dec64) (T rhs) {
 		this = opBinary!op(rhs);
 		return this;
 	}
 
-	ref Dec64 opOpAssign(string op, T) (T rhs) if (isPromotable!T) {
+	private ref Dec64 opOpAssign(string op, T) (T rhs) if (isPromotable!T) {
 		this = opBinary!op(rhs);
 		return this;
 	}

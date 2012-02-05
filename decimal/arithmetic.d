@@ -1306,6 +1306,64 @@ unittest {
 	assertTrue(result.toString() == "21");
 }
 
+/// Multiplies a decimal by an integer.
+/// Not a required function, but useful because it avoids
+/// an unnecessary conversion to a decimal when multiplying.
+public T scale(T)(const T arg1, long arg2, DecimalContext context,
+		const bool rounded = true) if (isDecimal!T) {
+
+	T result = T.nan;
+	// if invalid, return NaN
+	if (invalidOperand!T(arg1, result)) {
+		return result;
+	}
+	// infinity * zero => invalid operation
+	if (arg1.isInfinite && arg2 == 0) {
+		return result;
+	}
+	// if either operand is infinite, return infinity
+	if (arg1.isInfinite) {
+		result = T.infinity;
+		result.sign = arg1.sign ^ (arg2 < 0);
+		return result;
+	}
+
+	// product is finite
+	// mul(0,f) or (f,0)
+	if (arg1.isZero || arg2 == 0) {
+		result = T.zero;
+		result.exponent = arg1.exponent;
+		result.sign = arg1.sign ^ (arg2 < 0);
+	}
+	// product is non-zero
+	else {
+		BigDecimal product = BigDecimal.zero();
+		product.coefficient = arg1.coefficient * arg2;
+		product.exponent = arg1.exponent;
+		product.sign = arg1.sign ^ (arg2 < 0);
+		product.digits = numDigits(product.coefficient);
+		result = T(product);
+	}
+
+	// only needs rounding if
+	if (rounded) {
+		round(result, context);
+	}
+	return result;
+}
+
+unittest {
+	BigDecimal arg1, result;
+	long arg2;
+	arg1 = BigDecimal("1.20");
+	arg2 = 3;
+	result = scale(arg1, arg2, testContext);
+	assertTrue(result.toString() == "3.60");
+	arg1 = -7000;
+	result = scale(arg1, arg2, testContext);
+	assertTrue(result.toString() == "-21000");
+}
+
 /**
  * Multiplies two numbers and adds a third number to the result.
  * The result of the multiplication is not rounded prior to the addition.
