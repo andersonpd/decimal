@@ -212,7 +212,6 @@ if (isDecimal!T) {
 	uint digits = num.digits;
 	T remainder = getRemainder(num, context);
 
-
 	// if the number wasn't rounded...
 	if (num.digits == digits) {
 		return;
@@ -225,10 +224,33 @@ if (isDecimal!T) {
 	// TODO: the first digit function now has a maxValue parameter for
 	// Dec32 & Dec64
 	switch (context.rounding) {
+	case Rounding.UP:
+		auto temp = T.zero;
+		if (remainder != temp) {
+			increment(num, context);
+		}
+		return;
 	case Rounding.DOWN:
+		return;
+	case Rounding.CEILING:
+		auto temp = T.zero;
+		if (!num.sign && (remainder != temp)) {
+			increment(num, context);
+		}
+		return;
+	case Rounding.FLOOR:
+		auto temp = T.zero;
+		if (num.sign && remainder != temp) {
+			increment(num, context);
+		}
 		return;
 	case Rounding.HALF_UP:
 		if (firstDigit(remainder.coefficient) >= 5) {
+			increment(num, context);
+		}
+		return;
+	case Rounding.HALF_DOWN:
+		if (firstDigit(remainder.coefficient) > 5) {
 			increment(num, context);
 		}
 		return;
@@ -244,29 +266,6 @@ if (isDecimal!T) {
 		// remainder == 5
 		// if last digit is odd...
 		if (first & 1) {
-			increment(num, context);
-		}
-		return;
-	case Rounding.CEILING:
-		auto temp = T.zero;
-		if (!num.sign && (remainder != temp)) {
-			increment(num, context);
-		}
-		return;
-	case Rounding.FLOOR:
-		auto temp = T.zero;
-		if (num.sign && remainder != temp) {
-			increment(num, context);
-		}
-		return;
-	case Rounding.HALF_DOWN:
-		if (firstDigit(remainder.coefficient) > 5) {
-			increment(num, context);
-		}
-		return;
-	case Rounding.UP:
-		auto temp = T.zero;
-		if (remainder != temp) {
 			increment(num, context);
 		}
 		return;

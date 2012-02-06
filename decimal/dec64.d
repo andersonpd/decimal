@@ -408,8 +408,8 @@ public:
 
 unittest {
 		Dec64 num;
-		num = Dec64(1234567890L);
-		assertTrue(num.toString == "1.234568E+9");
+		num = Dec64(123456789012345678L);
+		assertTrue(num.toString == "1.234567890123457E+17");
 		num = Dec64(0);
 		assertTrue(num.toString == "0");
 		num = Dec64(1);

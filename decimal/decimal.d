@@ -848,6 +848,28 @@ unittest {
 		assertTrue(num.isIntegral);
 	}
 
+	const bool isZeroCoefficient() {
+		return !isSpecial && coefficient == 0;
+	}
+
+	unittest {
+		BigDecimal num;
+		num = 0;
+		assertTrue(num.isZeroCoefficient);
+		num = BigInt("-0");
+		assertTrue(num.isZeroCoefficient);
+		num = BigDecimal("0E+4");
+		assertTrue(num.isZeroCoefficient);
+		num = 12345;
+		assertFalse(num.isZeroCoefficient);
+		num = 1.5;
+		assertFalse(num.isZeroCoefficient);
+		num = BigDecimal.NAN;
+		assertFalse(num.isZeroCoefficient);
+		num = BigDecimal.INFINITY;
+		assertFalse(num.isZeroCoefficient);
+	}
+
 //--------------------------------
 // comparison
 //--------------------------------
