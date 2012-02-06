@@ -503,10 +503,10 @@ unittest {
 	BigDecimal zero = BigDecimal(0);
 	BigDecimal num, expect;
 	num = 1.3;
-	expect = subtract(zero, num, testContext);
+	expect = sub(zero, num, testContext);
 	assertTrue(minus(num, testContext) == expect);
 	num = -1.3;
-	expect = subtract(zero, num, testContext);
+	expect = sub(zero, num, testContext);
 	assertTrue(minus(num, testContext) == expect);
 }
 
@@ -574,7 +574,7 @@ public T nextMinus(T)(const T arg, DecimalContext context) if (isDecimal!T) {
 		return T(0L, context.eTiny);
 	}
 	T addend = T(1, adjx);
-	result = subtract!T(arg, addend, context, true);	//TODO: are the flags set/not set correctly?
+	result = sub!T(arg, addend, context, true);	//TODO: are the flags set/not set correctly?
 		if (result < copyNegate!T(T.max(context))) {
 		result = copyNegate!T(T.infinity);
 	}
@@ -689,7 +689,7 @@ public int compare(T)(const T arg1, const T arg2, DecimalContext context,
 	}
 
 	// when all else fails, subtract
-	T result = subtract!T(arg1, arg2, context, rounded);
+	T result = sub!T(arg1, arg2, context, rounded);
 
 	// test the coefficient
 	// result.isZero may not be true if the result hasn't been rounded
@@ -759,7 +759,7 @@ public bool equals(T)(const T arg1, const T arg2, DecimalContext context,
 	}
 
 	// otherwise they are equal if they represent the same value
-	T result = subtract!T(arg1, arg2, context, rounded);
+	T result = sub!T(arg1, arg2, context, rounded);
 	return result.coefficient == 0;
 }
 
@@ -1240,10 +1240,10 @@ unittest {
  * in the General Decimal Arithmetic Specification and is the basis
  * for the opAdd and opSub functions for decimal numbers.
  */
-public T subtract(T) (const T arg1, const T arg2,
+public T sub(T) (const T arg1, const T arg2,
 		DecimalContext context, const bool rounded = true) if (isDecimal!T) {
 	return add!T(arg1, copyNegate!T(arg2), context , rounded);
-}	 // end subtract(arg1, arg2)
+}	 // end sub(arg1, arg2)
 
 /**
  * Multiplies two numbers.
@@ -1252,7 +1252,7 @@ public T subtract(T) (const T arg1, const T arg2,
  * in the General Decimal Arithmetic Specification and is the basis
  * for the opMul function for decimal numbers.
  */
-public T multiply(T)(const T arg1, const T arg2, DecimalContext context,
+public T mul(T)(const T arg1, const T arg2, DecimalContext context,
 		const bool rounded = true) if (isDecimal!T) {
 
 	T result = T.nan;
@@ -1299,17 +1299,17 @@ unittest {
 	BigDecimal arg1, arg2, result;
 	arg1 = BigDecimal("1.20");
 	arg2 = 3;
-	result = multiply(arg1, arg2, testContext);
+	result = mul(arg1, arg2, testContext);
 	assertTrue(result.toString() == "3.60");
 	arg1 = 7;
-	result = multiply(arg1, arg2, testContext);
+	result = mul(arg1, arg2, testContext);
 	assertTrue(result.toString() == "21");
 }
 
 /// Multiplies a decimal by an integer.
 /// Not a required function, but useful because it avoids
 /// an unnecessary conversion to a decimal when multiplying.
-public T scale(T)(const T arg1, long arg2, DecimalContext context,
+public T mulLong(T)(const T arg1, long arg2, DecimalContext context,
 		const bool rounded = true) if (isDecimal!T) {
 
 	T result = T.nan;
@@ -1357,10 +1357,10 @@ unittest {
 	long arg2;
 	arg1 = BigDecimal("1.20");
 	arg2 = 3;
-	result = scale(arg1, arg2, testContext);
+	result = mulLong(arg1, arg2, testContext);
 	assertTrue(result.toString() == "3.60");
 	arg1 = -7000;
-	result = scale(arg1, arg2, testContext);
+	result = mulLong(arg1, arg2, testContext);
 	assertTrue(result.toString() == "-21000");
 }
 
@@ -1374,7 +1374,7 @@ unittest {
 public T fma(T)(const T arg1, const T arg2, const T arg3,
 		DecimalContext context) if (isDecimal!T) {
 
-	T product = multiply!T(arg1, arg2, context, false);
+	T product = mul!T(arg1, arg2, context, false);
 	return add!T(product, arg3, context);
 }
 
@@ -1401,7 +1401,7 @@ unittest {
  * in the General Decimal Arithmetic Specification and is the basis
  * for the opDiv function for decimal numbers.
  */
-public T divide(T)(const T arg1, const T arg2,
+public T div(T)(const T arg1, const T arg2,
 		DecimalContext context, bool rounded = true) if (isDecimal!T) {
 
 	T quotient;
@@ -1443,14 +1443,14 @@ unittest {
 	BigDecimal arg1, arg2, actual, expect;
 	arg1 = 1;
 	arg2 = 3;
-	actual = divide(arg1, arg2, testContext);
+	actual = div(arg1, arg2, testContext);
 	expect = BigDecimal(0.333333333);
 	assertTrue(actual == expect);
 	assertTrue(actual.toString() == expect.toString());
 	arg1 = 1;
 	arg2 = 10;
 	expect = 0.1;
-	actual = divide(arg1, arg2, testContext);
+	actual = div(arg1, arg2, testContext);
 	assertTrue(actual == expect);
 }
 
@@ -1522,7 +1522,7 @@ public T remainder(T)(const T arg1, const T arg2,
 		return quotient;
 	}
 	quotient = divideInteger!T(arg1, arg2, context);
-	T remainder = arg1 - multiply!T(arg2, quotient, context, false);
+	T remainder = arg1 - mul!T(arg2, quotient, context, false);
 	return remainder;
 }
 
@@ -1555,7 +1555,7 @@ public T remainderNear(T)(const T dividend, const T divisor,
 		return quotient;
 	}
 	quotient = divideInteger(dividend, divisor, context);
-	T remainder = dividend - multiply!T(divisor, quotient, context, false);
+	T remainder = dividend - mul!T(divisor, quotient, context, false);
 	return remainder;
 }
 

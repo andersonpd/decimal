@@ -293,8 +293,8 @@ public:
 	/**
 	 * Creates a Dec32 from a special value.
 	 */
-	private this(const BITS sv) {
-		intBits = sv;
+	private this(const BITS bits) {
+		intBits = bits;
 	}
 
 	// this unit test uses private values
@@ -1415,7 +1415,7 @@ public:
 		} else static if (op == "++") {
 			return add!Dec32(this, Dec32(1), context32);
 		} else static if (op == "--") {
-			return subtract!Dec32(this, Dec32(1), context32);
+			return sub!Dec32(this, Dec32(1), context32);
 		}
 	}
 
@@ -1465,13 +1465,13 @@ public:
 			return add!Dec32(this, rhs, context32);
 		}
 		else static if (op == "-") {
-			return subtract!Dec32(this, rhs, context32);
+			return sub!Dec32(this, rhs, context32);
 		}
 		else static if (op == "*") {
-			return multiply!Dec32(this, rhs, context32);
+			return mul!Dec32(this, rhs, context32);
 		}
 		else static if (op == "/") {
-			return divide!Dec32(this, rhs, context32);
+			return div!Dec32(this, rhs, context32);
 		}
 		else static if (op == "%") {
 			return remainder!Dec32(this, rhs, context32);

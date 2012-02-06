@@ -908,7 +908,7 @@ unittest {
 			return add!BigDecimal(this, BigDecimal(1), bigContext);
 		}
 		else static if (op == "--") {
-			return subtract!BigDecimal(this, BigDecimal(1), bigContext);
+			return sub!BigDecimal(this, BigDecimal(1), bigContext);
 		}
 	}
 
@@ -954,13 +954,13 @@ unittest {
 			return add!BigDecimal(this, rhs, bigContext);
 		}
 		else static if (op == "-") {
-			return subtract!BigDecimal(this, rhs, bigContext);
+			return sub!BigDecimal(this, rhs, bigContext);
 		}
 		else static if (op == "*") {
-			return multiply!BigDecimal(this, rhs, bigContext);
+			return mul!BigDecimal(this, rhs, bigContext);
 		}
 		else static if (op == "/") {
-			return divide!BigDecimal(this, rhs, bigContext);
+			return div!BigDecimal(this, rhs, bigContext);
 		}
 		else static if (op == "%") {
 			return remainder!BigDecimal(this, rhs, bigContext);

@@ -244,41 +244,26 @@ private:
 private:
 	static enum BITS : ulong
 	{
-		// The value corresponding to a positive signaling NaN.
 		POS_SIG = 0x7E00000000000000,
-		// The value corresponding to a negative signaling NaN.
 		NEG_SIG = 0xFE00000000000000,
-
-		// The value corresponding to a positive quiet NaN.
 		POS_NAN = 0x7C00000000000000,
-		// The value corresponding to a negative quiet NaN.
 		NEG_NAN = 0xFC00000000000000,
-
-		// The value corresponding to positive infinity.
 		POS_INF = 0x7800000000000000,
-		// The value corresponding to negative infinity.
 		NEG_INF = 0xF800000000000000,
-
-		// The value corresponding to positive zero. (+0)
 		POS_ZRO = 0x31C0000000000000,
-		// The value corresponding to negative zero. (-0)
 		NEG_ZRO = 0xB1C0000000000000,
-
-		// The value of the largest representable positive number.
 		POS_MAX = 0x77FB86F26FC0FFFF, //  0x77F8967FFFFFFFFF TODO: why is this different?
-		// The value of the largest representable negative number.
-		NEG_MAX = 0xF7FB86F26FC0FFFF
-/*	Dec32 diff
-		// common small integers
-		POS_ONE = 0x32800001,
-		NEG_ONE = 0xB2800001,
-		POS_TWO = 0x32800002,
-		NEG_TWO = 0xB2800002,
-		POS_FIV = 0x32800005,
-		NEG_FIV = 0xB2800005,
-		POS_TEN = 0x3280000A,
-		NEG_TEN = 0xB280000A,
+		NEG_MAX = 0xF7FB86F26FC0FFFF,
+		POS_ONE = 0x31C0000000000001,
+		NEG_ONE = 0xB1C0000000000001,
+		POS_TWO = 0x31C0000000000002,
+		NEG_TWO = 0xB1C0000000000002,
+		POS_FIV = 0x31C0000000000005,
+		NEG_FIV = 0xB1C0000000000005,
+		POS_TEN = 0x31C000000000000A,
+		NEG_TEN = 0xB1C000000000000A,
 
+/*	Dec32 diff
 		// pi and related values
 		PI		 = 0x2FAFEFD9,
 		TAU 	 = 0x2FDFDFB2,
@@ -318,20 +303,18 @@ public:
 	immutable Dec64 NEG_ZERO = Dec64(BITS.NEG_ZRO);
 	immutable Dec64 MAX 	 = Dec64(BITS.POS_MAX);
 	immutable Dec64 NEG_MAX  = Dec64(BITS.NEG_MAX);
-	immutable Dec64 ONE 	 = Dec64( 1);
-	immutable Dec64 NEG_ONE  = Dec64(-1);
+
+	// small integers
+	immutable Dec64 ONE 	 = Dec64(BITS.POS_ONE);
+	immutable Dec64 NEG_ONE  = Dec64(BITS.NEG_ONE);
+	immutable Dec64 TWO 	 = Dec64(BITS.POS_TWO);
+	immutable Dec64 NEG_TWO  = Dec64(BITS.NEG_TWO);
+	immutable Dec64 FIVE	 = Dec64(BITS.POS_FIV);
+	immutable Dec64 NEG_FIVE = Dec64(BITS.NEG_FIV);
+	immutable Dec64 TEN 	 = Dec64(BITS.POS_TEN);
+	immutable Dec64 NEG_TEN  = Dec64(BITS.NEG_TEN);
 
 /*	Dec32 diff
-	// small integers
-	immutable Dec32 ONE 	 = Dec32(BITS.POS_ONE);
-	immutable Dec32 NEG_ONE  = Dec32(BITS.NEG_ONE);
-	immutable Dec32 TWO 	 = Dec32(BITS.POS_TWO);
-	immutable Dec32 NEG_TWO  = Dec32(BITS.NEG_TWO);
-	immutable Dec32 FIVE	 = Dec32(BITS.POS_FIV);
-	immutable Dec32 NEG_FIVE = Dec32(BITS.NEG_FIV);
-	immutable Dec32 TEN 	 = Dec32(BITS.POS_TEN);
-	immutable Dec32 NEG_TEN  = Dec32(BITS.NEG_TEN);
-
 	// mathamatical constants
 	immutable Dec32 TAU 	 = Dec32(BITS.TAU);
 	immutable Dec32 PI		 = Dec32(BITS.PI);
@@ -362,8 +345,8 @@ public:
 	/**
 	 * Creates a Dec64 from a special value.
 	 */
-	private this(const BITS sv) {
-		intBits = sv;
+	private this(const BITS bits) {
+		intBits = bits;
 	}
 
 	// this unit test uses private values
@@ -1536,7 +1519,7 @@ const bool opEquals(T:Dec64)(const T that) {
 		} else static if (op == "++") {
 			return add!Dec64(this, Dec64(1), context64);
 		} else static if (op == "--") {
-			return subtract!Dec64(this, Dec64(1), context64);
+			return sub!Dec64(this, Dec64(1), context64);
 		}
 	}
 
@@ -1581,11 +1564,11 @@ const bool opEquals(T:Dec64)(const T that) {
 		static if (op == "+") {
 			return add!Dec64(this, rhs, context64);
 		} else static if (op == "-") {
-			return subtract!Dec64(this, rhs, context64);
+			return sub!Dec64(this, rhs, context64);
 		} else static if (op == "*") {
-			return multiply!Dec64(this, rhs, context64);
+			return mul!Dec64(this, rhs, context64);
 		} else static if (op == "/") {
-			return divide!Dec64(this, rhs, context64);
+			return div!Dec64(this, rhs, context64);
 		} else static if (op == "%") {
 			return remainder!Dec64(this, rhs, context64);
 		} else static if (op == "%") {
