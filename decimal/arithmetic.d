@@ -1234,6 +1234,104 @@ unittest {
 }
 
 /**
+ * Adds two numbers.
+ *
+ * This function corresponds to the "add and subtract" function
+ * in the General Decimal Arithmetic Specification and is the basis
+ * for the opAdd and opSub functions for decimal numbers.
+ */
+public T addLong(T)(const T arg1, const long arg2, DecimalContext context,
+		bool rounded = true) if (isDecimal!T) {
+	T result = T.nan;	 // sum is initialized to quiet NaN
+
+	// check for NaN operand(s)
+	if (invalidOperand!T(arg1, result)) {
+		return result;
+	}
+	// if both operands are infinite
+	if (arg1.isInfinite) {
+		// (+inf) + (-inf) => invalid operation
+		if (arg1.sign != (arg2 < 0)) {
+			return setInvalidFlag!T();
+		}
+		// both infinite with same sign
+		return arg1.dup;
+	}
+	// only augend is infinite,
+	if (arg1.isInfinite) {
+		return arg1.dup;
+	}
+	// add(0, 0)
+	if (arg1.isZero && arg2 == 0) {
+		result = arg1;
+		result.exponent = std.algorithm.min(arg1.exponent, 0);
+		result.sign = arg1.sign && (arg2 < 0);
+		return result;
+	}
+	// add(0,f)
+	if (arg1.isZero) {
+		result = T(arg2);
+		result.exponent = std.algorithm.min(arg1.exponent, 0);
+		return result;
+	}
+	// add(f,0)
+	if (arg2 == 0) {
+		result = arg1;
+		result.exponent = std.algorithm.min(arg1.exponent, 0);
+		return result;
+	}
+
+	// at this point, the result will be finite and not zero.
+	// calculate in BigDecimal and convert before return
+	BigDecimal sum = BigDecimal.zero;
+	BigDecimal augend = toBigDecimal!T(arg1);
+	BigDecimal addend = BigDecimal(arg2);
+	// align the operands
+	alignOps(augend, addend, context);
+	// if operands have the same sign...
+	if (augend.sign == addend.sign) {
+		sum.coefficient = augend.coefficient + addend.coefficient;
+		sum.sign = augend.sign;
+	}
+	// ...else operands have different signs
+	else {
+		if (augend.coefficient >= addend.coefficient)
+		{
+			sum.coefficient = augend.coefficient - addend.coefficient;
+			sum.sign = augend.sign;
+		}
+		else
+		{
+			sum.coefficient = addend.coefficient - augend.coefficient;
+			sum.sign = addend.sign;
+		}
+	}
+	// set the number of digits and the exponent
+	sum.digits = numDigits(sum.coefficient);
+	sum.exponent = augend.exponent;
+
+	result = T(sum);
+	// round the result
+	if (rounded) {
+		round(result, context);
+	}
+	return result;
+}	 // end add(arg1, arg2)
+
+unittest {
+	BigDecimal arg1, sum;
+	long arg2;
+	arg2 = 12;
+	arg1 = BigDecimal("7.00");
+	sum = addLong(arg1, arg2, testContext);
+	assertTrue(sum.toString() == "19.00");
+	arg1 = BigDecimal("1E+2");
+	arg2 = 10000;
+	sum = addLong(arg1, arg2, testContext);
+	assertTrue(sum.toString() == "10100");
+}
+
+/**
  * Subtracts a number from another number.
  *
  * This function corresponds to the "add and subtract" function
@@ -1243,6 +1341,18 @@ unittest {
 public T sub(T) (const T arg1, const T arg2,
 		DecimalContext context, const bool rounded = true) if (isDecimal!T) {
 	return add!T(arg1, copyNegate!T(arg2), context , rounded);
+}	 // end sub(arg1, arg2)
+
+/**
+ * Subtracts a number from another number.
+ *
+ * This function corresponds to the "add and subtract" function
+ * in the General Decimal Arithmetic Specification and is the basis
+ * for the opAdd and opSub functions for decimal numbers.
+ */
+public T subLong(T) (const T arg1, const long arg2,
+		DecimalContext context, const bool rounded = true) if (isDecimal!T) {
+	return addLong!T(arg1, -arg2, context , rounded);
 }	 // end sub(arg1, arg2)
 
 /**
@@ -1540,6 +1650,7 @@ unittest {
 }
 
 // UNREADY: remainderNear. Unit tests. Logic?
+// FIXTHIS: should not be identical to remainder.
 /**
  * Divides one number by another and returns the fractional remainder.
  * Division by zero sets a flag and returns Infinity.
