@@ -241,6 +241,10 @@ private:
 //	special values and constants
 //--------------------------------
 
+// Integer values passed to the constructors are not copied but are modified
+// and inserted into the sign, coefficient and exponent fields.
+// This enum is used to force the constructor to copy the bit pattern,
+// rather than treating it as a integer.
 private:
 	static enum BITS : ulong
 	{
@@ -263,36 +267,34 @@ private:
 		POS_TEN = 0x31C000000000000A,
 		NEG_TEN = 0xB1C000000000000A,
 
-/*	Dec32 diff
 		// pi and related values
-		PI		 = 0x2FAFEFD9,
-		TAU 	 = 0x2FDFDFB2,
-		PI_2	 = 0x2F97F7EC,
-		PI_SQR	 = 0x6BF69924,
-		SQRT_PI  = 0x2F9B0BA6,
-		SQRT_2PI = 0x2F9B0BA6,
+		PI		 = 0x2FEB29430A256D21,
+		TAU 	 = 0x2FF65286144ADA42,
+		PI_2	 = 0x2FE594A18512B691,
+		PI_SQR	 = 0x6BFB105A58668B4F,
+		SQRT_PI  = 0x2FE64C099229FBAC,
+		SQRT_2PI = 0x2FE8E7C3DFE4B159,
 		// 1/PI
 		// 1/SQRT_PI
 		// 1/SQRT_2PI
 
+		// logarithms
+		E		= 0x2FE9A8434EC8E225,
+		LOG2_E	= 0x2FE5201F9D6E7083,
+		LOG10_E = 0x2FCF6DE2A337B1C6,
+		LN2 	= 0x2FD8A0230ABE4EDD,
+		LOG10_2 = 0x2FCAB1DA13953844,
+		LN10	= 0x2FE82E305E8873FE,
+		LOG2_10 = 0x2FEBCD46A810ADC2,
+/*	Dec32 diff
 		PHI 	= 0x2F98B072,
 		GAMMA	= 0x2F58137D,
-
-		// logarithms
-		E		= 0x2FA97A4A,
-		LOG2_E	= 0x2F960387,
-		LOG10_E = 0x2F4244A1,
-		LN2 	= 0x2F69C410,
-		LOG10_2 = 0x30007597,
-		LN10	= 0x2FA32279,
-		LOG2_10 = 0x2FB2B048,
-
+*/
 		// roots and squares of common values
-		SQRT2	= 0x2F959446,
-		SQRT1_2 = 0x2F6BE55C
+		SQRT2	= 0x2FE50638410593E7,
+		SQRT1_2 = 0x2FD91F19451BE383
 	}
 
-*/	}
 
 public:
 	immutable Dec64 NAN 	 = Dec64(BITS.POS_NAN);
@@ -314,25 +316,26 @@ public:
 	immutable Dec64 TEN 	 = Dec64(BITS.POS_TEN);
 	immutable Dec64 NEG_TEN  = Dec64(BITS.NEG_TEN);
 
-/*	Dec32 diff
 	// mathamatical constants
-	immutable Dec32 TAU 	 = Dec32(BITS.TAU);
-	immutable Dec32 PI		 = Dec32(BITS.PI);
-	immutable Dec32 PI_2	 = Dec32(BITS.PI_2);
-	immutable Dec32 PI_SQR	 = Dec32(BITS.PI_SQR);
-	immutable Dec32 SQRT_PI  = Dec32(BITS.SQRT_PI);
-	immutable Dec32 SQRT_2PI = Dec32(BITS.SQRT_2PI);
+	immutable Dec64 TAU 	 = Dec64(BITS.TAU);
+	immutable Dec64 PI		 = Dec64(BITS.PI);
+	immutable Dec64 PI_2	 = Dec64(BITS.PI_2);
+	immutable Dec64 PI_SQR	 = Dec64(BITS.PI_SQR);
+	immutable Dec64 SQRT_PI  = Dec64(BITS.SQRT_PI);
+	immutable Dec64 SQRT_2PI = Dec64(BITS.SQRT_2PI);
 
-	immutable Dec32 E		 = Dec32(BITS.E);
-	immutable Dec32 LOG2_E	 = Dec32(BITS.LOG2_E);
-	immutable Dec32 LOG10_E  = Dec32(BITS.LOG10_E);
-	immutable Dec32 LN2 	 = Dec32(BITS.LN2);
-	immutable Dec32 LOG10_2  = Dec32(BITS.LOG10_2);
-	immutable Dec32 LN10	 = Dec32(BITS.LN10);
-	immutable Dec32 LOG2_10  = Dec32(BITS.LOG2_10);
-	immutable Dec32 SQRT2	 = Dec32(BITS.SQRT2);
-	immutable Dec32 PHI 	 = Dec32(BITS.PHI);
-	immutable Dec32 GAMMA	 = Dec32(BITS.GAMMA);
+	immutable Dec64 E		 = Dec64(BITS.E);
+	immutable Dec64 LOG2_E	 = Dec64(BITS.LOG2_E);
+	immutable Dec64 LOG10_E  = Dec64(BITS.LOG10_E);
+	immutable Dec64 LN2 	 = Dec64(BITS.LN2);
+	immutable Dec64 LOG10_2  = Dec64(BITS.LOG10_2);
+	immutable Dec64 LN10	 = Dec64(BITS.LN10);
+	immutable Dec64 LOG2_10  = Dec64(BITS.LOG2_10);
+	immutable Dec64 SQRT2	 = Dec64(BITS.SQRT2);
+	immutable Dec64 SQRT1_2	 = Dec64(BITS.SQRT1_2);
+/*	Dec32 diff
+	immutable Dec64 PHI 	 = Dec64(BITS.PHI);
+	immutable Dec64 GAMMA	 = Dec64(BITS.GAMMA);
 */
 	// boolean constants
 	immutable Dec64 TRUE	 = ONE;
@@ -403,39 +406,25 @@ public:
 		coefficient = std.math.abs(n);
 	}
 
-/*	Dec32 diff
-	unittest {
-		real L10_2 = std.math.log10(2.0);
-		Dec32 LOG10_2 = Dec32(L10_2);
-		writeln("L10_2 = ", L10_2);
-		writeln("LOG10_2 = ", LOG10_2);
-		writeln("LOG10_2.toHexString = ", LOG10_2.toHexString);
-		real L2T = std.math.log2(10.0);
-		Dec32 LOG2_10 = Dec32(L2T);
-		writeln("L2T = ", L2T);
-		writeln("LOG2_10 = ", LOG2_10);
-		writeln("LOG2_10.toHexString = ", LOG2_10.toHexString);
-		Dec32 num;
-		num = Dec32(1234567890L);
+unittest {
+		Dec64 num;
+		num = Dec64(1234567890L);
 		assertTrue(num.toString == "1.234568E+9");
-		num = Dec32(0);
+		num = Dec64(0);
 		assertTrue(num.toString == "0");
-		num = Dec32(1);
+		num = Dec64(1);
 		assertTrue(num.toString == "1");
-		num = Dec32(-1);
+		num = Dec64(-1);
 		assertTrue(num.toString == "-1");
-		num = Dec32(5);
+		num = Dec64(5);
 		assertTrue(num.toString == "5");
 	}
-*/
+
 	/**
 	 * Creates a Dec64 from a boolean value.
 	 */
 	public this(const bool value) {
-		this = zero;
-		if (value) {
-			coefficient = 1;
-		}
+		this = value ? ONE : ZERO;
 	}
 
 /*	Dec32 diff

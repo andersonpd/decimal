@@ -279,6 +279,7 @@ public:
 	immutable Dec32 LN10	 = Dec32(BITS.LN10);
 	immutable Dec32 LOG2_10  = Dec32(BITS.LOG2_10);
 	immutable Dec32 SQRT2	 = Dec32(BITS.SQRT2);
+	immutable Dec32 SQRT1_2	 = Dec32(BITS.SQRT1_2);
 	immutable Dec32 PHI 	 = Dec32(BITS.PHI);
 	immutable Dec32 GAMMA	 = Dec32(BITS.GAMMA);
 
@@ -369,10 +370,7 @@ public:
 	 * Creates a Dec32 from a boolean value.
 	 */
 	public this(const bool value) {
-		this = zero;
-		if (value) {
-			coefficient = 1;
-		}
+		this = value ? ONE : ZERO;
 	}
 
 	/**
