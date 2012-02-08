@@ -1008,16 +1008,18 @@ public:
 		return !isNegative;
 	}
 
+	// NOTE: NaN is false, Infinity is true
 	const bool isTrue() {
-		return coefficient != 0;
+		return !isNaN || isInfinite || coefficient != 0;
 	}
 
+	// NOTE: NaN is false, Infinity is true
 	const bool isFalse() {
-		return coefficient == 0;
+		return isNaN || (isFinite && coefficient == 0);
 	}
 
 	const bool isZeroCoefficient() {
-		return coefficient == 0;
+		return !isSpecial && coefficient == 0;
 	}
 
 	/**

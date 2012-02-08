@@ -848,6 +848,16 @@ unittest {
 		assertTrue(num.isIntegral);
 	}
 
+	// NOTE: NaN is false, Infinity is true
+	const bool isTrue() {
+		return !isNaN || isInfinite || coefficient != 0;
+	}
+
+	// NOTE: NaN is false, Infinity is true
+	const bool isFalse() {
+		return isNaN || (isFinite && coefficient == 0);
+	}
+
 	const bool isZeroCoefficient() {
 		return !isSpecial && coefficient == 0;
 	}

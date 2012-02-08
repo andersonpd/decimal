@@ -19,6 +19,7 @@ module decimal.conv;
 import decimal.context;
 import decimal.dec32;
 import decimal.dec64;
+import decimal.dec128;
 import decimal.decimal;
 import std.array: insertInPlace;
 import std.bigint;
@@ -113,7 +114,7 @@ unittest {
  * Detect whether T is a decimal type.
  */
 public template isDecimal(T) {
-enum bool isDecimal = is(T: Dec32) || is(T: Dec64) || is(T: BigDecimal);
+enum bool isDecimal = is(T: Dec32) || is(T: Dec64) || is(T: Dec128) || is(T: BigDecimal);
 }
 
 /**

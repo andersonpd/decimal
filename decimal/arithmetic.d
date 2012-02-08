@@ -1391,7 +1391,7 @@ public T mul(T)(const T arg1, const T arg2, DecimalContext context,
 	// product is non-zero
 	else {
 		BigDecimal product = BigDecimal.zero();
-		product.coefficient = arg1.coefficient * arg2.coefficient;
+		product.coefficient = BigInt(arg1.coefficient) * BigInt(arg2.coefficient);
 		product.exponent = arg1.exponent + arg2.exponent;
 		product.sign = arg1.sign ^ arg2.sign;
 		product.digits = numDigits(product.coefficient);
@@ -1484,6 +1484,7 @@ unittest {
 public T fma(T)(const T arg1, const T arg2, const T arg3,
 		DecimalContext context) if (isDecimal!T) {
 
+	// NOTE: should these both be BigDecimal?
 	T product = mul!T(arg1, arg2, context, false);
 	return add!T(product, arg3, context);
 }
