@@ -1,5 +1,4 @@
 ﻿/**
- *
  * A D programming language implementation of the
  * General Decimal Arithmetic Specification,
  * Version 1.70, (25 March 2009).
@@ -8,7 +7,7 @@
  * License: <a href="http://www.boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
  * Authors: Paul D. Anderson
  */
-/*			Copyright Paul D. Anderson 2009 - 2011.
+/*			Copyright Paul D. Anderson 2009 - 2012.
  * Distributed under the Boost Software License, Version 1.0.
  *	  (See accompanying file LICENSE_1_0.txt or copy at
  *			http://www.boost.org/LICENSE_1_0.txt)
@@ -28,6 +27,7 @@ import decimal.context;
 import decimal.conv : isDecimal, isFixedDecimal, toBigDecimal;
 import decimal.decimal;
 import decimal.rounding;
+import decimal.utils;
 
 import std.array: insertInPlace;
 import std.ascii: isDigit;
@@ -1391,7 +1391,9 @@ public T mul(T)(const T arg1, const T arg2, DecimalContext context,
 	// product is non-zero
 	else {
 		BigDecimal product = BigDecimal.zero();
-		product.coefficient = BigInt(arg1.coefficient) * BigInt(arg2.coefficient);
+		BigInt mant1 = arg1.coefficient;
+		BigInt mant2 = arg2.coefficient;
+		product.coefficient = mant1 * mant2;
 		product.exponent = arg1.exponent + arg2.exponent;
 		product.sign = arg1.sign ^ arg2.sign;
 		product.digits = numDigits(product.coefficient);

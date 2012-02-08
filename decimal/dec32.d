@@ -27,6 +27,7 @@ import decimal.context;
 import decimal.decimal;
 import decimal.logical;
 import decimal.rounding;
+import decimal.utils;
 
 unittest {
 	writeln("-------------------");

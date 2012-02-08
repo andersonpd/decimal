@@ -20,11 +20,13 @@ import std.bigint;
 import std.stdio;
 import decimal.arithmetic;
 import decimal.context;
-import decimal.decimal;
+import decimal.conv;
 import decimal.dec32;
 import decimal.dec64;
+import decimal.dec128;
+import decimal.decimal;
 import decimal.rounding;
-import decimal.conv;
+import decimal.utils;
 
 unittest {
 	writeln("---------------------------");

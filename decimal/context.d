@@ -189,37 +189,6 @@ class SubnormalException: DecimalException {
 	}
 };
 
-bool assertEqual(T)(T expected, T actual,
-                    string file = __FILE__, int line = __LINE__ ) {
-	if (expected == actual) {
-		return true;
-	}
-	writeln("failed at ", std.path.basename(file), "(", line, "):",
-	        " expected \"", expected, "\"",
-	        " but found \"", actual, "\".");
-	return false;
-}
-
-bool assertNotEqual(T)(T unexpected, T actual,
-                    string file = __FILE__, int line = __LINE__ ) {
-	if (unexpected == actual) {
-		writeln("failed at ", std.path.basename(file), "(", line, "):",
-	        	" \"", unexpected, "\" is equal to \"", actual, "\".");
-	//	        " expected value [\"", expected, "\]"",
-	//	        " and actual value [\"", actual, "\" are equal.");
-		return false;
-	}
-	return true;
-}
-
-bool assertTrue(bool actual, string file = __FILE__, int line = __LINE__ ) {
-	return assertEqual(true, actual, file, line);
-}
-
-bool assertFalse(bool actual, string file = __FILE__, int line = __LINE__ ) {
-	return assertEqual(false, actual, file, line);
-}
-
 public struct ContextFlags {
 
 	private static ubyte flags;

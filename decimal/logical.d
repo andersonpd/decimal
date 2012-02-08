@@ -16,11 +16,13 @@
 
 module decimal.logical;
 
-import decimal.conv;
-import decimal.context;
-import decimal.arithmetic;
 import std.stdio;
 import std.string;
+
+import decimal.arithmetic;
+import decimal.context;
+import decimal.conv;
+import decimal.utils;
 
 unittest {
 	writeln("-------------------");

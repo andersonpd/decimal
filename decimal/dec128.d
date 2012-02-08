@@ -26,7 +26,9 @@ import decimal.arithmetic;
 import decimal.context;
 import decimal.decimal;
 import decimal.dec32;
+import decimal.dec64;
 import decimal.rounding;
+import decimal.utils;
 
 unittest {
 	writeln("-------------------");
@@ -1537,7 +1539,7 @@ const bool opEquals(T:Dec128)(const T that) {
 		} else static if (op == "++") {
 			return add!Dec128(this, Dec128(1), context64);
 		} else static if (op == "--") {
-			return subtract!Dec128(this, Dec128(1), context64);
+			return sub!Dec128(this, Dec128(1), context64);
 		}
 	}
 
@@ -1579,11 +1581,11 @@ const T opBinary(string op, T:Dec128)(const T rhs)
 		static if (op == "+") {
 			return add!Dec128(this, rhs, context64);
 		} else static if (op == "-") {
-			return subtract!Dec128(this, rhs, context64);
+			return sub!Dec128(this, rhs, context64);
 		} else static if (op == "*") {
-			return multiply!Dec128(this, rhs, context64);
+			return mul!Dec128(this, rhs, context64);
 		} else static if (op == "/") {
-			return divide!Dec128(this, rhs, context64);
+			return div!Dec128(this, rhs, context64);
 		} else static if (op == "%") {
 			return remainder!Dec128(this, rhs, context64);
 		}
@@ -1618,7 +1620,8 @@ const T opBinary(string op, T:Dec128)(const T rhs)
 	 * Detect whether T is a decimal type.
 	 */
 	private template isPromotable(T) {
-		enum bool isPromotable = is(T:ulong) || is(T:real) || is(T:Dec128);
+		enum bool isPromotable = is(T:ulong) || is(T:real) ||
+			is(T:Dec32) || is(T:Dec64);
 	}
 
 	const Dec128 opBinary(string op, T)(const T rhs) if(isPromotable!T) {

@@ -23,6 +23,7 @@ module decimal.decimal;
 import decimal.context;
 import decimal.rounding;
 import decimal.arithmetic;
+import decimal.utils;
 
 import std.bigint;
 import std.exception: assumeUnique;

@@ -19,6 +19,7 @@ module decimal.rounding;
 import decimal.arithmetic:compare, copyNegate, equals;
 import decimal.context;
 import decimal.conv;
+import decimal.utils;
 import std.array: insertInPlace;
 import std.ascii: isDigit;
 import std.bigint;
