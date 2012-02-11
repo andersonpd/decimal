@@ -63,30 +63,30 @@ public struct DecimalContext {
 	/// rounding mode
 	immutable Rounding rounding;
 	/// max coefficient
-//	immutable BigInt maxCoefficient;
+//	/*immutable*/ BigInt maxCoefficient  = BigInt(10)^^9 - 1;
 
 	/// constructs a context with the specified parameters
-	public this(immutable uint precision, immutable int eMax, immutable Rounding rounding) {
+	public this(immutable uint precision, immutable int eMax,
+			immutable Rounding rounding) {
 		this.precision = precision;
 		this.eMax = eMax;
 		this.eMin = 1 - eMax;
 		this.eTiny = eMin - precision + 1;
 		this.rounding = rounding;
-//		BigInt mant = 1;
-//		this.maxCoefficient = mant; //mant^^precision - 1;
+//		BigInt maxCoefficient = BigInt(10)^^precision - 1;
 	}
 
 	/// Returns a copy of the context with a new precision
-	public DecimalContext setPrecision(immutable uint precision) {
+	public const DecimalContext setPrecision(immutable uint precision) {
 		return DecimalContext(precision, this.eMax, this.rounding);
 	}
 
 	/// Returns a copy of the context with a new exponent limit
-	public DecimalContext setMaxExponent(immutable int eMax) {
+	public const DecimalContext setMaxExponent(immutable int eMax) {
 		return DecimalContext(this.precision, eMax, this.rounding);
 	}
 	/// Returns a copy of the context with a new rounding mode
-	public DecimalContext setRounding(immutable Rounding rounding) {
+	public const DecimalContext setRounding(immutable Rounding rounding) {
 		return DecimalContext(this.precision, this.eMax, rounding);
 	}
 

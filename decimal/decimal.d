@@ -55,7 +55,8 @@ private static enum SV {NONE, INF, QNAN, SNAN};
  */
 struct BigDecimal {
 
-	private static DecimalContext bigContext = DecimalContext(9, 99, Rounding.HALF_EVEN);
+	private static DecimalContext bigContext =
+		DecimalContext(9, 99, Rounding.HALF_EVEN);
 
 	private SV sval = SV.QNAN;		// special values: default value is quiet NaN
 	private bool signed = false;	// true if the value is negative, false otherwise.
@@ -526,25 +527,25 @@ unittest {
 	}
 
 	/// Returns the maximum number of decimal digits in this context.
-	static uint precision(DecimalContext context = bigContext) {
+	static uint precision(const DecimalContext context = bigContext) {
 		return context.precision;
 	}
 
 	/// Returns the maximum number of decimal digits in this context.
-	static uint dig(DecimalContext context = bigContext) {
+	static uint dig(const DecimalContext context = bigContext) {
 		return context.precision;
 	}
 
 	/// Returns the number of binary digits in this context.
-	static int mant_dig(DecimalContext context = bigContext) {
+	static int mant_dig(const DecimalContext context = bigContext) {
 		return cast(int)(context.precision/LOG2);
 	}
 
-	static int min_exp(DecimalContext context = bigContext) {
+	static int min_exp(const DecimalContext context = bigContext) {
 		return cast(int)(context.eMin);
 	}
 
-	static int max_exp(DecimalContext context = bigContext) {
+	static int max_exp(const DecimalContext context = bigContext) {
 		return cast (int)(context.eMax);
 	}
 
@@ -560,38 +561,38 @@ unittest {
 	}*/
 	// Returns the maximum representable normal value in the current context.
 	// TODO: this is a fairly expensive operation. Can it be fixed?
-	static BigDecimal max(DecimalContext context = bigContext) {
+	static BigDecimal max(const DecimalContext context = bigContext) {
 		return BigDecimal(context.maxString);
 	}
 
 	// Returns the maximum representable normal value in the current context.
 	// TODO: this is a fairly expensive operation. Can it be fixed?
 	// TODO: is this needed?
-	static BigDecimal max(const bool sign, DecimalContext context = bigContext) {
+	static BigDecimal max(const bool sign, const DecimalContext context = bigContext) {
 		BigDecimal result = BigDecimal(context.maxString);
 		return sign ? -result : result;
 	}
 
 //	/// Returns the minimum representable normal value in this context.
-//	static BigDecimal min_normal(DecimalContext context = bigContext) {
+//	static BigDecimal min_normal(const DecimalContext context = bigContext) {
 //		return BigDecimal(1, context.eMin);
 //	}
 
 	/// Returns the minimum representable subnormal value in this context.
-	static BigDecimal min(DecimalContext context = bigContext) {
+	static BigDecimal min(const DecimalContext context = bigContext) {
 		return BigDecimal(1, context.eTiny);
 	}
 
 	/// returns the smallest available increment to 1.0 in this context
-	static BigDecimal epsilon(DecimalContext context = bigContext) {
+	static BigDecimal epsilon(const DecimalContext context = bigContext) {
 		return BigDecimal(1, -context.precision);
 	}
 
-	static int min_10_exp(DecimalContext context = bigContext) {
+	static int min_10_exp(const DecimalContext context = bigContext) {
 		return context.eMin;
 	}
 
-	static int max_10_exp(DecimalContext context = bigContext) {
+	static int max_10_exp(const DecimalContext context = bigContext) {
 		return context.eMax;
 	}
 
@@ -783,7 +784,7 @@ unittest {
 	/**
 	 * Returns true if this number is subnormal.
 	 */
-	const bool isSubnormal(DecimalContext context = bigContext) {
+	const bool isSubnormal(const DecimalContext context = bigContext) {
 		if (!isFinite) return false;
 		return adjustedExponent < context.eMin;
 	}
@@ -805,7 +806,7 @@ unittest {
 	/**
 	 * Returns true if this number is normal.
 	 */
-	const bool isNormal(DecimalContext context = bigContext) {
+	const bool isNormal(const DecimalContext context = bigContext) {
 		if (isFinite && !isZero) {
 			return adjustedExponent >= context.eMin;
 		}

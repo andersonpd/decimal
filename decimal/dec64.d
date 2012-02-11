@@ -533,14 +533,10 @@ unittest {
 		}
 
 		BigDecimal big = plus!BigDecimal(num, context64);
-//writeln("big = ", big);
-//writeln("big.toAbstract = ", big.toAbstract);
-//writeln("cast(ulong)big.coefficient.toLong = ", cast(ulong)big.coefficient.toLong);
 
 		if (big.isFinite) {
 			this = zero;
 			this.coefficient = cast(ulong)big.coefficient.toLong;
-//writeln("this.coefficient = ", this.coefficient);
 			this.exponent = big.exponent;
 			this.sign = big.sign;
 			return;
@@ -615,7 +611,6 @@ unittest {
 		}
 		// TODO: this won't do -- no rounding has occured.
 		string str = format("%.*G", cast(int)context64.precision, r);
-//writeln("str = ", str);
 		this(str);
 	}
 
@@ -806,10 +801,8 @@ public:
 			return 0;
 		}
 		ulong copy = mant;
-//writeln("copy = ", copy);
 		// if too large for explicit representation, round
 		if (copy > C_MAX_IMPLICIT) {
-//writeln("copy > C_MAX_IMPLICIT = ", C_MAX_IMPLICIT);
 			int expo = 0;
 			uint digits = numDigits(copy);
 			expo = setExponent(sign, copy, digits, context64);
@@ -822,7 +815,6 @@ public:
 		}
 		// at this point, the number <=
 		if (copy <= C_MAX_EXPLICIT) {
-//writeln("copy <= C_MAX_EXPLICIT = ", C_MAX_EXPLICIT);
 			// if implicit, convert to explicit
 			if (this.isImplicit) {
 				expoEx = expoIm;
@@ -831,19 +823,13 @@ public:
 			return mantEx;
 		}
 		else {	// copy <= C_MAX_IMPLICITwriteln(" = ", );
-//writeln("copy <= C_MAX_IMPLICIT = ", C_MAX_IMPLICIT);
 			// if explicit, convert to implicit
 			if (this.isExplicit) {
-//writeln("WAS EXPLICIT");
 				expoIm = expoEx;
 				testIm = 0x3;
 			}
-//writefln("copy = %X", copy);
 			mantIm = cast(ulong)copy & C_IMPLICIT_MASK;
-//writeln("mantIm = ", mantIm);
-//writefln("mantIm = %X", mantIm);
 			ulong shifted = mantIm | (0b100UL << implicitBits);
-//writefln("shifted = %X", shifted);
 			return mantIm | (0b100UL << implicitBits);
 		}
 	}
@@ -852,14 +838,8 @@ public:
 		Dec64 num;
 		assertEqual!ulong(0, num.coefficient);
 		num = 9.998742;
-//writeln("num = ", num);
-//writeln("num.toAbstract = ", num.toAbstract);
-//writeln("num.toHexString = ", num.toHexString);
 		assertEqual!ulong(9998742, num.coefficient);
 		num = 9.998743;
-writeln("num = ", num);
-writeln("num.toAbstract = ", num.toAbstract);
-writeln("num.toHexString = ", num.toHexString);
 		assertEqual!ulong(9998742999999999, num.coefficient);
 		// note the difference between real and string values!
 		num = Dec64("9.998743");
@@ -984,7 +964,7 @@ writeln("num.toHexString = ", num.toHexString);
 	static int min_exp()	{ return cast(int)(context32.eMin/LOG2); }
 
 	/// Returns the maximum number of decimal digits in this context.
-	static uint precision(DecimalContext context = context32) {
+	static uint precision(const DecimalContext context = context64) {
 		return context.precision;
 	}
 */
@@ -1002,43 +982,43 @@ writeln("num.toHexString = ", num.toHexString);
 
 
 	/*	  /// Returns the maximum number of decimal digits in this context.
-		static uint dig(DecimalContext context = context64) {
+		static uint dig(const DecimalContext context = context64) {
 			return context.precision;
 		}
 
 		/// Returns the number of binary digits in this context.
-		static uint mant_dig(DecimalContext context = context64) {
+		static uint mant_dig(const DecimalContext context = context64) {
 			return cast(int)context.mant_dig;
 		}
 
-		static int min_exp(DecimalContext context = context64) {
+		static int min_exp(const DecimalContext context = context64) {
 			return context.min_exp;
 		}
 
-		static int max_exp(DecimalContext context = context64) {
+		static int max_exp(const DecimalContext context = context64) {
 			return context.max_exp;
 		}
 
 //		/// Returns the minimum representable normal value in this context.
-//		static Dec64 min_normal(DecimalContext context = context64) {
+//		static Dec64 min_normal(const DecimalContext context = context64) {
 //			return Dec64(1, context.eMin);
 //		}
 
 		/// Returns the minimum representable subnormal value in this context.
-		static Dec64 min(DecimalContext context = context64) {
+		static Dec64 min(const DecimalContext context = context64) {
 			return Dec64(1, context.eTiny);
 		}
 
 		/// returns the smallest available increment to 1.0 in this context
-		static Dec64 epsilon(DecimalContext context = context64) {
+		static Dec64 epsilon(const DecimalContext context = context64) {
 			return Dec64(1, -context.precision);
 		}
 
-		static int min_10_exp(DecimalContext context = context64) {
+		static int min_10_exp(const DecimalContext context = context64) {
 			return context.eMin;
 		}
 
-		static int max_10_exp(DecimalContext context = context64) {
+		static int max_10_exp(const DecimalContext context = context64) {
 			return context.eMax;
 		}*/
 
@@ -1173,7 +1153,7 @@ writeln("num.toHexString = ", num.toHexString);
 	/**
 	 * Returns true if this number is subnormal.
 	 */
-	const bool isSubnormal(DecimalContext context = context64) {
+	const bool isSubnormal(const DecimalContext context = context64) {
 		if (isSpecial) return false;
 		return adjustedExponent < context.eMin;
 	}
@@ -1181,7 +1161,7 @@ writeln("num.toHexString = ", num.toHexString);
 	/**
 	 * Returns true if this number is normal.
 	 */
-	const bool isNormal(DecimalContext context = context64) {
+	const bool isNormal(const DecimalContext context = context64) {
 		if (isSpecial) return false;
 		return adjustedExponent >= context.eMin;
 	}
@@ -1189,7 +1169,7 @@ writeln("num.toHexString = ", num.toHexString);
 	/**
 	 * Returns true if this number is an integer.
 	 */
-	const bool isIntegral(DecimalContext context = context64) {
+	const bool isIntegral(const DecimalContext context = context64) {
 		if (isSpecial) return false;
 		if (exponent >= 0) return true;
 		uint expo = std.math.abs(exponent);

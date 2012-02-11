@@ -162,7 +162,7 @@ unittest {
  * to be equal to the exponent of the second operand.
  */
 public T quantize(T)(const T arg1, const T arg2,
-		DecimalContext context) if (isDecimal!T) {
+		const DecimalContext context) if (isDecimal!T) {
 
 	T result;
 	if (invalidBinaryOp!T(arg1, arg2, result)) {
@@ -411,7 +411,7 @@ unittest {
  *	  To return the absolute value without rounding or setting flags
  *	  use the "copyAbs" function.
  */
-public T abs(T)(const T arg, DecimalContext context) if (isDecimal!T) {
+public T abs(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
 	T result;
 	if(invalidOperand!T(arg, result)) {
 		return result;
@@ -461,7 +461,7 @@ unittest {
  *	  Result is equivalent to add('0', number).
  *	  To copy without rounding or setting flags use the "copy" function.
  */
-public T plus(T)(const T arg, DecimalContext context) if (isDecimal!T) {
+public T plus(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
 	T result;
 	if(invalidOperand!T(arg, result)) {
 		return result;
@@ -489,7 +489,7 @@ unittest {
  *	  Result is equivalent to subtract('0', number).
  *	  To copy without rounding or setting flags use the "copyNegate" function.
  */
-public T minus(T)(const T arg, DecimalContext context) if (isDecimal!T) {
+public T minus(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
 	T result;
 	if(invalidOperand!T(arg, result)) {
 		return result;
@@ -515,7 +515,7 @@ unittest {
 //-----------------------------------
 
 // UNREADY: nextPlus. Description. Unit Tests.
-public T nextPlus(T)(const T arg1, DecimalContext context) if (isDecimal!T) {
+public T nextPlus(T)(const T arg1, const DecimalContext context) if (isDecimal!T) {
 	T result;
 	if (invalidOperand!T(arg1, result)) {
 		return result;
@@ -552,7 +552,7 @@ unittest {
 }
 
 // UNREADY: nextMinus. Description. Unit Tests.
-public T nextMinus(T)(const T arg, DecimalContext context) if (isDecimal!T) {
+public T nextMinus(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
 
 	T result;
 	if (invalidOperand!T(arg, result)) {
@@ -652,7 +652,7 @@ unittest {
 }
 
 // UNREADY: compare
-public int compare(T)(const T arg1, const T arg2, DecimalContext context,
+public int compare(T)(const T arg1, const T arg2, const DecimalContext context,
 		bool rounded = true) if (isDecimal!T) {
 
 	// any operation with a signaling NaN is invalid.
@@ -1139,7 +1139,7 @@ public T rotate(T)(const T arg1, const int arg2, DecimalContext context)
  * in the General Decimal Arithmetic Specification and is the basis
  * for the opAdd and opSub functions for decimal numbers.
  */
-public T add(T)(const T arg1, const T arg2, DecimalContext context,
+public T add(T)(const T arg1, const T arg2, const DecimalContext context,
 		bool rounded = true) if (isDecimal!T) {
 	T result = T.nan;	 // sum is initialized to quiet NaN
 
@@ -1240,7 +1240,7 @@ unittest {
  * in the General Decimal Arithmetic Specification and is the basis
  * for the opAdd and opSub functions for decimal numbers.
  */
-public T addLong(T)(const T arg1, const long arg2, DecimalContext context,
+public T addLong(T)(const T arg1, const long arg2, const DecimalContext context,
 		bool rounded = true) if (isDecimal!T) {
 	T result = T.nan;	 // sum is initialized to quiet NaN
 
@@ -1338,8 +1338,8 @@ unittest {
  * in the General Decimal Arithmetic Specification and is the basis
  * for the opAdd and opSub functions for decimal numbers.
  */
-public T sub(T) (const T arg1, const T arg2,
-		DecimalContext context, const bool rounded = true) if (isDecimal!T) {
+public T sub(T) (const T arg1, const T arg2, const DecimalContext context,
+		 const bool rounded = true) if (isDecimal!T) {
 	return add!T(arg1, copyNegate!T(arg2), context , rounded);
 }	 // end sub(arg1, arg2)
 
@@ -1394,6 +1394,9 @@ public T mul(T)(const T arg1, const T arg2, const DecimalContext context,
 		BigInt mant1 = arg1.coefficient;
 		BigInt mant2 = arg2.coefficient;
 		product.coefficient = mant1 * mant2;
+		// NOTE: can't convert to BigInt below because the template can't
+		// determine the type.
+//		product.coefficient = BigInt(arg1.coefficient) * BigInt(arg2.coefficient);
 		product.exponent = arg1.exponent + arg2.exponent;
 		product.sign = arg1.sign ^ arg2.sign;
 		product.digits = numDigits(product.coefficient);
@@ -1514,8 +1517,8 @@ unittest {
  * in the General Decimal Arithmetic Specification and is the basis
  * for the opDiv function for decimal numbers.
  */
-public T div(T)(const T arg1, const T arg2,
-		DecimalContext context, bool rounded = true) if (isDecimal!T) {
+public T div(T)(const T arg1, const T arg2, const DecimalContext context,
+		bool rounded = true) if (isDecimal!T) {
 
 	T quotient;
 	// check for NaN and divide by zero
@@ -1576,7 +1579,7 @@ unittest {
  * in the General Decimal Arithmetic Specification.
  */
 public T divideInteger(T)(const T arg1, const T arg2,
-		DecimalContext context) if (isDecimal!T) {
+		const DecimalContext context) if (isDecimal!T) {
 
 	T quotient;
 	if (invalidDivision!T(arg1, arg2, quotient, context)) {
@@ -1629,7 +1632,7 @@ unittest {
  * in the General Decimal Arithmetic Specification.
  */
 public T remainder(T)(const T arg1, const T arg2,
-		DecimalContext context) if (isDecimal!T) {
+		const DecimalContext context) if (isDecimal!T) {
 	T quotient;
 	if (invalidDivision!T(arg1, arg2, quotient, context)) {
 		return quotient;
@@ -1724,7 +1727,7 @@ public T roundToIntegralValue(T)(const T num,
  // TODO: has non-standard flag setting
 // NOTE: flags only
 private T reduceToIdeal(T)(const T num, int ideal,
-		DecimalContext context) if (isDecimal!T) {
+		const DecimalContext context) if (isDecimal!T) {
 	T result;
 	if (invalidOperand!T(num, result)) {
 		return result;
@@ -1778,7 +1781,8 @@ unittest {
  * to the value of the larger exponent, and adjusting the
  * coefficient so the value remains the same.
  */
-private void alignOps(ref BigDecimal arg1, ref BigDecimal arg2, DecimalContext context) {
+private void alignOps(ref BigDecimal arg1, ref BigDecimal arg2,
+		const DecimalContext context) {
 	int diff = arg1.exponent - arg2.exponent;
 	if (diff > 0) {
 		arg1.coefficient = decShl(arg1.coefficient, diff);
@@ -1874,7 +1878,7 @@ private bool invalidOperand(T)(const T arg, ref T result) if (isDecimal!T) {
  * -- General Decimal Arithmetic Specification, p. 52, "Invalid operation"
  */
 private bool invalidDivision(T)(const T dividend, const T divisor,
-		ref T quotient, DecimalContext context) if (isDecimal!T) {
+		ref T quotient, const DecimalContext context) if (isDecimal!T) {
 
 	if (invalidBinaryOp!T(dividend, divisor, quotient)) {
 		return true;
@@ -1886,6 +1890,7 @@ private bool invalidDivision(T)(const T dividend, const T divisor,
 		else {
 			contextFlags.setFlags(DIVISION_BY_ZERO);
 			quotient = T.infinity;
+			// TODO: is this assignment redundant?
 			quotient.coefficient = 0;
 			quotient.sign = dividend.sign ^ divisor.sign;
 		}

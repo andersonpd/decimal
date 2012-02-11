@@ -85,7 +85,7 @@ unittest {
  * Decimal version of invert.
  * Required by General Decimal Arithmetic Specification
  */
-T invert(T)(T arg, DecimalContext context) if (isDecimal!T) {
+T invert(T)(T arg, const DecimalContext context) if (isDecimal!T) {
 	string str;
 	if(!isLogicalOperand(arg, str)) {
 		contextFlags.setFlags(INVALID_OPERATION);
@@ -256,7 +256,7 @@ unittest {
  * Decimal version of and.
  * Required by General Decimal Arithmetic Specification
  */
-private T opLogical(string op, T)(const T arg1, const T arg2, DecimalContext context) {
+private T opLogical(string op, T)(const T arg1, const T arg2, const DecimalContext context) {
 	string str1;
 	if(!isLogicalOperand(arg1, str1)) {
 		contextFlags.setFlags(INVALID_OPERATION);
@@ -283,7 +283,7 @@ private T opLogical(string op, T)(const T arg1, const T arg2, DecimalContext con
  * Decimal version of and.
  * Required by General Decimal Arithmetic Specification
  */
-public T and (T)(const T arg1, const T arg2, DecimalContext context) if (isDecimal!T) {
+public T and (T)(const T arg1, const T arg2, const DecimalContext context) if (isDecimal!T) {
 	return opLogical!("and", T)(arg1, arg2, context);
 }
 
@@ -291,7 +291,7 @@ public T and (T)(const T arg1, const T arg2, DecimalContext context) if (isDecim
  * Decimal version of or.
  * Required by General Decimal Arithmetic Specification
  */
-public T or (T)(const T arg1, const T arg2, DecimalContext context) if (isDecimal!T) {
+public T or (T)(const T arg1, const T arg2, const DecimalContext context) if (isDecimal!T) {
 	return opLogical!("or", T)(arg1, arg2, context);
 }
 
@@ -300,7 +300,7 @@ public T or (T)(const T arg1, const T arg2, DecimalContext context) if (isDecima
  * Required by General Decimal Arithmetic Specification
  */
 
-public T xor(T)(const T arg1, const T arg2, DecimalContext context) if (isDecimal!T) {
+public T xor(T)(const T arg1, const T arg2, const DecimalContext context) if (isDecimal!T) {
 	return opLogical!("xor", T)(arg1, arg2, context);
 }
 

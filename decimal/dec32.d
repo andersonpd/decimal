@@ -125,7 +125,7 @@ private:
 	immutable int E_MIN = -95;		// = 1 - E_MAX
 
 	/// The context for this type.
-	public static DecimalContext
+	public static const DecimalContext
 		context32 = DecimalContext(PRECISION, E_MAX, Rounding.HALF_EVEN);
 
 	// union providing different views of the number representation.
@@ -846,30 +846,30 @@ public:
 	static int min_exp()	{ return cast(int)(context32.eMin/LOG2); }
 
 	/// Returns the maximum number of decimal digits in this context.
-	static uint precision(DecimalContext context = context32) {
+	static uint precision(const DecimalContext context = context32) {
 		return context.precision;
 	}
 
 	/// Returns the maximum number of decimal digits in this context.
-	static uint dig(DecimalContext context = context32) {
+	static uint dig(const DecimalContext context = context32) {
 		return context.precision;
 	}
 
 /*	/// Returns the number of binary digits in this context.
-	static uint mant_dig(DecimalContext context = context32) {
+	static uint mant_dig(const DecimalContext context = context32) {
 		return cast(int)context.mant_dig;
 	}
 
-	static int min_exp(DecimalContext context = context32) {
+	static int min_exp(const DecimalContext context = context32) {
 		return context.min_exp;
 	}
 
-	static int max_exp(DecimalContext context = context32) {
+	static int max_exp(const DecimalContext context = context32) {
 		return context.max_exp;
 	}*/
 
 //	/// Returns the minimum representable normal value in this context.
-//	static Dec32 min_normal(DecimalContext context = context32) {
+//	static Dec32 min_normal(const DecimalContext context = context32) {
 //		return Dec32(1, context.eMin);
 //	}
 
@@ -877,20 +877,20 @@ public:
 	/// NOTE: Creation of this number will not set the
 	/// subnormal flag until it is used. The operations will
 	/// set the flags as needed.
-	static Dec32 min(DecimalContext context = context32) {
+	static Dec32 min(const DecimalContext context = context32) {
 		return Dec32(1, context.eTiny);
 	}
 
 	/// returns the smallest available increment to 1.0 in this context
-	static Dec32 epsilon(DecimalContext context = context32) {
+	static Dec32 epsilon(const DecimalContext context = context32) {
 		return Dec32(1, -context.precision);
 	}
 
-	static int min_10_exp(DecimalContext context = context32) {
+	static int min_10_exp(const DecimalContext context = context32) {
 		return context.eMin;
 	}
 
-	static int max_10_exp(DecimalContext context = context32) {
+	static int max_10_exp(const DecimalContext context = context32) {
 		return context.eMax;
 	}
 
@@ -1025,7 +1025,7 @@ public:
 	/**
 	 * Returns true if this number is subnormal.
 	 */
-	const bool isSubnormal(DecimalContext context = context32) {
+	const bool isSubnormal(const DecimalContext context = context32) {
 		if (isSpecial) return false;
 		return adjustedExponent < context.eMin;
 	}
@@ -1033,7 +1033,7 @@ public:
 	/**
 	 * Returns true if this number is normal.
 	 */
-	const bool isNormal(DecimalContext context = context32) {
+	const bool isNormal(const DecimalContext context = context32) {
 		if (isSpecial) return false;
 		return adjustedExponent >= context.eMin;
 	}
@@ -1041,7 +1041,7 @@ public:
 	/**
 	 * Returns true if this number is an integer.
 	 */
-	const bool isIntegral(DecimalContext context = context32) {
+	const bool isIntegral(const DecimalContext context = context32) {
 		if (isSpecial) return false;
 		if (exponent >= 0) return true;
 		uint expo = std.math.abs(exponent);
@@ -1341,7 +1341,7 @@ public:
 			if (this.isQuiet) return false;
 			// let the main routine handle the signaling NaN
 		}
-		return equals!Dec32(this, that, context32);
+		return equals!Dec32(this, that, cast(DecimalContext)context32);
 	}
 
 	unittest {

@@ -66,7 +66,7 @@ public int sgn(const BigInt num) {
 	return 0;
 }
 
-public void round(T)(ref T num, ref DecimalContext context) if (isDecimal!T) {
+public void round(T)(ref T num, const DecimalContext context) if (isDecimal!T) {
 
 	// no rounding of special values
 	if (!num.isFinite) return;
@@ -207,7 +207,7 @@ unittest {
 //--------------------------------
 
 // UNREADY: roundByMode. Description. Order.
-private void roundByMode(T)(ref T num, ref DecimalContext context)
+private void roundByMode(T)(ref T num, const DecimalContext context)
 if (isDecimal!T) {
 
 	uint digits = num.digits;
@@ -305,7 +305,7 @@ unittest {
  * Returns the (unsigned) remainder for adjustments based on rounding mode.
  * Sets the ROUNDED and INEXACT flags.
  */
-private T getRemainder(T)(ref T num, ref DecimalContext context)
+private T getRemainder(T)(ref T num, const DecimalContext context)
 if (isDecimal!T) {
 	T remainder = T.zero;
 

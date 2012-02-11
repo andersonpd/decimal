@@ -16,6 +16,7 @@
 
 module decimal.test;
 
+/+
 import std.bigint;
 import std.stdio;
 import decimal.arithmetic;
@@ -2600,4 +2601,4 @@ unittest {
 	writeln("test...............finished");
 	writeln("---------------------------");
 }
-
++/

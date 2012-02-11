@@ -980,7 +980,7 @@ public:
 	static int min_exp()	{ return cast(int)(context32.eMin/LOG2); }
 
 	/// Returns the maximum number of decimal digits in this context.
-	static uint precision(DecimalContext context = context32) {
+	static uint precision(const DecimalContext context = context32) {
 		return context.precision;
 	}
 */
@@ -998,43 +998,43 @@ public:
 
 
 	/*	  /// Returns the maximum number of decimal digits in this context.
-		static uint dig(DecimalContext context = context64) {
+		static uint dig(const DecimalContext context = context64) {
 			return context.precision;
 		}
 
 		/// Returns the number of binary digits in this context.
-		static uint mant_dig(DecimalContext context = context64) {
+		static uint mant_dig(const DecimalContext context = context64) {
 			return cast(int)context.mant_dig;
 		}
 
-		static int min_exp(DecimalContext context = context64) {
+		static int min_exp(const DecimalContext context = context64) {
 			return context.min_exp;
 		}
 
-		static int max_exp(DecimalContext context = context64) {
+		static int max_exp(const DecimalContext context = context64) {
 			return context.max_exp;
 		}
 
 //		/// Returns the minimum representable normal value in this context.
-//		static Dec128 min_normal(DecimalContext context = context64) {
+//		static Dec128 min_normal(const DecimalContext context = context64) {
 //			return Dec128(1, context.eMin);
 //		}
 
 		/// Returns the minimum representable subnormal value in this context.
-		static Dec128 min(DecimalContext context = context64) {
+		static Dec128 min(const DecimalContext context = context64) {
 			return Dec128(1, context.eTiny);
 		}
 
 		/// returns the smallest available increment to 1.0 in this context
-		static Dec128 epsilon(DecimalContext context = context64) {
+		static Dec128 epsilon(const DecimalContext context = context64) {
 			return Dec128(1, -context.precision);
 		}
 
-		static int min_10_exp(DecimalContext context = context64) {
+		static int min_10_exp(const DecimalContext context = context64) {
 			return context.eMin;
 		}
 
-		static int max_10_exp(DecimalContext context = context64) {
+		static int max_10_exp(const DecimalContext context = context64) {
 			return context.eMax;
 		}*/
 
@@ -1166,7 +1166,7 @@ public:
 	/**
 	 * Returns true if this number is subnormal.
 	 */
-	const bool isSubnormal(DecimalContext context = context64) {
+	const bool isSubnormal(const DecimalContext context = context64) {
 		if (isSpecial) return false;
 		return adjustedExponent < context.eMin;
 	}
@@ -1174,7 +1174,7 @@ public:
 	/**
 	 * Returns true if this number is normal.
 	 */
-	const bool isNormal(DecimalContext context = context64) {
+	const bool isNormal(const DecimalContext context = context64) {
 		if (isSpecial) return false;
 		return adjustedExponent >= context.eMin;
 	}
@@ -1182,7 +1182,7 @@ public:
 	/**
 	 * Returns true if this number is an integer.
 	 */
-	const bool isIntegral(DecimalContext context = context64) {
+	const bool isIntegral(const DecimalContext context = context64) {
 		if (isSpecial) return false;
 		if (exponent >= 0) return true;
 		uint expo = std.math.abs(exponent);
