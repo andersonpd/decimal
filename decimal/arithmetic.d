@@ -35,9 +35,9 @@ import std.bigint;
 import std.string;
 
 unittest {
-	writeln("-------------------");
+	writeln("===================");
 	writeln("arithmetic....begin");
-	writeln("-------------------");
+	writeln("===================");
 }
 
 //--------------------------------
@@ -1362,7 +1362,7 @@ public T subLong(T) (const T arg1, const long arg2,
  * in the General Decimal Arithmetic Specification and is the basis
  * for the opMul function for decimal numbers.
  */
-public T mul(T)(const T arg1, const T arg2, DecimalContext context,
+public T mul(T)(const T arg1, const T arg2, const DecimalContext context,
 		const bool rounded = true) if (isDecimal!T) {
 
 	T result = T.nan;
@@ -1899,9 +1899,9 @@ private bool invalidDivision(T)(const T dividend, const T divisor,
 }
 
 unittest {
-	writeln("-------------------");
+	writeln("===================");
 	writeln("arithmetic......end");
-	writeln("-------------------");
+	writeln("===================");
 }
 
 

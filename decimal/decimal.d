@@ -35,9 +35,9 @@ import std.stdio: write, writeln;
 import std.string;
 
 unittest {
-	writeln("-------------------");
+	writeln("===================");
 	writeln("decimal.......begin");
-	writeln("-------------------");
+	writeln("===================");
 }
 
 alias BigDecimal.bigContext bigContext;
@@ -572,10 +572,10 @@ unittest {
 		return sign ? -result : result;
 	}
 
-	/// Returns the minimum representable normal value in this context.
-	static BigDecimal min_normal(DecimalContext context = bigContext) {
-		return BigDecimal(1, context.eMin);
-	}
+//	/// Returns the minimum representable normal value in this context.
+//	static BigDecimal min_normal(DecimalContext context = bigContext) {
+//		return BigDecimal(1, context.eMin);
+//	}
 
 	/// Returns the minimum representable subnormal value in this context.
 	static BigDecimal min(DecimalContext context = bigContext) {
@@ -1110,8 +1110,8 @@ unittest {
 }	 // end struct BigDecimal
 
 unittest {
-	writeln("-------------------");
+	writeln("===================");
 	writeln("decimal.........end");
-	writeln("-------------------");
+	writeln("===================");
 }
 

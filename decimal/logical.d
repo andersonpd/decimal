@@ -25,9 +25,9 @@ import decimal.conv;
 import decimal.utils;
 
 unittest {
-	writeln("-------------------");
+	writeln("===================");
 	writeln("logical.......begin");
-	writeln("-------------------");
+	writeln("===================");
 }
 
 // TODO: move units tests to test.d
@@ -358,8 +358,8 @@ unittest {
 }
 
 unittest {
-	writeln("-------------------");
+	writeln("===================");
 	writeln("logical.........end");
-	writeln("-------------------");
+	writeln("===================");
 }
 

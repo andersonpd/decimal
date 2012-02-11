@@ -31,9 +31,9 @@ import decimal.rounding;
 import decimal.utils;
 
 unittest {
-	writeln("-------------------");
+	writeln("===================");
 	writeln("dec64.......testing");
-	writeln("-------------------");
+	writeln("===================");
 }
 
 struct Dec64 {
@@ -108,8 +108,8 @@ private:
 	// The maximum coefficient allowed in an implicit number.
 	immutable ulong C_MAX_IMPLICIT = 9999999999999999;  // = 0x2386F26FC0FFFF
 	// masks for coefficients
-	immutable ulong C_IMPLICIT_MASK = 0x1FFFFFFFFFFFF;
-	immutable ulong C_EXPLICIT_MASK = 0x7FFFFFFFFFFFF;
+	immutable ulong C_IMPLICIT_MASK = 0x1FFFFFFFFFFFFF;
+	immutable ulong C_EXPLICIT_MASK = 0x7FFFFFFFFFFFFF;
 
 	// The maximum unbiased exponent. The largest binary number that can fit
 	// in the width of the exponent field without setting
@@ -368,7 +368,6 @@ writeln("test.toHexString = ", test.toHexString);
 
 	// this unit test uses private values
 	unittest {
-writeln("MAX = ", MAX);
 	Dec64 num;
 		num = Dec64(BITS.POS_SIG);
 		assertTrue(num.isSignaling);
@@ -534,10 +533,14 @@ unittest {
 		}
 
 		BigDecimal big = plus!BigDecimal(num, context64);
+//writeln("big = ", big);
+//writeln("big.toAbstract = ", big.toAbstract);
+//writeln("cast(ulong)big.coefficient.toLong = ", cast(ulong)big.coefficient.toLong);
 
 		if (big.isFinite) {
 			this = zero;
 			this.coefficient = cast(ulong)big.coefficient.toLong;
+//writeln("this.coefficient = ", this.coefficient);
 			this.exponent = big.exponent;
 			this.sign = big.sign;
 			return;
@@ -612,6 +615,7 @@ unittest {
 		}
 		// TODO: this won't do -- no rounding has occured.
 		string str = format("%.*G", cast(int)context64.precision, r);
+//writeln("str = ", str);
 		this(str);
 	}
 
@@ -802,8 +806,10 @@ public:
 			return 0;
 		}
 		ulong copy = mant;
+//writeln("copy = ", copy);
 		// if too large for explicit representation, round
 		if (copy > C_MAX_IMPLICIT) {
+//writeln("copy > C_MAX_IMPLICIT = ", C_MAX_IMPLICIT);
 			int expo = 0;
 			uint digits = numDigits(copy);
 			expo = setExponent(sign, copy, digits, context64);
@@ -814,41 +820,47 @@ public:
 				expoIm = expoIm + expo;
 			}
 		}
-		// at this point, the number <= C_MAX_IMPLICIT
+		// at this point, the number <=
 		if (copy <= C_MAX_EXPLICIT) {
+//writeln("copy <= C_MAX_EXPLICIT = ", C_MAX_EXPLICIT);
 			// if implicit, convert to explicit
 			if (this.isImplicit) {
 				expoEx = expoIm;
 			}
-			mantEx = cast(ulong)copy;
+			mantEx = /*cast(ulong)*/copy;
 			return mantEx;
 		}
-		else {	// copy <= C_MAX_IMPLICIT
+		else {	// copy <= C_MAX_IMPLICITwriteln(" = ", );
+//writeln("copy <= C_MAX_IMPLICIT = ", C_MAX_IMPLICIT);
 			// if explicit, convert to implicit
 			if (this.isExplicit) {
+//writeln("WAS EXPLICIT");
 				expoIm = expoEx;
 				testIm = 0x3;
 			}
-			writeln("implicit" );
-			writefln("copy = %X", copy);
-			writefln("mask = %X", C_IMPLICIT_MASK);
-			writefln("and  = %X", cast(ulong)copy & C_IMPLICIT_MASK);
-			writefln("mant = %X", mantIm);
-
+//writefln("copy = %X", copy);
 			mantIm = cast(ulong)copy & C_IMPLICIT_MASK;
-writefln("mantIm = %X", mantIm);
-//writeln("0b100UL << implicitBits = ", 0b100UL << implicitBits);
+//writeln("mantIm = ", mantIm);
+//writefln("mantIm = %X", mantIm);
+			ulong shifted = mantIm | (0b100UL << implicitBits);
+//writefln("shifted = %X", shifted);
 			return mantIm | (0b100UL << implicitBits);
 		}
 	}
 
 	unittest {
 		Dec64 num;
-		assertTrue(num.coefficient == 0);
+		assertEqual!ulong(0, num.coefficient);
 		num = 9.998742;
-		assertTrue(num.coefficient == 9998742);
+//writeln("num = ", num);
+//writeln("num.toAbstract = ", num.toAbstract);
+//writeln("num.toHexString = ", num.toHexString);
+		assertEqual!ulong(9998742, num.coefficient);
 		num = 9.998743;
-		assertTrue(num.coefficient == 9998742999999999);
+writeln("num = ", num);
+writeln("num.toAbstract = ", num.toAbstract);
+writeln("num.toHexString = ", num.toHexString);
+		assertEqual!ulong(9998742999999999, num.coefficient);
 		// note the difference between real and string values!
 		num = Dec64("9.998743");
 		assertTrue(num.coefficient == 9998743);
@@ -952,9 +964,9 @@ writefln("mantIm = %X", mantIm);
 	static Dec64 epsilon()	  {
 		return Dec64(1, -context64.precision);
 	}
-	static Dec64 min_normal() {
-		return Dec64(1, context64.eMin);
-	}
+//	static Dec64 min_normal() {
+//		return Dec64(1, context64.eMin);
+//	}
 	static Dec64 min()		  {
 		return Dec64(1, context64.eMin);
 	} //context64.eTiny); }
@@ -962,7 +974,6 @@ writefln("mantIm = %X", mantIm);
 /* dec32diff
 	static Dec32 init() 	  { return NAN; }
 	static Dec32 epsilon()	  { return Dec32(1, -7); }
-	static Dec32 min_normal() { return Dec32(1, context32.eMin); }
 	static Dec32 min()		  { return Dec32(1, context32.eTiny); }
 
 	static int dig()		{ return 7; }
@@ -1008,10 +1019,10 @@ writefln("mantIm = %X", mantIm);
 			return context.max_exp;
 		}
 
-		/// Returns the minimum representable normal value in this context.
-		static Dec64 min_normal(DecimalContext context = context64) {
-			return Dec64(1, context.eMin);
-		}
+//		/// Returns the minimum representable normal value in this context.
+//		static Dec64 min_normal(DecimalContext context = context64) {
+//			return Dec64(1, context.eMin);
+//		}
 
 		/// Returns the minimum representable subnormal value in this context.
 		static Dec64 min(DecimalContext context = context64) {
@@ -1688,8 +1699,8 @@ const int opCmp(T:Dec64)(const T that) {
 }	// end Dec64 struct
 
 unittest {
-	writeln("-------------------");
+	writeln("===================");
 	writeln("dec64...........end");
-	writeln("-------------------");
+	writeln("===================");
 }
 

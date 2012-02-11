@@ -31,9 +31,9 @@ import decimal.rounding;
 import decimal.utils;
 
 unittest {
-	writeln("-------------------");
+	writeln("===================");
 	writeln("dec128.......testing");
-	writeln("-------------------");
+	writeln("===================");
 }
 
 struct Dec128 {
@@ -960,9 +960,9 @@ public:
 	static Dec128 epsilon()	  {
 		return Dec128(1, -context64.precision);
 	}
-	static Dec128 min_normal() {
-		return Dec128(1, context64.eMin);
-	}
+//	static Dec128 min_normal() {
+//		return Dec128(1, context64.eMin);
+//	}
 	static Dec128 min()		  {
 		return Dec128(1, context64.eMin);
 	} //context64.eTiny); }
@@ -970,7 +970,6 @@ public:
 /* dec32diff
 	static Dec128 init() 	  { return NAN; }
 	static Dec128 epsilon()	  { return Dec128(1, -7); }
-	static Dec128 min_normal() { return Dec128(1, context32.eMin); }
 	static Dec128 min()		  { return Dec128(1, context32.eTiny); }
 
 	static int dig()		{ return 7; }
@@ -1016,10 +1015,10 @@ public:
 			return context.max_exp;
 		}
 
-		/// Returns the minimum representable normal value in this context.
-		static Dec128 min_normal(DecimalContext context = context64) {
-			return Dec128(1, context.eMin);
-		}
+//		/// Returns the minimum representable normal value in this context.
+//		static Dec128 min_normal(DecimalContext context = context64) {
+//			return Dec128(1, context.eMin);
+//		}
 
 		/// Returns the minimum representable subnormal value in this context.
 		static Dec128 min(DecimalContext context = context64) {
@@ -1683,8 +1682,8 @@ ref Dec128 opOpAssign(string op, T:Dec128) (T rhs) {
 }	// end Dec128 struct
 
 unittest {
-	writeln("-------------------");
+	writeln("===================");
 	writeln("dec128...........end");
-	writeln("-------------------");
+	writeln("===================");
 }
 

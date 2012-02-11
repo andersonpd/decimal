@@ -31,9 +31,9 @@ import decimal.dec64;
 import decimal.decimal;
 
 unittest {
-	writeln("-------------------");
+	writeln("===================");
 	writeln("rounding......begin");
-	writeln("-------------------");
+	writeln("===================");
 }
 
 // NOTE: it would be nice to make these const, but the BigInt class
@@ -999,9 +999,9 @@ public int trailingZeros(const ulong n, const int maxValue = 19) {
 
 
 unittest {
-	writeln("-------------------");
+	writeln("===================");
 	writeln("rounding........end");
-	writeln("-------------------");
+	writeln("===================");
 }
 
 

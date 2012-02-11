@@ -30,9 +30,9 @@ import decimal.decimal;
 import decimal.utils;
 
 unittest {
-	writeln("-------------------");
+	writeln("===================");
 	writeln("conv..........begin");
-	writeln("-------------------");
+	writeln("===================");
 }
 
 //--------------------------------
@@ -633,9 +633,9 @@ public string toExact(T)(const T num) if (isDecimal!T) {
 
 
 unittest {
-	writeln("-------------------");
+	writeln("===================");
 	writeln("conv............end");
-	writeln("-------------------");
+	writeln("===================");
 }
 
 

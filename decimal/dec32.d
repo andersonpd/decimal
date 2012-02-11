@@ -30,9 +30,9 @@ import decimal.rounding;
 import decimal.utils;
 
 unittest {
-	writeln("-------------------");
+	writeln("===================");
 	writeln("dec32.........begin");
-	writeln("-------------------");
+	writeln("===================");
 }
 
 struct Dec32 {
@@ -836,7 +836,6 @@ public:
 	// floating point properties
 	static Dec32 init() 	  { return NAN; }
 	static Dec32 epsilon()	  { return Dec32(1, -7); }
-	static Dec32 min_normal() { return Dec32(1, context32.eMin); }
 	static Dec32 min()		  { return Dec32(1, context32.eTiny); }
 
 	static int dig()		{ return 7; }
@@ -869,10 +868,10 @@ public:
 		return context.max_exp;
 	}*/
 
-	/// Returns the minimum representable normal value in this context.
-	static Dec32 min_normal(DecimalContext context = context32) {
-		return Dec32(1, context.eMin);
-	}
+//	/// Returns the minimum representable normal value in this context.
+//	static Dec32 min_normal(DecimalContext context = context32) {
+//		return Dec32(1, context.eMin);
+//	}
 
 	/// Returns the minimum representable subnormal value in this context.
 	/// NOTE: Creation of this number will not set the
@@ -1785,8 +1784,8 @@ unittest {
 }
 
 unittest {
-	writeln("-------------------");
+	writeln("===================");
 	writeln("dec32...........end");
-	writeln("-------------------");
+	writeln("===================");
 }
 

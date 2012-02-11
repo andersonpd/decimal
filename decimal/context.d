@@ -17,14 +17,15 @@
 module decimal.context;
 
 import std.array: replicate;
+import std.bigint;
 import std.string: format;
 import std.stdio;
 
 unittest {
 	import std.stdio;
-	writeln("-------------------");
+	writeln("===================");
 	writeln("context.......begin");
-	writeln("-------------------");
+	writeln("===================");
 }
 
 //--------------------------
@@ -61,6 +62,8 @@ public struct DecimalContext {
 	immutable int eTiny;
 	/// rounding mode
 	immutable Rounding rounding;
+	/// max coefficient
+//	immutable BigInt maxCoefficient;
 
 	/// constructs a context with the specified parameters
 	public this(immutable uint precision, immutable int eMax, immutable Rounding rounding) {
@@ -69,6 +72,8 @@ public struct DecimalContext {
 		this.eMin = 1 - eMax;
 		this.eTiny = eMin - precision + 1;
 		this.rounding = rounding;
+//		BigInt mant = 1;
+//		this.maxCoefficient = mant; //mant^^precision - 1;
 	}
 
 	/// Returns a copy of the context with a new precision
@@ -285,8 +290,8 @@ static ContextFlags contextFlags;
 
 unittest {
 	import std.stdio;
-	writeln("-------------------");
+	writeln("===================");
 	writeln("context.........end");
-	writeln("-------------------");
+	writeln("===================");
 }
 

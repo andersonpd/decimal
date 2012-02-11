@@ -1824,7 +1824,7 @@ unittest {
 	round(after, ctx3);;
 	assertTrue(after.toAbstract() == "[0,125,2]");
 	Dec32 a = Dec32(0.1);
-	Dec32 b = Dec32.min_normal * Dec32(8888888);
+	Dec32 b = Dec32(1, Dec32.context32.eMin) * Dec32(8888888);
 //	  assertTrue(b.toAbstract == "[0,8888888,-95]");
 	Dec32 c = a * b;
 //	  assertTrue(c.toAbstract == "[0,888889,-96]");
