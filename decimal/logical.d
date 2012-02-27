@@ -357,6 +357,94 @@ unittest {
 	writeln("passed");
 }
 
+// TODO: move this to decimal.logical
+/// Shifts the first operand by the specified number of decimal digits.
+/// (Not binary digits!) Positive values of the second operand shift the
+/// first operand left (multiplying by tens). Negative values shift right
+/// (divide by 10s). If the number is NaN, or if the shift value is less
+/// than -precision or greater than precision, an INVALID_OPERATION is signaled.
+/// An infinite number is returned unchanged.
+/// Implements the 'shift' function in the specification. (p. 49)
+public T shift(T)(const T arg, const int n, DecimalContext context)
+		if (isDecimal!T) {
+
+	T arg2;
+	// check for NaN operand
+	if (invalidOperand!T(arg, arg2)) {
+		return arg2;
+	}
+	if (n < -context.precision || n > context.precision) {
+		arg2 = setInvalidFlag!T();
+		return arg2;
+	}
+	if (arg.isInfinite) {
+		return arg.dup;
+	}
+	if (n == 0) {
+		return arg.dup;
+	}
+	BigDecimal shifted = toBigDecimal!T(arg);
+	BigInt pow10 = BigInt(10)^^std.math.abs(n);
+	if (n > 0) {
+		shifted.coefficient = shifted.coefficient * pow10;
+	}
+	else {
+		shifted.coefficient = shifted.coefficient / pow10;
+	}
+	return T(shifted);
+}
+
+/*unittest {
+	BigDecimal num = 34;
+	int digits = 8;
+	BigDecimal act = shift(num, digits, testContext);
+	num = 12;
+	digits = 9;
+	act = shift(num, digits, testContext);
+	num = 123456789;
+	digits = -2;
+	act = shift(num, digits, testContext);
+	digits = 0;
+	act = shift(num, digits, testContext);
+	digits = 2;
+	act = shift(num, digits, testContext);
+}*/
+
+
+/// Rotates the first operand by the specified number of decimal digits.
+/// (Not binary digits!) Positive values of the second operand rotate the
+/// first operand left (multiplying by tens). Negative values rotate right
+/// (divide by 10s). If the number is NaN, or if the rotate value is less
+/// than -precision or greater than precision, an INVALID_OPERATION is signaled.
+/// An infinite number is returned unchanged.
+/// Implements the 'rotate' function in the specification. (p. 47-48)
+public T rotate(T)(const T arg1, const int arg2, DecimalContext context)
+		if (isDecimal!T) {
+
+	T result;
+	// check for NaN operand
+	if (invalidOperand!T(arg1, result)) {
+		return result;
+	}
+	if (arg2 < -context.precision || arg2 > context.precision) {
+		result = setInvalidFlag();
+		return result;
+	}
+	if (arg1.isInfinite) {
+		return arg1.dup;
+	}
+	if (arg2 == 0) {
+		return arg1.dup;
+	}
+	result = arg1.dup;
+
+	// TODO: And then a miracle happens....
+
+	return result;
+}
+
+
+
 unittest {
 	writeln("===================");
 	writeln("logical.........end");

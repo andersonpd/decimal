@@ -421,15 +421,15 @@ unittest {
 	}
 
 	@property
-	const uint payload() {
+	const ushort payload() {
 		if (this.isNaN) {
-			return cast(uint)(this.mant.toLong);
+			return cast(ushort)(this.mant.toLong);
 		}
 		return 0;
 	}
 
 	@property
-	uint payload(uint value) {
+	ushort payload(const ushort value) {
 		if (this.isNaN) {
 			this.mant = BigInt(value);
 			return value;
@@ -497,7 +497,7 @@ unittest {
 	}
 
 	/// Returns NaN
-	static BigDecimal nan(uint payload = 0) {
+	static BigDecimal nan(ushort payload = 0) {
 		if (payload) {
 			BigDecimal dec = NAN.dup;
 			dec.payload = payload;
@@ -507,7 +507,7 @@ unittest {
 	}
 
 	/// Returns signaling NaN
-	static BigDecimal snan(uint payload = 0) {
+	static BigDecimal snan(ushort payload = 0) {
 		if (payload) {
 			BigDecimal dec = SNAN.dup;
 			dec.payload = payload;

@@ -172,7 +172,7 @@ private:
 		// Nan = not-a-number: qNaN and sNan
 		//		payload, unused bits, nan bits and sign bit.
 		mixin (bitfields!(
-			uint, "pyldNaN", payloadBits,
+			ushort, "pyldNaN", payloadBits,
 			ulong, "padNaN",  nanPadBits,
 			uint, "testNaN", nanBits,
 			bool, "signNaN", signBit)
@@ -868,7 +868,7 @@ public:
 	/// If this is a NaN, returns the value of the payload bits.
 	/// Otherwise returns zero.
 	@property
-	const uint payload() {
+	const ushort payload() {
 		if (this.isNaN) {
 			return pyldNaN;
 		}
@@ -880,7 +880,7 @@ public:
 	/// If the number is not a NaN (har!) no action is taken and zero
 	/// is returned.
 	@property
-	uint payload(const uint value) {
+	ushort payload(const ushort value) {
 		if (this.isNaN) {
 			// NOTE: hack because bitmanip is broken
 			this.bits = bits & 0xFFFFFFFFFFFF0000;
@@ -1486,7 +1486,7 @@ const int opCmp(T:Dec64)(const T that) {
 // assignment
 //--------------------------------
 
-	// (7) UNREADY: opAssign(T: Dec64)(const Dec64). Flags. Unit Tests.
+	// TODO: flags?
 	/// Assigns a Dec64 (copies that to this).
 	void opAssign(T:Dec64)(const T that) {
 		this.intBits = that.intBits;
@@ -1499,7 +1499,7 @@ const int opCmp(T:Dec64)(const T that) {
 		assertTrue(lhs == rhs);
 	}
 
-	// (7) UNREADY: opAssign(T)(const T). Flags.
+	// TODO: flags?
 	///    Assigns a numeric value.
 	void opAssign(T)(const T that) {
 		this = Dec64(that);

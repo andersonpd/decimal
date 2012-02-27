@@ -171,7 +171,7 @@ private:
 		// Nan = not-a-number: qNaN and sNan
 		//		payload, unused bits, nan bits and sign bit.
 		mixin (bitfields!(
-			uint, "pyldNaN", payloadBits,
+			ushort, "pyldNaN", payloadBits,
 			uint, "padNaN",  nanPadBits,
 			uint, "testNaN", nanBits,
 			bool, "signNaN", signBit)
@@ -767,7 +767,7 @@ public:
 	/// If this is a NaN, returns the value of the payload bits.
 	/// Otherwise returns zero.
 	@property
-	const uint payload() {
+	const ushort payload() {
 		if (this.isNaN) {
 			return pyldNaN;
 		}
@@ -779,7 +779,7 @@ public:
 	/// If the number is not a NaN (har!) no action is taken and zero
 	/// is returned.
 	@property
-	uint payload(const uint value) {
+	ushort payload(const ushort value) {
 		if (isNaN) {
 			pyldNaN = value;
 			return pyldNaN;
@@ -815,7 +815,7 @@ public:
 		return signed ? NEG_INF : INFINITY;
 	}
 
-	static Dec32 nan(const uint payload = 0) {
+	static Dec32 nan(const ushort payload = 0) {
 		if (payload) {
 			Dec32 result = NAN;
 			result.payload = payload;
@@ -824,7 +824,7 @@ public:
 		return NAN;
 	}
 
-	static Dec32 snan(const uint payload = 0) {
+	static Dec32 snan(const ushort payload = 0) {
 		if (payload) {
 			Dec32 result = SNAN;
 			result.payload = payload;
@@ -1376,7 +1376,7 @@ public:
 // assignment
 //--------------------------------
 
-	// (7) UNREADY: opAssign(T: Dec32)(const Dec32). Flags. Unit Tests.
+	// TODO: flags?
 	/// Assigns a Dec32 (copies that to this).
 	void opAssign(T:Dec32)(const T that) {
 		this.intBits = that.intBits;
@@ -1389,7 +1389,7 @@ public:
 		assertTrue(lhs == rhs);
 	}
 
-	// (7) UNREADY: opAssign(T)(const T). Flags.
+	// TODO: flags?
 	///    Assigns a numeric value.
 	void opAssign(T)(const T that) {
 		this = Dec32(that);

@@ -16,7 +16,7 @@
 
 module decimal.test;
 
-/+
+
 import std.bigint;
 import std.stdio;
 import decimal.arithmetic;
@@ -909,7 +909,7 @@ unittest {
 
 unittest {
 	write("shift........");
-	BigDecimal num = 34;
+/*	BigDecimal num = 34;
 	int digits = 8;
 	BigDecimal act = shift(num, digits, testContext);
 	num = 12;
@@ -921,32 +921,31 @@ unittest {
 	digits = 0;
 	act = shift(num, digits, testContext);
 	digits = 2;
-	act = shift(num, digits, testContext);
-	writeln("failed");
+	act = shift(num, digits, testContext);*/
+	writeln("test missing");
 }
 
 unittest {
 	write("rotate.......");
-	/*	  BigDecimal num = 34;
-		int digits = 8;
-		BigDecimal act = rotate(num, digits);
-		writeln("act = ", act);
-		num = 12;
-		digits = 9;
-		act = rotate(num, digits);
-		writeln("act = ", act);
-		num = 123456789;
-		digits = -2;
-		act = rotate(num, digits);
-		writeln("act = ", act);
-		digits = 0;
-		act = rotate(num, digits);
-		writeln("act = ", act);
-		digits = 2;
-		act = rotate(num, digits);
-		writeln("act = ", act);
-		writeln("failed");
-	*/
+/*	BigDecimal num = 34;
+	int digits = 8;
+	BigDecimal act = rotate(num, digits);
+	writeln("act = ", act);
+	num = 12;
+	digits = 9;
+	act = rotate(num, digits);
+	writeln("act = ", act);
+	num = 123456789;
+	digits = -2;
+	act = rotate(num, digits);
+	writeln("act = ", act);
+	digits = 0;
+	act = rotate(num, digits);
+	writeln("act = ", act);
+	digits = 2;
+	act = rotate(num, digits);
+	writeln("act = ", act);	*/
+	writeln("test missing");
 }
 
 // TODO: these tests need to be cleaned up to rely less on strings
@@ -2601,4 +2600,4 @@ unittest {
 	writeln("test...............finished");
 	writeln("---------------------------");
 }
-+/
+

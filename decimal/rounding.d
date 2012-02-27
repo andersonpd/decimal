@@ -206,18 +206,13 @@ unittest {
 // private rounding routines
 //--------------------------------
 
-// UNREADY: roundByMode. Description. Order.
+/// Rounds the subject number by the specified context mode
 private void roundByMode(T)(ref T num, const DecimalContext context)
-if (isDecimal!T) {
+		if (isDecimal!T) {
 
-	uint digits = num.digits;
+	// calculate remainder
 	T remainder = getRemainder(num, context);
-
-	// if the number wasn't rounded...
-	if (num.digits == digits) {
-		return;
-	}
-	// if the remainder is zero...
+	// if the number wasn't rounded, return
 	if (remainder.isZero) {
 		return;
 	}

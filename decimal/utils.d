@@ -18,7 +18,7 @@ module decimal.utils;
 import std.stdio;
 
 bool assertEqual(T)(T expected, T actual,
-                    string file = __FILE__, int line = __LINE__ ) {
+		string file = __FILE__, int line = __LINE__ ) {
 	if (expected == actual) {
 		return true;
 	}
@@ -28,8 +28,30 @@ bool assertEqual(T)(T expected, T actual,
 	return false;
 }
 
+bool assertStringEqual(T)(T expected, T actual,
+		string file = __FILE__, int line = __LINE__ ) {
+	if (expected.toString == actual.toString) {
+		return true;
+	}
+	writeln("failed at ", std.path.basename(file), "(", line, "):",
+	        " expected \"", expected, "\"",
+	        " but found \"", actual, "\".");
+	return false;
+}
+
+/*bool assertEqual(T)(T expected, T actual,
+		string file = __FILE__, int line = __LINE__ ) {
+	if (expected == actual) {
+		return true;
+	}
+	writeln("failed at ", std.path.basename(file), "(", line, "):",
+	        " expected \"", expected, "\"",
+	        " but found \"", actual, "\".");
+	return false;
+}*/
+
 bool assertNotEqual(T)(T unexpected, T actual,
-                    string file = __FILE__, int line = __LINE__ ) {
+		string file = __FILE__, int line = __LINE__ ) {
 	if (unexpected == actual) {
 		writeln("failed at ", std.path.basename(file), "(", line, "):",
 	        	" \"", unexpected, "\" is equal to \"", actual, "\".");

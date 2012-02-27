@@ -436,7 +436,7 @@ public BigDecimal toNumber(const string inStr) {
 		if(payload > ushort.max) {
 			return NAN;
 		}
-		num.payload = payload;
+		num.payload = cast(ushort)payload;
 		return num;
 	};
 	// check for sNaN
@@ -463,7 +463,7 @@ public BigDecimal toNumber(const string inStr) {
 		if(payload > ushort.max) {
 			return NAN;
 		}
-		num.payload = payload;
+		num.payload = cast(ushort)payload;
 		return num;
 	};
 	// check for infinity
