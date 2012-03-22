@@ -292,9 +292,7 @@ public:
 //	constructors
 //--------------------------------
 
-	/**
-	 * Creates a Dec32 from a special value.
-	 */
+	/// Creates a Dec32 from a special value.
 	private this(const BITS bits) {
 		intBits = bits;
 	}
@@ -344,9 +342,7 @@ public:
 		assertTrue(num.isFinite);
 	}
 
-	/**
-	 * Creates a Dec32 from a long integer.
-	 */
+	/// Creates a Dec32 from a long integer.
 	public this(const long n) {
 		this = zero;
 		signed = n < 0;
@@ -367,16 +363,12 @@ public:
 		assertTrue(num.toString == "5");
 	}
 
-	/**
-	 * Creates a Dec32 from a boolean value.
-	 */
+	/// Creates a Dec32 from a boolean value.
 	public this(const bool value) {
 		this = value ? ONE : ZERO;
 	}
 
-	/**
-	 * Creates a Dec32 from a long integer coefficient and an int exponent.
-	 */
+	/// Creates a Dec32 from a long integer coefficient and an int exponent.
 	public this(const long mant, const int expo) {
 		this(mant);
 		exponent = exponent + expo;
@@ -427,9 +419,7 @@ public:
 		assertTrue(num.toString == "0E+2");
 	}
 
-	/**
-	 * Creates a Dec32 from a BigDecimal
-	 */
+	/// Creates a Dec32 from a BigDecimal
 	public this(const BigDecimal num) {
 
 		// check for special values
@@ -527,7 +517,7 @@ public:
 			this.sign = cast(bool)std.math.signbit(r);
 			return;
 		}
-		// TODO: this won't do -- no rounding has occured.
+		// (32)TODO: this won't do -- no rounding has occured.
 		string str = format("%.*G", cast(int)context32.precision, r);
 		this(str);
 	}
@@ -628,28 +618,28 @@ public:
 	/// Otherwise, if the input value exceeds the maximum allowed exponent,
 	/// this number is converted to infinity and the overflow flag is set.
 	/// If the input value is less than the minimum allowed exponent,
-	/// this number is converted to zero, the exponent is set to eTiny
+	/// this number is converted to zero, the exponent is set to tinyExpo
 	/// and the underflow flag is set.
 	@property
 	 int exponent(const int expo) {
 		// check for overflow
-		if (expo > context32.eMax) {
+		if (expo > context32.maxExpo) {
 			this = signed ? NEG_INF : INFINITY;
 //			decimal.context.contextFlags.setFlags(OVERFLOW);
 			return 0;
 		}
 		// check for underflow
-		if (expo < context32.eMin) {
+		if (expo < context32.minExpo) {
 			// if the exponent is too small even for a subnormal number,
 			// the number is set to zero.
-			if (expo < context32.eTiny) {
+			if (expo < context32.tinyExpo) {
 				this = signed ? NEG_ZERO : ZERO;
-				expoEx = context32.eTiny + BIAS;
+				expoEx = context32.tinyExpo + BIAS;
 				contextFlags.setFlags(SUBNORMAL);
 				contextFlags.setFlags(UNDERFLOW);
-				return context32.eTiny;
+				return context32.tinyExpo;
 			}
-			// at this point the exponent is between eMin and eTiny.
+			// at this point the exponent is between minExpo and tinyExpo.
 			// NOTE: I don't think this needs special handling
 		}
 		// if explicit...
@@ -774,7 +764,7 @@ public:
 		return 0;
 	}
 
-	// TODO: need to ensure this won't overflow into other bits.
+	// (32)TODO: need to ensure this won't overflow into other bits.
 	/// Sets the payload of this number.
 	/// If the number is not a NaN (har!) no action is taken and zero
 	/// is returned.
@@ -836,14 +826,14 @@ public:
 	// floating point properties
 	static Dec32 init() 	  { return NAN; }
 	static Dec32 epsilon()	  { return Dec32(1, -7); }
-	static Dec32 min()		  { return Dec32(1, context32.eTiny); }
+	static Dec32 min()		  { return Dec32(1, context32.tinyExpo); }
 
 	static int dig()		{ return 7; }
 	static int mant_dig()	{ return 24; }
-	static int max_10_exp() { return context32.eMax; }
-	static int min_10_exp() { return context32.eMin; }
-	static int max_exp()	{ return cast(int)(context32.eMax/LOG2); }
-	static int min_exp()	{ return cast(int)(context32.eMin/LOG2); }
+	static int max_10_exp() { return context32.maxExpo; }
+	static int min_10_exp() { return context32.minExpo; }
+	static int max_exp()	{ return cast(int)(context32.maxExpo/LOG2); }
+	static int min_exp()	{ return cast(int)(context32.minExpo/LOG2); }
 
 	/// Returns the maximum number of decimal digits in this context.
 	static uint precision(const DecimalContext context = context32) {
@@ -870,15 +860,15 @@ public:
 
 //	/// Returns the minimum representable normal value in this context.
 //	static Dec32 min_normal(const DecimalContext context = context32) {
-//		return Dec32(1, context.eMin);
+//		return Dec32(1, context.minExpo);
 //	}
 
 	/// Returns the minimum representable subnormal value in this context.
-	/// NOTE: Creation of this number will not set the
+	/// NOTE: Creation of any number will not set the
 	/// subnormal flag until it is used. The operations will
 	/// set the flags as needed.
 	static Dec32 min(const DecimalContext context = context32) {
-		return Dec32(1, context.eTiny);
+		return Dec32(1, context.tinyExpo);
 	}
 
 	/// returns the smallest available increment to 1.0 in this context
@@ -886,23 +876,25 @@ public:
 		return Dec32(1, -context.precision);
 	}
 
-	static int min_10_exp(const DecimalContext context = context32) {
-		return context.eMin;
+/*	static int min_10_exp(const DecimalContext context = context32) {
+		return context.minExpo;
 	}
 
 	static int max_10_exp(const DecimalContext context = context32) {
-		return context.eMax;
+		return context.maxExpo;
 	}
+*/
+
+	/// Returns the radix (10)
+	immutable int radix = 10;
 
 //--------------------------------
 //	classification properties
 //--------------------------------
 
-	/**
-	 * Returns true if this number's representation is canonical.
-	 * Finite numbers are always canonical.
-	 * Infinities and NaNs are canonical if their unused bits are zero.
-	 */
+	/// Returns true if this number's representation is canonical.
+	/// Finite numbers are always canonical.
+	/// Infinities and NaNs are canonical if their unused bits are zero.
 	const bool isCanonical() {
 		if (isInfinite) return padInf == 0;
 		if (isNaN) return signed == 0 && padNaN == 0;
@@ -910,14 +902,12 @@ public:
 		return true;
 	}
 
-	/**
-	 * Returns true if this number's representation is canonical.
-	 * Finite numbers are always canonical.
-	 * Infinities and NaNs are canonical if their unused bits are zero.
-	 */
+	/// Returns a copy of this number in canonical form.
+	/// Finite numbers are always canonical.
+	/// Infinities and NaNs are canonical if their unused bits are zero.
 	const Dec32 canonical() {
 		Dec32 copy = this;
-		if (this.isCanonical) return copy;
+		if (!this.isSpecial) return copy;
 		if (this.isInfinite) {
 			copy.padInf = 0;
 			return copy;
@@ -929,58 +919,42 @@ public:
 		}
 	}
 
-	/**
-	 * Returns true if this number is +\- zero.
-	 */
+	/// Returns true if this number is +\- zero.
 	const bool isZero() {
 		return isExplicit && mantEx == 0;
 	}
 
-	/**
-	 * Returns true if the coefficient of this number is zero.
-	 */
+	///Returns true if the coefficient of this number is zero.
 	const bool coefficientIsZero() {
 		return coefficient == 0;
 	}
 
-	/**
-	 * Returns true if this number is a quiet or signaling NaN.
-	 */
+	/// Returns true if this number is a quiet or signaling NaN.
 	const bool isNaN() {
 		return testNaN == NAN_VAL || testNaN == SIG_VAL;
 	}
 
-	/**
-	 * Returns true if this number is a signaling NaN.
-	 */
+	/// Returns true if this number is a signaling NaN.
 	const bool isSignaling() {
 		return testNaN == SIG_VAL;
 	}
 
-	/**
-	 * Returns true if this number is a quiet NaN.
-	 */
+	/// Returns true if this number is a quiet NaN.
 	const bool isQuiet() {
 		return testNaN == NAN_VAL;
 	}
 
-	/**
-	 * Returns true if this number is +\- infinity.
-	 */
+	/// Returns true if this number is +\- infinity.
 	const bool isInfinite() {
 		return testInf == INF_VAL;
 	}
 
-	/**
-	 * Returns true if this number is neither infinite nor a NaN.
-	 */
+	/// Returns true if this number is neither infinite nor a NaN.
 	const bool isFinite() {
 		return testSpcl != 0xF;
 	}
 
-	/**
-	 * Returns true if this number is a NaN or infinity.
-	 */
+	/// Returns true if this number is a NaN or infinity.
 	const bool isSpecial() {
 		return testSpcl == 0xF;
 	}
@@ -993,9 +967,7 @@ public:
 		return testIm == 0x3 && testSpcl != 0xF;
 	}
 
-	/**
-	 * Returns true if this number is negative. (Includes -0)
-	 */
+	/// Returns true if this number is negative. (Includes -0)
 	const bool isSigned() {
 		return signed;
 	}
@@ -1022,20 +994,21 @@ public:
 		return !isSpecial && coefficient == 0;
 	}
 
-	/**
-	 * Returns true if this number is subnormal.
-	 */
+	/// Returns true if this number is subnormal.
 	const bool isSubnormal(const DecimalContext context = context32) {
 		if (isSpecial) return false;
-		return adjustedExponent < context.eMin;
+		return adjustedExponent < context.minExpo;
 	}
 
-	/**
-	 * Returns true if this number is normal.
-	 */
+	/// Returns true if this number is normal.
 	const bool isNormal(const DecimalContext context = context32) {
 		if (isSpecial) return false;
-		return adjustedExponent >= context.eMin;
+		return adjustedExponent >= context.minExpo;
+	}
+
+	/// Returns the value of the adjusted exponent.
+	const int adjustedExponent() {
+		return exponent + digits - 1;
 	}
 
 	/**
@@ -1060,14 +1033,6 @@ public:
 		assertTrue(!num.isIntegral);
 		num = Dec32.INFINITY;
 		assertTrue(!num.isIntegral);
-	}
-
-	/**
-	 * Returns the value of the adjusted exponent.
-	*/
-	// TODO: what if this is special?
-	const int adjustedExponent() {
-		return exponent + digits - 1;
 	}
 
 //--------------------------------
@@ -1182,23 +1147,18 @@ public:
 		writeln("passed");
 	}
 
-	/**
-	 * Converts this number to an exact scientific-style string representation.
-	 */
+
+	// Converts this number to an exact scientific-style string representation.
 	const string toSciString() {
-		return decimal.conv.toSciString!Dec32(this);
+		return decimal.conv.sciForm!Dec32(this);
 	}
 
-	/**
-	 * Converts this number to an exact engineering-style string representation.
-	 */
+	// Converts this number to an exact engineering-style string representation.
 	const string toEngString() {
-		return decimal.conv.toEngString!Dec32(this);
+		return decimal.conv.engForm!Dec32(this);
 	}
 
-	/**
-	 * Converts a Dec32 to a string
-	 */
+	// Converts a Dec32 to a standard string
 	const public string toString() {
 		 return toSciString();
 	}
@@ -1318,7 +1278,7 @@ public:
 	 * Returns -1, 0 or 1, if this number is less than, equal to or
 	 * greater than the argument, respectively.
 	 */
-	const int opCmp(T)(const T that) if(isPromotable!T) {
+	const int opCmp(T)(const T that) if (isPromotable!T) {
 		return opCmp!Dec32(Dec32(that));
 	}
 
@@ -1353,7 +1313,7 @@ public:
 	/**
 	 * Returns true if this number is equal to the specified number.
 	 */
-	const bool opEquals(T)(const T that) if(isPromotable!T) {
+	const bool opEquals(T)(const T that) if (isPromotable!T) {
 		return opEquals!Dec32(Dec32(that));
 	}
 
@@ -1376,7 +1336,7 @@ public:
 // assignment
 //--------------------------------
 
-	// TODO: flags?
+	// (32)TODO: flags?
 	/// Assigns a Dec32 (copies that to this).
 	void opAssign(T:Dec32)(const T that) {
 		this.intBits = that.intBits;
@@ -1389,7 +1349,7 @@ public:
 		assertTrue(lhs == rhs);
 	}
 
-	// TODO: flags?
+	// (32)TODO: flags?
 	///    Assigns a numeric value.
 	void opAssign(T)(const T that) {
 		this = Dec32(that);
@@ -1523,14 +1483,12 @@ public:
 		assertEqual(expect,actual);
 	}
 
-	/**
-	 * Detect whether T is promotable to decimal32 type.
-	 */
+	/// Detect whether T is promotable to decimal32 type.
 	private template isPromotable(T) {
 		enum bool isPromotable = is(T:ulong) || is(T:real);
 	}
 
-	const Dec32 opBinary(string op, T)(const T rhs) if(isPromotable!T)
+	const Dec32 opBinary(string op, T)(const T rhs) if (isPromotable!T)
 	{
 		return opBinary!(op,Dec32)(Dec32(rhs));
 	}
@@ -1589,10 +1547,10 @@ public:
 
 }	// end Dec32 struct
 
-// TODO: set context flags
+// (32)TODO: set context flags
 public Dec32 sqrt(Dec32 arg) {
 	if (arg.isNaN) {
-		// TODO: set a flag
+		// (32)TODO: set a flag
 		return Dec32.NAN;
 	}
 	if (arg.isZero) {
@@ -1652,7 +1610,7 @@ public Dec32 ln(Dec32 arg) {
 	if (arg == Dec32.ONE) {
 		return Dec32.ZERO;
 	}
-	// TODO: check for a NaN? or special value?
+	// (32)TODO: check for a NaN? or special value?
 	return Dec32(std.math.log(arg.toReal));
 }
 
@@ -1675,7 +1633,7 @@ public Dec32 log10(Dec32 arg) {
 	if (arg == Dec32.ONE) {
 		return Dec32.ZERO;
 	}
-	// TODO: check for a NaN? or special value?
+	// (32)TODO: check for a NaN? or special value?
 	return Dec32(std.math.log10(arg.toReal));
 }
 
@@ -1738,7 +1696,7 @@ public Dec32 power(Dec32 x, int n) {
 			return Dec32.infinity(isOdd(n));	// if n is odd, sign matches x
 		}
 	}
-	// TODO: this is a place where an integer op is needed
+	// (32)TODO: this is a place where an integer op is needed
 	return exp(Dec32(n) * ln(x));
 }
 

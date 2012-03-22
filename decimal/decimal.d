@@ -1,22 +1,22 @@
-﻿/**
- * A D programming language implementation of the
- * General Decimal Arithmetic Specification,
- * Version 1.70, (25 March 2009).
- * (http://www.speleotrove.com/decimal/decarith.pdf)
- *
- * License: <a href="http://www.boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
- * Authors: Paul D. Anderson
- */
+﻿///
+/// A D programming language implementation of the
+/// General Decimal Arithmetic Specification,
+/// Version 1.70, (25 March 2009).
+/// (http://www.speleotrove.com/decimal/decarith.pdf)
+///
+/// License: <a href="http://www.boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
+/// Authors: Paul D. Anderson
+///
 
-/* Copyright Paul D. Anderson 2009 - 2012.
- * Distributed under the Boost Software License, Version 1.0.
- * (See accompanying file LICENSE_1_0.txt or copy at
- *  http://www.boost.org/LICENSE_1_0.txt)
- */
+/// Copyright Paul D. Anderson 2009 - 2012.
+/// Distributed under the Boost Software License, Version 1.0.
+/// (See accompanying file LICENSE_1_0.txt or copy at
+///  http://www.boost.org/LICENSE_1_0.txt)
+///
 
-// TODO: write some test cases for flag setting. test the add/sub/mul/div functions
+// (B)TODO: write some test cases for flag setting. test the add/sub/mul/div functions
 
-// TODO: to/from real or double (float) values needs definition and implementation.
+// (B)TODO: to/from real or double (float) values needs definition and implementation.
 
 module decimal.decimal;
 
@@ -45,17 +45,17 @@ alias BigDecimal.bigContext bigContext;
 // special values for NaN, Inf, etc.
 private static enum SV {NONE, INF, QNAN, SNAN};
 
-/**
- * A struct representing an arbitrary-precision floating-point number.
- *
- * The implementation follows the General Decimal Arithmetic
- * Specification, Version 1.70 (25 Mar 2009),
- * http://www.speleotrove.com/decimal. This specification conforms with
- * IEEE standard 754-2008.
- */
+///
+/// A struct representing an arbitrary-precision floating-point number.
+///
+/// The implementation follows the General Decimal Arithmetic
+/// Specification, Version 1.70 (25 Mar 2009),
+/// http://www.speleotrove.com/decimal.
+/// This specification conforms with IEEE standard 754-2008.
+///
 struct BigDecimal {
 
-	private static DecimalContext bigContext =
+	public static DecimalContext bigContext =
 		DecimalContext(9, 99, Rounding.HALF_EVEN);
 
 	private SV sval = SV.QNAN;		// special values: default value is quiet NaN
@@ -93,7 +93,7 @@ unittest {
 	assertTrue(num.toString == "sNaN");
 //	writeln("BigDecimal(SV.QNAN).toAbstract = ", NAN.toAbstract);
 	num = NEG_ZERO;
-	assertTrue(num.toString == "-0");
+	assertEqual("-0", num.toString);
 }
 
 public:
@@ -102,9 +102,9 @@ public:
 // construction
 //--------------------------------
 
-	/**
-	 * Constructs a new number given a special value and an optional sign.
-	 */
+	///
+	/// Constructs a new number given a special value and an optional sign.
+	///
 	public this(const SV sv, const bool sign = false) {
 		this.signed = sign;
 		this.sval = sv;
@@ -116,9 +116,7 @@ public:
 		assertTrue(num.toAbstract() == "[1,inf]");
 	}
 
-	/**
-	 * Creates a BigDecimal from a boolean value.
-	 */
+	/// Creates a BigDecimal from a boolean value.
 	public this(const bool value)
 	{
 		this = zero;
@@ -127,21 +125,19 @@ public:
         }
 	}
 
-	/**
-	 * Constructs a number from a sign, a BigInt coefficient and
-	 * an optional(?) integer exponent.
-	 * The sign of the number is the value of the sign parameter,
-	 * regardless of the sign of the coefficient.
-	 * The intial precision of the number is deduced from the number of decimal
-	 * digits in the coefficient.
-	 */
+	/// Constructs a number from a sign, a BigInt coefficient and
+	/// an optional(?) integer exponent.
+	/// The sign of the number is the value of the sign parameter,
+	/// regardless of the sign of the coefficient.
+	/// The intial precision of the number is deduced from the number of decimal
+	/// digits in the coefficient.
 	this(const bool sign, const BigInt coefficient, const int exponent = 0) {
 		BigInt big = abs(coefficient);
 		this = zero();
 		this.signed = sign;
 		this.mant = big;
 		this.expo = exponent;
-        // TODO: If we specify the number of digits this can be CTFE.
+        // (B)TODO: If we specify the number of digits this can be CTFE.
         // The numDigits call is not CTFE.
 		this.digits = numDigits(this.mant);
 	}
@@ -152,13 +148,11 @@ public:
 		assertTrue(num.toString == "-7.254E+97");
 	}
 
-	// UNREADY: this(const BigInt, const int). Flags.
-	/**
-	 * Constructs a BigDecimal from a BigInt coefficient and an
-	 * optional integer exponent. The sign of the number is the sign
-	 * of the coefficient. The initial precision is determined by the number
-	 * of digits in the coefficient.
-	 */
+	// (B)TODO:: this(const BigInt, const int). Flags.
+	/// Constructs a BigDecimal from a BigInt coefficient and an
+	/// optional integer exponent. The sign of the number is the sign
+	/// of the coefficient. The initial precision is determined by the number
+	/// of digits in the coefficient.
 	this(const BigInt coefficient, const int exponent = 0) {
 		BigInt big = mutable(coefficient);
 		bool sign = decimal.rounding.sgn(big) < 0;
@@ -175,20 +169,16 @@ public:
 
 	// long constructors:
 
-	// UNREADY: this(bool, const int, const int). Flags. Unit Tests.
-	/**
-	 * Constructs a number from a sign, a long integer coefficient and
-	 * an integer exponent.
-	 */
+	// (B)TODO:: this(bool, const int, const int). Flags. Unit Tests.
+	/// Constructs a number from a sign, a long integer coefficient and
+	/// an integer exponent.
 	this(const bool sign, const long coefficient, const int exponent) {
 		this(sign, BigInt(coefficient), exponent);
 	}
 
-	// UNREADY: this(const long, const int). Flags. Unit Tests.
-	/**
-	 * Constructs a number from an long coefficient
-	 * and an optional integer exponent.
-	 */
+	// (B)TODO:: this(const long, const int). Flags. Unit Tests.
+	/// Constructs a number from an long coefficient
+	/// and an optional integer exponent.
 	this(const long coefficient, const int exponent) {
 		this(BigInt(coefficient), exponent);
 	}
@@ -196,20 +186,18 @@ public:
 	unittest {
 	}
 
-	// UNREADY: this(const long). Flags. Unit Tests.
-	/**
-	 * Constructs a number from an long coefficient
-	 * and an optional integer exponent.
-	 */
+	// (B)TODO:: this(const long). Flags. Unit Tests.
+	/// Constructs a number from an long coefficient
+	/// and an optional integer exponent.
 	this(const long coefficient) {
 		this(BigInt(coefficient), 0);
 	}
 
 	// string constructors:
 
-	// UNREADY: this(const string). Flags. Unit Tests.
+	// (B)TODO:: this(const string). Flags. Unit Tests.
 	// construct from string representation
-// TODO: this(str): add tests for just over/under int.max, int.min
+// (B)TODO: this(str): add tests for just over/under int.max, int.min
 
 	this(const string str) {
 		this = decimal.conv.toNumber(str);
@@ -240,16 +228,16 @@ public:
 
 	// floating point constructors:
 
-	// UNREADY: this(const real). Flags. Unit Tests.
-	/**
-	 *	  Constructs a number from a real value.
-	 */
+	// (B)TODO:: this(const real). Flags. Unit Tests.
+	///
+	/// Constructs a number from a real value.
+	///
 	this(const real r) {
 		string str = format("%.*G", cast(int)bigContext.precision, r);
 		this(str);
 	}
 
-	// UNREADY: this(BigDecimal). Flags. Unit Tests.
+	// (B)TODO:: this(BigDecimal). Flags. Unit Tests.
 	// copy constructor
 	this(const BigDecimal that) {
 		this.signed = that.signed;
@@ -259,10 +247,10 @@ public:
 		this.mant	= cast(BigInt) that.mant;
 	};
 
-	// UNREADY: dup. Flags.
-	/**
-	 * dup property
-	 */
+	// (B)TODO:: dup. Flags.
+	///
+	/// dup property
+	///
 	const BigDecimal dup() {
 		return BigDecimal(this);
 	}
@@ -277,7 +265,7 @@ public:
 // assignment
 //--------------------------------
 
-	// UNREADY: opAssign(T: BigDecimal)(const BigDecimal). Flags. Unit Tests.
+	// (B)TODO:: opAssign(T: BigDecimal)(const BigDecimal). Flags. Unit Tests.
 	/// Assigns a BigDecimal (makes a copy)
 	void opAssign(T:BigDecimal)(const T that) {
 		this.signed = that.signed;
@@ -287,19 +275,19 @@ public:
 		this.mant	= cast(BigInt) that.mant;
 	}
 
-	// UNREADY: opAssign(T)(const T). Flags.
+	// (B)TODO:: opAssign(T)(const T). Flags.
 	///    Assigns a floating point value.
 	void opAssign(T:BigInt)(const T that) {
 		this = BigDecimal(that);
 	}
 
-	// UNREADY: opAssign(T)(const T). Flags.
+	// (B)TODO:: opAssign(T)(const T). Flags.
 	///    Assigns a floating point value.
 	void opAssign(T:long)(const T that) {
 		this = BigDecimal(that);
 	}
 
-	// UNREADY: opAssign(T)(const T). Flags. Unit Tests.
+	// (B)TODO:: opAssign(T)(const T). Flags. Unit Tests.
 	///    Assigns a floating point value.
 	void opAssign(T:real)(const T that) {
 		this = BigDecimal(that);
@@ -335,9 +323,9 @@ public:
 // string representations
 //--------------------------------
 
-	/**
-	 * Converts a number to an abstract string representation.
-	 */
+	///
+	/// Converts a number to an abstract string representation.
+	///
 	public const string toAbstract() {
 		return decimal.conv.toAbstract!BigDecimal(this);
 	}
@@ -357,26 +345,26 @@ unittest {
 }
 
 // READY: toSciString.
-/**
- * Converts a BigDecimal to a string representation.
- */
+///
+/// Converts a BigDecimal to a string representation.
+///
 const string toSciString() {
-	return decimal.conv.toSciString!BigDecimal(this);
+	return decimal.conv.sciForm!BigDecimal(this);
 };
 
 // READY: toEngString.
-/**
- * Converts a BigDecimal to an engineering string representation.
- */
+///
+/// Converts a BigDecimal to an engineering string representation.
+///
 const string toEngString() {
-   return decimal.conv.toEngString!BigDecimal(this);
+   return decimal.conv.engForm!BigDecimal(this);
 };
 
-/**
- * Converts a number to its string representation.
- */
+///
+/// Converts a number to its string representation.
+///
 const string toString() {
-	return toSciString();
+	return decimal.conv.sciForm!BigDecimal(this);
 };
 
 unittest {
@@ -391,7 +379,7 @@ unittest {
 // member properties
 //--------------------------------
 
-	/// returns the exponent of this number
+	/// Returns the exponent of this number
 	@property
 	const int exponent() {
 		return this.expo;
@@ -468,12 +456,12 @@ unittest {
 		assertTrue(num.toExact == "-Infinity");
 	}
 
-	/// returns the adjusted exponent of this number
+	/// Returns the adjusted exponent of this number
 	@property const int adjustedExponent() {
 		return expo + digits - 1;
 	}
 
-	/// returns the number of decimal digits in the coefficient of this number
+	/// Returns the number of decimal digits in the coefficient of this number
 	const int getDigits() {
 		return this.digits;
 	}
@@ -491,7 +479,7 @@ unittest {
 // floating point properties
 //--------------------------------
 
-	/// returns the default value for this type (NaN)
+	/// Returns the default value for this type (NaN)
 	static BigDecimal init() {
 		return NAN.dup;
 	}
@@ -542,32 +530,34 @@ unittest {
 	}
 
 	static int min_exp(const DecimalContext context = bigContext) {
-		return cast(int)(context.eMin);
+		return cast(int)(context.minExpo);
 	}
 
 	static int max_exp(const DecimalContext context = bigContext) {
-		return cast (int)(context.eMax);
+		return cast (int)(context.maxExpo);
 	}
 
-/*	// TODO: is there a way to make this const w/in a context?
-	// TODO: This is only used by BigDecimal -- maybe should move it there?
-	// TODO: The mantissa is 10^^(precision - 1), so probably don't need
-	//			to implement as a string.
+//	// (B)TODO: is there a way to make this const w/in a context?
+//	// (B)TODO: This is only used by BigDecimal -- maybe should move it there?
+//	// (B)TODO: The mantissa is 10^^(precision - 1), so probably don't need
+//	//			to implement as a string.
+//	// Returns the maximum representable normal value in the current context.
+//	const string maxString() {
+//		string cstr = "9." ~ replicate("9", precision - 1)
+//					~ "E" ~ format("%d", maxExpo);
+//		return cstr;
+//	}
+
+
 	// Returns the maximum representable normal value in the current context.
-	const string maxString() {
-		string cstr = "9." ~ replicate("9", precision - 1)
-					~ "E" ~ format("%d", eMax);
-		return cstr;
-	}*/
-	// Returns the maximum representable normal value in the current context.
-	// TODO: this is a fairly expensive operation. Can it be fixed?
+	// (B)TODO: this is a fairly expensive operation. Can it be fixed?
 	static BigDecimal max(const DecimalContext context = bigContext) {
 		return BigDecimal(context.maxString);
 	}
 
 	// Returns the maximum representable normal value in the current context.
-	// TODO: this is a fairly expensive operation. Can it be fixed?
-	// TODO: is this needed?
+	// (B)TODO: this is a fairly expensive operation. Can it be fixed?
+	// (B)TODO: is this needed?
 	static BigDecimal max(const bool sign, const DecimalContext context = bigContext) {
 		BigDecimal result = BigDecimal(context.maxString);
 		return sign ? -result : result;
@@ -575,41 +565,40 @@ unittest {
 
 //	/// Returns the minimum representable normal value in this context.
 //	static BigDecimal min_normal(const DecimalContext context = bigContext) {
-//		return BigDecimal(1, context.eMin);
+//		return BigDecimal(1, context.minExpo);
 //	}
 
 	/// Returns the minimum representable subnormal value in this context.
 	static BigDecimal min(const DecimalContext context = bigContext) {
-		return BigDecimal(1, context.eTiny);
+		return BigDecimal(1, context.tinyExpo);
 	}
 
-	/// returns the smallest available increment to 1.0 in this context
+	/// Returns the smallest available increment to 1.0 in this context
 	static BigDecimal epsilon(const DecimalContext context = bigContext) {
 		return BigDecimal(1, -context.precision);
 	}
 
 	static int min_10_exp(const DecimalContext context = bigContext) {
-		return context.eMin;
+		return context.minExpo;
 	}
 
 	static int max_10_exp(const DecimalContext context = bigContext) {
-		return context.eMax;
+		return context.maxExpo;
 	}
+
+	/// Returns the radix (10)
+	immutable int radix = 10;
 
 //--------------------------------
 //	classification properties
 //--------------------------------
 
-	/**
-	 * Returns true if this number's representation is canonical (always true).
-	 */
+	/// Returns true if this number's representation is canonical (always true).
 	const bool isCanonical() {
-		return	true;
+		return true;
 	}
 
-	/**
-	 * Returns the canonical form of the number.
-	 */
+	/// Returns the canonical form of the number.
 	const BigDecimal canonical() {
 		return this.dup;
 	}
@@ -621,9 +610,7 @@ unittest {
 		assertTrue(compareTotal(num, copy) == 0);
 	}
 
-	/**
-	 * Returns true if this number is + or - zero.
-	 */
+	/// Returns true if this number is + or - zero.
 	const bool isZero() {
 		return isFinite && coefficient == 0;
 	}
@@ -638,9 +625,7 @@ unittest {
 		assertTrue(num.isZero);
 	}
 
-	/**
-	 * Returns true if this number is a quiet or signaling NaN.
-	 */
+	/// Returns true if this number is a quiet or signaling NaN.
 	const bool isNaN() {
 		return this.sval == SV.QNAN || this.sval == SV.SNAN;
 	}
@@ -655,9 +640,7 @@ unittest {
 		assertTrue(num.isNaN);
 	}
 
-	/**
-	 * Returns true if this number is a signaling NaN.
-	 */
+	/// Returns true if this number is a signaling NaN.
 	const bool isSignaling() {
 		return this.sval == SV.SNAN;
 	}
@@ -672,9 +655,7 @@ unittest {
 		assertTrue(num.isSignaling);
 	}
 
-	/**
-	 * Returns true if this number is a quiet NaN.
-	 */
+	/// Returns true if this number is a quiet NaN.
 	const bool isQuiet() {
 		return this.sval == SV.QNAN;
 	}
@@ -689,9 +670,7 @@ unittest {
 		assertTrue(!num.isQuiet);
 	}
 
-	/**
-	 * Returns true if this number is + or - infinity.
-	 */
+	/// Returns true if this number is + or - infinity.
 	const bool isInfinite() {
 		return this.sval == SV.INF;
 	}
@@ -706,9 +685,7 @@ unittest {
 		assertTrue(!num.isInfinite);
 	}
 
-	/**
-	 * Returns true if this number is not + or - infinity and not a NaN.
-	 */
+	/// Returns true if this number is not an infinity or a NaN.
 	const bool isFinite() {
 		return sval != SV.INF
 			&& sval != SV.QNAN
@@ -731,9 +708,7 @@ unittest {
 		assertTrue(!num.isFinite);
 	}
 
-	/**
-	 * Returns true if this number is a NaN or infinity.
-	 */
+	/// Returns true if this number is a NaN or infinity.
 	const bool isSpecial() {
 		return sval == SV.INF
 			|| sval == SV.QNAN
@@ -750,9 +725,7 @@ unittest {
 		assertTrue(!num.isSpecial);
 	}
 
-	/**
-	 * Returns true if this number is negative. (Includes -0)
-	 */
+	/// Returns true if this number is negative. (Includes -0)
 	const bool isSigned() {
 		return this.signed;
 	}
@@ -767,6 +740,7 @@ unittest {
 		assertTrue(num.isSigned);
 	}
 
+	/// Returns true if this number is negative. (Includes -0)
 	const bool isNegative() {
 		return this.signed;
 	}
@@ -781,12 +755,10 @@ unittest {
 		assertTrue(num.isNegative);
 	}
 
-	/**
-	 * Returns true if this number is subnormal.
-	 */
+	/// Returns true if this number is subnormal.
 	const bool isSubnormal(const DecimalContext context = bigContext) {
 		if (!isFinite) return false;
-		return adjustedExponent < context.eMin;
+		return adjustedExponent < context.minExpo;
 	}
 
 	unittest {
@@ -803,12 +775,10 @@ unittest {
 		assertTrue(!num.isSubnormal);
 	}
 
-	/**
-	 * Returns true if this number is normal.
-	 */
+	/// Returns true if this number is normal.
 	const bool isNormal(const DecimalContext context = bigContext) {
 		if (isFinite && !isZero) {
-			return adjustedExponent >= context.eMin;
+			return adjustedExponent >= context.minExpo;
 		}
 		return false;
 	}
@@ -827,12 +797,10 @@ unittest {
 		assertTrue(!num.isNormal);
 	}
 
-	/**
-	 * Returns true if this number is integral;
-	 * that is, its fractional part is zero.
-	 */
+	/// Returns true if this number is integral;
+	/// that is, if its fractional part is zero.
 	 const bool isIntegral() {
-	 	// TODO: need to take trailing zeros into account
+	 	// (B)TODO: need to take trailing zeros into account
 		return expo >= 0;
 	 }
 
@@ -850,14 +818,28 @@ unittest {
 		assertTrue(num.isIntegral);
 	}
 
-	// NOTE: NaN is false, Infinity is true
+	/// Returns true if this number represents a logical true value.
+	/// Any number other than zero or NaN returns true.
+	/// NaN is false, infinity is true.
 	const bool isTrue() {
 		return !isNaN || isInfinite || coefficient != 0;
 	}
 
-	// NOTE: NaN is false, Infinity is true
+	unittest {
+		write("isTrue...");
+		writeln("test missing");
+	}
+
+	/// Returns true if this number represents a logical false value.
+	/// Zero and NaN return true.
+	/// Any other number (e.g., infinity) returns false;
 	const bool isFalse() {
 		return isNaN || (isFinite && coefficient == 0);
+	}
+
+	unittest {
+		write("isFalse...");
+		writeln("test missing");
 	}
 
 	const bool isZeroCoefficient() {
@@ -886,10 +868,8 @@ unittest {
 // comparison
 //--------------------------------
 
-	/**
-	 * Returns -1, 0 or 1, if this number is less than, equal to or
-	 * greater than the argument, respectively.
-	 */
+	/// Returns -1, 0 or 1, if this number is less than, equal to,
+	/// or greater than the argument, respectively.
 	const int opCmp(const BigDecimal that) {
 		return compare!BigDecimal(this, that, bigContext);
 	}
@@ -905,14 +885,13 @@ unittest {
 		assertTrue(num2 <= num1);
 	}
 
-	/**
-	 * Returns true if this number is equal to the specified BigDecimal.
-	 * A NaN is not equal to any number, not even to another NaN.
-	 * Infinities are equal if they have the same sign.
-	 * Zeros are equal regardless of sign.
-	 * Finite numbers are equal if they are numerically equal to the current precision.
-	 * A BigDecimal may not be equal to itself (this != this) if it is a NaN.
-	 */
+	/// Returns true if this number is equal to the argument.
+	/// Finite numbers are equal if they are numerically equal
+	/// to the current precision.
+	/// Infinities are equal if they have the same sign.
+	/// Zeros are equal regardless of sign.
+	/// A NaN is not equal to any number, not even to another NaN.
+	/// A number may not be equal to itself (this != this) if it is a NaN.
 	const bool opEquals (ref const BigDecimal that) {
 		return equals!BigDecimal(this, that, bigContext);
 	}
@@ -930,6 +909,9 @@ unittest {
 // unary arithmetic operators
 //--------------------------------
 
+
+	/// Returns the result of performing the specified
+	/// unary operation on this number.
 	const BigDecimal opUnary(string op)()
 	{
 		static if (op == "+") {
@@ -982,40 +964,47 @@ unittest {
 //	binary arithmetic operators
 //--------------------------------
 
-	const BigDecimal opBinary(string op, T:BigDecimal)(const T rhs)
+	/// Returns the result of performing the specified
+	/// binary operation on this number and the argument.
+	const BigDecimal opBinary(string op, T:BigDecimal)(const T arg)
 	{
 		static if (op == "+") {
-			return add!BigDecimal(this, rhs, bigContext);
+			return add!BigDecimal(this, arg, bigContext);
 		}
 		else static if (op == "-") {
-			return sub!BigDecimal(this, rhs, bigContext);
+			return sub!BigDecimal(this, arg, bigContext);
 		}
 		else static if (op == "*") {
-			return mul!BigDecimal(this, rhs, bigContext);
+			return mul!BigDecimal(this, arg, bigContext);
 		}
 		else static if (op == "/") {
-			return div!BigDecimal(this, rhs, bigContext);
+			return div!BigDecimal(this, arg, bigContext);
 		}
 		else static if (op == "%") {
-			return remainder!BigDecimal(this, rhs, bigContext);
+			return remainder!BigDecimal(this, arg, bigContext);
 		}
-	}
-
-	/**
-	 * Detect whether T is promotable to decimal32 type.
-	 */
-	private template isPromotable(T) {
-		enum bool isPromotable = is(T:ulong) || is(T:real);
-	}
-
-	const BigDecimal opBinary(string op, T)(const T rhs) if(isPromotable!T)	{
-		return opBinary!(op,BigDecimal)(BigDecimal(rhs));
 	}
 
 	unittest {
 		BigDecimal num = BigDecimal(591.3);
 		BigDecimal result = num * 5;
 		assertTrue(result == BigDecimal(2956.5));
+	}
+
+	/// Returns true if the type T is promotable to a decimal type.
+	private template isPromotable(T) {
+		enum bool isPromotable = is(T:ulong) || is(T:real);
+	}
+
+	unittest {
+		write("isPromotable...");
+		writeln("test missing");
+	}
+
+	/// Returns the result of performing the specified
+	/// binary operation on this number and the argument.
+	const BigDecimal opBinary(string op, T)(const T arg) if (isPromotable!T)	{
+		return opBinary!(op,BigDecimal)(BigDecimal(arg));
 	}
 
 	unittest {
@@ -1047,8 +1036,10 @@ unittest {
 // operator assignment
 //-----------------------------
 
-	ref BigDecimal opOpAssign(string op) (BigDecimal rhs) {
-		this = opBinary!op(rhs);
+	/// Performs the specified binary operation on this number
+	/// and the argument then assigns the result to this number.
+	ref BigDecimal opOpAssign(string op) (BigDecimal arg) {
+		this = opBinary!op(arg);
 		return this;
 	}
 
@@ -1070,16 +1061,23 @@ unittest {
 // nextUp, nextDown, nextAfter
 //-----------------------------
 
+	/// Returns the smallest representable number that is larger than
+	/// this number.
 	const BigDecimal nextUp() {
 		return nextPlus!BigDecimal(this, bigContext);
 	}
 
+	/// Returns the largest representable number that is smaller than
+	/// this number.
 	const BigDecimal nextDown() {
 		return nextMinus!BigDecimal(this, bigContext);
 	}
 
-	const BigDecimal nextAfter(const BigDecimal num) {
-		return nextToward!BigDecimal(this, num, bigContext);
+	/// Returns the representable number that is closest to the
+	/// this number (but not this number) in the
+	/// direction toward the argument.
+	const BigDecimal nextAfter(const BigDecimal arg) {
+		return nextToward!BigDecimal(this, arg, bigContext);
 	}
 
 	unittest {
@@ -1096,9 +1094,8 @@ unittest {
 		assertTrue(big.nextAfter(BigDecimal(123.44)) == expect);
 	}
 
-	/**
-	 * Returns (BigInt) ten raised to the specified power.
-	 */
+	// (B)TODO: move this outside the struct
+	/// Returns a BigInt value of ten raised to the specified power.
 	public static BigInt pow10(const int n) {
 		BigInt num = 1;
 		return decShl(num, n);
@@ -1106,6 +1103,20 @@ unittest {
 
 	unittest {
 		assertTrue(pow10(3) == 1000);
+	}
+
+	/// Returns a copy of the context with a new precision.
+	public static DecimalContext setPrecision(const uint precision) {
+		return DecimalContext(precision, bigContext.maxExpo, bigContext.rounding);
+	}
+
+	/// Returns a copy of the context with a new exponent limit.
+	public static DecimalContext setMaxExponent(const int maxExpo) {
+		return DecimalContext(bigContext.precision, maxExpo, bigContext.rounding);
+	}
+	/// Returns a copy of the context with a new rounding mode.
+	public static DecimalContext setRounding(const Rounding rounding) {
+		return DecimalContext(bigContext.precision, bigContext.maxExpo, rounding);
 	}
 
 }	 // end struct BigDecimal

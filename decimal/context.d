@@ -1,18 +1,15 @@
-﻿/**
- * A D programming language implementation of the
- * General Decimal Arithmetic Specification,
- * Version 1.70, (25 March 2009).
- * (http://www.speleotrove.com/decimal/decarith.pdf)
- *
- * License: <a href="http://www.boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
- * Authors: Paul D. Anderson
- */
+﻿/// A D programming language implementation of the
+/// General Decimal Arithmetic Specification,
+/// Version 1.70, (25 March 2009).
+/// (http://www.speleotrove.com/decimal/decarith.pdf)
+///
+/// License: <a href="http://www.boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
+/// Authors: Paul D. Anderson
 
-/* Copyright Paul D. Anderson 2009 - 2012.
- * Distributed under the Boost Software License, Version 1.0.
- * (See accompanying file LICENSE_1_0.txt or copy at
- *  http://www.boost.org/LICENSE_1_0.txt)
- */
+/// Copyright Paul D. Anderson 2009 - 2012.
+/// Distributed under the Boost Software License, Version 1.0.
+/// (See accompanying file LICENSE_1_0.txt or copy at
+///  http://www.boost.org/LICENSE_1_0.txt)
 
 module decimal.context;
 
@@ -29,16 +26,34 @@ unittest {
 }
 
 //--------------------------
-// Radix
+// Pre-defined decimal contexts
 //--------------------------
 
-immutable int radix = 10;
+/// The context used in examples of operations in the specification.
+//immutable static DecimalContext TEST_CONTEXT = DecimalContext(9, 99, Rounding.HALF_EVEN);
+/// The context used in examples of operations in the specification.
+static DecimalContext testContext = DecimalContext(9, 99, Rounding.HALF_EVEN);
+/// The basic default context. In addition the inexact, rounded and subnormal
+/// trap-enablers should set to 0; all others should be set to 1 (that is,
+/// the other conditions are treated as errors)
+/// General Decimal Arithmetic Specification, p. 16.
+immutable static DecimalContext BASIC_CONTEXT =
+		DecimalContext(9, 999, Rounding.HALF_UP);
+
+/// An extended default context. No trap-enablers should be set.
+immutable static DecimalContext EXTENDED_CONTEXT
+		= DecimalContext(999, 9999,
+	Rounding.HALF_EVEN);
 
 //--------------------------
 // DecimalContext struct
 //--------------------------
 
-/// Available rounding modes.
+/// The available rounding modes. For cumulative operations use the
+/// HALF_EVEN mode to prevent accumulation of errors. Otherwise the
+/// HALF_UP and HALF_DOWN modes are satisfactory. The UP, DOWN, FLOOR,
+/// and CEILING modes are also useful for some operations.
+/// General Decimal Arithmetic Specification, p. 13-14.
 public enum Rounding {
     HALF_EVEN,
     HALF_DOWN,
@@ -49,67 +64,11 @@ public enum Rounding {
     CEILING,
 }
 
-/// Context for decimal mathematic operations
-public struct DecimalContext {
-
-	/// length of the coefficient in (decimal) digits
-	immutable uint precision;
-	/// maximum value of the adjusted exponent
-	immutable int eMax;
-	/// smallest normalized exponent
-	immutable int eMin;
-	/// smallest non-normalized exponent
-	immutable int eTiny;
-	/// rounding mode
-	immutable Rounding rounding;
-	/// max coefficient
-//	/*immutable*/ BigInt maxCoefficient  = BigInt(10)^^9 - 1;
-
-	/// constructs a context with the specified parameters
-	public this(immutable uint precision, immutable int eMax,
-			immutable Rounding rounding) {
-		this.precision = precision;
-		this.eMax = eMax;
-		this.eMin = 1 - eMax;
-		this.eTiny = eMin - precision + 1;
-		this.rounding = rounding;
-//		BigInt maxCoefficient = BigInt(10)^^precision - 1;
-	}
-
-	/// Returns a copy of the context with a new precision
-	public const DecimalContext setPrecision(immutable uint precision) {
-		return DecimalContext(precision, this.eMax, this.rounding);
-	}
-
-	/// Returns a copy of the context with a new exponent limit
-	public const DecimalContext setMaxExponent(immutable int eMax) {
-		return DecimalContext(this.precision, eMax, this.rounding);
-	}
-	/// Returns a copy of the context with a new rounding mode
-	public const DecimalContext setRounding(immutable Rounding rounding) {
-		return DecimalContext(this.precision, this.eMax, rounding);
-	}
-
-	// TODO: is there a way to make this const w/in a context?
-	// TODO: This is only used by BigDecimal -- maybe should move it there?
-	// TODO: The mantissa is 10^^(precision - 1), so probably don't need
-	//			to implement as a string.
-	// Returns the maximum representable normal value in the current context.
-	const string maxString() {
-		string cstr = "9." ~ replicate("9", precision - 1)
-					~ "E" ~ format("%d", eMax);
-		return cstr;
-	}
-};
-// end struct DecimalContext
-
-
-//--------------------------
-// Context flags and trap-enablers
-//--------------------------
-
-/// Exceptional conditions.
-/// The larger the value, the higher the precedence
+/// The available flags and trap-enablers.
+/// The larger value have higher precedence.
+/// If more than one flag is set by an operation and traps are enabled,
+/// the flag with higher precedence will throw its exception.
+/// General Decimal Arithmetic Specification, p. 15.
 public enum : ubyte
 {
 	INVALID_OPERATION  = 0x80,
@@ -122,6 +81,66 @@ public enum : ubyte
 	CLAMPED            = 0x01
 }
 
+/// Arithmetic context for decimal operations.
+/// "The user-selectable parameters and rules
+/// which govern the results of arithmetic operations",
+/// General Decimal Arithmetic Specification, p. 13-14.
+public struct DecimalContext {
+
+	/// Maximum length of the coefficient in (decimal) digits.
+	immutable uint precision;
+	/// Maximum value of the adjusted exponent.
+	immutable int maxExpo;
+	/// Smallest normalized exponent.
+	immutable int minExpo;
+	/// Smallest non-normalized exponent.
+	immutable int tinyExpo;
+	/// Rounding mode.
+	immutable Rounding rounding;
+
+	/// Constructs a context with the specified parameters.
+	public this(const uint precision, const int maxExpo,
+			const Rounding rounding) {
+		this.precision = precision;
+		this.maxExpo = maxExpo;
+		this.minExpo = 1 - maxExpo;
+		this.tinyExpo = minExpo - precision + 1;
+		this.rounding = rounding;
+	}
+
+	/// Returns a copy of the context with a new precision.
+	public const DecimalContext setPrecision(immutable uint precision) {
+		return DecimalContext(precision, this.maxExpo, this.rounding);
+	}
+
+	/// Returns a copy of the context with a new maximum exponent.
+	public const DecimalContext setMaxExponent(immutable int maxExpo) {
+		return DecimalContext(this.precision, maxExpo, this.rounding);
+	}
+	/// Returns a copy of the context with a new rounding mode.
+	public const DecimalContext setRounding(immutable Rounding rounding) {
+		return DecimalContext(this.precision, this.maxExpo, rounding);
+	}
+
+	// (X)TODO: is there a way to make this const w/in a context?
+	// (X)TODO: This is only used by BigDecimal -- maybe should move it there?
+	// (X)TODO: The mantissa is 10^^(precision - 1), so probably don't need
+	//			to implement as a string.
+	// Returns the maximum representable normal value in the current context.
+	const string maxString() {
+		string cstr = "9." ~ replicate("9", precision - 1)
+					~ "E" ~ format("%d", maxExpo);
+		return cstr;
+	}
+};
+// end struct DecimalContext
+
+
+//--------------------------
+// Context flags and trap-enablers
+//--------------------------
+
+/// The base class for all decimal arithmetic exceptions.
 class DecimalException: object.Exception {
 	this(string msg, string file = __FILE__,
 		uint line = cast(uint)__LINE__, Throwable next = null)
@@ -130,6 +149,9 @@ class DecimalException: object.Exception {
 	}
 };
 
+/// Raised when the exponent of a result has been altered or constrained
+/// in order to fit the constraints of a specific concrete representation.
+/// General Decimal Arithmetic Specification, p. 15.
 class ClampedException: DecimalException {
 	this(string msg, string file = __FILE__,
 	     uint line = cast(uint)__LINE__, Throwable next = null)
@@ -138,6 +160,8 @@ class ClampedException: DecimalException {
 	}
 };
 
+/// Raised when a non-zero dividend is divided by zero.
+/// General Decimal Arithmetic Specification, p. 15.
 class DivByZeroException: DecimalException {
 	this(string msg, string file = __FILE__,
 	     uint line = cast(uint)__LINE__, Throwable next = null)
@@ -146,6 +170,9 @@ class DivByZeroException: DecimalException {
 	}
 };
 
+/// Raised when a result is not exact (one or more non-zero coefficient
+/// digits were discarded during rounding).
+/// General Decimal Arithmetic Specification, p. 15.
 class InexactException: DecimalException {
 	this(string msg, string file = __FILE__,
 	     uint line = cast(uint)__LINE__, Throwable next = null)
@@ -154,6 +181,8 @@ class InexactException: DecimalException {
 	}
 };
 
+/// Raised when a result would be undefined or impossible.
+/// General Decimal Arithmetic Specification, p. 15.
 class InvalidOperationException: DecimalException {
 	this(string msg, string file = __FILE__,
 	     uint line = cast(uint)__LINE__, Throwable next = null)
@@ -162,6 +191,8 @@ class InvalidOperationException: DecimalException {
 	}
 };
 
+/// Raised when the exponent of a result is too large to be represented.
+/// General Decimal Arithmetic Specification, p. 15.
 class OverflowException: DecimalException {
 	this(string msg, string file = __FILE__,
 	     uint line = cast(uint)__LINE__, Throwable next = null)
@@ -170,14 +201,9 @@ class OverflowException: DecimalException {
 	}
 };
 
-class UnderflowException: DecimalException {
-	this(string msg, string file = __FILE__,
-	     uint line = cast(uint)__LINE__, Throwable next = null)
-	{
-		super(msg, file, line, next);
-	}
-};
-
+/// Raised when a result has been rounded (that is, some zero or non-zero
+/// coefficient digits were discarded).
+/// General Decimal Arithmetic Specification, p. 15.
 class RoundedException: DecimalException {
 	this(string msg, string file = __FILE__,
 	     uint line = cast(uint)__LINE__, Throwable next = null)
@@ -186,6 +212,9 @@ class RoundedException: DecimalException {
 	}
 };
 
+/// Raised when a result is subnormal (its adjusted exponent is less
+/// than the minimum exponent) before any rounding.
+/// General Decimal Arithmetic Specification, p. 15.
 class SubnormalException: DecimalException {
 	this(string msg, string file = __FILE__,
 	     uint line = cast(uint)__LINE__, Throwable next = null)
@@ -194,6 +223,24 @@ class SubnormalException: DecimalException {
 	}
 };
 
+/// Raised when a result is both subnormal and inexact.
+/// General Decimal Arithmetic Specification, p. 15.
+class UnderflowException: DecimalException {
+	this(string msg, string file = __FILE__,
+	     uint line = cast(uint)__LINE__, Throwable next = null)
+	{
+		super(msg, file, line, next);
+	}
+};
+
+/// "The exceptional conditions are grouped into signals,
+/// which can be controlled individually.
+/// The context contains a flag (which is either 0 or 1)
+/// and a trap-enabler (which also is either 0 or 1) for each signal.
+/// For each of the signals, the corresponding flag is
+/// set to 1 when the signal occurs.
+/// It is only reset to 0 by explicit user action."
+/// General Decimal Arithmetic Specification, p. 15.
 public struct ContextFlags {
 
 	private static ubyte flags;
@@ -206,7 +253,7 @@ public struct ContextFlags {
 			this.flags |= flags;
 			ubyte changed = saved ^ flags;
 			checkFlags(changed);
-			// TODO: if this flag is trapped an exception should be thrown.
+			// (X)TODO: if this flag is trapped an exception should be thrown.
 		} else {
 			this.flags &= !flags;
 		}
@@ -281,10 +328,6 @@ public struct ContextFlags {
 	}
 
 };
-
-static DecimalContext testContext = DecimalContext(9, 99, Rounding.HALF_EVEN);
-static DecimalContext basicContext = DecimalContext(9, 999, Rounding.HALF_UP);
-static DecimalContext extendedContext = DecimalContext(99, 9999, Rounding.HALF_EVEN);
 
 static ContextFlags contextFlags;
 

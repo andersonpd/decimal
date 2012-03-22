@@ -30,27 +30,28 @@ unittest {
 	writeln("===================");
 }
 
-// TODO: move units tests to test.d
-// NOTE: arguments must be of the same type -- e.g. can't and Dec32 w/ Dec64
+// (L)TODO: move units tests to test.d
+// NOTE: arguments must be of the same type -- e.g. can't 'and' Dec32 w/ Dec64
+// (L)TODO: Why not?
 
 /**
  * isLogical.
  */
 public bool isLogicalString(const string str) {
 	foreach(char ch; str) {
-		if(ch != '0' && ch != '1') return false;
+		if (ch != '0' && ch != '1') return false;
 	}
 	return true;
 }
 
 public bool isLogical(T)(const T arg) if (isDecimal!T) {
-	if(arg.sign != 0 || arg.exponent != 0) return false;
+	if (arg.sign != 0 || arg.exponent != 0) return false;
 	string str = to!string(arg.coefficient);
 	return isLogicalString(str);
 }
 
 private bool isLogicalOperand(T)(const T arg, out string str) if (isDecimal!T) {
-	if(arg.sign != 0 || arg.exponent != 0) return false;
+	if (arg.sign != 0 || arg.exponent != 0) return false;
 	str = to!string(arg.coefficient);
 	return isLogicalString(str);
 }
@@ -58,7 +59,7 @@ private bool isLogicalOperand(T)(const T arg, out string str) if (isDecimal!T) {
 T invert(T: string)(T arg) {
 	char[] result = new char[arg.length];
 	for(int i = 0; i < arg.length; i++) {
-		if(arg[i] == '0') {
+		if (arg[i] == '0') {
 			result[i] = '1';
 		} else {
 			result[i] = '0';
@@ -87,7 +88,7 @@ unittest {
  */
 T invert(T)(T arg, const DecimalContext context) if (isDecimal!T) {
 	string str;
-	if(!isLogicalOperand(arg, str)) {
+	if (!isLogicalOperand(arg, str)) {
 		contextFlags.setFlags(INVALID_OPERATION);
 		return T.nan;
 	}
@@ -119,12 +120,12 @@ unittest {
 T strAnd (T: string)(const T arg1, const T arg2) {
 	string str1, str2;
 	int length;
-	if(arg1.length > arg2.length) {
+	if (arg1.length > arg2.length) {
 		length = arg1.length;
 		str1 = arg1;
 		str2 = rightJustify(arg2, '0');
 	}
-	if(arg1.length < arg2.length) {
+	if (arg1.length < arg2.length) {
 		length = arg2.length;
 		str1 = rightJustify(arg1, '0');
 		str2 = arg2;
@@ -135,7 +136,7 @@ T strAnd (T: string)(const T arg1, const T arg2) {
 	}
 	char[] result = new char[length];
 	for(int i = 0; i < length; i++) {
-		if(str1[i] == '1' && str2[i] == '1') {
+		if (str1[i] == '1' && str2[i] == '1') {
 			result[i] = '1';
 		} else {
 			result[i] = '0';
@@ -147,12 +148,12 @@ T strAnd (T: string)(const T arg1, const T arg2) {
 T strOr (T: string)(const T arg1, const T arg2) {
 	string str1, str2;
 	int length;
-	if(arg1.length > arg2.length) {
+	if (arg1.length > arg2.length) {
 		length = arg1.length;
 		str1 = arg1;
 		str2 = rightJustify(arg2, '0');
 	}
-	if(arg1.length < arg2.length) {
+	if (arg1.length < arg2.length) {
 		length = arg2.length;
 		str1 = rightJustify(arg1, '0');
 		str2 = arg2;
@@ -163,7 +164,7 @@ T strOr (T: string)(const T arg1, const T arg2) {
 	}
 	char[] result = new char[length];
 	for(int i = 0; i < length; i++) {
-		if(str1[i] == '1' || str2[i] == '1') {
+		if (str1[i] == '1' || str2[i] == '1') {
 			result[i] = '1';
 		} else {
 			result[i] = '0';
@@ -175,12 +176,12 @@ T strOr (T: string)(const T arg1, const T arg2) {
 T strXor(T: string)(const T arg1, const T arg2) {
 	string str1, str2;
 	int length;
-	if(arg1.length > arg2.length) {
+	if (arg1.length > arg2.length) {
 		length = arg1.length;
 		str1 = arg1;
 		str2 = rightJustify(arg2, '0');
 	}
-	if(arg1.length < arg2.length) {
+	if (arg1.length < arg2.length) {
 		length = arg2.length;
 		str1 = rightJustify(arg1, '0');
 		str2 = arg2;
@@ -191,7 +192,7 @@ T strXor(T: string)(const T arg1, const T arg2) {
 	}
 	char[] result = new char[length];
 	for(int i = 0; i < length; i++) {
-		if(str1[i] != str2[i]) {
+		if (str1[i] != str2[i]) {
 			result[i] = '1';
 		} else {
 			result[i] = '0';
@@ -251,29 +252,29 @@ unittest {
 	writeln("passed");
 }
 
-// TODO: add opBinary("&", "|", "^")
+// (L)TODO: add opBinary("&", "|", "^")
 /**
  * Decimal version of and.
  * Required by General Decimal Arithmetic Specification
  */
 private T opLogical(string op, T)(const T arg1, const T arg2, const DecimalContext context) {
 	string str1;
-	if(!isLogicalOperand(arg1, str1)) {
+	if (!isLogicalOperand(arg1, str1)) {
 		contextFlags.setFlags(INVALID_OPERATION);
 		return T.nan;
 	}
 	string str2;
-	if(!isLogicalOperand(arg2, str2)) {
+	if (!isLogicalOperand(arg2, str2)) {
 		contextFlags.setFlags(INVALID_OPERATION);
 		return T.nan;
 	}
-	static if(op == "and") {
+	static if (op == "and") {
 		string str = strAnd (str1, str2);
 	}
-	static if(op == "or") {
+	static if (op == "or") {
 		string str = strOr (str1, str2);
 	}
-	static if(op == "xor") {
+	static if (op == "xor") {
 		string str = strXor(str1, str2);
 	}
 	return T(str);
@@ -357,7 +358,7 @@ unittest {
 	writeln("passed");
 }
 
-// TODO: move this to decimal.logical
+// (L)TODO: move this to decimal.logical
 /// Shifts the first operand by the specified number of decimal digits.
 /// (Not binary digits!) Positive values of the second operand shift the
 /// first operand left (multiplying by tens). Negative values shift right
@@ -438,7 +439,7 @@ public T rotate(T)(const T arg1, const int arg2, DecimalContext context)
 	}
 	result = arg1.dup;
 
-	// TODO: And then a miracle happens....
+	// (L)TODO: And then a miracle happens....
 
 	return result;
 }

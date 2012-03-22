@@ -35,6 +35,10 @@ unittest {
 	writeln("---------------------------");
 }
 
+
+public void testDecimal() {
+
+}
 //--------------------------------
 // unit tests
 //--------------------------------
@@ -69,65 +73,65 @@ unittest {
 unittest {
 	write("to-sci-str.....");
 	Dec32 num = Dec32(123); //(false, 123, 0);
-	assertTrue(toSciString!Dec32(num) == "123");
+	assertTrue(sciForm!Dec32(num) == "123");
 	assertTrue(num.toAbstract() == "[0,123,0]");
 	num = Dec32(-123, 0);
-	assertTrue(toSciString!Dec32(num) == "-123");
+	assertTrue(sciForm!Dec32(num) == "-123");
 	assertTrue(num.toAbstract() == "[1,123,0]");
 	num = Dec32(123, 1);
-	assertTrue(toSciString!Dec32(num) == "1.23E+3");
+	assertTrue(sciForm!Dec32(num) == "1.23E+3");
 	assertTrue(num.toAbstract() == "[0,123,1]");
 	num = Dec32(123, 3);
-	assertTrue(toSciString!Dec32(num) == "1.23E+5");
+	assertTrue(sciForm!Dec32(num) == "1.23E+5");
 	assertTrue(num.toAbstract() == "[0,123,3]");
 	num = Dec32(123, -1);
 
-	assertTrue(toSciString!Dec32(num) == "12.3");
+	assertTrue(sciForm!Dec32(num) == "12.3");
 	assertTrue(num.toAbstract() == "[0,123,-1]");
 	num = Dec32(123, -5);
-	assertTrue(toSciString!Dec32(num) == "0.00123");
+	assertTrue(sciForm!Dec32(num) == "0.00123");
 	assertTrue(num.toAbstract() == "[0,123,-5]");
 	num = Dec32(123, -10);
-	assertTrue(toSciString!Dec32(num) == "1.23E-8");
+	assertTrue(sciForm!Dec32(num) == "1.23E-8");
 	assertTrue(num.toAbstract() == "[0,123,-10]");
 	num = Dec32(-123, -12);
-	assertTrue(toSciString!Dec32(num) == "-1.23E-10");
+	assertTrue(sciForm!Dec32(num) == "-1.23E-10");
 	assertTrue(num.toAbstract() == "[1,123,-12]");
 	num = Dec32(0, 0);
-	assertTrue(toSciString!Dec32(num) == "0");
+	assertTrue(sciForm!Dec32(num) == "0");
 	assertTrue(num.toAbstract() == "[0,0,0]");
 	num = Dec32(0, -2);
-	assertTrue(toSciString!Dec32(num) == "0.00");
+	assertTrue(sciForm!Dec32(num) == "0.00");
 	assertTrue(num.toAbstract() == "[0,0,-2]");
 	num = Dec32(0, 2);
-	assertTrue(toSciString!Dec32(num) == "0E+2");
+	assertTrue(sciForm!Dec32(num) == "0E+2");
 	assertTrue(num.toAbstract() == "[0,0,2]");
 	num = -Dec32(0, 0);
-	assertTrue(toSciString!Dec32(num) == "-0");
+	assertTrue(sciForm!Dec32(num) == "-0");
 	assertTrue(num.toAbstract() == "[1,0,0]");
 	num = Dec32(5, -6);
-	assertTrue(toSciString!Dec32(num) == "0.000005");
+	assertTrue(sciForm!Dec32(num) == "0.000005");
 	assertTrue(num.toAbstract() == "[0,5,-6]");
 	num = Dec32(50,-7);
-	assertTrue(toSciString!Dec32(num) == "0.0000050");
+	assertTrue(sciForm!Dec32(num) == "0.0000050");
 	assertTrue(num.toAbstract() == "[0,50,-7]");
 	num = Dec32(5, -7);
-	assertTrue(toSciString!Dec32(num) == "5E-7");
+	assertTrue(sciForm!Dec32(num) == "5E-7");
 	assertTrue(num.toAbstract() == "[0,5,-7]");
 	num = Dec32("inf");
-	assertTrue(toSciString!Dec32(num) == "Infinity");
+	assertTrue(sciForm!Dec32(num) == "Infinity");
 	assertTrue(num.toAbstract() == "[0,inf]");
 	num = Dec32.infinity(true);
-	assertTrue(toSciString!Dec32(num) == "-Infinity");
+	assertTrue(sciForm!Dec32(num) == "-Infinity");
 	assertTrue(num.toAbstract() == "[1,inf]");
 	num = Dec32("naN");
-	assertTrue(toSciString!Dec32(num) == "NaN");
+	assertTrue(sciForm!Dec32(num) == "NaN");
 	assertTrue(num.toAbstract() == "[0,qNaN]");
 	num = Dec32.nan(123);
-	assertTrue(toSciString!Dec32(num) == "NaN123");
+	assertTrue(sciForm!Dec32(num) == "NaN123");
 	assertTrue(num.toAbstract() == "[0,qNaN,123]");
 	num = Dec32("-SNAN");
-	assertTrue(toSciString!Dec32(num) == "-sNaN");
+	assertTrue(sciForm!Dec32(num) == "-sNaN");
 	assertTrue(num.toAbstract() == "[1,sNaN]");
 	writeln("passed");
 }
@@ -136,73 +140,73 @@ unittest {
 	write("to-eng-str.....");
 	string str = "1.23E+3";
 	BigDecimal num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	str = "123E+3";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	str = "12.3E-9";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	str = "-123E-12";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	str = "700E-9";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	str = "70";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	str = "0E-9";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	str = "0.00E-6";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	str = "0.0E-6";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	str = "0.000000";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	/*	  str = "0.00E-3";
 		num = BigDecimal(str);
-		assertTrue(toEngString!BigDecimal(num) == str);
+		assertTrue(engForm!BigDecimal(num) == str);
 		str = "0.0E-3";
 		num = BigDecimal(str);
-		assertTrue(toEngString!BigDecimal(num) == str);*/
+		assertTrue(engForm!BigDecimal(num) == str);*/
 	str = "0.000";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	str = "0.00";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	str = "0.0";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	str = "0";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	str = "0.00E+3";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	str = "0.0E+3";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	str = "0E+3";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	str = "0.00E+6";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	str = "0.0E+6";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	str = "0E+6";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	str = "0.00E+9";
 	num = BigDecimal(str);
-	assertTrue(toEngString!BigDecimal(num) == str);
+	assertTrue(engForm!BigDecimal(num) == str);
 	writeln("passed");
 }
 
@@ -267,7 +271,7 @@ unittest {
 		assertEqual(f.toString(), "1.23E+700000001") ? passed++ : failed++;
 		f = BigDecimal("12.3E-700000000");
 		assertEqual(f.toString(), "1.23E-699999999") ? passed++ : failed++;
-		// NOTE: since there will still be adjustments -- maybe limit to 99999999?
+		// (T)TODO: since there will still be adjustments -- maybe limit to 99999999?
 		f = BigDecimal("12.0");
 		assertEqual(f.toString(), "12.0") ? passed++ : failed++;
 		f = BigDecimal("12.3");
@@ -320,8 +324,8 @@ unittest {
 
 unittest {
 	write("radix........");
-	assertEqual!int(10, radix);
-	assertNotEqual!int(16, radix);
+	assertEqual!int(10, Dec32.radix);
+	assertNotEqual!int(16, BigDecimal.radix);
 	writeln("passed");
 }
 
@@ -357,7 +361,7 @@ unittest {
 	writeln("passed");
 }
 
-// TODO: these should actually be compare-total assertions
+// (T)TODO: these should actually be compare-total assertions
 // This is probably true of other unit tests as well
 unittest {
 	write("copy.........");
@@ -572,7 +576,7 @@ unittest {
 }
 
 unittest {
-	// TODO: add rounding tests
+	// (T)TODO: add rounding tests
 	writeln("-------------------");
 	write("abs..........");
 	BigDecimal num;
@@ -621,7 +625,7 @@ unittest {
 	num = -1.3;
 	expd = zero + num;
 	assertTrue(+num == expd);
-	// TODO: add tests that check flags.
+	// (T)TODO: add tests that check flags.
 	writeln("passed");
 }
 
@@ -637,7 +641,7 @@ unittest {
 	num = -1.3;
 	expd = zero - num;
 	assertTrue(-num == expd);
-	// TODO: add tests that check flags.
+	// (T)TODO: add tests that check flags.
 	writeln("passed");
 }
 
@@ -796,7 +800,7 @@ unittest {
 	writeln("passed");
 }
 
-// NOTE: change these to true opEquals calls.
+// (T)TODO: change these to true opEquals calls.
 unittest {
 	write("equals.......");
 	BigDecimal op1, op2;
@@ -948,7 +952,7 @@ unittest {
 	writeln("test missing");
 }
 
-// TODO: these tests need to be cleaned up to rely less on strings
+// (T)TODO: these tests need to be cleaned up to rely less on strings
 // and to check the NaN, Inf combinations better.
 unittest {
 	write("add..........");
@@ -997,7 +1001,7 @@ unittest {
 }
 
 unittest {
-	// TODO: change these to mul(op1, op2) tests.
+	// (T)TODO: change these to mul(op1, op2) tests.
 	write("multiply.....");
 	BigDecimal op1, op2, result;
 	op1 = BigDecimal("1.20");
@@ -1220,7 +1224,7 @@ unittest {
 	write("invalid......");
 	BigDecimal num, expect, actual;
 
-	// FIXTHIS: Can't actually test payloads at this point.
+	// (T)TODO: FIXTHIS: Can't actually test payloads at this point.
 	num = BigDecimal("sNaN123");
 	expect = BigDecimal("NaN123");
 	actual = abs!BigDecimal(num, testContext);
@@ -1681,7 +1685,7 @@ unittest {
 	assertTrue(actual == expect);
 	num = 1.00E8;
 	expect = num;
-// TODO:   actual = --num; // fails!
+// (T)TODO:   actual = --num; // fails!
 	actual = num--;
 	assertTrue(actual == expect);
 	num = BigDecimal(9999999, 90);
@@ -1824,7 +1828,7 @@ unittest {
 	round(after, ctx3);;
 	assertTrue(after.toAbstract() == "[0,125,2]");
 	Dec32 a = Dec32(0.1);
-	Dec32 b = Dec32(1, Dec32.context32.eMin) * Dec32(8888888);
+	Dec32 b = Dec32(1, Dec32.context32.minExpo) * Dec32(8888888);
 //	  assertTrue(b.toAbstract == "[0,8888888,-95]");
 	Dec32 c = a * b;
 //	  assertTrue(c.toAbstract == "[0,888889,-96]");
@@ -2251,7 +2255,7 @@ unittest {
 	writeln("passed");
 }
 
-// TODO: is there a this(BigInt)?
+// (T)TODO: is there a this(BigInt)?
 // should there be?
 /*unittest {
 	writeln("this(big)....");
@@ -2339,7 +2343,7 @@ unittest {
 	assertTrue(num.coefficient == 125);
 	num = 99999999;
 	assertTrue(num.coefficient == 1000000);
-	// TODO: test explicit, implicit, nan and infinity.
+	// (T)TODO: test explicit, implicit, nan and infinity.
 	writeln("passed");
 }
 
@@ -2370,7 +2374,7 @@ unittest {
 	assertTrue(num.exponent == -27);
 	num = Dec32.infinity;
 	assertTrue(num.exponent == 0);
-	// (4) TODO: test overflow and underflow.
+	// (4) (T)TODO: test overflow and underflow.
 	writeln("passed");
 }
 
@@ -2441,7 +2445,7 @@ unittest {
 	expect = 135;
 	actual = ++num;
 	assertTrue(actual == expect);
-	// TODO: seems to be broken for nums like 1.000E8
+	// (T)TODO: seems to be broken for nums like 1.000E8
 	num = 12.35;
 	expect = 11.35;
 	actual = --num;

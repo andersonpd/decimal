@@ -11,13 +11,13 @@
 ///	  (See accompanying file LICENSE_1_0.txt or copy at
 ///			http://www.boost.org/LICENSE_1_0.txt)
 
-// TODO: ensure context flags are being set and cleared properly.
+// (A)TODO: ensure context flags are being set and cleared properly.
 
-// TODO: opEquals unit test should include numerically equal testing.
+// (A)TODO: opEquals unit test should include numerically equal testing.
 
-// TODO: write some test cases for flag setting. test the add/sub/mul/div functions
+// (A)TODO: write some test cases for flag setting. test the add/sub/mul/div functions
 
-// TODO: to/from real or double (float) values needs definition and implementation.
+// (A)TODO: to/from real or double (float) values needs definition and implementation.
 
 module decimal.arithmetic;
 
@@ -241,7 +241,7 @@ public T reduce(T)(const T arg) if (isDecimal!T) {
 		return result;
 	}
 
-	// TODO: doing this in bigints when the coefficient is ulong or uint
+	// (A)TODO: doing this in bigints when the coefficient is ulong or uint
 	// is a big waste
 	auto temp = result.coefficient % 10;
 	while (result.coefficient != 0 && temp == 0) {
@@ -282,7 +282,7 @@ unittest {
 /// Implements the 'abs' function in the specification. (p. 26)
 public T abs(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
 	T result;
-	if(invalidOperand!T(arg, result)) {
+	if (invalidOperand!T(arg, result)) {
 		return result;
 	}
 	result = copyAbs!T(arg);
@@ -295,7 +295,7 @@ unittest {
 	BigDecimal expect, actual;
 	arg = BigDecimal("-Inf");
 	expect = BigDecimal("Inf");
-	actual = abs(arg, testContext);
+	actual = abs(arg, decimal.context.testContext);
 	assertEqual(expect, actual);
 	arg = 101.5;
 	expect = 101.5;
@@ -337,7 +337,7 @@ unittest {
 /// Implements the 'plus' function in the specification. (p. 33)
 public T plus(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
 	T result;
-	if(invalidOperand!T(arg, result)) {
+	if (invalidOperand!T(arg, result)) {
 		return result;
 	}
 	result = arg;
@@ -365,7 +365,7 @@ unittest {
 /// Implements the 'minus' function in the specification. (p. 37)
 public T minus(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
 	T result;
-	if(invalidOperand!T(arg, result)) {
+	if (invalidOperand!T(arg, result)) {
 		return result;
 	}
 	result = copyNegate!T(arg);
@@ -407,12 +407,12 @@ public T nextPlus(T)(const T arg1, const DecimalContext context) if (isDecimal!T
 		}
 	}
 	int adjx = arg1.exponent + arg1.digits - context.precision;
-	if (adjx < context.eTiny) {
-			return T(0L, context.eTiny);
+	if (adjx < context.tinyExpo) {
+			return T(0L, context.tinyExpo);
 	}
 	T arg2 = T(1L, adjx);
-	result = add!T(arg1, arg2, context, true); // FIXTHIS: really? does this guarantee no flags?
-	// TODO: should be context.max
+	result = add!T(arg1, arg2, context, true); // (A)TODO: FIXTHIS: really? does this guarantee no flags?
+	// (A)TODO: should be context.max
 	if (result > T.max(context)) {
 		result = T.infinity;
 	}
@@ -453,11 +453,11 @@ public T nextMinus(T)(const T arg, const DecimalContext context)
 	T red = reduce!T(arg);
 	int adjx = red.exponent + red.digits - context.precision;
 	if (arg.coefficient == 1) adjx--;
-	if (adjx < context.eTiny) {
-		return T(0L, context.eTiny);
+	if (adjx < context.tinyExpo) {
+		return T(0L, context.tinyExpo);
 	}
 	T addend = T(1, adjx);
-	result = sub!T(arg, addend, context, true);	//TODO: are the flags set/not set correctly?
+	result = sub!T(arg, addend, context, true);	//(A)TODO: are the flags set/not set correctly?
 		if (result < copyNegate!T(T.max(context))) {
 		result = copyNegate!T(T.infinity);
 	}
@@ -659,13 +659,13 @@ unittest {
 	writeln("test missing");
 }
 
-// TODO: this is either a true abstract representation compare or it isn't
+// (A)TODO: this is either a true abstract representation compare or it isn't
 /// Compares the operands using their abstract representation rather than
 /// their numerical value.
 /// Returns 0 if the numbers are equal and have the same representation.
 /// This operation does not set any flags.
 /// Implements the 'compare-total' function in the specification. (p. 42-43)
-// TODO: just compare signs, coefficients and exponenents.
+// (A)TODO: just compare signs, coefficients and exponenents.
 public int compareTotal(T)(const T arg1, const T arg2) if (isDecimal!T) {
 
 	int ret1 =	1;
@@ -810,7 +810,7 @@ unittest {
 	assertTrue(!sameQuantum(arg1, arg2));
 }
 
-// TODO: Need to set flags per specification (p. 32).
+// (A)TODO: Need to set flags per specification (p. 32).
 /// Returns the maximum of the two operands (or NaN).
 /// If either is a signaling NaN, or both are quiet NaNs, a NaN is returned.
 /// Otherwise, Any (finite or infinite) number is larger than a NaN.
@@ -876,7 +876,7 @@ unittest {
 }
 
 
-// TODO: Need to set flags per specification (p. 32).
+// (A)TODO: Need to set flags per specification (p. 32).
 /// Returns the minimum of the two operands (or NaN).
 /// If either is a signaling NaN, or both are quiet NaNs, a NaN is returned.
 /// Otherwise, Any (finite or infinite) number is smaller than a NaN.
@@ -929,7 +929,7 @@ unittest {
 }
 
 /// Returns the smaller of the two operands (or NaN). Returns the same result
-/// as the 'max' (TODO: ?) function if the signs of the operands are ignored.
+/// as the 'max' ((A)TODO: ?) function if the signs of the operands are ignored.
 /// Implements the 'min-magnitude' function in the specification. (p. 33)
 const(T) minMagnitude(T)(const T arg1, const T arg2,
 		DecimalContext context) if (isDecimal!T) {
@@ -1047,7 +1047,7 @@ public T add(T)(const T arg1, const T arg2, const DecimalContext context,
 }	 // end add(arg1, arg2)
 
 unittest {
-	// TODO: change inputs to real njumbers
+	// (A)TODO: change inputs to real njumbers
 	BigDecimal arg1, arg2, sum;
 	arg1 = BigDecimal("12");
 	arg2 = BigDecimal("7.00");
@@ -1210,7 +1210,7 @@ public T mul(T)(const T arg1, const T arg2, const DecimalContext context,
 		BigInt mant1 = arg1.coefficient;
 		BigInt mant2 = arg2.coefficient;
 		product.coefficient = mant1 * mant2;
-		// TODO: can't convert to BigInt below because the template can't
+		// (A)TODO: can't convert to BigInt below because the template can't
 		// determine the type.
 //		product.coefficient = BigInt(arg1.coefficient) * BigInt(arg2.coefficient);
 		product.exponent = arg1.exponent + arg2.exponent;
@@ -1303,7 +1303,7 @@ unittest {
 public T fma(T)(const T arg1, const T arg2, const T arg3,
 		DecimalContext context) if (isDecimal!T) {
 
-	// TODO: should these both be BigDecimal?
+	// (A)TODO: should these both be BigDecimal?
 	T product = mul!T(arg1, arg2, context, false);
 	return add!T(product, arg3, context);
 }
@@ -1468,7 +1468,7 @@ unittest {
 	assertEqual(expect, actual);
 }
 
-// TODO: should not be identical to remainder.
+// (A)TODO: should not be identical to remainder.
 /// Divides the first operand by the second and returns the
 /// fractional remainder.
 /// Division by zero sets a flag and returns Infinity.
@@ -1491,7 +1491,7 @@ unittest {
 	writeln("test missing");
 }
 
-// TODO: add 'remquo' function. (Uses remainder-near(?))
+// (A)TODO: add 'remquo' function. (Uses remainder-near(?))
 
 //--------------------------------
 // rounding routines
@@ -1524,7 +1524,7 @@ public T quantize(T)(const T arg1, const T arg2,
 		return result;
 	}
 
-	// TODO: this shift can cause integer overflow for fixed size decimals
+	// (A)TODO: this shift can cause integer overflow for fixed size decimals
 	if (diff > 0) {
 		result.coefficient = decShl(result.coefficient, diff);
 		result.digits = result.digits + diff;
@@ -1628,7 +1628,7 @@ unittest {
 	assertEqual(expect, actual);
 }
 
-// TODO: Not clear what this does.
+// (A)TODO: Not clear what this does.
 /// Returns a value as if this were the quantize function using
 /// the given operand as the left-hand-operand.
 /// The result is and context flags may be set.
@@ -1657,7 +1657,7 @@ unittest {
 	assertStringEqual(expect, actual);
 }
 
-// TODO: need to re-implement this so no flags are set.
+// (A)TODO: need to re-implement this so no flags are set.
 /// The result may be rounded and context flags may be set.
 /// Implements the 'round-to-integraL-value' function
 /// in the specification. (p. 39)
@@ -1672,8 +1672,8 @@ public T roundToIntegralValue(T)(const T arg,
 	return result;
 }
 
-// TODO: Need to check for subnormal and inexact(?). Or is this done by caller?
-// TODO: has non-standard flag setting
+// (A)TODO: Need to check for subnormal and inexact(?). Or is this done by caller?
+// (A)TODO: has non-standard flag setting
 /// Reduces operand to the specified (ideal) exponent.
 /// All trailing zeros are removed.
 /// (Used to return the "ideal" value following division. p. 28-29)
@@ -1695,7 +1695,7 @@ private T reduceToIdeal(T)(const T arg, int ideal,
 	}
 	if (result.coefficient == 0) {
 		result = T.zero;
-		// TODO: needed?
+		// (A)TODO: needed?
 		result.exponent = 0;
 	}
 	result.digits = numDigits(result.coefficient);
@@ -1719,7 +1719,7 @@ private T setInvalidFlag(T)(ushort payload = 0) if (isDecimal!T) {
 
 unittest {
 	BigDecimal arg, expect, actual;
-	// TODO: Can't actually test payloads at this point.
+	// (A)TODO: Can't actually test payloads at this point.
 	arg = BigDecimal("sNaN123");
 	expect = BigDecimal("NaN123");
 	actual = abs!BigDecimal(arg, testContext);

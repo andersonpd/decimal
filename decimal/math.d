@@ -90,7 +90,7 @@ unittest {
             writeln("x = ", x);
             writeln("y = ", y);
 //            writeln("step 1");
-            // NOTE: if x == y then this division never ends.
+            // (M)TODO: if x == y then this division never ends.
             // Check the division routine for this case.
             Decimal np;
             if (x == y) {
@@ -240,7 +240,7 @@ unittest {
  * to speed convergence and to avoid unstable operation.
  */
 Decimal sqrt(const Decimal arg, uint precision) {
-	// NOTE: check for negative numbers.
+	// check for negative numbers.
 	if (arg.isNegative) {
 		return Decimal.nan;
 	}
@@ -681,7 +681,7 @@ unittest {
 /**
  * part of spec
  *
- * TODO: implement
+ * (M)TODO: implement
  */
 Decimal ln(Decimal op1) {
 	Decimal result;

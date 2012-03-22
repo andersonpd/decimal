@@ -26,7 +26,7 @@ import std.string;
 import decimal.arithmetic;
 import decimal.context;
 import decimal.decimal;
-import decimal.dec32;
+//import decimal.dec32;
 import decimal.rounding;
 import decimal.utils;
 
@@ -126,7 +126,7 @@ private:
 	immutable int E_MIN = -385; 	 // = 1 - E_MAX
 
 	/// The context for this type.
-	private static DecimalContext
+	public static DecimalContext
 	context64 = DecimalContext(PRECISION, E_MAX, Rounding.HALF_EVEN);
 
 	// union providing different views of the number representation.
@@ -179,10 +179,11 @@ private:
 		);
 	}
 
-	// TODO: Move this test to test.d?
+	// (64)TODO: Move this test to test.d?
 	unittest {
 		Dec64 num;
 		assertTrue(num.toHexString == "0x7C00000000000000");
+
 		num.pyldNaN = 1;
 		// NOTE: this test should fail when bitmanip is fixed.
 		assertTrue(num.toHexString != "0x7C00000000000001");
@@ -420,7 +421,7 @@ writeln("test.toHexString = ", test.toHexString);
 		coefficient = std.math.abs(n);
 	}
 
-unittest {
+	unittest {
 		Dec64 num;
 		num = Dec64(123456789012345678L);
 		assertTrue(num.toString == "1.234567890123457E+17");
@@ -467,19 +468,20 @@ unittest {
 	unittest {
 		Dec64 num;
 		num = Dec64(1234567890L, 5);
-		assertTrue(num.toString == "1.234567890E+14");
+		assertEqual("1.234567890E+14", num.toString);
 		num = Dec64(0, 2);
-		assertTrue(num.toString == "0E+2");
+		assertEqual("0E+2", num.toString);
 		num = Dec64(1, 75);
-		assertTrue(num.toString == "1E+75");
+		assertEqual("1E+75", num.toString);
 		num = Dec64(-1, -75);
-		assertTrue(num.toString == "-1E-75");
+
+		assertEqual("-1E-75", num.toString);
 		num = Dec64(5, -3);
-		assertTrue(num.toString == "0.005");
+		assertEqual("0.005", num.toString);
 		num = Dec64(true, 1234567890L, 5);
-		assertTrue(num.toString == "-1.234567890E+14");
+		assertEqual("-1.234567890E+14", num.toString);
 		num = Dec64(0, 0, 2);
-		assertTrue(num.toString == "0E+2");
+		assertEqual("0E+2", num.toString);
 	}
 
 	/**
@@ -609,7 +611,7 @@ unittest {
 			this.sign = cast(bool)std.math.signbit(r);
 			return;
 		}
-		// TODO: this won't do -- no rounding has occured.
+		// (64)TODO: this won't do -- no rounding has occured.
 		string str = format("%.*G", cast(int)context64.precision, r);
 		this(str);
 	}
@@ -723,29 +725,29 @@ public:
 	/// Otherwise, if the input value exceeds the maximum allowed exponent,
 	/// this number is converted to infinity and the overflow flag is set.
 	/// If the input value is less than the minimum allowed exponent,
-	/// this number is converted to zero, the exponent is set to eTiny
+	/// this number is converted to zero, the exponent is set to tinyExpo
 	/// and the underflow flag is set.
 	@property
 	int exponent(const int expo) {
 		// check for overflow
-		if (expo > context64.eMax) {
+		if (expo > context64.maxExpo) {
 			this = signed ? NEG_INF : INFINITY;
 			contextFlags.setFlags(OVERFLOW);
 			return 0;
 		}
 		// check for underflow
-		if (expo < context64.eMin) {
+		if (expo < context64.minExpo) {
 			// if the exponent is too small even for a subnormal number,
 			// the number is set to zero.
-			if (expo < context64.eTiny) {
+			if (expo < context64.tinyExpo) {
 				this = signed ? NEG_ZERO : ZERO;
-				expoEx = context64.eTiny + BIAS;
+				expoEx = context64.tinyExpo + BIAS;
 				contextFlags.setFlags(SUBNORMAL);
 				contextFlags.setFlags(UNDERFLOW);
-				return context64.eTiny;
+				return context64.tinyExpo;
 			}
-			// at this point the exponent is between eMin and eTiny.
-			// NOTE: I don't think this needs special handling
+			// at this point the exponent is between minExpo and tinyExpo.
+			// (64)TODO: I don't think this needs special handling
 		}
 		// if explicit...
 		if (this.isExplicit) {
@@ -875,7 +877,7 @@ public:
 		return 0;
 	}
 
-	// TODO: need to ensure this won't overflow into other bits.
+	// (64)TODO: need to ensure this won't overflow into other bits.
 	/// Sets the payload of this number.
 	/// If the number is not a NaN (har!) no action is taken and zero
 	/// is returned.
@@ -945,23 +947,23 @@ public:
 		return Dec64(1, -context64.precision);
 	}
 //	static Dec64 min_normal() {
-//		return Dec64(1, context64.eMin);
+//		return Dec64(1, context64.minExpo);
 //	}
 	static Dec64 min()		  {
-		return Dec64(1, context64.eMin);
-	} //context64.eTiny); }
+		return Dec64(1, context64.minExpo);
+	} //context64.tinyExpo); }
 
 /* dec32diff
 	static Dec32 init() 	  { return NAN; }
 	static Dec32 epsilon()	  { return Dec32(1, -7); }
-	static Dec32 min()		  { return Dec32(1, context32.eTiny); }
+	static Dec32 min()		  { return Dec32(1, context32.tinyExpo); }
 
 	static int dig()		{ return 7; }
 	static int mant_dig()	{ return 24; }
-	static int max_10_exp() { return context32.eMax; }
-	static int min_10_exp() { return context32.eMin; }
-	static int max_exp()	{ return cast(int)(context32.eMax/LOG2); }
-	static int min_exp()	{ return cast(int)(context32.eMin/LOG2); }
+	static int max_10_exp() { return context32.maxExpo; }
+	static int min_10_exp() { return context32.minExpo; }
+	static int max_exp()	{ return cast(int)(context32.maxExpo/LOG2); }
+	static int min_exp()	{ return cast(int)(context32.minExpo/LOG2); }
 
 	/// Returns the maximum number of decimal digits in this context.
 	static uint precision(const DecimalContext context = context64) {
@@ -970,10 +972,10 @@ public:
 */
 	/*	static int dig()		{ return context64.precision; }
 		static int mant_dig()	{ return cast(int)context64.mant_dig;; }
-		static int max_10_exp() { return context64.eMax; }
-		static int min_10_exp() { return context64.eMin; }
-		static int max_exp()	{ return cast(int)(context64.eMax/LOG2); }
-		static int min_exp()	{ return cast(int)(context64.eMin/LOG2); }*/
+		static int max_10_exp() { return context64.maxExpo; }
+		static int min_10_exp() { return context64.minExpo; }
+		static int max_exp()	{ return cast(int)(context64.maxExpo/LOG2); }
+		static int min_exp()	{ return cast(int)(context64.minExpo/LOG2); }*/
 
 	/// Returns the maximum number of decimal digits in this context.
 	static uint precision() {
@@ -1001,12 +1003,12 @@ public:
 
 //		/// Returns the minimum representable normal value in this context.
 //		static Dec64 min_normal(const DecimalContext context = context64) {
-//			return Dec64(1, context.eMin);
+//			return Dec64(1, context.minExpo);
 //		}
 
 		/// Returns the minimum representable subnormal value in this context.
 		static Dec64 min(const DecimalContext context = context64) {
-			return Dec64(1, context.eTiny);
+			return Dec64(1, context.tinyExpo);
 		}
 
 		/// returns the smallest available increment to 1.0 in this context
@@ -1015,12 +1017,15 @@ public:
 		}
 
 		static int min_10_exp(const DecimalContext context = context64) {
-			return context.eMin;
+			return context.minExpo;
 		}
 
 		static int max_10_exp(const DecimalContext context = context64) {
-			return context.eMax;
+			return context.maxExpo;
 		}*/
+
+	/// Returns the radix (10)
+	immutable int radix = 10;
 
 //--------------------------------
 //	classification properties
@@ -1155,7 +1160,7 @@ public:
 	 */
 	const bool isSubnormal(const DecimalContext context = context64) {
 		if (isSpecial) return false;
-		return adjustedExponent < context.eMin;
+		return adjustedExponent < context.minExpo;
 	}
 
 	/**
@@ -1163,7 +1168,7 @@ public:
 	 */
 	const bool isNormal(const DecimalContext context = context64) {
 		if (isSpecial) return false;
-		return adjustedExponent >= context.eMin;
+		return adjustedExponent >= context.minExpo;
 	}
 
 	/**
@@ -1190,10 +1195,9 @@ public:
 		assertTrue(!num.isIntegral);
 	}
 
-	/**
-	 * Returns the value of the adjusted exponent.
-	 */
-	// TODO: what if this is special?
+	// (64)TODO: Spec reference
+	/// Returns the value of the adjusted exponent.
+	/// NOTE: This routine shouldn't be called on special numbers.
 	const int adjustedExponent() {
 		return exponent + digits - 1;
 	}
@@ -1310,23 +1314,17 @@ public:
 		writeln("passed");
 	}
 
-	/**
-	 * Converts this number to an exact scientific-style string representation.
-	 */
+	// Converts this number to an exact scientific-style string representation.
 	const string toSciString() {
-		return decimal.conv.toSciString!Dec64(this);
+		return decimal.conv.sciForm!Dec64(this);
 	}
 
-	/**
-	 * Converts this number to an exact engineering-style string representation.
-	 */
+	// Converts this number to an exact engineering-style string representation.
 	const string toEngString() {
-		return decimal.conv.toEngString!Dec64(this);
+		return decimal.conv.engForm!Dec64(this);
 	}
 
-	/**
-	 * Converts a Dec64 to a string
-	 */
+	// Converts this Dec64 to a string
 	const public string toString() {
 		return toSciString();
 	}
@@ -1338,9 +1336,7 @@ public:
 		assertTrue(num.toString == "-1.2345E-41");
 	}
 
-	/**
-	 * Creates an exact representation of this number.
-	 */
+	 // Creates an exact representation of this number.
 	const string toExact() {
 		return decimal.conv.toExact!Dec64(this);
 	}
@@ -1428,7 +1424,7 @@ const int opCmp(T:Dec64)(const T that) {
 	 * Returns -1, 0 or 1, if this number is less than, equal to or
 	 * greater than the argument, respectively.
 	 */
-	const int opCmp(T)(const T that) if(isPromotable!T) {
+	const int opCmp(T)(const T that) if (isPromotable!T) {
 		return opCmp!Dec64(Dec64(that));
 	}
 
@@ -1463,7 +1459,7 @@ const int opCmp(T:Dec64)(const T that) {
 	/**
 	 * Returns true if this number is equal to the specified number.
 	 */
-	const bool opEquals(T)(const T that) if(isPromotable!T) {
+	const bool opEquals(T)(const T that) if (isPromotable!T) {
 		return opEquals!Dec64(Dec64(that));
 	}
 
@@ -1486,7 +1482,7 @@ const int opCmp(T:Dec64)(const T that) {
 // assignment
 //--------------------------------
 
-	// TODO: flags?
+	// (64)TODO: flags?
 	/// Assigns a Dec64 (copies that to this).
 	void opAssign(T:Dec64)(const T that) {
 		this.intBits = that.intBits;
@@ -1499,7 +1495,7 @@ const int opCmp(T:Dec64)(const T that) {
 		assertTrue(lhs == rhs);
 	}
 
-	// TODO: flags?
+	// (64)TODO: flags?
 	///    Assigns a numeric value.
 	void opAssign(T)(const T that) {
 		this = Dec64(that);
@@ -1615,12 +1611,12 @@ const int opCmp(T:Dec64)(const T that) {
 
 	 /// Can T be promoted to a Dec64?
 	private template isPromotable(T) {
-		enum bool isPromotable = is(T:ulong) || is(T:real) || is(T:Dec32);
+		enum bool isPromotable = is(T:ulong) || is(T:real); // || is(T:Dec32);
 	}
 
-	// TODO: fix this to pass integers without promotion
+	// (64)TODO: fix this to pass integers without promotion
 	/// operations on promotable arguments
-	const Dec64 opBinary(string op, T)(const T rhs) if(isPromotable!T) {
+	const Dec64 opBinary(string op, T)(const T rhs) if (isPromotable!T) {
 		return opBinary!(op,Dec64)(Dec64(rhs));
 	}
 
