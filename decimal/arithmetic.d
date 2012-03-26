@@ -25,18 +25,12 @@ import decimal.context;
 import decimal.conv : isDecimal, isFixedDecimal, toBigDecimal;
 import decimal.decimal;
 import decimal.rounding;
-import decimal.utils;
+import decimal.test;
 
 import std.array: insertInPlace;
 import std.ascii: isDigit;
 import std.bigint;
 import std.string;
-
-unittest {
-	writeln("===================");
-	writeln("arithmetic....begin");
-	writeln("===================");
-}
 
 //--------------------------------
 // classification functions
@@ -57,22 +51,6 @@ public string classify(T)(const T arg) if (isDecimal!T) {
 	return "NaN";
 }
 
-unittest {
-	BigDecimal arg;
-	arg = BigDecimal("Inf");
-	assertEqual("+Infinity", classify(arg));
-	arg = BigDecimal("1E-10");
-	assertEqual("+Normal", classify(arg));
-	arg = BigDecimal("-0");
-	assertEqual("-Zero", classify(arg));
-	arg = BigDecimal("-0.1E-99");
-	assertEqual("-Subnormal", classify(arg));
-	arg = BigDecimal("NaN");
-	assertEqual("NaN", classify(arg));
-	arg = BigDecimal("sNaN");
-	assertEqual("sNaN", classify(arg));
-}
-
 //--------------------------------
 // copy functions
 //--------------------------------
@@ -82,16 +60,6 @@ unittest {
 /// Implements the 'copy' function in the specification. (p. 43)
 public T copy(T)(const T arg) if (isDecimal!T) {
 	return arg.dup;
-}
-
-unittest {
-	BigDecimal arg, expect;
-	arg  = BigDecimal("2.1");
-	expect = BigDecimal("2.1");
-	assertTrue(compareTotal(copy(arg),expect) == 0);
-	arg  = BigDecimal("-1.00");
-	expect = BigDecimal("-1.00");
-	assertTrue(compareTotal(copy(arg),expect) == 0);
 }
 
 
@@ -104,16 +72,6 @@ public T copyAbs(T)(const T arg) if (isDecimal!T) {
 	return copy;
 }
 
-unittest {
-	BigDecimal arg, expect;
-	arg  = 2.1;
-	expect = 2.1;
-	assertTrue(compareTotal(copyAbs(arg),expect) == 0);
-	arg  = BigDecimal("-1.00");
-	expect = BigDecimal("1.00");
-	assertTrue(compareTotal(copyAbs(arg),expect) == 0);
-}
-
 
 /// Returns a copy of the operand with the sign inverted.
 /// The copy is unaffected by context and is quiet -- no flags are changed.
@@ -124,12 +82,6 @@ public T copyNegate(T)(const T arg) if (isDecimal!T) {
 	return copy;
 }
 
-unittest {
-	BigDecimal arg	= "101.5";
-	BigDecimal expect = "-101.5";
-	assertTrue(compareTotal(copyNegate(arg),expect) == 0);
-}
-
 
 /// Returns a copy of the first operand with the sign of the second operand.
 /// The copy is unaffected by context and is quiet -- no flags are changed.
@@ -138,15 +90,6 @@ public T copySign(T)(const T arg1, const T arg2) if (isDecimal!T) {
 	T copy = arg1.dup;
 	copy.sign = arg2.sign;
 	return copy;
-}
-
-unittest {
-	BigDecimal arg1, arg2, expect;
-	arg1 = 1.50; arg2 = 7.33; expect = 1.50;
-	assertTrue(compareTotal(copySign(arg1, arg2),expect) == 0);
-	arg2 = -7.33;
-	expect = -1.50;
-	assertTrue(compareTotal(copySign(arg1, arg2),expect) == 0);
 }
 
 /// Returns "the integer which is the exponent of the magnitude
@@ -172,14 +115,6 @@ public T logb(T)(const T arg) {
 	}
 	int expo = arg.digits + arg.exponent - 1;
 	return T(cast(long)expo);
-}
-
-unittest {
-	BigDecimal arg, expect, actual;
-	arg = BigDecimal("250");
-	expect = BigDecimal("2");
-	actual = logb(arg);
-	assertEqual(expect, actual);
 }
 
 /// If the first operand is infinite then that operand is returned,
@@ -210,15 +145,6 @@ public T scaleb(T)(const T arg1, const T arg2) if (isDecimal!T) {
 	return result;
 }
 
-unittest {
-	BigDecimal expect, actual;
-	auto arg1 = BigDecimal("7.50");
-	auto arg2 = BigDecimal("-2");
-	expect = BigDecimal("0.0750");
-	actual = scaleb(arg1, arg2);
-	assertEqual(expect, actual);
-}
-
 //--------------------------------
 // absolute value, unary plus and minus functions
 //--------------------------------
@@ -243,6 +169,8 @@ public T reduce(T)(const T arg) if (isDecimal!T) {
 
 	// (A)TODO: doing this in bigints when the coefficient is ulong or uint
 	// is a big waste
+	int digits = result.digits;
+/*	int zeros = trailingZeros(arg.coefficient, arg.digits);
 	auto temp = result.coefficient % 10;
 	while (result.coefficient != 0 && temp == 0) {
 		result.exponent = result.exponent + 1;
@@ -257,19 +185,16 @@ public T reduce(T)(const T arg) if (isDecimal!T) {
 			result = T.zero;
 		}
 		result.exponent = 0;
-	}
-	result.digits = numDigits(result.coefficient);
-	return result;
-}
+	}*/
+	auto temp = result.coefficient;
+	int zeros = trimZeros(temp, digits);
 
-unittest {
-	BigDecimal arg;
-	string expect, actual;
-	string str;
-	arg = BigDecimal("1.200");
-	expect = "1.2";
-	actual = reduce(arg).toString;
-	assertEqual(expect, actual);
+	if (zeros) {
+		result.coefficient = temp;
+		result.digits  = digits - zeros;
+		result.exponent = result.exponent + zeros;
+	}
+	return result;
 }
 
 
@@ -290,22 +215,6 @@ public T abs(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
 	return result;
 }
 
-unittest {
-	BigDecimal arg;
-	BigDecimal expect, actual;
-	arg = BigDecimal("-Inf");
-	expect = BigDecimal("Inf");
-	actual = abs(arg, decimal.context.testContext);
-	assertEqual(expect, actual);
-	arg = 101.5;
-	expect = 101.5;
-	actual = abs(arg, testContext);
-	assertEqual(expect, actual);
-	arg = -101.5;
-	actual = abs(arg, testContext);
-	assertEqual(expect, actual);
-}
-
 
 /// Returns the sign of the argument: -1, 0, -1.
 /// If the argument is (signed or unsigned) zero, 0 is returned.
@@ -315,18 +224,6 @@ unittest {
 public int sgn(T)(const T arg) if (isDecimal!T) {
 	if (arg.isZero) return 0;
 	return arg.isNegative ? -1 : 1;
-}
-
-unittest {
-	BigDecimal arg;
-	arg = -123;
-	assertEqual(-1, sgn(arg));
-	arg = 2345;
-	assertEqual( 1, sgn(arg));
-	arg = BigDecimal("0.0000");
-	assertEqual( 0, sgn(arg));
-	arg = BigDecimal.infinity(true);
-	assertEqual(-1, sgn(arg));
 }
 
 
@@ -345,19 +242,6 @@ public T plus(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
 	return result;
 }
 
-unittest {
-	BigDecimal zero = BigDecimal.zero;
-	BigDecimal arg, expect, actual;
-	arg = 1.3;
-	expect = add(zero, arg, testContext);
-	actual = plus(arg, testContext);
-	assertEqual(expect, actual);
-	arg = -1.3;
-	expect = add(zero, arg, testContext);
-	actual = plus(arg, testContext);
-	assertEqual(expect, actual);
-}
-
 /// Returns a copy of the argument with the opposite sign.
 /// This operation rounds the argument and may set flags.
 /// Result is equivalent to subtract('0', arg).
@@ -371,19 +255,6 @@ public T minus(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
 	result = copyNegate!T(arg);
 	round(result, context);
 	return result;
-}
-
-unittest {
-	BigDecimal zero = BigDecimal(0);
-	BigDecimal arg, expect, actual;
-	arg = 1.3;
-	expect = sub(zero, arg, testContext);
-	actual = minus(arg, testContext);
-	assertEqual(expect, actual);
-	arg = -1.3;
-	expect = sub(zero, arg, testContext);
-	actual = minus(arg, testContext);
-	assertEqual(expect, actual);
 }
 
 //-----------------------------------
@@ -419,18 +290,6 @@ public T nextPlus(T)(const T arg1, const DecimalContext context) if (isDecimal!T
 	return result;
 }
 
-unittest {
-	BigDecimal arg, expect, actual;
-	arg = 1;
-	expect = BigDecimal("1.00000001");
-	actual = nextPlus(arg, testContext);
-	assertEqual(expect, actual);
-	arg = 10;
-	expect = BigDecimal("10.0000001");
-	actual = nextPlus(arg, testContext);
-	assertEqual(expect, actual);
-}
-
 /// Returns the largest representable number that is smaller than
 /// the argument.
 /// Implements the 'next-minus' function in the specification. (p. 34)
@@ -464,18 +323,6 @@ public T nextMinus(T)(const T arg, const DecimalContext context)
 	return result;
 }
 
-unittest {
-	BigDecimal arg, expect, actual;
-	arg = 1;
-	expect = 0.999999999;
-	actual = nextMinus(arg, testContext);
-	assertEqual(expect, actual);
-	arg = -1.00000003;
-	expect = -1.00000004;
-	actual = nextMinus(arg, testContext);
-	assertEqual(expect, actual);
-}
-
 /// Returns the representable number that is closest to the
 /// first operand (but not the first operand) in the
 /// direction toward the second operand.
@@ -493,20 +340,6 @@ public T nextToward(T)(const T arg1, const T arg2,
 	result = copySign!T(arg1, arg2);
 	round(result, context);
 	return result;
-}
-
-unittest {
-	BigDecimal arg1, arg2, expect, actual;
-	arg1 = 1;
-	arg2 = 2;
-	expect = 1.00000001;
-	actual = nextToward(arg1, arg2, testContext);
-	assertEqual(expect, actual);
-	arg1 = -1.00000003;
-	arg2 = 0;
-	expect = -1.00000002;
-	actual = nextToward(arg1, arg2, testContext);
-	assertEqual(expect, actual);
 }
 
 //--------------------------------
@@ -565,16 +398,6 @@ public int compare(T)(const T arg1, const T arg2, const DecimalContext context,
 	return result.sign ? -1 : 1;
 }
 
-unittest {
-	BigDecimal arg1, arg2;
-	arg1 = BigDecimal(2.1);
-	arg2 = BigDecimal("3");
-	assertEqual(-1, compare(arg1, arg2, testContext));
-	arg1 = 2.1;
-	arg2 = BigDecimal(2.1);
-	assertEqual(0, compare(arg1, arg2, testContext));
-}
-
 /// Returns true if the operands are equal to the current precision.
 /// Finite numbers are equal if they are numerically equal
 /// to the current precision.
@@ -629,15 +452,6 @@ public bool equals(T)(const T arg1, const T arg2, DecimalContext context,
 	return result.coefficient == 0;
 }
 
-unittest {
-	BigDecimal arg1, arg2;
-	arg1 = 123.4567;
-	arg2 = 123.4568;
-	assertTrue(!equals!BigDecimal(arg1, arg2, bigContext));
-	arg2 = 123.4567;
-	assertTrue(equals!BigDecimal(arg1, arg2, bigContext));
-}
-
 /// Compares the numeric values of two numbers. CompareSignal is identical to
 /// compare except that quiet NaNs are treated as if they were signaling.
 /// This operation may set the invalid-operation flag.
@@ -652,11 +466,6 @@ public int compareSignal(T) (const T arg1, const T arg2,
 		return arg1.isNaN ? 1 : -1;
 	}
 	return (compare!T(arg1, arg2, context, rounded));
-}
-
-unittest {
-	write("compareSignal...");
-	writeln("test missing");
 }
 
 // (A)TODO: this is either a true abstract representation compare or it isn't
@@ -756,23 +565,6 @@ public int compareTotal(T)(const T arg1, const T arg2) if (isDecimal!T) {
 	return (result > 0) ? ret1 : ret2;
 }
 
-unittest {
-	BigDecimal arg1, arg2;
-	int result;
-	arg1 = BigDecimal("12.30");
-	arg2 = BigDecimal("12.3");
-	result = compareTotal(arg1, arg2);
-	assertTrue(result == -1);
-	arg1 = BigDecimal("12.30");
-	arg2 = BigDecimal("12.30");
-	result = compareTotal(arg1, arg2);
-	assertTrue(result == 0);
-	arg1 = BigDecimal("12.3");
-	arg2 = BigDecimal("12.300");
-	result = compareTotal(arg1, arg2);
-	assertTrue(result == 1);
-}
-
 /// compare-total-magnitude takes two numbers and compares them
 /// using their abstract representation rather than their numerical value
 /// and with their sign ignored and assumed to be 0.
@@ -797,17 +589,6 @@ public bool sameQuantum(T)(const T arg1, const T arg2) if (isDecimal!T) {
 		return arg1.isInfinite && arg2.isInfinite;
 	}
 	return arg1.exponent == arg2.exponent;
-}
-
-unittest {
-	BigDecimal arg1, arg2;
-	arg1 = 2.17;
-	arg2 = 0.001;
-	assertTrue(!sameQuantum(arg1, arg2));
-	arg2 = 0.01;
-	assertTrue(sameQuantum(arg1, arg2));
-	arg2 = 0.1;
-	assertTrue(!sameQuantum(arg1, arg2));
 }
 
 // (A)TODO: Need to set flags per specification (p. 32).
@@ -852,27 +633,12 @@ const(T) max(T)(const T arg1, const T arg2,
 	return arg1.exponent > arg2.exponent ? arg2 : arg1;
 }
 
-unittest {
-	BigDecimal arg1, arg2, expect, actual;
-	arg1 = 3; arg2 = 2; expect = 3;
-	actual = max(arg1, arg2, testContext);
-	assertEqual(expect, actual);
-	arg1 = -10; arg2 = 3; expect = 3;
-	actual = max(arg1, arg2, testContext);
-	assertEqual(expect, actual);
-}
-
 /// Returns the larger of the two operands (or NaN). Returns the same result
 /// as the 'max' function if the signs of the operands are ignored.
 /// Implements the 'max-magnitude' function in the specification. (p. 32)
 const(T) maxMagnitude(T)(const T arg1, const T arg2,
 		DecimalContext context) if (isDecimal!T) {
 	return max(copyAbs!T(arg1), copyAbs!T(arg2), context);
-}
-
-unittest {
-	write("maxMagnitude...");
-	writeln("test missing");
 }
 
 
@@ -918,27 +684,12 @@ const(T) min(T)(const T arg1, const T arg2,
 	return arg1.exponent < arg2.exponent ? arg2 : arg1;
 }
 
-unittest {
-	BigDecimal arg1, arg2, expect, actual;
-	arg1 = 3; arg2 = 2; expect = 2;
-	actual = min(arg1, arg2, testContext);
-	assertEqual(expect, actual);
-	arg1 = -10; arg2 = 3; expect = -10;
-	actual = min(arg1, arg2, testContext);
-	assertEqual(expect, actual);
-}
-
 /// Returns the smaller of the two operands (or NaN). Returns the same result
 /// as the 'max' ((A)TODO: ?) function if the signs of the operands are ignored.
 /// Implements the 'min-magnitude' function in the specification. (p. 33)
 const(T) minMagnitude(T)(const T arg1, const T arg2,
 		DecimalContext context) if (isDecimal!T) {
 	return min(copyAbs!T(arg1), copyAbs!T(arg2), context);
-}
-
-unittest {
-	write("minMagnitude...");
-	writeln("test missing");
 }
 
 /// Returns a number with a coefficient of 1 and
@@ -948,14 +699,6 @@ unittest {
 public const (T) quantum(T)(const T arg) if (isDecimal!T) {
 		return T(1, arg.exponent);
 	}
-
-unittest {
-	BigDecimal arg, expect, actual;
-	arg = 23.14E-12;
-	expect = 1E-14;
-	actual = quantum(arg);
-	assertEqual(expect, actual);
-}
 
 //------------------------------------------
 // binary arithmetic operations
@@ -1046,19 +789,6 @@ public T add(T)(const T arg1, const T arg2, const DecimalContext context,
 	return result;
 }	 // end add(arg1, arg2)
 
-unittest {
-	// (A)TODO: change inputs to real njumbers
-	BigDecimal arg1, arg2, sum;
-	arg1 = BigDecimal("12");
-	arg2 = BigDecimal("7.00");
-	sum = add(arg1, arg2, testContext);
-	assertEqual("19.00", sum.toString);
-	arg1 = BigDecimal("1E+2");
-	arg2 = BigDecimal("1E+4");
-	sum = add(arg1, arg2, testContext);
-	assertEqual("1.01E+4", sum.toString);
-}
-
 
 /// Adds a long value to a decimal number. The result is identical to that of
 /// the 'add' function as if the long value were converted to a decimal number.
@@ -1142,19 +872,6 @@ public T addLong(T)(const T arg1, const long arg2, const DecimalContext context,
 	return result;
 }	 // end add(arg1, arg2)
 
-unittest {
-	BigDecimal arg1, sum;
-	long arg2;
-	arg2 = 12;
-	arg1 = BigDecimal("7.00");
-	sum = addLong(arg1, arg2, testContext);
-	assertEqual("19.00", sum.toString);
-	arg1 = BigDecimal("1E+2");
-	arg2 = 10000;
-	sum = addLong(arg1, arg2, testContext);
-	assertEqual("10100", sum.toString);
-}
-
 
 /// Subtracts the second operand from the first operand.
 /// The result may be rounded and context flags may be set.
@@ -1226,17 +943,6 @@ public T mul(T)(const T arg1, const T arg2, const DecimalContext context,
 	return result;
 }
 
-unittest {
-	BigDecimal arg1, arg2, result;
-	arg1 = BigDecimal("1.20");
-	arg2 = 3;
-	result = mul(arg1, arg2, testContext);
-	assertEqual("3.60", result.toString());
-	arg1 = 7;
-	result = mul(arg1, arg2, testContext);
-	assertEqual("21", result.toString());
-}
-
 /// Multiplies a decimal number by a long integer.
 /// The result may be rounded and context flags may be set.
 /// Not a required function, but useful because it avoids
@@ -1283,18 +989,6 @@ public T mulLong(T)(const T arg1, long arg2, DecimalContext context,
 	return result;
 }
 
-unittest {
-	BigDecimal arg1, result;
-	long arg2;
-	arg1 = BigDecimal("1.20");
-	arg2 = 3;
-	result = mulLong(arg1, arg2, testContext);
-	assertEqual("3.60", result.toString());
-	arg1 = -7000;
-	result = mulLong(arg1, arg2, testContext);
-	assertEqual("-21000", result.toString());
-}
-
 
 /// Multiplies the first two operands and adds the third operand to the result.
 /// The result of the multiplication is not rounded prior to the addition.
@@ -1306,24 +1000,6 @@ public T fma(T)(const T arg1, const T arg2, const T arg3,
 	// (A)TODO: should these both be BigDecimal?
 	T product = mul!T(arg1, arg2, context, false);
 	return add!T(product, arg3, context);
-}
-
-unittest {
-	BigDecimal arg1, arg2, arg3, expect, actual;
-	arg1 = 3; arg2 = 5; arg3 = 7;
-	expect = 22;
-	actual = (fma(arg1, arg2, arg3, testContext));
-	assertEqual(expect, actual);
-	arg1 = 3; arg2 = -5; arg3 = 7;
-	expect = -8;
-	actual = (fma(arg1, arg2, arg3, testContext));
-	assertEqual(expect, actual);
-	arg1 = 888565290;
-	arg2 = 1557.96930;
-	arg3 = -86087.7578;
-	expect = BigDecimal(1.38435736E+12);
-	actual = (fma(arg1, arg2, arg3, testContext));
-	assertEqual(expect, actual);
 }
 
 /// Divides the first operand by the second operand and returns their quotient.
@@ -1367,22 +1043,6 @@ public T div(T)(const T arg1, const T arg2, const DecimalContext context,
 	return T(quotient);
 }
 
-unittest {
-	BigDecimal arg1, arg2, actual, expect;
-	arg1 = 1;
-	arg2 = 3;
-	actual = div(arg1, arg2, testContext);
-	expect = BigDecimal(0.333333333);
-	assertEqual(expect, actual);
-	assertStringEqual(expect, actual);
-	arg1 = 1;
-	arg2 = 10;
-	expect = 0.1;
-	actual = div(arg1, arg2, testContext);
-	assertEqual(expect, actual);
-}
-
-
 /// Divides the first operand by the second and returns the integer portion
 /// of the quotient.
 /// Division by zero sets a flag and returns infinity.
@@ -1421,23 +1081,6 @@ public T divideInteger(T)(const T arg1, const T arg2,
 	return T(quotient);
 }
 
-unittest {
-	BigDecimal arg1, arg2, actual, expect;
-	arg1 = 2;
-	arg2 = 3;
-	actual = divideInteger(arg1, arg2, testContext);
-	expect = 0;
-	assertEqual(expect, actual);
-	arg1 = 10;
-	actual = divideInteger(arg1, arg2, testContext);
-	expect = 3;
-	assertEqual(expect, actual);
-	arg1 = 1;
-	arg2 = 0.3;
-	actual = divideInteger(arg1, arg2, testContext);
-	assertEqual(expect, actual);
-}
-
 /// Divides the first operand by the second and returns the
 /// fractional remainder.
 /// Division by zero sets a flag and returns infinity.
@@ -1453,19 +1096,6 @@ public T remainder(T)(const T arg1, const T arg2,
 	quotient = divideInteger!T(arg1, arg2, context);
 	T remainder = arg1 - mul!T(arg2, quotient, context, false);
 	return remainder;
-}
-
-unittest {
-	BigDecimal arg1, arg2, actual, expect;
-	arg1 = 2.1;
-	arg2 = 3;
-	actual = remainder(arg1, arg2, testContext);
-	expect = 2.1;
-	assertEqual(expect, actual);
-	arg1 = 10;
-	actual = remainder(arg1, arg2, testContext);
-	expect = 1;
-	assertEqual(expect, actual);
 }
 
 // (A)TODO: should not be identical to remainder.
@@ -1484,11 +1114,6 @@ public T remainderNear(T)(const T dividend, const T divisor,
 	quotient = divideInteger(dividend, divisor, context);
 	T remainder = dividend - mul!T(divisor, quotient, context, false);
 	return remainder;
-}
-
-unittest {
-	write("remainderNear...");
-	writeln("test missing");
 }
 
 // (A)TODO: add 'remquo' function. (Uses remainder-near(?))
@@ -1546,7 +1171,571 @@ public T quantize(T)(const T arg1, const T arg2,
 	}
 }
 
+// (A)TODO: Not clear what this does.
+/// Returns a value as if this were the quantize function using
+/// the given operand as the left-hand-operand.
+/// The result is and context flags may be set.
+/// Implements the 'round-to-integral-exact' function
+/// in the specification. (p. 39)
+public T roundToIntegralExact(T)(const T arg,
+		DecimalContext context) if (isDecimal!T) {
+	if (arg.isSignaling) return setInvalidFlag!T();
+	if (arg.isSpecial) return arg.dup;
+	if (arg.exponent >= 0) return arg.dup;
+	const T ONE = T(1L);
+	T result = quantize!T(arg, ONE, context.setPrecision(arg.digits));
+	return result;
+}
+
+// (A)TODO: need to re-implement this so no flags are set.
+/// The result may be rounded and context flags may be set.
+/// Implements the 'round-to-integraL-value' function
+/// in the specification. (p. 39)
+public T roundToIntegralValue(T)(const T arg,
+		DecimalContext context) if (isDecimal!T) {
+	if (arg.isSignaling) return setInvalidFlag!T();
+	if (arg.isQuiet) return arg.dup;
+	if (arg.isSpecial) return arg.dup;
+	if (arg.exponent >= 0) return arg.dup;
+	const T ONE = T(1L);
+	T result = quantize!T(arg, ONE, context.setPrecision(arg.digits));
+	return result;
+}
+
+// (A)TODO: Need to check for subnormal and inexact(?). Or is this done by caller?
+// (A)TODO: has non-standard flag setting
+/// Reduces operand to the specified (ideal) exponent.
+/// All trailing zeros are removed.
+/// (Used to return the "ideal" value following division. p. 28-29)
+private T reduceToIdeal(T)(const T arg, int ideal,
+		const DecimalContext context) if (isDecimal!T) {
+	T result;
+	if (invalidOperand!T(arg, result)) {
+		return result;
+	}
+	result = arg;
+	if (!result.isFinite()) {
+		return result;
+	}
+	BigInt temp = result.coefficient % 10;
+	while (result.coefficient != 0 && temp == 0 && result.exponent < ideal) {
+		result.exponent = result.exponent + 1;
+		result.coefficient = result.coefficient / 10;
+		temp = result.coefficient % 10;
+	}
+	if (result.coefficient == 0) {
+		result = T.zero;
+		// (A)TODO: needed?
+		result.exponent = 0;
+	}
+	result.digits = numDigits(result.coefficient);
+	return result;
+}
+
+/// Sets the invalid-operation flag and returns a quiet NaN.
+private T setInvalidFlag(T)(ushort payload = 0) if (isDecimal!T) {
+	contextFlags.setFlags(INVALID_OPERATION);
+	T result = T.nan;
+	if (payload != 0) {
+		result.payload = payload;
+	}
+	return result;
+}
+
+
+/// Aligns the two operands by raising the smaller exponent
+/// to the value of the larger exponent, and adjusting the
+/// coefficient so the value remains the same.
+/// No flags are set and the result is not rounded.
+private void alignOps(ref BigDecimal arg1, ref BigDecimal arg2,
+		const DecimalContext context) {
+	int diff = arg1.exponent - arg2.exponent;
+	if (diff > 0) {
+		arg1.coefficient = decShl(arg1.coefficient, diff);
+		arg1.exponent = arg2.exponent;
+	}
+	else if (diff < 0) {
+		arg2.coefficient = decShl(arg2.coefficient, -diff);
+		arg2.exponent = arg1.exponent;
+	}
+}
+
+///  Returns true and sets the invalid-operation flag if either operand
+/// is a NaN.
+/// "The result of any arithmetic operation which has an operand
+/// which is a NaN (a quiet NaN or a signaling NaN) is [s,qNaN]
+/// or [s,qNaN,d]. The sign and any diagnostic information is copied
+/// from the first operand which is a signaling NaN, or if neither is
+/// signaling then from the first operand which is a NaN."
+/// -- General Decimal Arithmetic Specification, p. 24
+private bool invalidBinaryOp(T)(const T arg1, const T arg2, T result)
+		if (isDecimal!T) {
+	// if either operand is a quiet NaN...
+	if (arg1.isQuiet || arg2.isQuiet) {
+		// flag the invalid operation
+		contextFlags.setFlags(INVALID_OPERATION);
+		// set the result to the first qNaN operand
+		result = arg1.isQuiet ? arg1 : arg2;
+		return true;
+	}
+	// ...if either operand is a signaling NaN...
+	if (arg1.isSignaling || arg2.isSignaling) {
+		// flag the invalid operation
+		contextFlags.setFlags(INVALID_OPERATION);
+		// set the result to the first sNaN operand
+		result = arg1.isSignaling ? T.nan(arg1.payload) : T.nan(arg2.payload);
+		return true;
+	}
+	// ...otherwise, no flags are set and result is unchanged
+	return false;
+}
+
+/// Returns true and sets the invalid-operation flag if the operand
+/// is a NaN.
+/// "The result of any arithmetic operation which has an operand
+/// which is a NaN (a quiet NaN or a signaling NaN) is [s,qNaN]
+/// or [s,qNaN,d]. The sign and any diagnostic information is copied
+/// from the first operand which is a signaling NaN, or if neither is
+/// signaling then from the first operand which is a NaN."
+/// -- General Decimal Arithmetic Specification, p. 24
+private bool invalidOperand(T)(const T arg, ref T result) if (isDecimal!T) {
+	// if the operand is a signaling NaN...
+	if (arg.isSignaling) {
+		// flag the invalid operation
+		contextFlags.setFlags(INVALID_OPERATION);
+		// retain payload; convert to qNaN
+		result = T.nan(arg.payload);
+		return true;
+	}
+	// ...else if the operand is a quiet NaN...
+	if (arg.isQuiet) {
+		// flag the invalid operation
+		contextFlags.setFlags(INVALID_OPERATION);
+		// set the result to the qNaN operand
+		result = arg;
+		return true;
+	}
+	// ...otherwise, no flags are set and result is unchanged
+	return false;
+}
+
+/// Checks for invalid operands and division by zero.
+/// If found, the function sets the quotient to NaN or infinity, respectively,
+/// and returns true after setting the context flags.
+/// Also checks for zero dividend and calculates the result as needed.
+/// This is a helper function implementing checks for division by zero
+/// and invalid operation in the specification. (p. 51-52)
+private bool invalidDivision(T)(const T dividend, const T divisor,
+		ref T quotient) if (isDecimal!T) {
+
+	if (invalidBinaryOp!T(dividend, divisor, quotient)) {
+		return true;
+	}
+	if (divisor.isZero()) {
+		if (dividend.isZero()) {
+			quotient = setInvalidFlag!T();
+		}
+		else {
+			contextFlags.setFlags(DIVISION_BY_ZERO);
+			quotient = T.infinity;
+			quotient.sign = dividend.sign ^ divisor.sign;
+		}
+		return true;
+	}
+	if (dividend.isZero()) {
+		quotient = T.zero;
+		return true;
+	}
+	return false;
+}
+
+//--------------------------------
+// unit tests
+//--------------------------------
+
 unittest {
+	writeln("===================");
+	writeln("arithmetic....begin");
+	writeln("===================");
+}
+
+unittest {	// classify
+	BigDecimal arg;
+	arg = BigDecimal("Inf");
+	assertEqual("+Infinity", classify(arg));
+	arg = BigDecimal("1E-10");
+	assertEqual("+Normal", classify(arg));
+	arg = BigDecimal("-0");
+	assertEqual("-Zero", classify(arg));
+	arg = BigDecimal("-0.1E-99");
+	assertEqual("-Subnormal", classify(arg));
+	arg = BigDecimal("NaN");
+	assertEqual("NaN", classify(arg));
+	arg = BigDecimal("sNaN");
+	assertEqual("sNaN", classify(arg));
+}
+
+unittest {	// copy
+	BigDecimal arg, expect;
+	arg  = BigDecimal("2.1");
+	expect = BigDecimal("2.1");
+	assertTrue(compareTotal(copy(arg),expect) == 0);
+	arg  = BigDecimal("-1.00");
+	expect = BigDecimal("-1.00");
+	assertTrue(compareTotal(copy(arg),expect) == 0);
+}
+
+unittest {	// copyAbs
+	BigDecimal arg, expect;
+	arg  = 2.1;
+	expect = 2.1;
+	assertTrue(compareTotal(copyAbs(arg),expect) == 0);
+	arg  = BigDecimal("-1.00");
+	expect = BigDecimal("1.00");
+	assertTrue(compareTotal(copyAbs(arg),expect) == 0);
+}
+
+unittest {	// copyNegate
+	BigDecimal arg	= "101.5";
+	BigDecimal expect = "-101.5";
+	assertTrue(compareTotal(copyNegate(arg),expect) == 0);
+}
+
+unittest {	// copySign
+	BigDecimal arg1, arg2, expect;
+	arg1 = 1.50; arg2 = 7.33; expect = 1.50;
+	assertTrue(compareTotal(copySign(arg1, arg2),expect) == 0);
+	arg2 = -7.33;
+	expect = -1.50;
+	assertTrue(compareTotal(copySign(arg1, arg2),expect) == 0);
+}
+
+unittest {	// logb
+	BigDecimal arg, expect, actual;
+	arg = BigDecimal("250");
+	expect = BigDecimal("2");
+	actual = logb(arg);
+	assertEqual(expect, actual);
+}
+
+unittest {	// scaleb
+	BigDecimal expect, actual;
+	auto arg1 = BigDecimal("7.50");
+	auto arg2 = BigDecimal("-2");
+	expect = BigDecimal("0.0750");
+	actual = scaleb(arg1, arg2);
+	assertEqual(expect, actual);
+}
+
+unittest {	// reduce
+	BigDecimal arg;
+	string expect, actual;
+	arg = BigDecimal("1.200");
+	expect = "1.2";
+	actual = reduce(arg).toString;
+	assertEqual(expect, actual);
+}
+
+unittest {	// abs
+	BigDecimal arg;
+	BigDecimal expect, actual;
+	arg = BigDecimal("-Inf");
+	expect = BigDecimal("Inf");
+	actual = abs(arg, decimal.context.testContext);
+	assertEqual(expect, actual);
+	arg = 101.5;
+	expect = 101.5;
+	actual = abs(arg, testContext);
+	assertEqual(expect, actual);
+	arg = -101.5;
+	actual = abs(arg, testContext);
+	assertEqual(expect, actual);
+}
+
+unittest {	// sgn
+	BigDecimal arg;
+	arg = -123;
+	assertEqual(-1, sgn(arg));
+	arg = 2345;
+	assertEqual( 1, sgn(arg));
+	arg = BigDecimal("0.0000");
+	assertEqual( 0, sgn(arg));
+	arg = BigDecimal.infinity(true);
+	assertEqual(-1, sgn(arg));
+}
+
+unittest {	// plus
+	BigDecimal zero = BigDecimal.zero;
+	BigDecimal arg, expect, actual;
+	arg = 1.3;
+	expect = add(zero, arg, testContext);
+	actual = plus(arg, testContext);
+	assertEqual(expect, actual);
+	arg = -1.3;
+	expect = add(zero, arg, testContext);
+	actual = plus(arg, testContext);
+	assertEqual(expect, actual);
+}
+
+unittest {	// minus
+	BigDecimal zero = BigDecimal(0);
+	BigDecimal arg, expect, actual;
+	arg = 1.3;
+	expect = sub(zero, arg, testContext);
+	actual = minus(arg, testContext);
+	assertEqual(expect, actual);
+	arg = -1.3;
+	expect = sub(zero, arg, testContext);
+	actual = minus(arg, testContext);
+	assertEqual(expect, actual);
+}
+
+unittest {	// nextPlus
+	BigDecimal arg, expect, actual;
+	arg = 1;
+	expect = BigDecimal("1.00000001");
+	actual = nextPlus(arg, testContext);
+	assertEqual(expect, actual);
+	arg = 10;
+	expect = BigDecimal("10.0000001");
+	actual = nextPlus(arg, testContext);
+	assertEqual(expect, actual);
+}
+
+unittest {	// nextMinus
+	BigDecimal arg, expect, actual;
+	arg = 1;
+	expect = 0.999999999;
+	actual = nextMinus(arg, testContext);
+	assertEqual(expect, actual);
+	arg = -1.00000003;
+	expect = -1.00000004;
+	actual = nextMinus(arg, testContext);
+	assertEqual(expect, actual);
+}
+
+unittest {	// nextToward
+	BigDecimal arg1, arg2, expect, actual;
+	arg1 = 1;
+	arg2 = 2;
+	expect = 1.00000001;
+	actual = nextToward(arg1, arg2, testContext);
+	assertEqual(expect, actual);
+	arg1 = -1.00000003;
+	arg2 = 0;
+	expect = -1.00000002;
+	actual = nextToward(arg1, arg2, testContext);
+	assertEqual(expect, actual);
+}
+
+unittest {	// compare
+	BigDecimal arg1, arg2;
+	arg1 = BigDecimal(2.1);
+	arg2 = BigDecimal("3");
+	assertEqual(-1, compare(arg1, arg2, testContext));
+	arg1 = 2.1;
+	arg2 = BigDecimal(2.1);
+	assertEqual(0, compare(arg1, arg2, testContext));
+}
+
+unittest {	// equals
+	BigDecimal arg1, arg2;
+	arg1 = 123.4567;
+	arg2 = 123.4568;
+	assertTrue(!equals!BigDecimal(arg1, arg2, bigContext));
+	arg2 = 123.4567;
+	assertTrue(equals!BigDecimal(arg1, arg2, bigContext));
+}
+
+unittest {
+	write("compareSignal...");
+	writeln("test missing");
+}
+
+unittest {	// compareTotal
+	BigDecimal arg1, arg2;
+	int result;
+	arg1 = BigDecimal("12.30");
+	arg2 = BigDecimal("12.3");
+	result = compareTotal(arg1, arg2);
+	assertTrue(result == -1);
+	arg1 = BigDecimal("12.30");
+	arg2 = BigDecimal("12.30");
+	result = compareTotal(arg1, arg2);
+	assertTrue(result == 0);
+	arg1 = BigDecimal("12.3");
+	arg2 = BigDecimal("12.300");
+	result = compareTotal(arg1, arg2);
+	assertTrue(result == 1);
+}
+
+unittest {	// sameQuantum
+	BigDecimal arg1, arg2;
+	arg1 = 2.17;
+	arg2 = 0.001;
+	assertTrue(!sameQuantum(arg1, arg2));
+	arg2 = 0.01;
+	assertTrue(sameQuantum(arg1, arg2));
+	arg2 = 0.1;
+	assertTrue(!sameQuantum(arg1, arg2));
+}
+
+unittest {	// max
+	BigDecimal arg1, arg2, expect, actual;
+	arg1 = 3; arg2 = 2; expect = 3;
+	actual = max(arg1, arg2, testContext);
+	assertEqual(expect, actual);
+	arg1 = -10; arg2 = 3; expect = 3;
+	actual = max(arg1, arg2, testContext);
+	assertEqual(expect, actual);
+}
+
+unittest {
+	write("maxMagnitude...");
+	writeln("test missing");
+}
+
+unittest {	// min
+	BigDecimal arg1, arg2, expect, actual;
+	arg1 = 3; arg2 = 2; expect = 2;
+	actual = min(arg1, arg2, testContext);
+	assertEqual(expect, actual);
+	arg1 = -10; arg2 = 3; expect = -10;
+	actual = min(arg1, arg2, testContext);
+	assertEqual(expect, actual);
+}
+
+unittest {
+	write("minMagnitude...");
+	writeln("test missing");
+}
+
+unittest {	// quantum
+	BigDecimal arg, expect, actual;
+	arg = 23.14E-12;
+	expect = 1E-14;
+	actual = quantum(arg);
+	assertEqual(expect, actual);
+}
+
+unittest {	// add
+	// (A)TODO: change inputs to real njumbers
+	BigDecimal arg1, arg2, sum;
+	arg1 = BigDecimal("12");
+	arg2 = BigDecimal("7.00");
+	sum = add(arg1, arg2, testContext);
+	assertEqual("19.00", sum.toString);
+	arg1 = BigDecimal("1E+2");
+	arg2 = BigDecimal("1E+4");
+	sum = add(arg1, arg2, testContext);
+	assertEqual("1.01E+4", sum.toString);
+}
+
+unittest {	// addLong
+	BigDecimal arg1, sum;
+	long arg2;
+	arg2 = 12;
+	arg1 = BigDecimal("7.00");
+	sum = addLong(arg1, arg2, testContext);
+	assertEqual("19.00", sum.toString);
+	arg1 = BigDecimal("1E+2");
+	arg2 = 10000;
+	sum = addLong(arg1, arg2, testContext);
+	assertEqual("10100", sum.toString);
+}
+
+unittest {	// mul
+	BigDecimal arg1, arg2, result;
+	arg1 = BigDecimal("1.20");
+	arg2 = 3;
+	result = mul(arg1, arg2, testContext);
+	assertEqual("3.60", result.toString());
+	arg1 = 7;
+	result = mul(arg1, arg2, testContext);
+	assertEqual("21", result.toString());
+}
+
+unittest { // mulLong
+	BigDecimal arg1, result;
+	long arg2;
+	arg1 = BigDecimal("1.20");
+	arg2 = 3;
+	result = mulLong(arg1, arg2, testContext);
+	assertEqual("3.60", result.toString());
+	arg1 = -7000;
+	result = mulLong(arg1, arg2, testContext);
+	assertEqual("-21000", result.toString());
+}
+
+unittest {	// fma
+	BigDecimal arg1, arg2, arg3, expect, actual;
+	arg1 = 3; arg2 = 5; arg3 = 7;
+	expect = 22;
+	actual = (fma(arg1, arg2, arg3, testContext));
+	assertEqual(expect, actual);
+	arg1 = 3; arg2 = -5; arg3 = 7;
+	expect = -8;
+	actual = (fma(arg1, arg2, arg3, testContext));
+	assertEqual(expect, actual);
+	arg1 = 888565290;
+	arg2 = 1557.96930;
+	arg3 = -86087.7578;
+	expect = BigDecimal(1.38435736E+12);
+	actual = (fma(arg1, arg2, arg3, testContext));
+	assertEqual(expect, actual);
+}
+
+unittest {	// div
+	BigDecimal arg1, arg2, actual, expect;
+	arg1 = 1;
+	arg2 = 3;
+	actual = div(arg1, arg2, testContext);
+	expect = BigDecimal(0.333333333);
+	assertEqual(expect, actual);
+	assertStringEqual(expect, actual);
+	arg1 = 1;
+	arg2 = 10;
+	expect = 0.1;
+	actual = div(arg1, arg2, testContext);
+	assertEqual(expect, actual);
+}
+
+unittest {	// divideInteger
+	BigDecimal arg1, arg2, actual, expect;
+	arg1 = 2;
+	arg2 = 3;
+	actual = divideInteger(arg1, arg2, testContext);
+	expect = 0;
+	assertEqual(expect, actual);
+	arg1 = 10;
+	actual = divideInteger(arg1, arg2, testContext);
+	expect = 3;
+	assertEqual(expect, actual);
+	arg1 = 1;
+	arg2 = 0.3;
+	actual = divideInteger(arg1, arg2, testContext);
+	assertEqual(expect, actual);
+}
+
+unittest {	// remainder
+	BigDecimal arg1, arg2, actual, expect;
+	arg1 = 2.1;
+	arg2 = 3;
+	actual = remainder(arg1, arg2, testContext);
+	expect = 2.1;
+	assertEqual(expect, actual);
+	arg1 = 10;
+	actual = remainder(arg1, arg2, testContext);
+	expect = 1;
+	assertEqual(expect, actual);
+}
+
+unittest {
+	write("remainderNear...");
+	writeln("test missing");
+}
+
+unittest {	// quantize
     auto context = testContext;
 	BigDecimal arg1, arg2, actual, expect;
 	string str;
@@ -1628,23 +1817,7 @@ unittest {
 	assertEqual(expect, actual);
 }
 
-// (A)TODO: Not clear what this does.
-/// Returns a value as if this were the quantize function using
-/// the given operand as the left-hand-operand.
-/// The result is and context flags may be set.
-/// Implements the 'round-to-integral-exact' function
-/// in the specification. (p. 39)
-public T roundToIntegralExact(T)(const T arg,
-		DecimalContext context) if (isDecimal!T) {
-	if (arg.isSignaling) return setInvalidFlag!T();
-	if (arg.isSpecial) return arg.dup;
-	if (arg.exponent >= 0) return arg.dup;
-	const T ONE = T(1L);
-	T result = quantize!T(arg, ONE, context.setPrecision(arg.digits));
-	return result;
-}
-
-unittest {
+unittest { // roundToIntegralExact
 	BigDecimal arg, expect, actual;
 	arg = 2.1;
 	expect = 2;
@@ -1657,67 +1830,12 @@ unittest {
 	assertStringEqual(expect, actual);
 }
 
-// (A)TODO: need to re-implement this so no flags are set.
-/// The result may be rounded and context flags may be set.
-/// Implements the 'round-to-integraL-value' function
-/// in the specification. (p. 39)
-public T roundToIntegralValue(T)(const T arg,
-		DecimalContext context) if (isDecimal!T) {
-	if (arg.isSignaling) return setInvalidFlag!T();
-	if (arg.isQuiet) return arg.dup;
-	if (arg.isSpecial) return arg.dup;
-	if (arg.exponent >= 0) return arg.dup;
-	const T ONE = T(1L);
-	T result = quantize!T(arg, ONE, context.setPrecision(arg.digits));
-	return result;
-}
-
-// (A)TODO: Need to check for subnormal and inexact(?). Or is this done by caller?
-// (A)TODO: has non-standard flag setting
-/// Reduces operand to the specified (ideal) exponent.
-/// All trailing zeros are removed.
-/// (Used to return the "ideal" value following division. p. 28-29)
-private T reduceToIdeal(T)(const T arg, int ideal,
-		const DecimalContext context) if (isDecimal!T) {
-	T result;
-	if (invalidOperand!T(arg, result)) {
-		return result;
-	}
-	result = arg;
-	if (!result.isFinite()) {
-		return result;
-	}
-	BigInt temp = result.coefficient % 10;
-	while (result.coefficient != 0 && temp == 0 && result.exponent < ideal) {
-		result.exponent = result.exponent + 1;
-		result.coefficient = result.coefficient / 10;
-		temp = result.coefficient % 10;
-	}
-	if (result.coefficient == 0) {
-		result = T.zero;
-		// (A)TODO: needed?
-		result.exponent = 0;
-	}
-	result.digits = numDigits(result.coefficient);
-	return result;
-}
-
 unittest {
 	write("reduceToIdeal...");
 	writeln("test missing");
 }
 
-/// Sets the invalid-operation flag and returns a quiet NaN.
-private T setInvalidFlag(T)(ushort payload = 0) if (isDecimal!T) {
-	contextFlags.setFlags(INVALID_OPERATION);
-	T result = T.nan;
-	if (payload != 0) {
-		result.payload = payload;
-	}
-	return result;
-}
-
-unittest {
+unittest {	// setInvalidFlag
 	BigDecimal arg, expect, actual;
 	// (A)TODO: Can't actually test payloads at this point.
 	arg = BigDecimal("sNaN123");
@@ -1728,25 +1846,7 @@ unittest {
 //	  assertTrue(actual.toAbstract == expect.toAbstract);
 }
 
-
-/// Aligns the two operands by raising the smaller exponent
-/// to the value of the larger exponent, and adjusting the
-/// coefficient so the value remains the same.
-/// No flags are set and the result is not rounded.
-private void alignOps(ref BigDecimal arg1, ref BigDecimal arg2,
-		const DecimalContext context) {
-	int diff = arg1.exponent - arg2.exponent;
-	if (diff > 0) {
-		arg1.coefficient = decShl(arg1.coefficient, diff);
-		arg1.exponent = arg2.exponent;
-	}
-	else if (diff < 0) {
-		arg2.coefficient = decShl(arg2.coefficient, -diff);
-		arg2.exponent = arg1.exponent;
-	}
-}
-
-unittest {
+unittest { // alignOps
 	BigDecimal arg1, arg2;
 	arg1 = 1.3E35;
 	arg2 = -17.4E29;
@@ -1755,103 +1855,14 @@ unittest {
 	assertTrue(arg2.exponent == 28);
 }
 
-///  Returns true and sets the invalid-operation flag if either operand
-/// is a NaN.
-/// "The result of any arithmetic operation which has an operand
-/// which is a NaN (a quiet NaN or a signaling NaN) is [s,qNaN]
-/// or [s,qNaN,d]. The sign and any diagnostic information is copied
-/// from the first operand which is a signaling NaN, or if neither is
-/// signaling then from the first operand which is a NaN."
-/// -- General Decimal Arithmetic Specification, p. 24
-private bool invalidBinaryOp(T)(const T arg1, const T arg2, T result)
-		if (isDecimal!T) {
-	// if either operand is a quiet NaN...
-	if (arg1.isQuiet || arg2.isQuiet) {
-		// flag the invalid operation
-		contextFlags.setFlags(INVALID_OPERATION);
-		// set the result to the first qNaN operand
-		result = arg1.isQuiet ? arg1 : arg2;
-		return true;
-	}
-	// ...if either operand is a signaling NaN...
-	if (arg1.isSignaling || arg2.isSignaling) {
-		// flag the invalid operation
-		contextFlags.setFlags(INVALID_OPERATION);
-		// set the result to the first sNaN operand
-		result = arg1.isSignaling ? T.nan(arg1.payload) : T.nan(arg2.payload);
-		return true;
-	}
-	// ...otherwise, no flags are set and result is unchanged
-	return false;
-}
-
 unittest {
 	write("invalidBinaryOp...");
 	writeln("test missing");
 }
 
-/// Returns true and sets the invalid-operation flag if the operand
-/// is a NaN.
-/// "The result of any arithmetic operation which has an operand
-/// which is a NaN (a quiet NaN or a signaling NaN) is [s,qNaN]
-/// or [s,qNaN,d]. The sign and any diagnostic information is copied
-/// from the first operand which is a signaling NaN, or if neither is
-/// signaling then from the first operand which is a NaN."
-/// -- General Decimal Arithmetic Specification, p. 24
-private bool invalidOperand(T)(const T arg, ref T result) if (isDecimal!T) {
-	// if the operand is a signaling NaN...
-	if (arg.isSignaling) {
-		// flag the invalid operation
-		contextFlags.setFlags(INVALID_OPERATION);
-		// retain payload; convert to qNaN
-		result = T.nan(arg.payload);
-		return true;
-	}
-	// ...else if the operand is a quiet NaN...
-	if (arg.isQuiet) {
-		// flag the invalid operation
-		contextFlags.setFlags(INVALID_OPERATION);
-		// set the result to the qNaN operand
-		result = arg;
-		return true;
-	}
-	// ...otherwise, no flags are set and result is unchanged
-	return false;
-}
-
 unittest {
 	write("invalidOperand...");
 	writeln("test missing");
-}
-
-/// Checks for invalid operands and division by zero.
-/// If found, the function sets the quotient to NaN or infinity, respectively,
-/// and returns true after setting the context flags.
-/// Also checks for zero dividend and calculates the result as needed.
-/// This is a helper function implementing checks for division by zero
-/// and invalid operation in the specification. (p. 51-52)
-private bool invalidDivision(T)(const T dividend, const T divisor,
-		ref T quotient) if (isDecimal!T) {
-
-	if (invalidBinaryOp!T(dividend, divisor, quotient)) {
-		return true;
-	}
-	if (divisor.isZero()) {
-		if (dividend.isZero()) {
-			quotient = setInvalidFlag!T();
-		}
-		else {
-			contextFlags.setFlags(DIVISION_BY_ZERO);
-			quotient = T.infinity;
-			quotient.sign = dividend.sign ^ divisor.sign;
-		}
-		return true;
-	}
-	if (dividend.isZero()) {
-		quotient = T.zero;
-		return true;
-	}
-	return false;
 }
 
 unittest {

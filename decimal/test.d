@@ -27,7 +27,57 @@ import decimal.dec64;
 import decimal.dec128;
 import decimal.decimal;
 import decimal.rounding;
-import decimal.utils;
+
+bool assertEqual(T)(T expected, T actual,
+		string file = __FILE__, int line = __LINE__ ) {
+	if (expected == actual) {
+		return true;
+	}
+	writeln("failed at ", std.path.basename(file), "(", line, "):",
+	        " expected \"", expected, "\"",
+	        " but found \"", actual, "\".");
+	return false;
+}
+
+bool assertStringEqual(T)(T expected, T actual,
+		string file = __FILE__, int line = __LINE__ ) {
+	if (expected.toString == actual.toString) {
+		return true;
+	}
+	writeln("failed at ", std.path.basename(file), "(", line, "):",
+	        " expected \"", expected, "\"",
+	        " but found \"", actual, "\".");
+	return false;
+}
+
+/*bool assertEqual(T)(T expected, T actual,
+		string file = __FILE__, int line = __LINE__ ) {
+	if (expected == actual) {
+		return true;
+	}
+	writeln("failed at ", std.path.basename(file), "(", line, "):",
+	        " expected \"", expected, "\"",
+	        " but found \"", actual, "\".");
+	return false;
+}*/
+
+bool assertNotEqual(T)(T unexpected, T actual,
+		string file = __FILE__, int line = __LINE__ ) {
+	if (unexpected == actual) {
+		writeln("failed at ", std.path.basename(file), "(", line, "):",
+	        	" \"", unexpected, "\" is equal to \"", actual, "\".");
+		return false;
+	}
+	return true;
+}
+
+bool assertTrue(bool actual, string file = __FILE__, int line = __LINE__ ) {
+	return assertEqual(true, actual, file, line);
+}
+
+bool assertFalse(bool actual, string file = __FILE__, int line = __LINE__ ) {
+	return assertEqual(false, actual, file, line);
+}
 
 unittest {
 	writeln("---------------------------");
@@ -546,23 +596,23 @@ unittest {
 	num = BigDecimal("2.1");
 	str = "2.1";
 	red = reduce(num);
-	assertTrue(red.toString() == str);
+	assertEqual(str, red.toString());
 	num = BigDecimal("-2.0");
 	str = "-2";
 	red = reduce(num);
-	assertTrue(red.toString() == str);
+	assertEqual(str, red.toString());
 	num = BigDecimal("1.200");
 	str = "1.2";
 	red = reduce(num);
-	assertTrue(red.toString() == str);
+	assertEqual(str, red.toString());
 	num = BigDecimal("-120");
 	str = "-1.2E+2";
 	red = reduce(num);
-	assertTrue(red.toString() == str);
+	assertEqual(str, red.toString());
 	num = BigDecimal("120.00");
 	str = "1.2E+2";
 	red = reduce(num);
-	assertTrue(red.toString() == str);
+	assertEqual(str, red.toString());
 	writeln("passed");
 }
 
@@ -1822,7 +1872,7 @@ unittest {
 	after = before;
 	round(after, ctx3);;
 //writeln("after = ", after.toAbstract);
-	assertTrue(after.toAbstract() == "[0,125,1]");
+	assertEqual("[0,124,1]", after.toAbstract);
 	before = 12459;
 	after = before;
 	round(after, ctx3);;

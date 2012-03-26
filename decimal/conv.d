@@ -24,7 +24,7 @@ import decimal.dec32;
 import decimal.dec64;
 import decimal.dec128;
 import decimal.decimal;
-import decimal.utils;
+import decimal.test;
 
 unittest {
 	writeln("===================");

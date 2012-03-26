@@ -16,28 +16,15 @@
 
 module decimal.rounding;
 
-import decimal.arithmetic:compare, copyNegate, equals;
+import decimal.arithmetic: compare, copyNegate, equals;
 import decimal.context;
 import decimal.conv;
-import decimal.utils;
+import decimal.test;
 import std.array: insertInPlace;
 import std.ascii: isDigit;
 import std.bigint;
 
-// NOTE: these imports are only needed for testing.
-import decimal.dec32;
-import decimal.dec64;
-// NOTE: this import is only used once outside of testing.
 import decimal.decimal;
-
-// (R)TODO: it would be nice to make these const, but the BigInt class
-// complains about casting. They are private so I know they won't change,
-// but it's inconvenient
-private BigInt BIG_ZERO = BigInt(0);
-private BigInt BIG_ONE = BigInt(1);
-private BigInt BIG_TEN = BigInt(10);
-private BigInt BILLION = BigInt(1_000_000_000);
-private BigInt QUINTILLION = BigInt(1_000_000_000_000_000_000);
 
 /// Rounds the referenced number using the precision and rounding mode of
 /// the context parameter.
@@ -48,7 +35,7 @@ public void round(T)(ref T num, const DecimalContext context) if (isDecimal!T) {
 	if (!num.isFinite) return;
 
 	// zero values aren't rounded, but they are checked for
-	// subnormal values and for out of range exponents.
+	// subnormal and out of range exponents.
 	if (num.isZero) {
 		if (num.exponent < context.minExpo) {
 			contextFlags.setFlags(SUBNORMAL);
@@ -59,7 +46,7 @@ public void round(T)(ref T num, const DecimalContext context) if (isDecimal!T) {
 		return;
 	}
 
-	// check for subnormal
+	// handle subnormal numbers
 	if (num.isSubnormal(context)) {
 		contextFlags.setFlags(SUBNORMAL);
 		int diff = context.minExpo - num.adjustedExponent;
@@ -69,7 +56,8 @@ public void round(T)(ref T num, const DecimalContext context) if (isDecimal!T) {
 			auto ctx = BigDecimal.setPrecision(precision);
 			roundByMode(num, ctx);
 		}
-		// subnormal rounding to zero == clamped (Spec. p. 51)
+		// if the result of rounding a subnormal is zero
+		// the clamped flag is set. (Spec. p. 51)
 		if (num.isZero) {
 			num.exponent = context.tinyExpo;
 			contextFlags.setFlags(CLAMPED);
@@ -77,7 +65,7 @@ public void round(T)(ref T num, const DecimalContext context) if (isDecimal!T) {
 		return;
 	}
 
-	// check for overflow
+	// handle overflow
 	if (num.adjustedExponent > context.maxExpo) {
 		contextFlags.setFlags(OVERFLOW);
 		switch (context.rounding) {
@@ -104,12 +92,6 @@ public void round(T)(ref T num, const DecimalContext context) if (isDecimal!T) {
 		return;
 	}
 	roundByMode(num, context);
-	// check for zero
-	static if (is(T:BigDecimal)) {
-		if (num.coefficient == 0) {
-			num.zero(num.sign);
-		}
-	}
 	return;
 
 } // end round()
@@ -133,7 +115,7 @@ private void roundByMode(T)(ref T num, const DecimalContext context)
 	// Dec32 & Dec64
 	switch (context.rounding) {
 		case Rounding.UP:
-			auto temp = T.zero;
+			T temp = T.zero;
 			if (remainder != temp) {
 				increment(num, context);
 			}
@@ -141,13 +123,13 @@ private void roundByMode(T)(ref T num, const DecimalContext context)
 		case Rounding.DOWN:
 			return;
 		case Rounding.CEILING:
-			auto temp = T.zero;
+			T temp = T.zero;
 			if (!num.sign && (remainder != temp)) {
 				increment(num, context);
 			}
 			return;
 		case Rounding.FLOOR:
-			auto temp = T.zero;
+			T temp = T.zero;
 			if (num.sign && remainder != temp) {
 				increment(num, context);
 			}
@@ -158,30 +140,52 @@ private void roundByMode(T)(ref T num, const DecimalContext context)
 			}
 			return;
 		case Rounding.HALF_DOWN:
-			if (firstDigit(remainder.coefficient) > 5) {
-				increment(num, context);
+			if (half(remainder.coefficient) > 0) {
+				increment(num,context);
 			}
 			return;
 		case Rounding.HALF_EVEN:
-			int first = firstDigit(remainder.coefficient);
-			if (first > 5) {
-				increment(num, context);
-				break;
-			}
-			if (first < 5) {
-				break;
-			}
-			// remainder == 5...
-			// (R)TODO: need to check entire remainder
-			// if last digit is odd...
-			if (first & 1) {
-				increment(num, context);
-			}
+			switch (half(remainder.coefficient)) {
+				case -1:
+					break;
+				case 1:
+					increment(num, context);
+					break;
+				default:
+					if (lastDigit(num.coefficient) & 1) {
+						increment(num, context);
+					}
+					break;
+				}
 			return;
 		default:
 			return;
 	}	 // end switch(mode)
 } // end roundByMode()
+
+/// Returns -1, 1, or 0 if the remainder is less than, more than,
+/// or exactly half the least significant digit of the shortened coefficient.
+/// Exactly half is a five followed by zero or more zero digits.
+public int half(const ulong n) {
+	int digits = numDigits(n);
+	int first = cast(int)(n / TENS[digits-1]);
+	if (first < 5) return -1;
+	if (first > 5) return +1;
+	int zeros = cast(int)(n % TENS[digits-1]);
+	return (zeros != 0) ? 1 : 0;
+}
+
+/// Returns -1, 1, or 0 if the remainder is less than, more than,
+/// or exactly half the least significant digit of the shortened coefficient.
+/// Exactly half is a five followed by zero or more zero digits.
+public int half(const BigInt arg) {
+	BigInt big = mutable(arg);
+	int first = firstDigit(arg);
+	if (first < 5) return -1;
+	if (first > 5) return +1;
+	int zeros = (big % pow10(numDigits(big)-1)).toInt;
+	return (zeros != 0) ? 1 : 0;
+}
 
 /// Clips the coefficient of the number to the specified precision.
 /// Returns the (unsigned) remainder for adjustments based on rounding mode.
@@ -218,25 +222,11 @@ if (isDecimal!T) {
 	return remainder;
 }
 
-/// Increments the coefficient by 1. If this causes an overflow, rounds again.
-private void increment(T:BigDecimal)(ref T num, const DecimalContext context) {
-	num.coefficient = num.coefficient + 1;
-	// check if the num was all nines --
-	// did the coefficient roll over to 1000...?
-	// (R)TODO: Calculate trailing zeros?
-	BigDecimal test1 = BigDecimal(1, num.digits + num.exponent);
-	BigDecimal test2 = num;
-	test2.digits++;
-	int comp = decimal.arithmetic.compare(test1, test2, context, false);
-	if (comp == 0) {
-		num.digits++;
-		// check if there are now too many digits...
-		if (num.digits > context.precision) {
-			round(num, context);
-		}
-	}
-}
-
+/// Returns the value of the exponent of a ulong value rounded to the
+/// context precision.
+/// The input value is modified to the result of the rounding and
+/// number of digits is modified to the rounded value's digits.
+/// This method is used in the construction of fixed-size decimal numbers.
 public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
                         const DecimalContext context) {
 
@@ -307,14 +297,14 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
 
 } // end setExponent()
 
-/**
- * Clips the coefficient of the number to the specified precision.
- * Returns the (unsigned) remainder for adjustments based on rounding mode.
- * Sets the ROUNDED and INEXACT flags.
- */
+
+/// Clips the coefficient of the number to the specified precision.
+/// Returns the (unsigned) remainder for adjustments based on rounding mode.
+/// Flags: ROUNDED, INEXACT.
 private ulong clipRemainder(ref ulong num, ref uint digits, uint precision) {
 	ulong remainder = 0;
 	int diff = digits - precision;
+	// if diff is less than or equal to zero no rounding is required.
 	if (diff <= 0) {
 		return remainder;
 	}
@@ -335,6 +325,26 @@ private ulong clipRemainder(ref ulong num, ref uint digits, uint precision) {
 	return remainder;
 }
 
+// (R)TODO: Algorithm needs revisit. Not very efficient.
+
+/// Increments the coefficient by 1. If this causes an overflow, rounds again.
+private void increment(T:BigDecimal)(ref T num, const DecimalContext context) {
+	num.coefficient = num.coefficient + 1;
+	// check if the num was all nines --
+	// did the coefficient roll over to 1000...?
+	BigDecimal test1 = BigDecimal(1, num.digits + num.exponent);
+	BigDecimal test2 = num;
+	test2.digits++;
+	int comp = decimal.arithmetic.compare(test1, test2, context, false);
+	if (comp == 0) {
+		num.digits++;
+		// check if there are now too many digits...
+		if (num.digits > context.precision) {
+			round(num, context);
+		}
+	}
+}
+
 // (R)TODO: context is not used.
 /// Increments the number by 1.
 /// Re-calculates the number of digits -- the increment may have caused
@@ -352,7 +362,29 @@ private void increment(T:ulong)(ref T num, ref uint digits) {
 	digits = numDigits(num);
 }
 
-// BigInt versions
+//-----------------------------
+// useful constants
+//-----------------------------
+
+// BigInt has problems with const and immutable; these should be const values.
+// They are private so I know they won't change, but it's inconvenient
+private BigInt BIG_ZERO = BigInt(0);
+private BigInt BIG_ONE  = BigInt(1);
+private BigInt BIG_FIVE = BigInt(5);
+private BigInt BIG_TEN  = BigInt(10);
+private BigInt BILLION  = BigInt(1_000_000_000);
+private BigInt QUINTILLION = BigInt(1_000_000_000_000_000_000);
+
+/// An array of unsigned long integers with values of
+/// the powers of ten from 10^^0 to 10^^18
+public static ulong[19] TENS = [10L^^0,
+		10L^^1,  10^^2,   10L^^3,  10L^^4,  10L^^5,  10L^^6,
+		10L^^7,  10L^^8,  10L^^9,  10L^^10, 10L^^11, 10L^^12,
+		10L^^13, 10L^^14, 10L^^15, 10L^^16, 10L^^17, 10L^^18];
+
+//-----------------------------
+// decimal digit functions
+//-----------------------------
 
 /// Returns the number of digits in the argument.
 public int numDigits(const BigInt arg) {
@@ -371,6 +403,28 @@ public int numDigits(const BigInt arg) {
 	return count + numDigits(n);
 }
 
+/// Returns the number of digits in the argument,
+/// where the argument is an unsigned long integer.
+public int numDigits(const ulong n, const int maxValue = 19) {
+    // special cases:
+	if (n == 0) return 0;
+	if (n < 10) return 1;
+	if (n >= TENS[maxValue - 1]) return maxValue;
+    // use a binary search to count the digits
+	int min = 1;
+	int max = maxValue - 1;
+	while (min <= max) {
+		int mid = (min + max)/2;
+		if (n < TENS[mid]) {
+			max = mid - 1;
+		}
+		else {
+			min = mid + 1;
+		}
+	}
+	return min;
+}
+
 /// Returns the first digit of the argument.
 public int firstDigit(const BigInt arg) {
 	BigInt big = mutable(arg);
@@ -381,13 +435,21 @@ public int firstDigit(const BigInt arg) {
 	return firstDigit(n);
 }
 
+/// Returns the first digit of the argument.
+public int firstDigit(const ulong n, int maxValue = 19) {
+	if (n == 0) return 0;
+	if (n < 10) return cast(int) n;
+	int d = numDigits(n, maxValue);
+	return cast(int)(n/TENS[d-1]);
+}
+
 /// Shifts the number left by the specified number of decimal digits.
 /// If n <= 0 the number is returned unchanged.
 public BigInt decShl(BigInt num, const int n) {
 	if (n <= 0) {
 		return num;
 	}
-	BigInt fives = BigInt(5)^^n;	// TENS[n]? FIVES[n]?
+	BigInt fives = BIG_FIVE^^n;
 	num = num << n;
 	num *= fives;
 	return num;
@@ -415,14 +477,7 @@ public uint decShl(uint num, const int n) {
 	return num;
 }
 
-/// Returns the last digit of the (long integer) argument.
-public uint lastDigit(const long num) {
-	ulong n = std.math.abs(num);
-	return cast(uint)(n % 10UL);
-}
-
-
-/// Returns the last digit of the (BigInt) argument.
+/// Returns the last digit of the argument.
 public uint lastDigit(const BigInt arg) {
 	BigInt big = mutable(arg);
 	BigInt digit = big % BigInt(10);
@@ -430,51 +485,41 @@ public uint lastDigit(const BigInt arg) {
 	return cast(uint)digit.toInt;
 }
 
-/// An array of unsigned long integers with values of
-/// the powers of ten from 10^^0 to 10^^18
-public static ulong[19] TENS = [10L^^0,
-		10L^^1,  10^^2,   10L^^3,  10L^^4,  10L^^5,  10L^^6,
-		10L^^7,  10L^^8,  10L^^9,  10L^^10, 10L^^11, 10L^^12,
-		10L^^13, 10L^^14, 10L^^15, 10L^^16, 10L^^17, 10L^^18];
+/// Returns the last digit of the argument.
+public uint lastDigit(const long num) {
+	ulong n = std.math.abs(num);
+	return cast(uint)(n % 10UL);
+}
 
-/// Returns the number of digits in the argument,
-/// where the argument is an unsigned long integer.
-public int numDigits(const ulong n, const int maxValue = 19) {
-    // special cases:
+/// Returns the number of trailing zeros in the argument.
+public int trailingZeros(const BigInt arg, const int maxValue) {
+	BigInt n = mutable(arg);
+	// shortcuts for frequent values
 	if (n == 0) return 0;
-	if (n < 10) return 1;
-	if (n >= TENS[maxValue - 1]) return maxValue;
-    // use a binary search to count the digits
-	int min = 1;
+	if (n % 10) return 0;
+	if (n % 100) return 1;
+	// find by binary search
+	int min = 3;
 	int max = maxValue - 1;
 	while (min <= max) {
 		int mid = (min + max)/2;
-		if (n < TENS[mid]) {
+		if (n % pow10(mid) != 0) {
 			max = mid - 1;
 		}
 		else {
 			min = mid + 1;
 		}
 	}
-	return min;
-}
-
-/// Returns the first digit of the argument.
-public int firstDigit(const ulong n, int maxValue = 19) {
-	if (n == 0) return 0;
-	if (n < 10) return cast(int) n;
-	int d = numDigits(n, maxValue);
-	return cast(int)(n/TENS[d-1]);
+	return max;
 }
 
 /// Returns the number of trailing zeros in the argument.
 public int trailingZeros(const ulong n, const int maxValue = 19) {
-
-	// special cases:
+	// shortcuts for frequent values
 	if (n == 0) return 0;
 	if (n % 10) return 0;
 	if (n % 100) return 1;
-
+	// find by binary search
 	int min = 3;
 	int max = maxValue - 1;
 	while (min <= max) {
@@ -487,6 +532,28 @@ public int trailingZeros(const ulong n, const int maxValue = 19) {
 		}
 	}
 	return max;
+}
+
+/// Trims trailing zeros from the argument and returns the number of zeros trimmed.
+public int trimZeros(ref ulong n, const int maxValue = 19) {
+	int zeros = trailingZeros(n);
+	if (zeros == 0) return 0;
+	n /= TENS[zeros];
+	return zeros;
+}
+
+/// Trims trailing zeros from the argument and returns the number of zeros trimmed.
+public int trimZeros(ref BigInt n, const int maxValue ) {
+	int zeros = trailingZeros(cast(const)n, maxValue);
+	if (zeros == 0) return 0;
+	n /= pow10(zeros);
+	return zeros;
+}
+
+/// Returns a BigInt value of ten raised to the specified power.
+public BigInt pow10(const int n) {
+	BigInt num = 1;
+	return decShl(num, n);
 }
 
 //-----------------------------
@@ -519,39 +586,12 @@ public int sgn(const BigInt num) {
 	return 0;
 }
 
-/*
-/// Returns the number of trailing zeros in binary.
-/// Algorithm adapted from Bit Twiddling Hacks  by Sean Eron Anderson
-/// (graphics.standford.edu/~seander/bithacks.html)
-public int trailingZerosBinary(const uint arg) {
-
-	if (arg & 1) return 0;
-	int n = arg;
-	int count = 1;
-	if ((n & 0xFFFF) == 0) {
-		n >>= 16;
-		count += 16;
-	}
-	if ((n & 0xFF) == 0) {
-		n >>= 8;
-		count += 8;
-	}
-	if ((n & 0xF) == 0) {
-		n >>= 4;
-		count += 4;
-	}
-	if ((n & 0x3) == 0) {
-		n >>= 2;
-		count += 2;
-	}
-	count -= n & 1;
-	return count;
-}
-*/
-
 //--------------------------------
 // unit tests
 //--------------------------------
+
+import decimal.dec32;
+import decimal.dec64;
 
 unittest {
 	writeln("===================");
@@ -593,15 +633,15 @@ unittest {
 	before = 1235;
 	after = before;
 	round(after, ctx3);;
-	assertTrue(after.toAbstract() == "[0,124,1]");
+	assertEqual("[0,124,1]", after.toAbstract());
 	before = 12359;
 	after = before;
 	round(after, ctx3);;
-	assertTrue(after.toAbstract() == "[0,124,2]");
+	assertEqual("[0,124,2]", after.toAbstract());
 	before = 1245;
 	after = before;
 	round(after, ctx3);
-	assertTrue(after.toAbstract() == "[0,125,1]");
+	assertEqual("[0,124,1]", after.toAbstract());
 	before = 12459;
 	after = before;
 	round(after, ctx3);;
@@ -649,6 +689,15 @@ unittest {
 	num = 1234550;
 	roundByMode(num, ctxUP);
 	assertTrue(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
+}
+
+unittest {	// half
+	assertEqual( 0, half(5000));
+	assertEqual(-1, half(4999));
+	assertEqual( 1, half(5001));
+	assertEqual( 0, half(BigInt("5000000000000000000000")));
+	assertEqual(-1, half(BigInt("4999999999999999999999")));
+	assertEqual( 1, half(BigInt("5000000000000000000001")));
 }
 
 unittest {

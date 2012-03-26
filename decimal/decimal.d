@@ -23,7 +23,7 @@ module decimal.decimal;
 import decimal.context;
 import decimal.rounding;
 import decimal.arithmetic;
-import decimal.utils;
+import decimal.test;
 
 import std.bigint;
 import std.exception: assumeUnique;
@@ -33,12 +33,6 @@ import std.ascii: isDigit;
 import std.math: PI, LOG2;
 import std.stdio: write, writeln;
 import std.string;
-
-unittest {
-	writeln("===================");
-	writeln("decimal.......begin");
-	writeln("===================");
-}
 
 alias BigDecimal.bigContext bigContext;
 
@@ -183,9 +177,6 @@ public:
 		this(BigInt(coefficient), exponent);
 	}
 
-	unittest {
-	}
-
 	// (B)TODO:: this(const long). Flags. Unit Tests.
 	/// Constructs a number from an long coefficient
 	/// and an optional integer exponent.
@@ -203,28 +194,6 @@ public:
 		this = decimal.conv.toNumber(str);
 	};
 
-	unittest {
-		BigDecimal num;
-		string str;
-		num = BigDecimal(1, 12334, -5);
-		str = "-0.12334";
-		assertTrue(num.toString == str);
-		num = BigDecimal(-23456, 10);
-		str = "-2.3456E+14";
-		assertTrue(num.toString == str);
-		num = BigDecimal(234568901234);
-		str = "234568901234";
-		assertTrue(num.toString == str);
-		num = BigDecimal("123.457E+29");
-		str = "1.23457E+31";
-		assertTrue(num.toString == str);
-		num = std.math.E;
-		str = "2.71828183";
-		assertEqual!string(str, num.toString);
-		num = std.math.LOG2;
-		BigDecimal copy = BigDecimal(num);
-		assertTrue(compareTotal!BigDecimal(num, copy) == 0);
-	}
 
 	// floating point constructors:
 
@@ -253,12 +222,6 @@ public:
 	///
 	const BigDecimal dup() {
 		return BigDecimal(this);
-	}
-
-	unittest {
-		BigDecimal num = BigDecimal(std.math.PI);
-		BigDecimal copy = num.dup;
-		assertTrue(num == copy);
 	}
 
 //--------------------------------
@@ -297,27 +260,6 @@ public:
 		this = decimal.conv.toBigDecimal!T(that);
 	}
 
-	unittest {
-		import decimal.dec32;
-
-		BigDecimal num;
-		string str;
-		num = BigDecimal(1, 245, 8);
-		str = "-2.45E+10";
-		assertTrue(num.toString == str);
-		num = long.max;
-		str = "9223372036854775807";
-		assertTrue(num.toString == str);
-		num = real.max;
-		str = "1.1897315E+4932";
-		assertEqual!string(str, num.toString);
-		num = Dec32.max;
-		str = "9.999999E+96";
-		assertTrue(num.toString == str);
-		num = BigInt("123456098420234978023480");
-		str = "123456098420234978023480";
-		assertTrue(num.toString == str);
-	}
 
 //--------------------------------
 // string representations
@@ -329,20 +271,6 @@ public:
 	public const string toAbstract() {
 		return decimal.conv.toAbstract!BigDecimal(this);
 	}
-
-unittest {
-	BigDecimal num;
-	string str;
-	num = BigDecimal("-inf");
-	str = "[1,inf]";
-	assertTrue(num.toAbstract == str);
-	num = BigDecimal("nan");
-	str = "[0,qNaN]";
-	assertTrue(num.toAbstract == str);
-	num = BigDecimal("snan1234");
-	str = "[0,sNaN1234]";
-	assertTrue(num.toAbstract == str);
-}
 
 // READY: toSciString.
 ///
@@ -366,14 +294,6 @@ const string toEngString() {
 const string toString() {
 	return decimal.conv.sciForm!BigDecimal(this);
 };
-
-unittest {
-	BigDecimal num;
-	string str;
-	num = BigDecimal(200000, 71);
-	str = "2.00000E+76";
-	assertTrue(num.toString == str);
-}
 
 //--------------------------------
 // member properties
@@ -425,36 +345,10 @@ unittest {
 		return 0;
 	}
 
-	unittest {
-		BigDecimal big = -123.45E12;
-		assertEqual!int(10, big.exponent);
-		assertEqual!BigInt(BigInt(12345), big.coefficient);
-//		assertTrue(big.coefficient == 12345);
-		assertTrue(big.sign);
-		big.coefficient = 23456;
-		big.exponent = 12;
-		big.sign = false;
-		assertEqual!BigDecimal(BigDecimal(234.56E14),big);
-		big = nan;
-		assertTrue(big.payload == 0);
-		big = snan(1250);
-		assertTrue(big.payload == 1250);
-	}
-
 	const string toExact() {
 		return decimal.conv.toExact!BigDecimal(this);
 	}
 
-	unittest {
-		BigDecimal num;
-		assertTrue(num.toExact == "+NaN");
-		num = +9999999E+90;
-		assertEqual!string("+9999999E+90", num.toExact);
-		num = 1;
-		assertTrue(num.toExact == "+1E+00");
-		num = infinity(true);
-		assertTrue(num.toExact == "-Infinity");
-	}
 
 	/// Returns the adjusted exponent of this number
 	@property const int adjustedExponent() {
@@ -603,86 +497,33 @@ unittest {
 		return this.dup;
 	}
 
-	unittest {
-		BigDecimal num = BigDecimal("2.50");
-		assertTrue(num.isCanonical);
-		BigDecimal copy = num.canonical;
-		assertTrue(compareTotal(num, copy) == 0);
-	}
 
 	/// Returns true if this number is + or - zero.
 	const bool isZero() {
 		return isFinite && coefficient == 0;
 	}
 
-	unittest {
-		BigDecimal num;
-		num = BigDecimal("0");
-		assertTrue(num.isZero);
-		num = BigDecimal("2.50");
-		assertTrue(!num.isZero);
-		num = BigDecimal("-0E+2");
-		assertTrue(num.isZero);
-	}
 
 	/// Returns true if this number is a quiet or signaling NaN.
 	const bool isNaN() {
 		return this.sval == SV.QNAN || this.sval == SV.SNAN;
 	}
 
-	unittest {
-		BigDecimal num;
-		num = BigDecimal("2.50");
-		assertTrue(!num.isNaN);
-		num = BigDecimal("NaN");
-		assertTrue(num.isNaN);
-		num = BigDecimal("-sNaN");
-		assertTrue(num.isNaN);
-	}
 
 	/// Returns true if this number is a signaling NaN.
 	const bool isSignaling() {
 		return this.sval == SV.SNAN;
 	}
 
-	unittest {
-		BigDecimal num;
-		num = BigDecimal("2.50");
-		assertTrue(!num.isSignaling);
-		num = BigDecimal("NaN");
-		assertTrue(!num.isSignaling);
-		num = BigDecimal("sNaN");
-		assertTrue(num.isSignaling);
-	}
 
 	/// Returns true if this number is a quiet NaN.
 	const bool isQuiet() {
 		return this.sval == SV.QNAN;
 	}
 
-	unittest {
-		BigDecimal num;
-		num = BigDecimal("2.50");
-		assertTrue(!num.isQuiet);
-		num = BigDecimal("NaN");
-		assertTrue(num.isQuiet);
-		num = BigDecimal("sNaN");
-		assertTrue(!num.isQuiet);
-	}
-
 	/// Returns true if this number is + or - infinity.
 	const bool isInfinite() {
 		return this.sval == SV.INF;
-	}
-
-	unittest {
-		BigDecimal num;
-		num = BigDecimal("2.50");
-		assertTrue(!num.isInfinite);
-		num = BigDecimal("-Inf");
-		assertTrue(num.isInfinite);
-		num = BigDecimal("NaN");
-		assertTrue(!num.isInfinite);
 	}
 
 	/// Returns true if this number is not an infinity or a NaN.
@@ -692,21 +533,6 @@ unittest {
 			&& sval != SV.SNAN;
 	}
 
-	unittest {
-		BigDecimal num;
-		num = BigDecimal("2.50");
-		assertTrue(num.isFinite);
-		num = BigDecimal("-0.3");
-		assertTrue(num.isFinite);
-		num = 0;
-		assertTrue(num.isFinite);
-		num = BigDecimal("Inf");
-		assertTrue(!num.isFinite);
-		num = BigDecimal("-Inf");
-		assertTrue(!num.isFinite);
-		num = BigDecimal("NaN");
-		assertTrue(!num.isFinite);
-	}
 
 	/// Returns true if this number is a NaN or infinity.
 	const bool isSpecial() {
@@ -715,29 +541,9 @@ unittest {
 			|| sval == SV.SNAN;
 	}
 
-	unittest {
-		BigDecimal num;
-		num = infinity(true);
-		assertTrue(num.isSpecial);
-		num = snan(1234);
-		assertTrue(num.isSpecial);
-		num = 12378.34;
-		assertTrue(!num.isSpecial);
-	}
-
 	/// Returns true if this number is negative. (Includes -0)
 	const bool isSigned() {
 		return this.signed;
-	}
-
-	unittest {
-		BigDecimal num;
-		num = BigDecimal("2.50");
-		assertTrue(!num.isSigned);
-		num = BigDecimal("-12");
-		assertTrue(num.isSigned);
-		num = BigDecimal("-0");
-		assertTrue(num.isSigned);
 	}
 
 	/// Returns true if this number is negative. (Includes -0)
@@ -745,34 +551,10 @@ unittest {
 		return this.signed;
 	}
 
-	unittest {
-		BigDecimal num;
-		num = BigDecimal("2.50");
-		assertTrue(!num.isNegative);
-		num = BigDecimal("-12");
-		assertTrue(num.isNegative);
-		num = BigDecimal("-0");
-		assertTrue(num.isNegative);
-	}
-
 	/// Returns true if this number is subnormal.
 	const bool isSubnormal(const DecimalContext context = bigContext) {
 		if (!isFinite) return false;
 		return adjustedExponent < context.minExpo;
-	}
-
-	unittest {
-		BigDecimal num;
-		num = BigDecimal("2.50");
-		assertTrue(!num.isSubnormal);
-		num = BigDecimal("0.1E-99");
-		assertTrue(num.isSubnormal);
-		num = BigDecimal("0.00");
-		assertTrue(!num.isSubnormal);
-		num = BigDecimal("-Inf");
-		assertTrue(!num.isSubnormal);
-		num = BigDecimal("NaN");
-		assertTrue(!num.isSubnormal);
 	}
 
 	/// Returns true if this number is normal.
@@ -783,19 +565,6 @@ unittest {
 		return false;
 	}
 
-	unittest {
-		BigDecimal num;
-		num = BigDecimal("2.50");
-		assertTrue(num.isNormal);
-		num = BigDecimal("0.1E-99");
-		assertTrue(!num.isNormal);
-		num = BigDecimal("0.00");
-		assertTrue(!num.isNormal);
-		num = BigDecimal("-Inf");
-		assertTrue(!num.isNormal);
-		num = BigDecimal("NaN");
-		assertTrue(!num.isNormal);
-	}
 
 	/// Returns true if this number is integral;
 	/// that is, if its fractional part is zero.
@@ -804,30 +573,11 @@ unittest {
 		return expo >= 0;
 	 }
 
-	unittest {
-		BigDecimal num;
-		num = 12345;
-		assertTrue(num.isIntegral);
-		num = BigInt("123456098420234978023480");
-		assertTrue(num.isIntegral);
-		num = 1.5;
-		assertTrue(!num.isIntegral);
-		num = 1.5E+1;
-		assertTrue(num.isIntegral);
-		num = 0;
-		assertTrue(num.isIntegral);
-	}
-
 	/// Returns true if this number represents a logical true value.
 	/// Any number other than zero or NaN returns true.
 	/// NaN is false, infinity is true.
 	const bool isTrue() {
 		return !isNaN || isInfinite || coefficient != 0;
-	}
-
-	unittest {
-		write("isTrue...");
-		writeln("test missing");
 	}
 
 	/// Returns true if this number represents a logical false value.
@@ -837,32 +587,11 @@ unittest {
 		return isNaN || (isFinite && coefficient == 0);
 	}
 
-	unittest {
-		write("isFalse...");
-		writeln("test missing");
-	}
 
 	const bool isZeroCoefficient() {
 		return !isSpecial && coefficient == 0;
 	}
 
-	unittest {
-		BigDecimal num;
-		num = 0;
-		assertTrue(num.isZeroCoefficient);
-		num = BigInt("-0");
-		assertTrue(num.isZeroCoefficient);
-		num = BigDecimal("0E+4");
-		assertTrue(num.isZeroCoefficient);
-		num = 12345;
-		assertFalse(num.isZeroCoefficient);
-		num = 1.5;
-		assertFalse(num.isZeroCoefficient);
-		num = BigDecimal.NAN;
-		assertFalse(num.isZeroCoefficient);
-		num = BigDecimal.INFINITY;
-		assertFalse(num.isZeroCoefficient);
-	}
 
 //--------------------------------
 // comparison
@@ -874,16 +603,6 @@ unittest {
 		return compare!BigDecimal(this, that, bigContext);
 	}
 
-	unittest {
-		BigDecimal num1, num2;
-		num1 = 105;
-		num2 = 10.543;
-		assertTrue(num1 > num2);
-		assertTrue(num2 < num1);
-		num1 = 10.543;
-		assertTrue(num1 >= num2);
-		assertTrue(num2 <= num1);
-	}
 
 	/// Returns true if this number is equal to the argument.
 	/// Finite numbers are equal if they are numerically equal
@@ -896,14 +615,7 @@ unittest {
 		return equals!BigDecimal(this, that, bigContext);
 	}
 
-	unittest {
-		BigDecimal num1, num2;
-		num1 = 105;
-		num2 = 10.543;
-		assertTrue(num1 != num2);
-		num1 = 10.543;
-		assertTrue(num1 == num2);
-	}
+
 
 //--------------------------------
 // unary arithmetic operators
@@ -926,38 +638,6 @@ unittest {
 		else static if (op == "--") {
 			return sub!BigDecimal(this, BigDecimal(1), bigContext);
 		}
-	}
-
-	unittest {
-		BigDecimal num, actual, expect;
-		num = 134;
-		expect = num;
-		actual = +num;
-		assertEqual!BigDecimal(expect, actual);
-		num = 134.02;
-		expect = -134.02;
-		actual = -num;
-		assertEqual!BigDecimal(expect, actual);
-		num = 134;
-		expect = 135;
-		actual = ++num;
-		assertEqual!BigDecimal(expect, actual);
-		num = 1.00E8;
-		expect = num - 1;
-		actual = --num;
-		assertEqual!BigDecimal(expect, actual);
-		num = 1.00E8;
-		expect = num;
-		actual = num--;
-		assertEqual!BigDecimal(expect, actual);
-		num = BigDecimal(9999999, 90);
-		expect = num;
-		actual = num++;
-		assertEqual!BigDecimal(expect, actual);
-		num = 12.35;
-		expect = 11.35;
-		actual = --num;
-		assertEqual!BigDecimal(expect, actual);
 	}
 
 //--------------------------------
@@ -985,51 +665,15 @@ unittest {
 		}
 	}
 
-	unittest {
-		BigDecimal num = BigDecimal(591.3);
-		BigDecimal result = num * 5;
-		assertTrue(result == BigDecimal(2956.5));
-	}
-
 	/// Returns true if the type T is promotable to a decimal type.
 	private template isPromotable(T) {
 		enum bool isPromotable = is(T:ulong) || is(T:real);
-	}
-
-	unittest {
-		write("isPromotable...");
-		writeln("test missing");
 	}
 
 	/// Returns the result of performing the specified
 	/// binary operation on this number and the argument.
 	const BigDecimal opBinary(string op, T)(const T arg) if (isPromotable!T)	{
 		return opBinary!(op,BigDecimal)(BigDecimal(arg));
-	}
-
-	unittest {
-		BigDecimal op1, op2, actual, expect;
-		op1 = 4;
-		op2 = 8;
-		actual = op1 + op2;
-		expect = 12;
-		assertEqual!BigDecimal(expect, actual);
-		actual = op1 - op2;
-		expect = -4;
-		assertEqual!BigDecimal(expect, actual);
-		actual = op1 * op2;
-		expect = 32;
-		assertEqual!BigDecimal(expect, actual);
-		op1 = 5;
-		op2 = 2;
-		actual = op1 / op2;
-		expect = 2.5;
-		assertEqual!BigDecimal(expect, actual);
-		op1 = 10;
-		op2 = 3;
-		actual = op1 % op2;
-		expect = 1;
-		assertEqual!BigDecimal(expect, actual);
 	}
 
 //-----------------------------
@@ -1041,20 +685,6 @@ unittest {
 	ref BigDecimal opOpAssign(string op) (BigDecimal arg) {
 		this = opBinary!op(arg);
 		return this;
-	}
-
-	unittest {
-		BigDecimal op1, op2, actual, expect;
-		op1 = 23.56;
-		op2 = -2.07;
-		op1 += op2;
-		expect = 21.49;
-		actual = op1;
-		assertEqual!BigDecimal(expect, actual);
-		op1 *= op2;
-		expect = -44.4843;
-		actual = op1;
-		assertEqual!BigDecimal(expect, actual);
 	}
 
 //-----------------------------
@@ -1080,29 +710,11 @@ unittest {
 		return nextToward!BigDecimal(this, arg, bigContext);
 	}
 
-	unittest {
-		BigDecimal big, expect;
-		big = 123.45;
-		assertTrue(big.nextUp == BigDecimal(123.450001));
-		big = 123.45;
-		assertTrue(big.nextDown == BigDecimal(123.449999));
-		big = 123.45;
-		expect = big.nextUp;
-		assertTrue(big.nextAfter(BigDecimal(123.46)) == expect);
-		big = 123.45;
-		expect = big.nextDown;
-		assertTrue(big.nextAfter(BigDecimal(123.44)) == expect);
-	}
-
 	// (B)TODO: move this outside the struct
 	/// Returns a BigInt value of ten raised to the specified power.
 	public static BigInt pow10(const int n) {
 		BigInt num = 1;
 		return decShl(num, n);
-	}
-
-	unittest {
-		assertTrue(pow10(3) == 1000);
 	}
 
 	/// Returns a copy of the context with a new precision.
@@ -1120,6 +732,404 @@ unittest {
 	}
 
 }	 // end struct BigDecimal
+
+
+// (B)TODO: is it possible to use stringOf to improve the test asserts?
+
+//-----------------------------
+// unittests
+//-----------------------------
+
+unittest {
+	writeln("===================");
+	writeln("decimal.......begin");
+	writeln("===================");
+}
+
+unittest {	// ctor(string)
+	BigDecimal num;
+	string str;
+	num = BigDecimal(1, 12334, -5);
+	str = "-0.12334";
+	assertTrue(num.toString == str);
+	num = BigDecimal(-23456, 10);
+	str = "-2.3456E+14";
+	assertTrue(num.toString == str);
+	num = BigDecimal(234568901234);
+	str = "234568901234";
+	assertTrue(num.toString == str);
+	num = BigDecimal("123.457E+29");
+	str = "1.23457E+31";
+	assertTrue(num.toString == str);
+	num = std.math.E;
+	str = "2.71828183";
+	assertEqual!string(str, num.toString);
+	num = std.math.LOG2;
+	BigDecimal copy = BigDecimal(num);
+	assertTrue(compareTotal!BigDecimal(num, copy) == 0);
+}
+
+unittest {
+	BigDecimal num = BigDecimal(std.math.PI);
+	BigDecimal copy = num.dup;
+	assertTrue(num == copy);
+}
+
+unittest {	// opAssign
+	import decimal.dec32;
+
+	BigDecimal num;
+	string str;
+	num = BigDecimal(1, 245, 8);
+	str = "-2.45E+10";
+	assertTrue(num.toString == str);
+	num = long.max;
+	str = "9223372036854775807";
+	assertTrue(num.toString == str);
+	num = real.max;
+	str = "1.1897315E+4932";
+	assertEqual!string(str, num.toString);
+	num = Dec32.max;
+	str = "9.999999E+96";
+	assertTrue(num.toString == str);
+	num = BigInt("123456098420234978023480");
+	str = "123456098420234978023480";
+	assertTrue(num.toString == str);
+}
+unittest {	// toAbstract
+	BigDecimal num;
+	string str;
+	num = BigDecimal("-inf");
+	str = "[1,inf]";
+	assertTrue(num.toAbstract == str);
+	num = BigDecimal("nan");
+	str = "[0,qNaN]";
+	assertTrue(num.toAbstract == str);
+	num = BigDecimal("snan1234");
+	str = "[0,sNaN1234]";
+	assertTrue(num.toAbstract == str);
+}
+
+unittest {
+	BigDecimal num;
+	string str;
+	num = BigDecimal(200000, 71);
+	str = "2.00000E+76";
+	assertTrue(num.toString == str);
+}
+
+unittest {
+	BigDecimal big = -123.45E12;
+	assertEqual!int(10, big.exponent);
+	assertEqual!BigInt(BigInt(12345), big.coefficient);
+//		assertTrue(big.coefficient == 12345);
+	assertTrue(big.sign);
+	big.coefficient = 23456;
+	big.exponent = 12;
+	big.sign = false;
+	assertEqual!BigDecimal(BigDecimal(234.56E14),big);
+	big = BigDecimal.nan;
+	assertTrue(big.payload == 0);
+	big = BigDecimal.snan(1250);
+	assertTrue(big.payload == 1250);
+}
+
+unittest {
+	BigDecimal num;
+	assertTrue(num.toExact == "+NaN");
+	num = +9999999E+90;
+	assertEqual!string("+9999999E+90", num.toExact);
+	num = 1;
+	assertTrue(num.toExact == "+1E+00");
+	num = BigDecimal.infinity(true);
+	assertTrue(num.toExact == "-Infinity");
+}
+unittest {
+	BigDecimal num = BigDecimal("2.50");
+	assertTrue(num.isCanonical);
+	BigDecimal copy = num.canonical;
+	assertTrue(compareTotal(num, copy) == 0);
+}
+
+unittest {
+	BigDecimal num;
+	num = BigDecimal("0");
+	assertTrue(num.isZero);
+	num = BigDecimal("2.50");
+	assertTrue(!num.isZero);
+	num = BigDecimal("-0E+2");
+	assertTrue(num.isZero);
+}
+unittest {
+	BigDecimal num;
+	num = BigDecimal("2.50");
+	assertTrue(!num.isNaN);
+	num = BigDecimal("NaN");
+	assertTrue(num.isNaN);
+	num = BigDecimal("-sNaN");
+	assertTrue(num.isNaN);
+}
+unittest {
+	BigDecimal num;
+	num = BigDecimal("2.50");
+	assertTrue(!num.isSignaling);
+	num = BigDecimal("NaN");
+	assertTrue(!num.isSignaling);
+	num = BigDecimal("sNaN");
+	assertTrue(num.isSignaling);
+}
+unittest {
+	BigDecimal num;
+	num = BigDecimal("2.50");
+	assertTrue(!num.isQuiet);
+	num = BigDecimal("NaN");
+	assertTrue(num.isQuiet);
+	num = BigDecimal("sNaN");
+	assertTrue(!num.isQuiet);
+}
+
+unittest {
+	BigDecimal num;
+	num = BigDecimal("2.50");
+	assertTrue(!num.isInfinite);
+	num = BigDecimal("-Inf");
+	assertTrue(num.isInfinite);
+	num = BigDecimal("NaN");
+	assertTrue(!num.isInfinite);
+}
+
+unittest {
+	BigDecimal num;
+	num = BigDecimal("2.50");
+	assertTrue(num.isFinite);
+	num = BigDecimal("-0.3");
+	assertTrue(num.isFinite);
+	num = 0;
+	assertTrue(num.isFinite);
+	num = BigDecimal("Inf");
+	assertTrue(!num.isFinite);
+	num = BigDecimal("-Inf");
+	assertTrue(!num.isFinite);
+	num = BigDecimal("NaN");
+	assertTrue(!num.isFinite);
+}
+
+unittest {
+	BigDecimal num;
+	num = BigDecimal.infinity(true);
+	assertTrue(num.isSpecial);
+	num = BigDecimal.snan(1234);
+	assertTrue(num.isSpecial);
+	num = 12378.34;
+	assertTrue(!num.isSpecial);
+}
+
+unittest {
+	BigDecimal num;
+	num = BigDecimal("2.50");
+	assertTrue(!num.isSigned);
+	num = BigDecimal("-12");
+	assertTrue(num.isSigned);
+	num = BigDecimal("-0");
+	assertTrue(num.isSigned);
+}
+
+unittest {
+	BigDecimal num;
+	num = BigDecimal("2.50");
+	assertTrue(!num.isNegative);
+	num = BigDecimal("-12");
+	assertTrue(num.isNegative);
+	num = BigDecimal("-0");
+	assertTrue(num.isNegative);
+}
+
+unittest {
+	BigDecimal num;
+	num = BigDecimal("2.50");
+	assertTrue(!num.isSubnormal);
+	num = BigDecimal("0.1E-99");
+	assertTrue(num.isSubnormal);
+	num = BigDecimal("0.00");
+	assertTrue(!num.isSubnormal);
+	num = BigDecimal("-Inf");
+	assertTrue(!num.isSubnormal);
+	num = BigDecimal("NaN");
+	assertTrue(!num.isSubnormal);
+}
+unittest {
+	BigDecimal num;
+	num = BigDecimal("2.50");
+	assertTrue(num.isNormal);
+	num = BigDecimal("0.1E-99");
+	assertTrue(!num.isNormal);
+	num = BigDecimal("0.00");
+	assertTrue(!num.isNormal);
+	num = BigDecimal("-Inf");
+	assertTrue(!num.isNormal);
+	num = BigDecimal("NaN");
+	assertTrue(!num.isNormal);
+}
+
+unittest {	// isIntegral
+	BigDecimal num;
+	num = 12345;
+	assertTrue(num.isIntegral);
+	num = BigInt("123456098420234978023480");
+	assertTrue(num.isIntegral);
+	num = 1.5;
+	assertTrue(!num.isIntegral);
+	num = 1.5E+1;
+	assertTrue(num.isIntegral);
+	num = 0;
+	assertTrue(num.isIntegral);
+}
+
+unittest {
+	write("isTrue...");
+	writeln("test missing");
+}
+
+unittest {
+	write("isFalse...");
+	writeln("test missing");
+}
+
+unittest {	// isZeroCoefficient
+	BigDecimal num;
+	num = 0;
+	assertTrue(num.isZeroCoefficient);
+	num = BigInt("-0");
+	assertTrue(num.isZeroCoefficient);
+	num = BigDecimal("0E+4");
+	assertTrue(num.isZeroCoefficient);
+	num = 12345;
+	assertFalse(num.isZeroCoefficient);
+	num = 1.5;
+	assertFalse(num.isZeroCoefficient);
+	num = BigDecimal.NAN;
+	assertFalse(num.isZeroCoefficient);
+	num = BigDecimal.INFINITY;
+	assertFalse(num.isZeroCoefficient);
+}
+
+unittest {	// opCmp
+	BigDecimal num1, num2;
+	num1 = 105;
+	num2 = 10.543;
+	assertTrue(num1 > num2);
+	assertTrue(num2 < num1);
+	num1 = 10.543;
+	assertTrue(num1 >= num2);
+	assertTrue(num2 <= num1);
+}
+unittest {	// opEquals
+	BigDecimal num1, num2;
+	num1 = 105;
+	num2 = 10.543;
+	assertTrue(num1 != num2);
+	num1 = 10.543;
+	assertTrue(num1 == num2);
+}
+unittest {	// opUnary
+	BigDecimal num, actual, expect;
+	num = 134;
+	expect = num;
+	actual = +num;
+	assertEqual!BigDecimal(expect, actual);
+	num = 134.02;
+	expect = -134.02;
+	actual = -num;
+	assertEqual!BigDecimal(expect, actual);
+	num = 134;
+	expect = 135;
+	actual = ++num;
+	assertEqual!BigDecimal(expect, actual);
+	num = 1.00E8;
+	expect = num - 1;
+	actual = --num;
+	assertEqual!BigDecimal(expect, actual);
+	num = 1.00E8;
+	expect = num;
+	actual = num--;
+	assertEqual!BigDecimal(expect, actual);
+	num = BigDecimal(9999999, 90);
+	expect = num;
+	actual = num++;
+	assertEqual!BigDecimal(expect, actual);
+	num = 12.35;
+	expect = 11.35;
+	actual = --num;
+	assertEqual!BigDecimal(expect, actual);
+}
+
+unittest {
+	BigDecimal num = BigDecimal(591.3);
+	BigDecimal result = num * 5;
+	assertTrue(result == BigDecimal(2956.5));
+}
+
+unittest {
+	write("isPromotable...");
+	writeln("test missing");
+}
+
+unittest {	// opBinary
+	BigDecimal op1, op2, actual, expect;
+	op1 = 4;
+	op2 = 8;
+	actual = op1 + op2;
+	expect = 12;
+	assertEqual!BigDecimal(expect, actual);
+	actual = op1 - op2;
+	expect = -4;
+	assertEqual!BigDecimal(expect, actual);
+	actual = op1 * op2;
+	expect = 32;
+	assertEqual!BigDecimal(expect, actual);
+	op1 = 5;
+	op2 = 2;
+	actual = op1 / op2;
+	expect = 2.5;
+	assertEqual!BigDecimal(expect, actual);
+	op1 = 10;
+	op2 = 3;
+	actual = op1 % op2;
+	expect = 1;
+	assertEqual!BigDecimal(expect, actual);
+}
+
+unittest {	// opOpAssign
+	BigDecimal op1, op2, actual, expect;
+	op1 = 23.56;
+	op2 = -2.07;
+	op1 += op2;
+	expect = 21.49;
+	actual = op1;
+	assertEqual!BigDecimal(expect, actual);
+	op1 *= op2;
+	expect = -44.4843;
+	actual = op1;
+	assertEqual!BigDecimal(expect, actual);
+}
+
+unittest {
+	BigDecimal big, expect;
+	big = 123.45;
+	assertTrue(big.nextUp == BigDecimal(123.450001));
+	big = 123.45;
+	assertTrue(big.nextDown == BigDecimal(123.449999));
+	big = 123.45;
+	expect = big.nextUp;
+	assertTrue(big.nextAfter(BigDecimal(123.46)) == expect);
+	big = 123.45;
+	expect = big.nextDown;
+	assertTrue(big.nextAfter(BigDecimal(123.44)) == expect);
+}
+
+/*unittest {	// pow10
+	assertTrue(pow10(3) == 1000);
+}*/
 
 unittest {
 	writeln("===================");
