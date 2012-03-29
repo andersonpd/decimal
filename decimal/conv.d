@@ -26,12 +26,6 @@ import decimal.dec128;
 import decimal.decimal;
 import decimal.test;
 
-unittest {
-	writeln("===================");
-	writeln("conv..........begin");
-	writeln("===================");
-}
-
 //--------------------------------
 //  conversions
 //--------------------------------
@@ -77,29 +71,6 @@ public T toDecimal(T, U)(const U num) if (isDecimal!T && isFixedDecimal!U) {
 	return T.nan;
 }
 
-unittest {
-	write("toDecimal...");
-	BigDecimal big;
-	Dec32 expect, actual;
-	big = BigDecimal(12345E-8);
-	expect = Dec32(12345E-8);
-	actual = toDecimal!(Dec32,BigDecimal)(big);
-	assertEqual(expect, actual);
-	assertEqual(typeid(typeof(expect)), typeid(typeof(actual)));
-	Dec64 rexpect, ractual;
-	big = BigDecimal(12345E-8);
-	rexpect = Dec64(12345E-8);
-	ractual = toDecimal!(Dec64,BigDecimal)(big);
-	assertEqual(rexpect, ractual);
-	assertEqual(typeid(typeof(rexpect)), typeid(typeof(ractual)));
-	Dec64 d64 = Dec64(12345E-8);
-	expect = Dec32(12345E-8);
-	actual = toDecimal!(Dec32,Dec64)(d64);
-	assertEqual(expect, actual);
-	assertEqual(typeid(typeof(rexpect)), typeid(typeof(ractual)));
-	writeln("passed");
-}
-
 /// Converts any decimal to a big decimal
 public BigDecimal toBigDecimal(T)(const T num) if (isDecimal!T) {
 	static if (is(typeof(num) == BigDecimal)) {
@@ -120,14 +91,6 @@ public BigDecimal toBigDecimal(T)(const T num) if (isDecimal!T) {
 	return BigDecimal.nan;
 }
 
-unittest {
-	Dec32 small;
-	BigDecimal big;
-	small = 5;
-	big = toBigDecimal!Dec32(small);
-	assertTrue(big.toString == small.toString);
-}
-
 /// Returns true if T is a decimal type.
 public template isDecimal(T) {
 enum bool isDecimal = is(T: Dec32) || is(T: Dec64) || is(T: Dec128) || is(T: BigDecimal);
@@ -143,34 +106,15 @@ public template isFixedDecimal(T) {
 enum bool isFixedDecimal = is(T: Dec32) || is(T: Dec64) || is(T: Dec128);
 }
 
-unittest {
-	assertTrue(isFixedDecimal!Dec32);
-	assertTrue(!isFixedDecimal!BigDecimal);
-	assertTrue(isDecimal!Dec32);
-	assertTrue(isDecimal!BigDecimal);
-	assertTrue(!isBigDecimal!Dec32);
-	assertTrue(isBigDecimal!BigDecimal);
-}
-
 /// Converts a decimal number to a scientific string representation.
 public string sciForm(T)(const T num) if (isDecimal!T) {
 	return stdForm!T(num, false);
 };  // end sciForm()
 
-unittest {
-	write("sciForm...");
-	writeln("test missing");
-}
-
 /// Converts a decimal number to an engineering string representation.
 public string engForm(T)(const T num) if (isDecimal!T) {
 	return stdForm!T(num, true);
 }  // end engForm()
-
-unittest {
-	write("engForm...");
-	writeln("test missing");
-}
 
 /// string representation of special values
 private string toSpecialString(T)(const T num,
@@ -193,20 +137,6 @@ private string toSpecialString(T)(const T num,
 		return num.isSigned ? "-" ~ str : str;
 	}
 	return str;
-}
-
-unittest {
-	write("toSpecialString...");
-	BigDecimal num;
-	string expect, actual;
-	num = BigDecimal("inf");
-	actual = toSpecialString(num);
-	expect = "Infinity";
-	assertEqual(expect, actual);
-	actual = toSpecialString(num, true);
-	expect = "Inf";
-	assertEqual(expect, actual);
-	writeln("passed");
 }
 
 /// Converts a decimal number to a string in decimal format (xxx.xxx)
@@ -255,29 +185,6 @@ private string decimalForm(T)
 	return sign ? ("-" ~ cstr).idup : cstr.idup;
 }
 
-unittest {
-	write("decimalForm...");
-	Dec32 num;
-	string expect, actual;
-	num = Dec32(125);
-	expect = "125.000";
-	actual = decimalForm(num, 3);
-	assertEqual(expect, actual);
-	num = Dec32(125E5);
-	expect = "12500000";
-	actual = decimalForm(num);
-	assertEqual(expect, actual);
-	num = Dec32(1.25);
-	expect = "1.25";
-	actual = decimalForm(num);
-	assertEqual(expect, actual);
-	num = Dec32(125E-5);
-	expect = "0.001250";
-	actual = decimalForm(num, 6);
-	assertEqual(expect, actual);
-	writeln("passed");
-}
-
 /// Converts a decimal number to exponential notation.
 private string exponentForm(T)(const T num, const bool lowerCase = false,
 	const bool padExpo = false) if (isDecimal!T) {
@@ -300,32 +207,6 @@ private string exponentForm(T)(const T num, const bool lowerCase = false,
 	string str = (cstr ~ expoChar ~ xstr).idup;
 	return sign ? "-" ~ str : str;
 }  // end exponentForm
-
-unittest {
-	write("exponentForm...");
-	Dec32 num;
-	string expect, actual;
-	num = Dec32(125);
-	expect = "1.25E+2";
-	actual = exponentForm(num);
-	assertEqual(expect, actual);
-	expect = "1.25e+02";
-	actual = exponentForm(num, true, true);
-	assertEqual(expect, actual);
-	num = Dec32(125E5);
-	expect = "1.25E+7";
-	actual = exponentForm(num);
-	assertEqual(expect, actual);
-	num = Dec32(1.25);
-	expect = "1.25E+0";
-	actual = exponentForm(num);
-	assertEqual(expect, actual);
-	num = Dec32(125E-5);
-	expect = "1.25E-3";
-	actual = exponentForm(num);
-	assertEqual(expect, actual);
-	writeln("passed");
-}
 
 /// Converts a decimal number to one of two (three, counting decimal form)
 /// standard string representations.
@@ -389,39 +270,6 @@ private string stdForm(T)(const T num,
 	}
 	return sign ? "-" ~ str : str;
 }  // end stdForm
-
-unittest {
-	Dec32 num = Dec32(123); //(false, 123, 0);
-	assertTrue(sciForm!Dec32(num) == "123");
-	assertTrue(num.toAbstract() == "[0,123,0]");
-	num = Dec32(-123, 0);
-	assertTrue(sciForm!Dec32(num) == "-123");
-	assertTrue(num.toAbstract() == "[1,123,0]");
-	num = Dec32(123, 1);
-	assertTrue(sciForm!Dec32(num) == "1.23E+3");
-	assertTrue(num.toAbstract() == "[0,123,1]");
-	num = Dec32(123, 3);
-	assertTrue(sciForm!Dec32(num) == "1.23E+5");
-	assertTrue(num.toAbstract() == "[0,123,3]");
-	num = Dec32(123, -1);
-	assertTrue(sciForm!Dec32(num) == "12.3");
-	assertTrue(num.toAbstract() == "[0,123,-1]");
-	num = Dec32("inf");
-	assertTrue(sciForm!Dec32(num) == "Infinity");
-	assertTrue(num.toAbstract() == "[0,inf]");
-	string str = "1.23E+3";
-	BigDecimal dec = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(dec) == str);
-	str = "123E+3";
-	dec = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(dec) == str);
-	str = "12.3E-9";
-	dec = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(dec) == str);
-	str = "-123E-12";
-	dec = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(dec) == str);
-}
 
 public string toString(T)(const T num, string fmt) {
 	return "surprise!";
@@ -504,26 +352,6 @@ private string prefix(string str, string prefixChar) {
 	return prefixChar ~ str;
 }
 
-unittest {
-	write("prefix....");
-	string str, expect, actual;
-	str = "100.54";
-	expect = "100.54";
-	actual = prefix(str, "");
-	assertEqual(expect, actual);
-	assert(expect is actual);
-	expect = "-100.54";
-	actual = prefix(str, "-");
-	assertEqual(expect, actual);
-	expect = " 100.54";
-	actual = prefix(str, " ");
-	assertEqual(expect, actual);
-	expect = "+100.54";
-	actual = prefix(str, "+");
-	assertEqual(expect, actual);
-	writeln("passed");
-}
-
 private string toWidth(string str, const int minWidth, const char fillChar = ' ') {
 	if (str.length >= std.math.abs(minWidth)) return str;
 	bool toLeft = false;
@@ -536,22 +364,6 @@ private string toWidth(string str, const int minWidth, const char fillChar = ' '
 		return leftJustify!string(str, width, fillChar);
 	}
 	return rightJustify!string(str, width, fillChar);
-}
-
-unittest {
-	write("toWidth...");
-	string str, expect, actual;
-	str = "10E+05";
-	expect = "  10E+05";
-	actual = toWidth(str, 8);
-	assertEqual(expect, actual);
-	expect = "10E+05  ";
-	actual = toWidth(str, -8);
-	assertEqual(expect, actual);
-	expect = "0010E+05";
-	actual = toWidth(str, 8, '0');
-	assertEqual(expect, actual);
-	writeln("passed");
 }
 
 // (V)TODO: Doesn't work yet, returns scientific string.
@@ -652,11 +464,6 @@ public string writeTo(T) (const T num, const string fmt = "") if (isDecimal!T) {
 		return signed ? "-" ~ str : str;
 	}
 };  // end writeTo
-
-unittest {
-	write("writeTo...");
-	writeln("test missing");
-}
 
 /// Converts a string into a BigDecimal.
 public BigDecimal toNumber(const string inStr) {
@@ -823,19 +630,6 @@ public BigDecimal toNumber(const string inStr) {
 	return num;
 }
 
-unittest {
-	BigDecimal f = BigDecimal("1.0");
-	assertTrue(f.toString() == "1.0");
-	f = BigDecimal(".1");
-	assertTrue(f.toString() == "0.1");
-	f = BigDecimal("-123");
-	assertTrue(f.toString() == "-123");
-	f = BigDecimal("1.23E3");
-	assertTrue(f.toString() == "1.23E+3");
-	f = BigDecimal("1.23E-3");
-	assertTrue(f.toString() == "0.00123");
-}
-
 /// Returns an abstract string representation of a number.
 /// The abstract representation is described in the specification. (p. 9-12)
 public string toAbstract(T)(const T num) if (isDecimal!T) {
@@ -859,11 +653,6 @@ public string toAbstract(T)(const T num) if (isDecimal!T) {
 		return format("[%d,%s]", num.sign ? 1 : 0, "sNaN");
 	}
 	return "[0,qNAN]";
-}
-
-unittest {
-	write("toAbstract...");
-	writeln("test missing");
 }
 
 // (V)TODO: Does exact representation really return a round-trip value?
@@ -893,6 +682,221 @@ public string toExact(T)(const T num) if (isDecimal!T) {
 	return "+NaN";
 }
 
+//--------------------------------
+//  unittests
+//--------------------------------
+
+unittest {
+	writeln("===================");
+	writeln("conv..........begin");
+	writeln("===================");
+}
+
+unittest {
+	write("toDecimal...");
+	BigDecimal big;
+	Dec32 expect, actual;
+	big = BigDecimal(12345E-8);
+	expect = Dec32(12345E-8);
+	actual = toDecimal!(Dec32,BigDecimal)(big);
+	assertEqual(expect, actual);
+	assertEqual(typeid(typeof(expect)), typeid(typeof(actual)));
+	Dec64 rexpect, ractual;
+	big = BigDecimal(12345E-8);
+	rexpect = Dec64(12345E-8);
+	ractual = toDecimal!(Dec64,BigDecimal)(big);
+	assertEqual(rexpect, ractual);
+	assertEqual(typeid(typeof(rexpect)), typeid(typeof(ractual)));
+	Dec64 d64 = Dec64(12345E-8);
+	expect = Dec32(12345E-8);
+	actual = toDecimal!(Dec32,Dec64)(d64);
+	assertEqual(expect, actual);
+	assertEqual(typeid(typeof(rexpect)), typeid(typeof(ractual)));
+	writeln("passed");
+}
+
+unittest {	// toBigDecimal
+	Dec32 small;
+	BigDecimal big;
+	small = 5;
+	big = toBigDecimal!Dec32(small);
+	assertTrue(big.toString == small.toString);
+}
+
+unittest {	// isXxxDecimal
+	assertTrue(isFixedDecimal!Dec32);
+	assertTrue(!isFixedDecimal!BigDecimal);
+	assertTrue(isDecimal!Dec32);
+	assertTrue(isDecimal!BigDecimal);
+	assertTrue(!isBigDecimal!Dec32);
+	assertTrue(isBigDecimal!BigDecimal);
+}
+
+unittest {
+	write("sciForm...");
+	writeln("test missing");
+}
+
+unittest {
+	write("engForm...");
+	writeln("test missing");
+}
+
+unittest {
+	write("toSpecialString...");
+	BigDecimal num;
+	string expect, actual;
+	num = BigDecimal("inf");
+	actual = toSpecialString(num);
+	expect = "Infinity";
+	assertEqual(expect, actual);
+	actual = toSpecialString(num, true);
+	expect = "Inf";
+	assertEqual(expect, actual);
+	writeln("passed");
+}
+
+unittest {
+	write("decimalForm...");
+	Dec32 num;
+	string expect, actual;
+	num = Dec32(125);
+	expect = "125.000";
+	actual = decimalForm(num, 3);
+	assertEqual(expect, actual);
+	num = Dec32(125E5);
+	expect = "12500000";
+	actual = decimalForm(num);
+	assertEqual(expect, actual);
+	num = Dec32(1.25);
+	expect = "1.25";
+	actual = decimalForm(num);
+	assertEqual(expect, actual);
+	num = Dec32(125E-5);
+	expect = "0.001250";
+	actual = decimalForm(num, 6);
+	assertEqual(expect, actual);
+	writeln("passed");
+}
+
+unittest {
+	write("exponentForm...");
+	Dec32 num;
+	string expect, actual;
+	num = Dec32(125);
+	expect = "1.25E+2";
+	actual = exponentForm(num);
+	assertEqual(expect, actual);
+	expect = "1.25e+02";
+	actual = exponentForm(num, true, true);
+	assertEqual(expect, actual);
+	num = Dec32(125E5);
+	expect = "1.25E+7";
+	actual = exponentForm(num);
+	assertEqual(expect, actual);
+	num = Dec32(1.25);
+	expect = "1.25E+0";
+	actual = exponentForm(num);
+	assertEqual(expect, actual);
+	num = Dec32(125E-5);
+	expect = "1.25E-3";
+	actual = exponentForm(num);
+	assertEqual(expect, actual);
+	writeln("passed");
+}
+
+unittest {	// stdForm
+	Dec32 num = Dec32(123); //(false, 123, 0);
+	assertTrue(sciForm!Dec32(num) == "123");
+	assertTrue(num.toAbstract() == "[0,123,0]");
+	num = Dec32(-123, 0);
+	assertTrue(sciForm!Dec32(num) == "-123");
+	assertTrue(num.toAbstract() == "[1,123,0]");
+	num = Dec32(123, 1);
+	assertTrue(sciForm!Dec32(num) == "1.23E+3");
+	assertTrue(num.toAbstract() == "[0,123,1]");
+	num = Dec32(123, 3);
+	assertTrue(sciForm!Dec32(num) == "1.23E+5");
+	assertTrue(num.toAbstract() == "[0,123,3]");
+	num = Dec32(123, -1);
+	assertTrue(sciForm!Dec32(num) == "12.3");
+	assertTrue(num.toAbstract() == "[0,123,-1]");
+	num = Dec32("inf");
+	assertTrue(sciForm!Dec32(num) == "Infinity");
+	assertTrue(num.toAbstract() == "[0,inf]");
+	string str = "1.23E+3";
+	BigDecimal dec = BigDecimal(str);
+	assertTrue(engForm!BigDecimal(dec) == str);
+	str = "123E+3";
+	dec = BigDecimal(str);
+	assertTrue(engForm!BigDecimal(dec) == str);
+	str = "12.3E-9";
+	dec = BigDecimal(str);
+	assertTrue(engForm!BigDecimal(dec) == str);
+	str = "-123E-12";
+	dec = BigDecimal(str);
+	assertTrue(engForm!BigDecimal(dec) == str);
+}
+
+unittest {
+	write("prefix....");
+	string str, expect, actual;
+	str = "100.54";
+	expect = "100.54";
+	actual = prefix(str, "");
+	assertEqual(expect, actual);
+	assert(expect is actual);
+	expect = "-100.54";
+	actual = prefix(str, "-");
+	assertEqual(expect, actual);
+	expect = " 100.54";
+	actual = prefix(str, " ");
+	assertEqual(expect, actual);
+	expect = "+100.54";
+	actual = prefix(str, "+");
+	assertEqual(expect, actual);
+	writeln("passed");
+}
+
+unittest {
+	write("toWidth...");
+	string str, expect, actual;
+	str = "10E+05";
+	expect = "  10E+05";
+	actual = toWidth(str, 8);
+	assertEqual(expect, actual);
+	expect = "10E+05  ";
+	actual = toWidth(str, -8);
+	assertEqual(expect, actual);
+	expect = "0010E+05";
+	actual = toWidth(str, 8, '0');
+	assertEqual(expect, actual);
+	writeln("passed");
+}
+
+unittest {
+	write("writeTo...");
+	writeln("test missing");
+}
+
+unittest {	// toNumber
+	BigDecimal f = BigDecimal("1.0");
+	assertTrue(f.toString() == "1.0");
+	f = BigDecimal(".1");
+	assertTrue(f.toString() == "0.1");
+	f = BigDecimal("-123");
+	assertTrue(f.toString() == "-123");
+	f = BigDecimal("1.23E3");
+	assertTrue(f.toString() == "1.23E+3");
+	f = BigDecimal("1.23E-3");
+	assertTrue(f.toString() == "0.00123");
+}
+
+unittest {
+	write("toAbstract...");
+	writeln("test missing");
+}
+
 unittest {
 	write("toExact...");
 	writeln("test missing");
@@ -903,5 +907,3 @@ unittest {
 	writeln("conv............end");
 	writeln("===================");
 }
-
-

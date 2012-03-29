@@ -100,7 +100,7 @@ public void round(T)(ref T num, const DecimalContext context) if (isDecimal!T) {
 // private rounding routines
 //--------------------------------
 
-/// Rounds the subject number by the specified context mode
+/// Rounds the subject number by the context mode to the context precision.
 private void roundByMode(T)(ref T num, const DecimalContext context)
 		if (isDecimal!T) {
 
@@ -117,7 +117,7 @@ private void roundByMode(T)(ref T num, const DecimalContext context)
 		case Rounding.UP:
 			T temp = T.zero;
 			if (remainder != temp) {
-				increment(num, context);
+				incrementAndRound(num);
 			}
 			return;
 		case Rounding.DOWN:
@@ -125,35 +125,35 @@ private void roundByMode(T)(ref T num, const DecimalContext context)
 		case Rounding.CEILING:
 			T temp = T.zero;
 			if (!num.sign && (remainder != temp)) {
-				increment(num, context);
+				incrementAndRound(num);
 			}
 			return;
 		case Rounding.FLOOR:
 			T temp = T.zero;
 			if (num.sign && remainder != temp) {
-				increment(num, context);
+				incrementAndRound(num);
 			}
 			return;
 		case Rounding.HALF_UP:
 			if (firstDigit(remainder.coefficient) >= 5) {
-				increment(num, context);
+				incrementAndRound(num);
 			}
 			return;
 		case Rounding.HALF_DOWN:
-			if (half(remainder.coefficient) > 0) {
-				increment(num,context);
+			if (testHalf(remainder.coefficient) > 0) {
+				incrementAndRound(num);
 			}
 			return;
 		case Rounding.HALF_EVEN:
-			switch (half(remainder.coefficient)) {
+			switch (testHalf(remainder.coefficient)) {
 				case -1:
 					break;
 				case 1:
-					increment(num, context);
+					incrementAndRound(num);
 					break;
 				default:
 					if (lastDigit(num.coefficient) & 1) {
-						increment(num, context);
+						incrementAndRound(num);
 					}
 					break;
 				}
@@ -163,10 +163,10 @@ private void roundByMode(T)(ref T num, const DecimalContext context)
 	}	 // end switch(mode)
 } // end roundByMode()
 
-/// Returns -1, 1, or 0 if the remainder is less than, more than,
-/// or exactly half the least significant digit of the shortened coefficient.
+/// Returns -1, 0, or 1 if the remainder is less than, equal to, or more than
+/// half of the least significant digit of the shortened coefficient.
 /// Exactly half is a five followed by zero or more zero digits.
-public int half(const ulong n) {
+public int testHalf(const ulong n) {
 	int digits = numDigits(n);
 	int first = cast(int)(n / TENS[digits-1]);
 	if (first < 5) return -1;
@@ -178,12 +178,12 @@ public int half(const ulong n) {
 /// Returns -1, 1, or 0 if the remainder is less than, more than,
 /// or exactly half the least significant digit of the shortened coefficient.
 /// Exactly half is a five followed by zero or more zero digits.
-public int half(const BigInt arg) {
+public int testHalf(const BigInt arg) {
 	BigInt big = mutable(arg);
 	int first = firstDigit(arg);
 	if (first < 5) return -1;
 	if (first > 5) return +1;
-	int zeros = (big % pow10(numDigits(big)-1)).toInt;
+	int zeros = (big % pow10!BigInt(numDigits(big)-1)).toInt;
 	return (zeros != 0) ? 1 : 0;
 }
 
@@ -328,19 +328,13 @@ private ulong clipRemainder(ref ulong num, ref uint digits, uint precision) {
 // (R)TODO: Algorithm needs revisit. Not very efficient.
 
 /// Increments the coefficient by 1. If this causes an overflow, rounds again.
-private void increment(T:BigDecimal)(ref T num, const DecimalContext context) {
+private void incrementAndRound(T:BigDecimal)(ref T num) {
+	int digits = num.digits;
 	num.coefficient = num.coefficient + 1;
-	// check if the num was all nines --
-	// did the coefficient roll over to 1000...?
-	BigDecimal test1 = BigDecimal(1, num.digits + num.exponent);
-	BigDecimal test2 = num;
-	test2.digits++;
-	int comp = decimal.arithmetic.compare(test1, test2, context, false);
-	if (comp == 0) {
-		num.digits++;
-		// check if there are now too many digits...
-		if (num.digits > context.precision) {
-			round(num, context);
+	if (lastDigit(num.coefficient) == 0) {
+		if (num.coefficient / pow10!BigInt(digits) > 0) {
+			num.coefficient = num.coefficient / 10;
+			num.exponent = num.exponent + 1;
 		}
 	}
 }
@@ -349,9 +343,15 @@ private void increment(T:BigDecimal)(ref T num, const DecimalContext context) {
 /// Increments the number by 1.
 /// Re-calculates the number of digits -- the increment may have caused
 /// an increase in the number of digits, i.e., input number was all 9s.
-private void increment(T)(ref T num, const DecimalContext context) if (isFixedDecimal!T) {
+private void incrementAndRound(T)(ref T num) if (isFixedDecimal!T) {
+	int digits = num.digits;
 	num.coefficient = num.coefficient + 1;
-	num.digits = numDigits(num.coefficient);
+	if (lastDigit(num.coefficient) == 0) {
+		if (num.coefficient / TENS[digits] > 0) {
+			num.coefficient = num.coefficient / 10;
+			num.exponent = num.exponent + 1;
+		}
+	}
 }
 
 /// Increments the number by 1.
@@ -503,7 +503,7 @@ public int trailingZeros(const BigInt arg, const int maxValue) {
 	int max = maxValue - 1;
 	while (min <= max) {
 		int mid = (min + max)/2;
-		if (n % pow10(mid) != 0) {
+		if (n % pow10!BigInt(mid) != 0) {
 			max = mid - 1;
 		}
 		else {
@@ -546,13 +546,19 @@ public int trimZeros(ref ulong n, const int maxValue = 19) {
 public int trimZeros(ref BigInt n, const int maxValue ) {
 	int zeros = trailingZeros(cast(const)n, maxValue);
 	if (zeros == 0) return 0;
-	n /= pow10(zeros);
+	n /= pow10!BigInt(zeros);
 	return zeros;
 }
 
 /// Returns a BigInt value of ten raised to the specified power.
-public BigInt pow10(const int n) {
-	BigInt num = 1;
+//public BigInt pow10(const int n) {
+//	BigInt num = 1;
+//	return decShl(num, n);
+//}
+
+/// Returns a BigInt value of ten raised to the specified power.
+public T pow10(T)(const int n) {
+	T num = 1;
 	return decShl(num, n);
 }
 
@@ -605,7 +611,7 @@ unittest {
 	BigDecimal after = before;
 	DecimalContext ctx3 = DecimalContext(3, 99, Rounding.HALF_EVEN);
 	round(after, ctx3);
-	assertTrue(after.toString() == "1.00E+4");
+	assertEqual("1.00E+4", after.toString);
 	before = BigDecimal(1234567890);
 	after = before;
 	round(after, ctx3);
@@ -691,13 +697,13 @@ unittest {
 	assertTrue(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
 }
 
-unittest {	// half
-	assertEqual( 0, half(5000));
-	assertEqual(-1, half(4999));
-	assertEqual( 1, half(5001));
-	assertEqual( 0, half(BigInt("5000000000000000000000")));
-	assertEqual(-1, half(BigInt("4999999999999999999999")));
-	assertEqual( 1, half(BigInt("5000000000000000000001")));
+unittest {	// testHalf
+	assertEqual( 0, testHalf(5000));
+	assertEqual(-1, testHalf(4999));
+	assertEqual( 1, testHalf(5001));
+	assertEqual( 0, testHalf(BigInt("5000000000000000000000")));
+	assertEqual(-1, testHalf(BigInt("4999999999999999999999")));
+	assertEqual( 1, testHalf(BigInt("5000000000000000000001")));
 }
 
 unittest {
@@ -717,15 +723,15 @@ unittest {
 	BigDecimal num, expect;
 	num = 10;
 	expect = 11;
-	increment(num, testContext);
+	incrementAndRound(num);
 	assertTrue(num == expect);
 	num = 19;
 	expect = 20;
-	increment(num, testContext);
+	incrementAndRound(num);
 	assertTrue(num == expect);
 	num = 999;
 	expect = 1000;
-	increment(num, testContext);
+	incrementAndRound(num);
 	assertTrue(num == expect);
 }
 
