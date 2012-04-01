@@ -625,7 +625,7 @@ public:
 		// check for overflow
 		if (expo > context32.maxExpo) {
 			this = signed ? NEG_INF : INFINITY;
-//			decimal.context.contextFlags.setFlags(OVERFLOW);
+			contextFlags.setFlags(OVERFLOW);
 			return 0;
 		}
 		// check for underflow

@@ -65,42 +65,49 @@ public void round(T)(ref T num, const DecimalContext context) if (isDecimal!T) {
 		return;
 	}
 
-	// handle overflow
-	if (num.adjustedExponent > context.maxExpo) {
-		contextFlags.setFlags(OVERFLOW);
-		switch (context.rounding) {
-			case Rounding.HALF_UP:
-			case Rounding.HALF_EVEN:
-			case Rounding.HALF_DOWN:
-			case Rounding.UP:
-				num = T.infinity(num.sign);
-				break;
-			case Rounding.DOWN:
-				num = T.max(num.sign);
-				break;
-			case Rounding.CEILING:
-				num = num.sign ? T.max(true) : T.infinity;
-				break;
-			case Rounding.FLOOR:
-				num = num.sign ? T.infinity(true) : T.max;
-				break;
-			default:
-				break;
-		}
-		contextFlags.setFlags(INEXACT);
-		contextFlags.setFlags(ROUNDED);
-		return;
-	}
+	// check for overflow
+	if (overflow(num, context)) return;
+	// round the number
 	roundByMode(num, context);
-	return;
+	// check again for an overflow
+	overflow(num, context);
 
 } // end round()
 
 //--------------------------------
-// private rounding routines
+// private methods
 //--------------------------------
 
-/// Rounds the subject number by the context mode to the context precision.
+/// Returns true if the number overflows. (GDA Spec., p. 53) If overflow occurs
+/// the number is converted to the correct value according to the rounding mode.
+/// Also, if overflow occurs the overflow, rounded, and inexact flags are set.
+private bool overflow(T)(ref T num, const DecimalContext context) {
+	if (num.adjustedExponent <= context.maxExpo) return false;
+	switch (context.rounding) {
+		case Rounding.HALF_UP:
+		case Rounding.HALF_EVEN:
+		case Rounding.HALF_DOWN:
+		case Rounding.UP:
+			num = T.infinity(num.sign);
+			break;
+		case Rounding.DOWN:
+			num = T.max(num.sign);
+			break;
+		case Rounding.CEILING:
+			num = num.sign ? T.max(true) : T.infinity;
+			break;
+		case Rounding.FLOOR:
+			num = num.sign ? T.infinity(true) : T.max;
+			break;
+		default:
+			break;
+	}
+	contextFlags.setFlags(OVERFLOW | INEXACT | ROUNDED);
+	return true;
+}
+
+/// Rounds the number to the context precision.
+/// The number is rounded using the context rounding mode.
 private void roundByMode(T)(ref T num, const DecimalContext context)
 		if (isDecimal!T) {
 
@@ -110,9 +117,6 @@ private void roundByMode(T)(ref T num, const DecimalContext context)
 	if (remainder.isZero) {
 		return;
 	}
-	//
-	// (R)TODO: the first digit function now has a maxValue parameter for
-	// Dec32 & Dec64
 	switch (context.rounding) {
 		case Rounding.UP:
 			T temp = T.zero;
@@ -140,12 +144,12 @@ private void roundByMode(T)(ref T num, const DecimalContext context)
 			}
 			return;
 		case Rounding.HALF_DOWN:
-			if (testHalf(remainder.coefficient) > 0) {
+			if (testFive(remainder.coefficient) > 0) {
 				incrementAndRound(num);
 			}
 			return;
 		case Rounding.HALF_EVEN:
-			switch (testHalf(remainder.coefficient)) {
+			switch (testFive(remainder.coefficient)) {
 				case -1:
 					break;
 				case 1:
@@ -160,13 +164,65 @@ private void roundByMode(T)(ref T num, const DecimalContext context)
 			return;
 		default:
 			return;
-	}	 // end switch(mode)
-} // end roundByMode()
+	}	// end switch(mode)
+}	// end roundByMode()
+
+/// Shortens the coefficient of the number to the context precision,
+/// adjusts the exponent, and returns the (unsigned) remainder.
+/// If the number is already less than or equal to the precision, the
+/// number is unchanged and the remainder is zero.
+/// Otherwise the rounded flag is set, and if the remainder is not zero
+/// the inexact flag is also set.
+private T getRemainder(T) (ref T num,
+		const DecimalContext context) if (isDecimal!T) {
+
+	T remainder = T.zero;
+	int diff = num.digits - context.precision;
+	if (diff <= 0) {
+		return remainder;
+	}
+	contextFlags.setFlags(ROUNDED);
+	// the precision can be zero when rounding subnormal numbers
+	if (context.precision == 0) {
+		num = T.zero(num.sign);
+	} else {
+		auto divisor = T.pow10(diff);
+		auto dividend = num.coefficient;
+		auto quotient = dividend/divisor;
+		auto mant = dividend - quotient*divisor;
+		if (mant != 0) {
+			remainder.zero;
+			remainder.digits = diff;
+			remainder.exponent = num.exponent;
+			remainder.coefficient = mant;
+			contextFlags.setFlags(INEXACT);
+		}
+		num.coefficient = quotient;
+		num.digits = context.precision;
+		num.exponent = num.exponent + diff;
+	}
+
+	return remainder;
+}
+
+/// Increments the coefficient by 1. If this causes an overflow
+/// the coefficient is adjusted by clipping the last digit (it will be zero)
+/// and incrementing the exponent.
+private void incrementAndRound(T)(ref T num) if (isDecimal!T) {
+	int digits = num.digits;
+	num.coefficient = num.coefficient + 1;
+	if (lastDigit(num.coefficient) == 0) {
+		if (num.coefficient / T.pow10(digits) > 0) {
+			num.coefficient = num.coefficient / 10;
+			num.exponent = num.exponent + 1;
+		}
+	}
+}
 
 /// Returns -1, 0, or 1 if the remainder is less than, equal to, or more than
 /// half of the least significant digit of the shortened coefficient.
 /// Exactly half is a five followed by zero or more zero digits.
-public int testHalf(const ulong n) {
+public int testFive(const ulong n) {
 	int digits = numDigits(n);
 	int first = cast(int)(n / TENS[digits-1]);
 	if (first < 5) return -1;
@@ -178,55 +234,18 @@ public int testHalf(const ulong n) {
 /// Returns -1, 1, or 0 if the remainder is less than, more than,
 /// or exactly half the least significant digit of the shortened coefficient.
 /// Exactly half is a five followed by zero or more zero digits.
-public int testHalf(const BigInt arg) {
+public int testFive(const BigInt arg) {
 	BigInt big = mutable(arg);
 	int first = firstDigit(arg);
 	if (first < 5) return -1;
 	if (first > 5) return +1;
-	int zeros = (big % pow10!BigInt(numDigits(big)-1)).toInt;
+	int zeros = (big % tens(numDigits(big)-1)).toInt;
 	return (zeros != 0) ? 1 : 0;
 }
 
-/// Clips the coefficient of the number to the specified precision.
-/// Returns the (unsigned) remainder for adjustments based on rounding mode.
-/// May set the ROUNDED and INEXACT flags.
-private T getRemainder(T)(ref T num, const DecimalContext context)
-if (isDecimal!T) {
-	T remainder = T.zero;
-
-	int diff = num.digits - context.precision;
-	if (diff <= 0) {
-		return remainder;
-	}
-	contextFlags.setFlags(ROUNDED);
-	// the context can be zero when...??
-	if (context.precision == 0) {
-		num = T.zero(num.sign);
-	} else {
-		auto divisor = T.pow10(diff);
-		auto dividend = num.coefficient;
-		auto quotient = dividend/divisor;
-		auto modulo = dividend - quotient*divisor;
-		if (modulo != 0) {
-			remainder.zero;
-			remainder.digits = diff;
-			remainder.exponent = num.exponent;
-			remainder.coefficient = modulo;
-			contextFlags.setFlags(INEXACT);
-		}
-		num.coefficient = quotient;
-		num.digits = context.precision;
-		num.exponent = num.exponent + diff;
-	}
-
-	return remainder;
-}
-
-/// Returns the value of the exponent of a ulong value rounded to the
-/// context precision.
-/// The input value is modified to the result of the rounding and
-/// number of digits is modified to the rounded value's digits.
-/// This method is used in the construction of fixed-size decimal numbers.
+/// Converts an integer to a decimal (coefficient and exponent) form.
+/// The input value is rounded to the context precision,
+/// the number of digits is adjusted, and the exponent is returned.
 public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
                         const DecimalContext context) {
 
@@ -243,17 +262,17 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
 	case Rounding.DOWN:
 		break;
 	case Rounding.HALF_UP:
-		if (firstDigit(remainder) >= 5) {
+		if (firstDigit(remainder, digits) >= 5) {
 			increment(mant, digits);
 		}
 		break;
 	case Rounding.HALF_EVEN:
-		ulong first = firstDigit(remainder);
-		if (first > 5) {
+		int five = testFive(remainder);
+		if (five > 0) {
 			increment(mant, digits);
 			break;
 		}
-		if (first < 5) {
+		if (five < 0) {
 			break;
 		}
 		// remainder == 5
@@ -273,7 +292,7 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
 		}
 		break;
 	case Rounding.HALF_DOWN:
-		if (firstDigit(remainder) > 5) {
+		if (firstDigit(remainder, digits) > 5) {
 			increment(mant, digits);
 		}
 		break;
@@ -298,8 +317,8 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
 } // end setExponent()
 
 
-/// Clips the coefficient of the number to the specified precision.
-/// Returns the (unsigned) remainder for adjustments based on rounding mode.
+/// Shortens the number to the specified precision and
+/// returns the (unsigned) remainder.
 /// Flags: ROUNDED, INEXACT.
 private ulong clipRemainder(ref ulong num, ref uint digits, uint precision) {
 	ulong remainder = 0;
@@ -323,35 +342,6 @@ private ulong clipRemainder(ref ulong num, ref uint digits, uint precision) {
 		digits = precision;
 	}
 	return remainder;
-}
-
-// (R)TODO: Algorithm needs revisit. Not very efficient.
-
-/// Increments the coefficient by 1. If this causes an overflow, rounds again.
-private void incrementAndRound(T:BigDecimal)(ref T num) {
-	int digits = num.digits;
-	num.coefficient = num.coefficient + 1;
-	if (lastDigit(num.coefficient) == 0) {
-		if (num.coefficient / pow10!BigInt(digits) > 0) {
-			num.coefficient = num.coefficient / 10;
-			num.exponent = num.exponent + 1;
-		}
-	}
-}
-
-// (R)TODO: context is not used.
-/// Increments the number by 1.
-/// Re-calculates the number of digits -- the increment may have caused
-/// an increase in the number of digits, i.e., input number was all 9s.
-private void incrementAndRound(T)(ref T num) if (isFixedDecimal!T) {
-	int digits = num.digits;
-	num.coefficient = num.coefficient + 1;
-	if (lastDigit(num.coefficient) == 0) {
-		if (num.coefficient / TENS[digits] > 0) {
-			num.coefficient = num.coefficient / 10;
-			num.exponent = num.exponent + 1;
-		}
-	}
 }
 
 /// Increments the number by 1.
@@ -461,10 +451,12 @@ public ulong decShl(ulong num, const int n) {
 	if (n <= 0) {
 		return num;
 	}
-	ulong scale = 10UL^^n; // TENS[n]?
-	num = num * scale;
+	ulong scale = TENS[n];
+	num *= scale;
 	return num;
 }
+
+// (R)TODO: Check for overflow?? What if it does??
 
 /// Shifts the number left by the specified number of decimal digits.
 /// If n <= 0 the number is returned unchanged.
@@ -472,8 +464,8 @@ public uint decShl(uint num, const int n) {
 	if (n <= 0) {
 		return num;
 	}
-	uint scale = 10U^^n;
-	num = num * scale;
+	uint scale = cast(uint)TENS[n];
+	num *= scale;
 	return num;
 }
 
@@ -503,7 +495,7 @@ public int trailingZeros(const BigInt arg, const int maxValue) {
 	int max = maxValue - 1;
 	while (min <= max) {
 		int mid = (min + max)/2;
-		if (n % pow10!BigInt(mid) != 0) {
+		if (n % tens(mid) != 0) {
 			max = mid - 1;
 		}
 		else {
@@ -546,19 +538,14 @@ public int trimZeros(ref ulong n, const int maxValue = 19) {
 public int trimZeros(ref BigInt n, const int maxValue ) {
 	int zeros = trailingZeros(cast(const)n, maxValue);
 	if (zeros == 0) return 0;
-	n /= pow10!BigInt(zeros);
+	n /= tens(zeros);
 	return zeros;
 }
 
 /// Returns a BigInt value of ten raised to the specified power.
-//public BigInt pow10(const int n) {
-//	BigInt num = 1;
-//	return decShl(num, n);
-//}
-
-/// Returns a BigInt value of ten raised to the specified power.
-public T pow10(T)(const int n) {
-	T num = 1;
+public BigInt tens(const int n) {
+	if (n <= 19) return BigInt(TENS[n]);
+	BigInt num = 1;
 	return decShl(num, n);
 }
 
@@ -697,13 +684,13 @@ unittest {
 	assertTrue(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
 }
 
-unittest {	// testHalf
-	assertEqual( 0, testHalf(5000));
-	assertEqual(-1, testHalf(4999));
-	assertEqual( 1, testHalf(5001));
-	assertEqual( 0, testHalf(BigInt("5000000000000000000000")));
-	assertEqual(-1, testHalf(BigInt("4999999999999999999999")));
-	assertEqual( 1, testHalf(BigInt("5000000000000000000001")));
+unittest {	// testFive
+	assertEqual( 0, testFive(5000));
+	assertEqual(-1, testFive(4999));
+	assertEqual( 1, testFive(5001));
+	assertEqual( 0, testFive(BigInt("5000000000000000000000")));
+	assertEqual(-1, testFive(BigInt("4999999999999999999999")));
+	assertEqual( 1, testFive(BigInt("5000000000000000000001")));
 }
 
 unittest {
