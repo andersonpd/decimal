@@ -19,7 +19,8 @@ import std.bitmanip;
 import std.conv;
 import std.string;
 
-//import decimal.context;
+import decimal.context;
+import decimal.rounding;
 import decimal.dec32;
 import decimal.dec64;
 import decimal.dec128;
@@ -45,7 +46,23 @@ T to(T: string)(const long n) {
 	return format("%d", n);
 }
 
-/// Converts a decimal number to another decimal type
+/// Returns true if T is a decimal type.
+public template isDecimal(T) {
+	enum bool isDecimal =
+		is(T: Dec32) || is(T: Dec64) || is(T: Dec128) || is(T: BigDecimal);
+}
+
+/// Returns true if T is an arbitrary-precision decimal type.
+public template isBigDecimal(T) {
+	enum bool isBigDecimal = is(T: BigDecimal);
+}
+
+/// Returns true if T is a fixed-precision decimal type.
+public template isFixedDecimal(T) {
+	enum bool isFixedDecimal = is(T: Dec32) || is(T: Dec64) || is(T: Dec128);
+}
+
+/// Converts a decimal number to an arbitrary-precision decimal type
 public T toDecimal(T, U)(const U num) if (isDecimal!T && isBigDecimal!U) {
 		static if (is(typeof(num) == T)) {
 		return num.dup;
@@ -53,7 +70,7 @@ public T toDecimal(T, U)(const U num) if (isDecimal!T && isBigDecimal!U) {
 	return T(num);
 }
 
-/// Converts a decimal number to another decimal type
+/// Converts a decimal number to a fixed-precision decimal type
 public T toDecimal(T, U)(const U num) if (isDecimal!T && isFixedDecimal!U) {
 	static if (is(typeof(num) == T)) {
 		return num.dup;
@@ -71,7 +88,7 @@ public T toDecimal(T, U)(const U num) if (isDecimal!T && isFixedDecimal!U) {
 	return T.nan;
 }
 
-/// Converts any decimal to a big decimal
+/// Converts a decimal number to a big decimal
 public BigDecimal toBigDecimal(T)(const T num) if (isDecimal!T) {
 	static if (is(typeof(num) == BigDecimal)) {
 		return num.dup;
@@ -91,32 +108,118 @@ public BigDecimal toBigDecimal(T)(const T num) if (isDecimal!T) {
 	return BigDecimal.nan;
 }
 
-/// Returns true if T is a decimal type.
-public template isDecimal(T) {
-enum bool isDecimal = is(T: Dec32) || is(T: Dec64) || is(T: Dec128) || is(T: BigDecimal);
-}
-
-/// Returns true if T is an arbitrary-precision decimal type.
-public template isBigDecimal(T) {
-enum bool isBigDecimal = is(T: BigDecimal);
-}
-
-/// Returns true if T is a fixed-precision decimal type.
-public template isFixedDecimal(T) {
-enum bool isFixedDecimal = is(T: Dec32) || is(T: Dec64) || is(T: Dec128);
-}
-
-/// Converts a decimal number to a scientific string representation.
+/// Converts a decimal number to a string
+/// using "scientific" notation, per the spec.
 public string sciForm(T)(const T num) if (isDecimal!T) {
-	return stdForm!T(num, false);
-};  // end sciForm()
 
-/// Converts a decimal number to an engineering string representation.
+	if (num.isSpecial) return toSpecialString!T(num);
+
+	char[] mant = to!string(num.coefficient).dup;
+	int  expo = num.exponent;
+	bool signed = num.isSigned;
+
+	int adjx = expo + mant.length - 1;
+	// if the exponent is small use decimal notation
+	if (expo <= 0 && adjx >= -6) {
+		// if the exponent is not zero, insert a decimal point
+		if (expo != 0) {
+			int point = std.math.abs(expo);
+			// if the coefficient is too small, pad with zeroes
+			if (point > mant.length) {
+				mant = rightJustify(mant, point, '0');
+			}
+			// if no chars precede the decimal point, prefix a zero
+			if (point == mant.length) {
+				mant = "0." ~ mant;
+			}
+			// otherwise insert the decimal point into the string
+			else {
+				insertInPlace(mant, mant.length - point, ".");
+			}
+		}
+		return signed ? ("-" ~ mant).idup : mant.idup;
+	}
+	// if the exponent is large enough use exponential notation
+	if (mant.length > 1) {
+		insertInPlace(mant, 1, ".");
+	}
+	string xstr = to!string(adjx);
+	if (adjx >= 0) {
+		xstr = "+" ~ xstr;
+	}
+	string str = (mant ~ "E" ~ xstr).idup;
+	return signed ? "-" ~ str : str;
+};  // end sciForm
+
+/// Converts a decimal number to a string
+/// using "engineering" notation, per the spec.
 public string engForm(T)(const T num) if (isDecimal!T) {
-	return stdForm!T(num, true);
+
+	if (num.isSpecial) return toSpecialString!T(num);
+
+	char[] mant = to!string(num.coefficient).dup;
+	int  expo = num.exponent;
+	bool signed = num.isSigned;
+
+	int adjx = expo + mant.length - 1;
+	// if exponent is small, don't use exponential notation
+	if (expo <= 0 && adjx >= -6) {
+		// if exponent is not zero, insert a decimal point
+		if (expo != 0) {
+			int point = std.math.abs(expo);
+			// if coefficient is too small, pad with zeroes
+			if (point > mant.length) {
+				mant = rightJustify(mant, point, '0');
+			}
+			// if no chars precede the decimal point, prefix a zero
+			if (point == mant.length) {
+				mant = "0." ~ mant;
+			}
+			// otherwise insert a decimal point
+			else {
+				insertInPlace(mant, mant.length - point, ".");
+			}
+		}
+		return signed ? ("-" ~ mant).idup : mant.idup;
+	}
+	// use exponential notation
+	if (num.isZero) {
+		adjx += 2;
+	}
+	int mod = adjx % 3;
+	// the % operator rounds down; we need it to round to floor.
+	if (mod < 0) {
+		mod = -(mod + 3);
+	}
+	int dot = std.math.abs(mod) + 1;
+	adjx = adjx - dot + 1;
+	if (num.isZero) {
+		dot = 1;
+		int count = 3 - std.math.abs(mod);
+		mant.length = 0;
+		for(int i = 0; i < count; i++) {
+			mant ~= '0';
+		}
+	}
+	while(dot > mant.length) {
+		mant ~= '0';
+	}
+	if (mant.length > dot) {
+		insertInPlace(mant, dot, ".");
+	}
+	string str = mant.idup;
+	if (adjx != 0) {
+		string xstr = to!string(adjx);
+		if (adjx > 0) {
+			xstr = '+' ~ xstr;
+		}
+		str = str ~ "E" ~ xstr;
+	}
+	return signed ? "-" ~ str : str;
 }  // end engForm()
 
-/// string representation of special values
+/// Returns a string representation of special values.
+/// Returns "" if the number is not a special value.
 private string toSpecialString(T)(const T num,
 		bool shortForm = false, bool lower = false, bool upper = false)
 		if (isDecimal!T) {
@@ -141,54 +244,63 @@ private string toSpecialString(T)(const T num,
 
 /// Converts a decimal number to a string in decimal format (xxx.xxx)
 private string decimalForm(T)
-	(const T num, const int precision = 0) if (isDecimal!T) {
+	(const T number, const int precision = 6) if (isDecimal!T) {
 
-	// finite numbers
-	auto mant = num.coefficient;
+	T num = number.dup;
+	// check if rounding is needed:
+	int diff = num.exponent + precision;
+	if (diff < 0) {
+		int numPrecision = num.digits + num.exponent - precision;
+		DecimalContext context = num.context.setPrecision(numPrecision);
+		round!T(num, context);
+	}
+
+	// convert the coefficient to a string
+	char[] mant = to!string(num.coefficient).dup;
 	auto expo = num.exponent;
 	auto sign = num.isSigned;
-	// convert the coefficient to a string
-	string temp = to!string(mant);
-	char[] cstr = temp.dup;
 	if (expo >= 0) {
 		if (expo > 0) {
 			// add zeros up to the decimal point
-			cstr ~= replicate("0", expo);
+			mant ~= replicate("0", expo);
 		}
 		if (precision) {
 			// add zeros trailing the decimal point
-			cstr ~= "." ~ replicate("0", precision);
+			mant ~= "." ~ replicate("0", precision);
 		}
 	}
 	else { // (expo < 0)
 		int point = -expo;
-//		if (point > precision) {
-			// rounding required: for 32/64 use ulong version
-			// for big and 128: TBD.
 		// if coefficient is too small, pad with zeros on the left
-		if (point > cstr.length) {
-			cstr = rightJustify(cstr, point, '0');
-		}
+		if (point > mant.length) {
+			mant = rightJustify(mant, point, '0');
+			}
 		// if no chars precede the decimal point, prefix a zero
-		if (point == cstr.length) {
-			cstr = "0." ~ cstr;
+		if (point == mant.length) {
+			mant = "0." ~ mant;
 		}
 		// otherwise insert a decimal point
 		else {
-			insertInPlace(cstr, cstr.length - point, ".");
+			insertInPlace(mant, mant.length - point, ".");
 		}
 		// if result is less than precision, add zeros
 		if (point < precision) {
-			cstr ~= replicate("0", precision - point);
+			mant ~= replicate("0", precision - point);
 		}
 	}
-	return sign ? ("-" ~ cstr).idup : cstr.idup;
+	return sign ? ("-" ~ mant).idup : mant.idup;
 }
 
 /// Converts a decimal number to exponential notation.
-private string exponentForm(T)(const T num, const bool lowerCase = false,
-	const bool padExpo = false) if (isDecimal!T) {
+private string exponentForm(T)(const T number, const int precision = 6,
+	const bool lowerCase = false, const bool padExpo = false) if (isDecimal!T) {
 
+	T num = number.dup;
+	if (num.context.precision > precision + 1) {
+		int numPrecision = precision + 1;
+		DecimalContext context = num.context.setPrecision(numPrecision);
+		round(num, context);
+	}
 	auto mant = num.coefficient;
 	auto expo = num.exponent;
 	auto sign = num.isSigned;
@@ -208,77 +320,13 @@ private string exponentForm(T)(const T num, const bool lowerCase = false,
 	return sign ? "-" ~ str : str;
 }  // end exponentForm
 
-/// Converts a decimal number to one of two (three, counting decimal form)
-/// standard string representations.
-private string stdForm(T)(const T num,
-		bool engineering = false) if (isDecimal!T) {
-
-	// special values
-	if (num.isSpecial) {
-		return toSpecialString!T(num);
-	}
-
-	// finite numbers
-	auto mant = num.coefficient;
-	auto expo = num.exponent;
-	auto sign = num.isSigned;
-
-	string temp = to!string(mant);
-	char[] cstr = temp.dup;
-	int clen = cstr.length;
-	int adjx = expo + clen - 1;
-	// if exponent is small, don't use exponential notation
-	if (expo <= 0 && adjx >= -6) {
-		return decimalForm!T(num);
-	}
-	if (!engineering) {
-		return exponentForm!T(num, false, false);
-	}
-	// use exponential notation
-	if (num.isZero) {
-		adjx += 2;
-	}
-	int mod = adjx % 3;
-	// the % operator rounds down; we need it to round to floor.
-	if (mod < 0) {
-		mod = -(mod + 3);
-	}
-	int dot = std.math.abs(mod) + 1;
-	adjx = adjx - dot + 1;
-	if (num.isZero) {
-		dot = 1;
-		clen = 3 - std.math.abs(mod);
-		cstr.length = 0;
-		for(int i = 0; i < clen; i++) {
-			cstr ~= '0';
-		}
-	}
-	while(dot > clen) {
-		cstr ~= '0';
-		clen++;
-	}
-	if (clen > dot) {
-		insertInPlace(cstr, dot, ".");
-	}
-	string str = cstr.idup;
-	if (adjx != 0) {
-		string xstr = to!string(adjx);
-		if (adjx > 0) {
-			xstr = '+' ~ xstr;
-		}
-		str = str ~ "E" ~ xstr;
-	}
-	return sign ? "-" ~ str : str;
-}  // end stdForm
-
 public string toString(T)(const T num, string fmt) {
 	return "surprise!";
 }
 
 /// toString(num, width, precision, expo)
-public string toString(T)(const T num, const char formatChar,
-	const int precision, const int width,
-	const bool exponential) if (isDecimal!T) {
+public string toString(T)(const T num,
+	const char formatChar, const int precision) if (isDecimal!T) {
 
 	bool lowerCase = std.uni.isLower(formatChar);
 	bool upperCase = std.uni.isUpper(formatChar);
@@ -288,64 +336,19 @@ public string toString(T)(const T num, const char formatChar,
 		return toSpecialString!T(num, false, lowerCase, upperCase);
 	}
 
-	string str;
 	switch (formatChar) {
-		case "": str = toSciString(num);
-			break;
 		case "E":
 		case "e":
-			str = exponentForm(num, precision, lowerCase, true);
-			break;
+			return exponentForm(num, precision, lowerCase, true);
 		case "F":
 		case "f":
-			str = decimalForm(num, precision);
-			break;
+			return decimalForm(num, precision);
 		case "G":
 		case "g":
-			str = exponentForm(num, lowerCase, true);
-			break;
-		default: str = toSciString(num);
-			break;
+			return exponentForm(num, precision, lowerCase, true);
+		default: return toSciString(num);
 	}
-
-	// finite numbers
-	auto mant = num.coefficient;
-	auto expo = num.exponent;
-	auto sign = num.isSigned;
-
-	string temp = to!string(mant);
-	char[] cstr = temp.dup;
-	int clen = cstr.length;
-	int adjx = expo + clen - 1;
-
-	string str = exponentForm(num);
-	return sign ? "-" ~ str : str;
-
-	// placeholder
-	return num.toExact;
 }
-
-/// Converts a decimal number to exponential notation.
-//private string exponentForm(T)
-//		(const string mant, const int expo,
-//		const bool lowerCase = false, const bool padExpo = false)
-//		if (isDecimal!T) {
-//
-//	char[] cstr = mant.dup;
-//	int adjx = expo + cstr.length - 1;
-//	// use exponential notation
-//	if (cstr.length > 1) {
-//		insertInPlace(cstr, 1, ".");
-//	}
-//	string xstr = to!string(std.math.abs(adjx));
-//	if (padExpo && xstr.length < 2) {
-//		xstr = prefix(xstr, "0");
-//	}
-//	xstr = adjx < 0 ? "-" ~ xstr : "+" ~ xstr;
-//	string expoChar = lowerCase ? "e" : "E";
-//	string str = (cstr ~ expoChar ~ xstr).idup;
-//	return str;
-//}  // end exponentForm
 
 private string prefix(string str, string prefixChar) {
 	if (prefixChar == "") return str;
@@ -369,100 +372,7 @@ private string toWidth(string str, const int minWidth, const char fillChar = ' '
 // (V)TODO: Doesn't work yet, returns scientific string.
 /// Converts a BigDecimal number to a string representation.
 public string writeTo(T) (const T num, const string fmt = "") if (isDecimal!T) {
-	auto mant = num.coefficient;
-	int  expo = num.exponent;
-	bool signed = num.isSigned;
-	// string representation of special values
-	if (num.isSpecial) {
-		string str;
-		if (num.isInfinite) {
-			str = "Infinity";
-		} else if (num.isSignaling) {
-			str = "sNaN";
-		} else {
-			str = "NaN";
-		}
-		// add payload to NaN, if present
-		if (num.isNaN && num.payload != 0) {
-			str ~= to!string(num.payload);
-		}
-		// add sign, if present
-		return signed ? "-" ~ str : str;
-	}
-	// string representation of finite numbers
-	string temp = to!string(mant);
-	char[] cstr = temp.dup;
-	int clen = cstr.length;
-	int adjx = expo + clen - 1;
-	// if exponent is small, don't use exponential notation
-	if (expo <= 0 && adjx >= -6) {
-		// if exponent is not zero, insert a decimal point
-		if (expo != 0) {
-			int point = std.math.abs(expo);
-			// if coefficient is too small, pad with zeroes
-			if (point > clen) {
-				cstr = rightJustify(cstr, point, '0');
-				clen = cstr.length;
-			}
-			// if no chars precede the decimal point, prefix a zero
-			if (point == clen) {
-				cstr = "0." ~ cstr;
-			}
-			// otherwise insert a decimal point
-			else {
-				insertInPlace(cstr, cstr.length - point, ".");
-			}
-		}
-		return signed ? ("-" ~ cstr).idup : cstr.idup;
-	}
-	if (engineering) {
-		// use exponential notation
-		if (num.isZero) {
-			adjx += 2;
-		}
-		int mod = adjx % 3;
-		// the % operator rounds down; we need it to round to floor.
-		if (mod < 0) {
-			mod = -(mod + 3);
-		}
-		int dot = std.math.abs(mod) + 1;
-		adjx = adjx - dot + 1;
-		if (num.isZero) {
-			dot = 1;
-			clen = 3 - std.math.abs(mod);
-			cstr.length = 0;
-			for(int i = 0; i < clen; i++) {
-				cstr ~= '0';
-			}
-		}
-		while(dot > clen) {
-			cstr ~= '0';
-			clen++;
-		}
-		if (clen > dot) {
-			insertInPlace(cstr, dot, ".");
-		}
-		string str = cstr.idup;
-		if (adjx != 0) {
-			string xstr = to!string(adjx);
-			if (adjx > 0) {
-				xstr = '+' ~ xstr;
-			}
-			str = str ~ "E" ~ xstr;
-		}
-		return signed ? "-" ~ str : str;
-	} else {
-		// use exponential notation
-		if (clen > 1) {
-			insertInPlace(cstr, 1, ".");
-		}
-		string xstr = to!string(adjx);
-		if (adjx >= 0) {
-			xstr = "+" ~ xstr;
-		}
-		string str = (cstr ~ "E" ~ xstr).idup;
-		return signed ? "-" ~ str : str;
-	}
+	return sciForm(num);
 };  // end writeTo
 
 /// Converts a string into a BigDecimal.
@@ -788,7 +698,7 @@ unittest {
 	actual = exponentForm(num);
 	assertEqual(expect, actual);
 	expect = "1.25e+02";
-	actual = exponentForm(num, true, true);
+	actual = exponentForm(num, 6, true, true);
 	assertEqual(expect, actual);
 	num = Dec32(125E5);
 	expect = "1.25E+7";
@@ -805,7 +715,7 @@ unittest {
 	writeln("passed");
 }
 
-unittest {	// stdForm
+unittest {	// sciForm
 	Dec32 num = Dec32(123); //(false, 123, 0);
 	assertTrue(sciForm!Dec32(num) == "123");
 	assertTrue(num.toAbstract() == "[0,123,0]");

@@ -127,7 +127,7 @@ private:
 
 	/// The context for this type.
 	public static DecimalContext
-	context64 = DecimalContext(PRECISION, E_MAX, Rounding.HALF_EVEN);
+	context = DecimalContext(PRECISION, E_MAX, Rounding.HALF_EVEN);
 
 	// union providing different views of the number representation.
 	union {
@@ -534,7 +534,7 @@ writeln("test.toHexString = ", test.toHexString);
 			return;
 		}
 
-		BigDecimal big = plus!BigDecimal(num, context64);
+		BigDecimal big = plus!BigDecimal(num, context);
 
 		if (big.isFinite) {
 			this = zero;
@@ -612,7 +612,7 @@ writeln("test.toHexString = ", test.toHexString);
 			return;
 		}
 		// (64)TODO: this won't do -- no rounding has occured.
-		string str = format("%.*G", cast(int)context64.precision, r);
+		string str = format("%.*G", cast(int)context.precision, r);
 		this(str);
 	}
 
@@ -730,21 +730,21 @@ public:
 	@property
 	int exponent(const int expo) {
 		// check for overflow
-		if (expo > context64.maxExpo) {
+		if (expo > context.maxExpo) {
 			this = signed ? NEG_INF : INFINITY;
 			contextFlags.setFlags(OVERFLOW);
 			return 0;
 		}
 		// check for underflow
-		if (expo < context64.minExpo) {
+		if (expo < context.minExpo) {
 			// if the exponent is too small even for a subnormal number,
 			// the number is set to zero.
-			if (expo < context64.tinyExpo) {
+			if (expo < context.tinyExpo) {
 				this = signed ? NEG_ZERO : ZERO;
-				expoEx = context64.tinyExpo + BIAS;
+				expoEx = context.tinyExpo + BIAS;
 				contextFlags.setFlags(SUBNORMAL);
 				contextFlags.setFlags(UNDERFLOW);
-				return context64.tinyExpo;
+				return context.tinyExpo;
 			}
 			// at this point the exponent is between minExpo and tinyExpo.
 			// (64)TODO: I don't think this needs special handling
@@ -807,7 +807,7 @@ public:
 		if (copy > C_MAX_IMPLICIT) {
 			int expo = 0;
 			uint digits = numDigits(copy);
-			expo = setExponent(sign, copy, digits, context64);
+			expo = setExponent(sign, copy, digits, context);
 			if (this.isExplicit) {
 				expoEx = expoEx + expo;
 			}
@@ -944,14 +944,14 @@ public:
 		return NAN;
 	}
 	static Dec64 epsilon()	  {
-		return Dec64(1, -context64.precision);
+		return Dec64(1, -context.precision);
 	}
 //	static Dec64 min_normal() {
-//		return Dec64(1, context64.minExpo);
+//		return Dec64(1, context.minExpo);
 //	}
 	static Dec64 min()		  {
-		return Dec64(1, context64.minExpo);
-	} //context64.tinyExpo); }
+		return Dec64(1, context.minExpo);
+	} //context.tinyExpo); }
 
 /* dec32diff
 	static Dec32 init() 	  { return NAN; }
@@ -966,62 +966,62 @@ public:
 	static int min_exp()	{ return cast(int)(context32.minExpo/LOG2); }
 
 	/// Returns the maximum number of decimal digits in this context.
-	static uint precision(const DecimalContext context = context64) {
-		return context.precision;
+	static uint precision(const DecimalContext ctx = context) {
+		return ctx.precision;
 	}
 */
-	/*	static int dig()		{ return context64.precision; }
-		static int mant_dig()	{ return cast(int)context64.mant_dig;; }
-		static int max_10_exp() { return context64.maxExpo; }
-		static int min_10_exp() { return context64.minExpo; }
-		static int max_exp()	{ return cast(int)(context64.maxExpo/LOG2); }
-		static int min_exp()	{ return cast(int)(context64.minExpo/LOG2); }*/
+	/*	static int dig()		{ return context.precision; }
+		static int mant_dig()	{ return cast(int)context.mant_dig;; }
+		static int max_10_exp() { return context.maxExpo; }
+		static int min_10_exp() { return context.minExpo; }
+		static int max_exp()	{ return cast(int)(context.maxExpo/LOG2); }
+		static int min_exp()	{ return cast(int)(context.minExpo/LOG2); }*/
 
 	/// Returns the maximum number of decimal digits in this context.
 	static uint precision() {
-		return context64.precision;
+		return context.precision;
 	}
 
 
 	/*	  /// Returns the maximum number of decimal digits in this context.
-		static uint dig(const DecimalContext context = context64) {
-			return context.precision;
+		static uint dig(const DecimalContext ctx = context) {
+			return ctx.precision;
 		}
 
 		/// Returns the number of binary digits in this context.
-		static uint mant_dig(const DecimalContext context = context64) {
-			return cast(int)context.mant_dig;
+		static uint mant_dig(const DecimalContext ctx = context) {
+			return cast(int)ctx.mant_dig;
 		}
 
-		static int min_exp(const DecimalContext context = context64) {
-			return context.min_exp;
+		static int min_exp(const DecimalContext ctx = context) {
+			return ctx.min_exp;
 		}
 
-		static int max_exp(const DecimalContext context = context64) {
-			return context.max_exp;
+		static int max_exp(const DecimalContext ctx = context) {
+			return ctx.max_exp;
 		}
 
 //		/// Returns the minimum representable normal value in this context.
-//		static Dec64 min_normal(const DecimalContext context = context64) {
-//			return Dec64(1, context.minExpo);
+//		static Dec64 min_normal(const DecimalContext ctx = context) {
+//			return Dec64(1, ctx.minExpo);
 //		}
 
 		/// Returns the minimum representable subnormal value in this context.
-		static Dec64 min(const DecimalContext context = context64) {
-			return Dec64(1, context.tinyExpo);
+		static Dec64 min(const DecimalContext ctx = context) {
+			return Dec64(1, ctx.tinyExpo);
 		}
 
 		/// returns the smallest available increment to 1.0 in this context
-		static Dec64 epsilon(const DecimalContext context = context64) {
-			return Dec64(1, -context.precision);
+		static Dec64 epsilon(const DecimalContext ctx = context) {
+			return Dec64(1, -ctx.precision);
 		}
 
-		static int min_10_exp(const DecimalContext context = context64) {
-			return context.minExpo;
+		static int min_10_exp(const DecimalContext ctx = context) {
+			return ctx.minExpo;
 		}
 
-		static int max_10_exp(const DecimalContext context = context64) {
-			return context.maxExpo;
+		static int max_10_exp(const DecimalContext ctx = context) {
+			return ctx.maxExpo;
 		}*/
 
 	/// Returns the radix (10)
@@ -1158,23 +1158,23 @@ public:
 	/**
 	 * Returns true if this number is subnormal.
 	 */
-	const bool isSubnormal(const DecimalContext context = context64) {
+	const bool isSubnormal(const DecimalContext ctx = context) {
 		if (isSpecial) return false;
-		return adjustedExponent < context.minExpo;
+		return adjustedExponent < ctx.minExpo;
 	}
 
 	/**
 	 * Returns true if this number is normal.
 	 */
-	const bool isNormal(const DecimalContext context = context64) {
+	const bool isNormal(const DecimalContext ctx = context) {
 		if (isSpecial) return false;
-		return adjustedExponent >= context.minExpo;
+		return adjustedExponent >= ctx.minExpo;
 	}
 
 	/**
 	 * Returns true if this number is an integer.
 	 */
-	const bool isIntegral(const DecimalContext context = context64) {
+	const bool isIntegral(const DecimalContext ctx = context) {
 		if (isSpecial) return false;
 		if (exponent >= 0) return true;
 		uint expo = std.math.abs(exponent);
@@ -1245,7 +1245,7 @@ public:
 		}
 		if (this > Dec64(int.max) || (isInfinite && !isSigned)) return int.max;
 		if (this < Dec64(int.min) || (isInfinite &&  isSigned)) return int.min;
-		quantize!Dec64(this, ONE, context64);
+		quantize!Dec64(this, ONE, context);
 		n = cast(int)coefficient;
 		return signed ? -n : n;
 	}
@@ -1270,7 +1270,7 @@ public:
 		}
 		if (this > Dec64(long.max) || (isInfinite && !isSigned)) return long.max;
 		if (this < Dec64(long.min) || (isInfinite &&  isSigned)) return long.min;
-		quantize!Dec64(this, ONE, context64);
+		quantize!Dec64(this, ONE, context);
 		n = coefficient;
 		return signed ? -n : n;
 	}
@@ -1417,7 +1417,7 @@ public:
 	 * greater than the argument, respectively.
 	 */
 const int opCmp(T:Dec64)(const T that) {
-		return compare!Dec64(this, that, context64);
+		return compare!Dec64(this, that, context);
 	}
 
 	/**
@@ -1447,7 +1447,7 @@ const int opCmp(T:Dec64)(const T that) {
 			if (this.isQuiet) return false;
 			// let the main routine handle the signaling NaN
 		}
-		return equals!Dec64(this, that, context64);
+		return equals!Dec64(this, that, context);
 	}
 
 	unittest {
@@ -1515,13 +1515,13 @@ const int opCmp(T:Dec64)(const T that) {
 
 	const Dec64 opUnary(string op)() {
 		static if (op == "+") {
-			return plus!Dec64(this, context64);
+			return plus!Dec64(this, context);
 		} else static if (op == "-") {
-			return minus!Dec64(this, context64);
+			return minus!Dec64(this, context);
 		} else static if (op == "++") {
-			return add!Dec64(this, Dec64(1), context64);
+			return add!Dec64(this, Dec64(1), context);
 		} else static if (op == "--") {
-			return sub!Dec64(this, Dec64(1), context64);
+			return sub!Dec64(this, Dec64(1), context);
 		}
 	}
 
@@ -1564,23 +1564,23 @@ const int opCmp(T:Dec64)(const T that) {
 	private const T opBinary(string op, T:Dec64)(const T rhs)
 	{
 		static if (op == "+") {
-			return add!Dec64(this, rhs, context64);
+			return add!Dec64(this, rhs, context);
 		} else static if (op == "-") {
-			return sub!Dec64(this, rhs, context64);
+			return sub!Dec64(this, rhs, context);
 		} else static if (op == "*") {
-			return mul!Dec64(this, rhs, context64);
+			return mul!Dec64(this, rhs, context);
 		} else static if (op == "/") {
-			return div!Dec64(this, rhs, context64);
+			return div!Dec64(this, rhs, context);
 		} else static if (op == "%") {
-			return remainder!Dec64(this, rhs, context64);
+			return remainder!Dec64(this, rhs, context);
 		} else static if (op == "%") {
-			return remainder!Dec32(this, rhs, context64);
+			return remainder!Dec32(this, rhs, context);
 		} else static if (op == "&") {
-			return and!Dec64(this, rhs, context64);
+			return and!Dec64(this, rhs, context);
 		} else static if (op == "|") {
-			return or!Dec64(this, rhs, context64);
+			return or!Dec64(this, rhs, context);
 		} else static if (op == "^") {
-			return xor!Dec64(this, rhs, context64);
+			return xor!Dec64(this, rhs, context);
 		}
 	}
 

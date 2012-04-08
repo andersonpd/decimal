@@ -316,7 +316,6 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
 
 } // end setExponent()
 
-
 /// Shortens the number to the specified precision and
 /// returns the (unsigned) remainder.
 /// Flags: ROUNDED, INEXACT.

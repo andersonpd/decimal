@@ -127,7 +127,7 @@ private:
 
 	/// The context for this type.
 	private static DecimalContext
-	context128 = DecimalContext(PRECISION, E_MAX, Rounding.HALF_EVEN);
+	context = DecimalContext(PRECISION, E_MAX, Rounding.HALF_EVEN);
 
 	// union providing different views of the number representation.
 	union {
@@ -549,7 +549,7 @@ public:
 			return;
 		}
 
-		BigDecimal big = plus!BigDecimal(num, context128);
+		BigDecimal big = plus!BigDecimal(num, context);
 
 		if (big.isFinite) {
 			this = zero;
@@ -627,7 +627,7 @@ public:
 			return;
 		}
 		// (128)TODO: this won't do -- no rounding has occured.
-		string str = format("%.*G", cast(int)context128.precision, r);
+		string str = format("%.*G", cast(int)context.precision, r);
 		this(str);
 	}
 
@@ -745,21 +745,21 @@ public:
 	@property
 	int exponent(const int expo) {
 		// check for overflow
-		if (expo > context128.maxExpo) {
+		if (expo > context.maxExpo) {
 			this = signed ? NEG_INF : INFINITY;
 			contextFlags.setFlags(OVERFLOW);
 			return 0;
 		}
 		// check for underflow
-		if (expo < context128.minExpo) {
+		if (expo < context.minExpo) {
 			// if the exponent is too small even for a subnormal number,
 			// the number is set to zero.
-			if (expo < context128.tinyExpo) {
+			if (expo < context.tinyExpo) {
 				this = signed ? NEG_ZERO : ZERO;
-				expoEx = context128.tinyExpo + BIAS;
+				expoEx = context.tinyExpo + BIAS;
 				contextFlags.setFlags(SUBNORMAL);
 				contextFlags.setFlags(UNDERFLOW);
-				return context128.tinyExpo;
+				return context.tinyExpo;
 			}
 			// at this point the exponent is between minExpo and tinyExpo.
 			// (128)TODO: I don't think this needs special handling
@@ -822,7 +822,7 @@ public:
 		if (copy > C_MAX_IMPLICIT) {
 			int expo = 0;
 			uint digits = numDigits(copy);
-			expo = setExponent(sign, copy, digits, context128);
+			expo = setExponent(sign, copy, digits, context);
 			if (this.isExplicit) {
 				expoEx = expoEx + expo;
 			}
@@ -958,14 +958,14 @@ public:
 		return NAN;
 	}
 	static Dec128 epsilon()	  {
-		return Dec128(1, -context128.precision);
+		return Dec128(1, -context.precision);
 	}
 //	static Dec128 min_normal() {
-//		return Dec128(1, context128.minExpo);
+//		return Dec128(1, context.minExpo);
 //	}
 	static Dec128 min()		  {
-		return Dec128(1, context128.minExpo);
-	} //context128.tinyExpo); }
+		return Dec128(1, context.minExpo);
+	} //context.tinyExpo); }
 
 /* dec32diff
 	static Dec128 init() 	  { return NAN; }
@@ -979,63 +979,63 @@ public:
 	static int max_exp()	{ return cast(int)(context32.maxExpo/LOG2); }
 	static int min_exp()	{ return cast(int)(context32.minExpo/LOG2); }
 
-	/// Returns the maximum number of decimal digits in this context.
-	static uint precision(const DecimalContext context = context32) {
-		return context.precision;
+	/// Returns the maximum number of decimal digits in this ctx.
+	static uint precision(const DecimalContext ctx = context32) {
+		return ctx.precision;
 	}
 */
-	/*	static int dig()		{ return context128.precision; }
-		static int mant_dig()	{ return cast(int)context128.mant_dig;; }
-		static int max_10_exp() { return context128.maxExpo; }
-		static int min_10_exp() { return context128.minExpo; }
-		static int max_exp()	{ return cast(int)(context128.maxExpo/LOG2); }
-		static int min_exp()	{ return cast(int)(context128.minExpo/LOG2); }*/
+	/*	static int dig()		{ return context.precision; }
+		static int mant_dig()	{ return cast(int)context.mant_dig;; }
+		static int max_10_exp() { return context.maxExpo; }
+		static int min_10_exp() { return context.minExpo; }
+		static int max_exp()	{ return cast(int)(context.maxExpo/LOG2); }
+		static int min_exp()	{ return cast(int)(context.minExpo/LOG2); }*/
 
-	/// Returns the maximum number of decimal digits in this context.
+	/// Returns the maximum number of decimal digits in this ctx.
 	static uint precision() {
-		return context128.precision;
+		return context.precision;
 	}
 
 
-	/*	  /// Returns the maximum number of decimal digits in this context.
-		static uint dig(const DecimalContext context = context128) {
-			return context.precision;
+	/*	  /// Returns the maximum number of decimal digits in this ctx.
+		static uint dig(const DecimalContext ctx = context) {
+			return ctx.precision;
 		}
 
-		/// Returns the number of binary digits in this context.
-		static uint mant_dig(const DecimalContext context = context128) {
-			return cast(int)context.mant_dig;
+		/// Returns the number of binary digits in this ctx.
+		static uint mant_dig(const DecimalContext ctx = context) {
+			return cast(int)ctx.mant_dig;
 		}
 
-		static int min_exp(const DecimalContext context = context128) {
-			return context.min_exp;
+		static int min_exp(const DecimalContext ctx = context) {
+			return ctx.min_exp;
 		}
 
-		static int max_exp(const DecimalContext context = context128) {
-			return context.max_exp;
+		static int max_exp(const DecimalContext ctx = context) {
+			return ctx.max_exp;
 		}
 
-//		/// Returns the minimum representable normal value in this context.
-//		static Dec128 min_normal(const DecimalContext context = context128) {
-//			return Dec128(1, context.minExpo);
+//		/// Returns the minimum representable normal value in this ctx.
+//		static Dec128 min_normal(const DecimalContext ctx = context) {
+//			return Dec128(1, ctx.minExpo);
 //		}
 
-		/// Returns the minimum representable subnormal value in this context.
-		static Dec128 min(const DecimalContext context = context128) {
-			return Dec128(1, context.tinyExpo);
+		/// Returns the minimum representable subnormal value in this ctx.
+		static Dec128 min(const DecimalContext ctx = context) {
+			return Dec128(1, ctx.tinyExpo);
 		}
 
 		/// returns the smallest available increment to 1.0 in this context
-		static Dec128 epsilon(const DecimalContext context = context128) {
-			return Dec128(1, -context.precision);
+		static Dec128 epsilon(const DecimalContext ctx = context) {
+			return Dec128(1, -ctx.precision);
 		}
 
-		static int min_10_exp(const DecimalContext context = context128) {
-			return context.minExpo;
+		static int min_10_exp(const DecimalContext ctx = context) {
+			return ctx.minExpo;
 		}
 
-		static int max_10_exp(const DecimalContext context = context128) {
-			return context.maxExpo;
+		static int max_10_exp(const DecimalContext ctx = context) {
+			return ctx.maxExpo;
 		}*/
 
 	/// Returns the radix (10)
@@ -1169,23 +1169,23 @@ public:
 	/**
 	 * Returns true if this number is subnormal.
 	 */
-	const bool isSubnormal(const DecimalContext context = context128) {
+	const bool isSubnormal(const DecimalContext ctx = context) {
 		if (isSpecial) return false;
-		return adjustedExponent < context.minExpo;
+		return adjustedExponent < ctx.minExpo;
 	}
 
 	/**
 	 * Returns true if this number is normal.
 	 */
-	const bool isNormal(const DecimalContext context = context128) {
+	const bool isNormal(const DecimalContext ctx = context) {
 		if (isSpecial) return false;
-		return adjustedExponent >= context.minExpo;
+		return adjustedExponent >= ctx.minExpo;
 	}
 
 	/**
 	 * Returns true if this number is an integer.
 	 */
-	const bool isIntegral(const DecimalContext context = context128) {
+	const bool isIntegral(const DecimalContext ctx = context) {
 		if (isSpecial) return false;
 		if (exponent >= 0) return true;
 		uint expo = std.math.abs(exponent);
@@ -1257,7 +1257,7 @@ public:
 		}
 		if (this > Dec128(int.max) || (isInfinite && !isSigned)) return int.max;
 		if (this < Dec128(int.min) || (isInfinite &&  isSigned)) return int.min;
-		quantize!Dec128(this, ONE, context128);
+		quantize!Dec128(this, ONE, context);
 		n = cast(int)coefficient;
 		return signed ? -n : n;
 	}
@@ -1284,7 +1284,7 @@ public:
 		}
 		if (this > Dec128(long.max) || (isInfinite && !isSigned)) return long.max;
 		if (this < Dec128(long.min) || (isInfinite &&  isSigned)) return long.min;
-		quantize!Dec128(this, ONE, context128);
+		quantize!Dec128(this, ONE, context);
 		n = coefficient;
 		return signed ? -n : n;
 	}
@@ -1439,7 +1439,7 @@ public:
 	 * greater than the argument, respectively.
 	 */
 const int opCmp(T:Dec128)(const T that) {
-		return compare!Dec128(this, that, context128);
+		return compare!Dec128(this, that, context);
 	}
 
 	/**
@@ -1469,7 +1469,7 @@ const bool opEquals(T:Dec128)(const T that) {
 			if (this.isQuiet) return false;
 			// let the main routine handle the signaling NaN
 		}
-		return equals!Dec128(this, that, context128);
+		return equals!Dec128(this, that, context);
 	}
 
 	unittest {
@@ -1537,13 +1537,13 @@ const bool opEquals(T:Dec128)(const T that) {
 
 	const Dec128 opUnary(string op)() {
 		static if (op == "+") {
-			return plus!Dec128(this, context128);
+			return plus!Dec128(this, context);
 		} else static if (op == "-") {
-			return minus!Dec128(this, context128);
+			return minus!Dec128(this, context);
 		} else static if (op == "++") {
-			return add!Dec128(this, Dec128(1), context128);
+			return add!Dec128(this, Dec128(1), context);
 		} else static if (op == "--") {
-			return sub!Dec128(this, Dec128(1), context128);
+			return sub!Dec128(this, Dec128(1), context);
 		}
 	}
 
@@ -1583,15 +1583,15 @@ const T opBinary(string op, T:Dec128)(const T rhs)
 //	  const Dec128 opBinary(string op)(const Dec128 rhs)
 	{
 		static if (op == "+") {
-			return add!Dec128(this, rhs, context128);
+			return add!Dec128(this, rhs, context);
 		} else static if (op == "-") {
-			return sub!Dec128(this, rhs, context128);
+			return sub!Dec128(this, rhs, context);
 		} else static if (op == "*") {
-			return mul!Dec128(this, rhs, context128);
+			return mul!Dec128(this, rhs, context);
 		} else static if (op == "/") {
-			return div!Dec128(this, rhs, context128);
+			return div!Dec128(this, rhs, context);
 		} else static if (op == "%") {
-			return remainder!Dec128(this, rhs, context128);
+			return remainder!Dec128(this, rhs, context);
 		}
 	}
 

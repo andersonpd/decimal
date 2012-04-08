@@ -34,7 +34,7 @@ import std.math: PI, LOG2;
 import std.stdio: write, writeln;
 import std.string;
 
-alias BigDecimal.bigContext bigContext;
+alias BigDecimal.context bigContext;
 
 // special values for NaN, Inf, etc.
 private static enum SV {NONE, INF, QNAN, SNAN};
@@ -49,7 +49,7 @@ private static enum SV {NONE, INF, QNAN, SNAN};
 ///
 struct BigDecimal {
 
-	public static DecimalContext bigContext =
+	public static DecimalContext context =
 		DecimalContext(9, 99, Rounding.HALF_EVEN);
 
 	private SV sval = SV.QNAN;		// special values: default value is quiet NaN
@@ -202,7 +202,7 @@ public:
 	/// Constructs a number from a real value.
 	///
 	this(const real r) {
-		string str = format("%.*G", cast(int)bigContext.precision, r);
+		string str = format("%.*G", cast(int)context.precision, r);
 		this(str);
 	}
 
@@ -408,34 +408,34 @@ const string toString() {
 		return signed ? NEG_ZERO.dup : ZERO.dup;
 	}
 
-	/// Returns the maximum number of decimal digits in this context.
-	static uint precision(const DecimalContext context = bigContext) {
-		return context.precision;
+	/// Returns the maximum number of decimal digits in this ctx.
+	static uint precision(const DecimalContext ctx = context) {
+		return ctx.precision;
 	}
 
-	/// Returns the maximum number of decimal digits in this context.
-	static uint dig(const DecimalContext context = bigContext) {
-		return context.precision;
+	/// Returns the maximum number of decimal digits in this ctx.
+	static uint dig(const DecimalContext ctx = context) {
+		return ctx.precision;
 	}
 
-	/// Returns the number of binary digits in this context.
-	static int mant_dig(const DecimalContext context = bigContext) {
-		return cast(int)(context.precision/LOG2);
+	/// Returns the number of binary digits in this ctx.
+	static int mant_dig(const DecimalContext ctx = context) {
+		return cast(int)(ctx.precision/LOG2);
 	}
 
-	static int min_exp(const DecimalContext context = bigContext) {
-		return cast(int)(context.minExpo);
+	static int min_exp(const DecimalContext ctx = context) {
+		return cast(int)(ctx.minExpo);
 	}
 
-	static int max_exp(const DecimalContext context = bigContext) {
-		return cast (int)(context.maxExpo);
+	static int max_exp(const DecimalContext ctx = context) {
+		return cast (int)(ctx.maxExpo);
 	}
 
 //	// (B)TODO: is there a way to make this const w/in a context?
 //	// (B)TODO: This is only used by BigDecimal -- maybe should move it there?
 //	// (B)TODO: The mantissa is 10^^(precision - 1), so probably don't need
 //	//			to implement as a string.
-//	// Returns the maximum representable normal value in the current context.
+//	// Returns the maximum representable normal value in the current ctx.
 //	const string maxString() {
 //		string cstr = "9." ~ replicate("9", precision - 1)
 //					~ "E" ~ format("%d", maxExpo);
@@ -443,41 +443,41 @@ const string toString() {
 //	}
 
 
-	// Returns the maximum representable normal value in the current context.
+	// Returns the maximum representable normal value in the current ctx.
 	// (B)TODO: this is a fairly expensive operation. Can it be fixed?
-	static BigDecimal max(const DecimalContext context = bigContext) {
-		return BigDecimal(context.maxString);
+	static BigDecimal max(const DecimalContext ctx = context) {
+		return BigDecimal(ctx.maxString);
 	}
 
-	// Returns the maximum representable normal value in the current context.
+	// Returns the maximum representable normal value in the current ctx.
 	// (B)TODO: this is a fairly expensive operation. Can it be fixed?
 	// (B)TODO: is this needed?
-	static BigDecimal max(const bool sign, const DecimalContext context = bigContext) {
-		BigDecimal result = BigDecimal(context.maxString);
+	static BigDecimal max(const bool sign, const DecimalContext ctx = context) {
+		BigDecimal result = BigDecimal(ctx.maxString);
 		return sign ? -result : result;
 	}
 
-//	/// Returns the minimum representable normal value in this context.
-//	static BigDecimal min_normal(const DecimalContext context = bigContext) {
-//		return BigDecimal(1, context.minExpo);
+//	/// Returns the minimum representable normal value in this ctx.
+//	static BigDecimal min_normal(const DecimalContext ctx = context) {
+//		return BigDecimal(1, ctx.minExpo);
 //	}
 
-	/// Returns the minimum representable subnormal value in this context.
-	static BigDecimal min(const DecimalContext context = bigContext) {
-		return BigDecimal(1, context.tinyExpo);
+	/// Returns the minimum representable subnormal value in this ctx.
+	static BigDecimal min(const DecimalContext ctx = context) {
+		return BigDecimal(1, ctx.tinyExpo);
 	}
 
 	/// Returns the smallest available increment to 1.0 in this context
-	static BigDecimal epsilon(const DecimalContext context = bigContext) {
-		return BigDecimal(1, -context.precision);
+	static BigDecimal epsilon(const DecimalContext ctx = context) {
+		return BigDecimal(1, -ctx.precision);
 	}
 
-	static int min_10_exp(const DecimalContext context = bigContext) {
-		return context.minExpo;
+	static int min_10_exp(const DecimalContext ctx = context) {
+		return ctx.minExpo;
 	}
 
-	static int max_10_exp(const DecimalContext context = bigContext) {
-		return context.maxExpo;
+	static int max_10_exp(const DecimalContext ctx = context) {
+		return ctx.maxExpo;
 	}
 
 	/// Returns the radix (10)
@@ -552,15 +552,15 @@ const string toString() {
 	}
 
 	/// Returns true if this number is subnormal.
-	const bool isSubnormal(const DecimalContext context = bigContext) {
+	const bool isSubnormal(const DecimalContext ctx = context) {
 		if (!isFinite) return false;
-		return adjustedExponent < context.minExpo;
+		return adjustedExponent < ctx.minExpo;
 	}
 
 	/// Returns true if this number is normal.
-	const bool isNormal(const DecimalContext context = bigContext) {
+	const bool isNormal(const DecimalContext ctx = context) {
 		if (isFinite && !isZero) {
-			return adjustedExponent >= context.minExpo;
+			return adjustedExponent >= ctx.minExpo;
 		}
 		return false;
 	}
@@ -600,7 +600,7 @@ const string toString() {
 	/// Returns -1, 0 or 1, if this number is less than, equal to,
 	/// or greater than the argument, respectively.
 	const int opCmp(const BigDecimal that) {
-		return compare!BigDecimal(this, that, bigContext);
+		return compare!BigDecimal(this, that, context);
 	}
 
 
@@ -612,7 +612,7 @@ const string toString() {
 	/// A NaN is not equal to any number, not even to another NaN.
 	/// A number may not be equal to itself (this != this) if it is a NaN.
 	const bool opEquals (ref const BigDecimal that) {
-		return equals!BigDecimal(this, that, bigContext);
+		return equals!BigDecimal(this, that, context);
 	}
 
 
@@ -627,16 +627,16 @@ const string toString() {
 	const BigDecimal opUnary(string op)()
 	{
 		static if (op == "+") {
-			return plus!BigDecimal(this, bigContext);
+			return plus!BigDecimal(this, context);
 		}
 		else static if (op == "-") {
-			return minus!BigDecimal(this, bigContext);
+			return minus!BigDecimal(this, context);
 		}
 		else static if (op == "++") {
-			return add!BigDecimal(this, BigDecimal(1), bigContext);
+			return add!BigDecimal(this, BigDecimal(1), context);
 		}
 		else static if (op == "--") {
-			return sub!BigDecimal(this, BigDecimal(1), bigContext);
+			return sub!BigDecimal(this, BigDecimal(1), context);
 		}
 	}
 
@@ -649,19 +649,19 @@ const string toString() {
 	const BigDecimal opBinary(string op, T:BigDecimal)(const T arg)
 	{
 		static if (op == "+") {
-			return add!BigDecimal(this, arg, bigContext);
+			return add!BigDecimal(this, arg, context);
 		}
 		else static if (op == "-") {
-			return sub!BigDecimal(this, arg, bigContext);
+			return sub!BigDecimal(this, arg, context);
 		}
 		else static if (op == "*") {
-			return mul!BigDecimal(this, arg, bigContext);
+			return mul!BigDecimal(this, arg, context);
 		}
 		else static if (op == "/") {
-			return div!BigDecimal(this, arg, bigContext);
+			return div!BigDecimal(this, arg, context);
 		}
 		else static if (op == "%") {
-			return remainder!BigDecimal(this, arg, bigContext);
+			return remainder!BigDecimal(this, arg, context);
 		}
 	}
 
@@ -694,20 +694,20 @@ const string toString() {
 	/// Returns the smallest representable number that is larger than
 	/// this number.
 	const BigDecimal nextUp() {
-		return nextPlus!BigDecimal(this, bigContext);
+		return nextPlus!BigDecimal(this, context);
 	}
 
 	/// Returns the largest representable number that is smaller than
 	/// this number.
 	const BigDecimal nextDown() {
-		return nextMinus!BigDecimal(this, bigContext);
+		return nextMinus!BigDecimal(this, context);
 	}
 
 	/// Returns the representable number that is closest to the
 	/// this number (but not this number) in the
 	/// direction toward the argument.
 	const BigDecimal nextAfter(const BigDecimal arg) {
-		return nextToward!BigDecimal(this, arg, bigContext);
+		return nextToward!BigDecimal(this, arg, context);
 	}
 
 	// (B)TODO: move this outside the struct
@@ -719,16 +719,16 @@ const string toString() {
 
 	/// Returns a copy of the context with a new precision.
 	public static DecimalContext setPrecision(const uint precision) {
-		return DecimalContext(precision, bigContext.maxExpo, bigContext.rounding);
+		return DecimalContext(precision, context.maxExpo, context.rounding);
 	}
 
 	/// Returns a copy of the context with a new exponent limit.
 	public static DecimalContext setMaxExponent(const int maxExpo) {
-		return DecimalContext(bigContext.precision, maxExpo, bigContext.rounding);
+		return DecimalContext(context.precision, maxExpo, context.rounding);
 	}
 	/// Returns a copy of the context with a new rounding mode.
 	public static DecimalContext setRounding(const Rounding rounding) {
-		return DecimalContext(bigContext.precision, bigContext.maxExpo, rounding);
+		return DecimalContext(context.precision, context.maxExpo, rounding);
 	}
 
 }	 // end struct BigDecimal
