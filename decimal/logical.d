@@ -1,18 +1,16 @@
-﻿/**
- * A D programming language implementation of the
- * General Decimal Arithmetic Specification,
- * Version 1.70, (25 March 2009).
- * (http://www.speleotrove.com/decimal/decarith.pdf)
- *
- * License: <a href="http://www.boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
- * Authors: Paul D. Anderson
- */
+﻿// Written in the D programming language
 
-/* Copyright Paul D. Anderson 2009 - 2012.
- * Distributed under the Boost Software License, Version 1.0.
- * (See accompanying file LICENSE_1_0.txt or copy at
- *  http://www.boost.org/LICENSE_1_0.txt)
- */
+/**
+ *	A D programming language implementation of the
+ *	General Decimal Arithmetic Specification,
+ *	Version 1.70, (25 March 2009).
+ *	http://www.speleotrove.com/decimal/decarith.pdf)
+ *
+ *	Copyright Paul D. Anderson 2009 - 2012.
+ *	Distributed under the Boost Software License, Version 1.0.
+ *	(See accompanying file LICENSE_1_0.txt or copy at
+ *	http://www.boost.org/LICENSE_1_0.txt)
+**/
 
 module decimal.logical;
 
@@ -211,11 +209,11 @@ public T xor(T)(const T arg1, const T arg2, const DecimalContext context) if (is
 	return opLogical!("xor", T)(arg1, arg2, context);
 }
 
-// (L)TODO: move this to decimal.logical
+// (L)TODO: move this back to arithmetic
 /// Shifts the first operand by the specified number of decimal digits.
 /// (Not binary digits!) Positive values of the second operand shift the
 /// first operand left (multiplying by tens). Negative values shift right
-/// (divide by 10s). If the number is NaN, or if the shift value is less
+/// (dividing by tens). If the number is NaN, or if the shift value is less
 /// than -precision or greater than precision, an INVALID_OPERATION is signaled.
 /// An infinite number is returned unchanged.
 /// Implements the 'shift' function in the specification. (p. 49)
@@ -238,12 +236,11 @@ public T shift(T)(const T arg, const int n, DecimalContext context)
 		return arg.dup;
 	}
 	BigDecimal shifted = toBigDecimal!T(arg);
-	BigInt pow10 = BigInt(10)^^std.math.abs(n);
 	if (n > 0) {
-		shifted.coefficient = shifted.coefficient * pow10;
+		decShl(shifted);
 	}
 	else {
-		shifted.coefficient = shifted.coefficient / pow10;
+		decShr(shifted);
 	}
 	return T(shifted);
 }

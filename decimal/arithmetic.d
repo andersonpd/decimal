@@ -1,15 +1,16 @@
-﻿/// A D programming language implementation of the
-/// General Decimal Arithmetic Specification,
-/// Version 1.70, (25 March 2009).
-/// (http://www.speleotrove.com/decimal/decarith.pdf)
+﻿// Written in the D programming language
 
-/// License: <a href="http://www.boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
-/// Authors: Paul D. Anderson
-
-///			Copyright Paul D. Anderson 2009 - 2012.
-/// Distributed under the Boost Software License, Version 1.0.
-///	  (See accompanying file LICENSE_1_0.txt or copy at
-///			http://www.boost.org/LICENSE_1_0.txt)
+/**
+ *	A D programming language implementation of the
+ *	General Decimal Arithmetic Specification,
+ *	Version 1.70, (25 March 2009).
+ *	http://www.speleotrove.com/decimal/decarith.pdf)
+ *
+ *	Copyright Paul D. Anderson 2009 - 2012.
+ *	Distributed under the Boost Software License, Version 1.0.
+ *	(See accompanying file LICENSE_1_0.txt or copy at
+ *	http://www.boost.org/LICENSE_1_0.txt)
+**/
 
 // (A)TODO: ensure context flags are being set and cleared properly.
 
@@ -39,6 +40,7 @@ import std.string;
 /// Returns a string indicating the class and sign of the argument.
 /// Classes are: sNaN, NaN, Infinity, Zero, Normal, and Subnormal.
 /// The sign of any NaN values is ignored in the classification.
+/// The argument is not rounded and no flags are changed.
 /// Implements the 'class' function in the specification. (p. 42)
 public string classify(T)(const T arg) if (isDecimal!T) {
 	if (arg.isFinite) {
@@ -62,7 +64,6 @@ public T copy(T)(const T arg) if (isDecimal!T) {
 	return arg.dup;
 }
 
-
 /// Returns a copy of the operand with a positive sign.
 /// The copy is unaffected by context and is quiet -- no flags are changed.
 /// Implements the 'copy-abs' function in the specification. (p. 44)
@@ -72,7 +73,6 @@ public T copyAbs(T)(const T arg) if (isDecimal!T) {
 	return copy;
 }
 
-
 /// Returns a copy of the operand with the sign inverted.
 /// The copy is unaffected by context and is quiet -- no flags are changed.
 /// Implements the 'copy-negate' function in the specification. (p. 44)
@@ -81,7 +81,6 @@ public T copyNegate(T)(const T arg) if (isDecimal!T) {
 	copy.sign = !arg.sign;
 	return copy;
 }
-
 
 /// Returns a copy of the first operand with the sign of the second operand.
 /// The copy is unaffected by context and is quiet -- no flags are changed.
@@ -97,6 +96,7 @@ public T copySign(T)(const T arg1, const T arg2) if (isDecimal!T) {
 /// (As though the operand were truncated to a single digit
 /// while maintaining the value of that digit and without
 /// limiting the resulting exponent)".
+/// May set the INVALID_OPERATION and DIVISION_BY_ZERO flags.
 /// Implements the 'logb' function in the specification. (p. 47)
 public T logb(T)(const T arg) {
 
@@ -122,6 +122,7 @@ public T logb(T)(const T arg) {
 /// adding the value of the second operand to its exponent.
 /// The second operand must be a finite integer with an exponent of zero.
 /// The result may overflow or underflow.
+/// Flags: INVALID_OPERATION, UNDERFLOW, OVERFLOW.
 /// Implements the 'scaleb' function in the specification. (p. 48)
 public T scaleb(T)(const T arg1, const T arg2) if (isDecimal!T) {
 	T result;
@@ -141,6 +142,8 @@ public T scaleb(T)(const T arg1, const T arg2) if (isDecimal!T) {
 	if (arg2.isSigned) {
 		scale = -scale;
 	}
+	// (A)TODO: check for overflow/underflow -- should this be part of setting
+	// the exponent? Don't want that in construction but maybe do here.
 	result.exponent = result.exponent + scale;
 	return result;
 }
@@ -157,6 +160,7 @@ public T scaleb(T)(const T arg1, const T arg2) if (isDecimal!T) {
 /// Implements the 'reduce' function in the specification. (p. 37)
 /// "This operation was called 'normalize' prior to
 /// version 1.68 of the specification." (p. 37)
+/// Flags: INVALID_OPERATION
 public T reduce(T)(const T arg) if (isDecimal!T) {
 	T result;
 	if (invalidOperand!T(arg, result)) {
@@ -167,25 +171,7 @@ public T reduce(T)(const T arg) if (isDecimal!T) {
 		return result;
 	}
 
-	// (A)TODO: doing this in bigints when the coefficient is ulong or uint
-	// is a big waste
 	int digits = result.digits;
-/*	int zeros = trailingZeros(arg.coefficient, arg.digits);
-	auto temp = result.coefficient % 10;
-	while (result.coefficient != 0 && temp == 0) {
-		result.exponent = result.exponent + 1;
-		result.coefficient = result.coefficient / 10;
-		temp = result.coefficient % 10;
-	}
-	if (result.coefficient == 0) {
-		if (result.isSigned) {
-			result = copyNegate(T.zero);
-		}
-		else {
-			result = T.zero;
-		}
-		result.exponent = 0;
-	}*/
 	auto temp = result.coefficient;
 	int zeros = trimZeros(temp, digits);
 
@@ -197,7 +183,6 @@ public T reduce(T)(const T arg) if (isDecimal!T) {
 	return result;
 }
 
-
 /// Returns the absolute value of the argument.
 /// This operation rounds the result and may set flags.
 /// The result is equivalent to plus(arg) for positive numbers
@@ -205,6 +190,7 @@ public T reduce(T)(const T arg) if (isDecimal!T) {
 /// To return the absolute value without rounding or setting flags
 /// use the 'copyAbs' function.
 /// Implements the 'abs' function in the specification. (p. 26)
+/// Flags: INVALID_OPERATION
 public T abs(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
 	T result;
 	if (invalidOperand!T(arg, result)) {
@@ -214,7 +200,6 @@ public T abs(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
 	round(result, context);
 	return result;
 }
-
 
 /// Returns the sign of the argument: -1, 0, -1.
 /// If the argument is (signed or unsigned) zero, 0 is returned.
@@ -226,12 +211,12 @@ public int sgn(T)(const T arg) if (isDecimal!T) {
 	return arg.isNegative ? -1 : 1;
 }
 
-
 /// Returns a copy of the argument with same sign as the argument.
 /// This operation rounds the result and may set flags.
 /// The result is equivalent to add('0', arg).
 /// To copy without rounding or setting flags use the 'copy' function.
 /// Implements the 'plus' function in the specification. (p. 33)
+/// Flags: INVALID_OPERATION
 public T plus(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
 	T result;
 	if (invalidOperand!T(arg, result)) {
@@ -247,6 +232,7 @@ public T plus(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
 /// Result is equivalent to subtract('0', arg).
 /// To copy without rounding or setting flags use the 'copyNegate' function.
 /// Implements the 'minus' function in the specification. (p. 37)
+/// Flags: INVALID_OPERATION
 public T minus(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
 	T result;
 	if (invalidOperand!T(arg, result)) {
@@ -264,6 +250,7 @@ public T minus(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
 /// Returns the smallest representable number that is larger than
 /// the argument.
 /// Implements the 'next-plus' function in the specification. (p. 34)
+/// Flags: INVALID_OPERATION
 public T nextPlus(T)(const T arg1, const DecimalContext context) if (isDecimal!T) {
 	T result;
 	if (invalidOperand!T(arg1, result)) {
@@ -293,6 +280,7 @@ public T nextPlus(T)(const T arg1, const DecimalContext context) if (isDecimal!T
 /// Returns the largest representable number that is smaller than
 /// the argument.
 /// Implements the 'next-minus' function in the specification. (p. 34)
+/// Flags: INVALID_OPERATION
 public T nextMinus(T)(const T arg, const DecimalContext context)
 		if (isDecimal!T) {
 
@@ -327,6 +315,7 @@ public T nextMinus(T)(const T arg, const DecimalContext context)
 /// first operand (but not the first operand) in the
 /// direction toward the second operand.
 /// Implements the 'next-toward' function in the specification. (p. 34-35)
+/// Flags: INVALID_OPERATION
 public T nextToward(T)(const T arg1, const T arg2,
 		DecimalContext context) if (isDecimal!T) {
 	T result;
@@ -350,7 +339,7 @@ public T nextToward(T)(const T arg1, const T arg2,
 /// Returns -1, 0, or +1 if the second operand is, respectively,
 /// less than, equal to, or greater than the first operand.
 /// Implements the 'compare' function in the specification. (p. 27)
-/// This operation may set the invalid-operation flag.
+/// Flags: INVALID_OPERATION
 public int compare(T)(const T arg1, const T arg2, const DecimalContext context,
 		bool rounded = true) if (isDecimal!T) {
 
@@ -405,8 +394,8 @@ public int compare(T)(const T arg1, const T arg2, const DecimalContext context,
 /// Infinities are equal if they have the same sign.
 /// Zeros are equal regardless of sign.
 /// A decimal NaN is not equal to itself (this != this).
-/// This operation may set the invalid-operation flag.
 /// This function is not included in the specification.
+/// Flags: INVALID_OPERATION
 public bool equals(T)(const T arg1, const T arg2, DecimalContext context,
 		const bool rounded = true) if (isDecimal!T) {
 
@@ -456,6 +445,7 @@ public bool equals(T)(const T arg1, const T arg2, DecimalContext context,
 /// compare except that quiet NaNs are treated as if they were signaling.
 /// This operation may set the invalid-operation flag.
 /// Implements the 'compare-signal' function in the specification. (p. 27)
+/// Flags: INVALID_OPERATION
 public int compareSignal(T) (const T arg1, const T arg2,
 		DecimalContext context, bool rounded = true) if (isDecimal!T) {
 
@@ -472,9 +462,9 @@ public int compareSignal(T) (const T arg1, const T arg2,
 /// Compares the operands using their abstract representation rather than
 /// their numerical value.
 /// Returns 0 if the numbers are equal and have the same representation.
-/// This operation does not set any flags.
 /// Implements the 'compare-total' function in the specification. (p. 42-43)
 // (A)TODO: just compare signs, coefficients and exponenents.
+/// Flags: NONE.
 public int compareTotal(T)(const T arg1, const T arg2) if (isDecimal!T) {
 
 	int ret1 =	1;
@@ -572,6 +562,7 @@ public int compareTotal(T)(const T arg1, const T arg2) if (isDecimal!T) {
 /// on two operands which are the copy-abs copies of the operands.
 /// Implements the 'compare-total-magnitude' function in the specification.
 /// (p. 43)
+/// Flags: NONE.
 int compareTotalMagnitude(T)(const T arg1, const T arg2) if (isDecimal!T) {
 	return compareTotal(copyAbs!T(arg1), copyAbs!T(arg2));
 }
@@ -602,6 +593,7 @@ public bool sameQuantum(T)(const T arg1, const T arg2) if (isDecimal!T) {
 /// 3) If they are negative, the one with the smaller exponent is returned.
 /// 4) Otherwise, they are indistinguishable; the first is returned.
 /// Implements the 'max' function in the specification. (p. 32)
+/// Flags: NONE.
 const(T) max(T)(const T arg1, const T arg2,
 		DecimalContext context) if (isDecimal!T) {
 	// if both are NaNs or either is an sNan, return NaN.
@@ -636,6 +628,7 @@ const(T) max(T)(const T arg1, const T arg2,
 /// Returns the larger of the two operands (or NaN). Returns the same result
 /// as the 'max' function if the signs of the operands are ignored.
 /// Implements the 'max-magnitude' function in the specification. (p. 32)
+/// Flags: NONE.
 const(T) maxMagnitude(T)(const T arg1, const T arg2,
 		DecimalContext context) if (isDecimal!T) {
 	return max(copyAbs!T(arg1), copyAbs!T(arg2), context);
@@ -653,6 +646,7 @@ const(T) maxMagnitude(T)(const T arg1, const T arg2,
 /// 3) If they are positive, the one with the smaller exponent is returned.
 /// 4) Otherwise, they are indistinguishable; the first is returned.
 /// Implements the 'min' function in the specification. (p. 32-33)
+/// Flags: NONE.
 const(T) min(T)(const T arg1, const T arg2,
 		DecimalContext context) if (isDecimal!T) {
 	// if both are NaNs or either is an sNan, return NaN.
@@ -687,6 +681,7 @@ const(T) min(T)(const T arg1, const T arg2,
 /// Returns the smaller of the two operands (or NaN). Returns the same result
 /// as the 'max' ((A)TODO: ?) function if the signs of the operands are ignored.
 /// Implements the 'min-magnitude' function in the specification. (p. 33)
+/// Flags: NONE.
 const(T) minMagnitude(T)(const T arg1, const T arg2,
 		DecimalContext context) if (isDecimal!T) {
 	return min(copyAbs!T(arg1), copyAbs!T(arg2), context);
@@ -694,8 +689,8 @@ const(T) minMagnitude(T)(const T arg1, const T arg2,
 
 /// Returns a number with a coefficient of 1 and
 /// the same exponent as the argument.
-/// No context flags are set.
 /// Not required by the specification.
+/// Flags: NONE.
 public const (T) quantum(T)(const T arg) if (isDecimal!T) {
 		return T(1, arg.exponent);
 	}
@@ -707,6 +702,7 @@ public const (T) quantum(T)(const T arg) if (isDecimal!T) {
 /// Adds the two operands.
 /// The result may be rounded and context flags may be set.
 /// Implements the 'add' function in the specification. (p. 26)
+/// Flags: INVALID_OPERATION, OVERFLOW.
 public T add(T)(const T arg1, const T arg2, const DecimalContext context,
 		bool rounded = true) if (isDecimal!T) {
 	T result = T.nan;	 // sum is initialized to quiet NaN
@@ -794,6 +790,7 @@ public T add(T)(const T arg1, const T arg2, const DecimalContext context,
 /// the 'add' function as if the long value were converted to a decimal number.
 /// The result may be rounded and context flags may be set.
 /// This function is not included in the specification.
+/// Flags: INVALID_OPERATION, OVERFLOW.
 public T addLong(T)(const T arg1, const long arg2, const DecimalContext context,
 		bool rounded = true) if (isDecimal!T) {
 	T result = T.nan;	 // sum is initialized to quiet NaN
@@ -871,7 +868,6 @@ public T addLong(T)(const T arg1, const long arg2, const DecimalContext context,
 	}
 	return result;
 }	 // end add(arg1, arg2)
-
 
 /// Subtracts the second operand from the first operand.
 /// The result may be rounded and context flags may be set.

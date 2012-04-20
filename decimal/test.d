@@ -1,24 +1,23 @@
-﻿/**
- * A D programming language implementation of the
- * General Decimal Arithmetic Specification,
- * Version 1.70, (25 March 2009).
- * (http://www.speleotrove.com/decimal/decarith.pdf)
- *
- * License: <a href="http://www.boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
- * Authors: Paul D. Anderson
- */
+﻿// Written in the D programming language
 
-/* Copyright Paul D. Anderson 2009 - 2012.
- * Distributed under the Boost Software License, Version 1.0.
- * (See accompanying file LICENSE_1_0.txt or copy at
- *  http://www.boost.org/LICENSE_1_0.txt)
- */
+/**
+ *	A D programming language implementation of the
+ *	General Decimal Arithmetic Specification,
+ *	Version 1.70, (25 March 2009).
+ *	http://www.speleotrove.com/decimal/decarith.pdf)
+ *
+ *	Copyright Paul D. Anderson 2009 - 2012.
+ *	Distributed under the Boost Software License, Version 1.0.
+ *	(See accompanying file LICENSE_1_0.txt or copy at
+ *	http://www.boost.org/LICENSE_1_0.txt)
+**/
 
 module decimal.test;
 
-
 import std.bigint;
+import std.path: baseName;
 import std.stdio;
+
 import decimal.arithmetic;
 import decimal.context;
 import decimal.conv;
@@ -33,7 +32,7 @@ bool assertEqual(T)(T expected, T actual,
 	if (expected == actual) {
 		return true;
 	}
-	writeln("failed at ", std.path.basename(file), "(", line, "):",
+	writeln("failed at ", baseName(file), "(", line, "):",
 	        " expected \"", expected, "\"",
 	        " but found \"", actual, "\".");
 	return false;
@@ -44,27 +43,16 @@ bool assertStringEqual(T)(T expected, T actual,
 	if (expected.toString == actual.toString) {
 		return true;
 	}
-	writeln("failed at ", std.path.basename(file), "(", line, "):",
+	writeln("failed at ", baseName(file), "(", line, "):",
 	        " expected \"", expected, "\"",
 	        " but found \"", actual, "\".");
 	return false;
 }
 
-/*bool assertEqual(T)(T expected, T actual,
-		string file = __FILE__, int line = __LINE__ ) {
-	if (expected == actual) {
-		return true;
-	}
-	writeln("failed at ", std.path.basename(file), "(", line, "):",
-	        " expected \"", expected, "\"",
-	        " but found \"", actual, "\".");
-	return false;
-}*/
-
 bool assertNotEqual(T)(T unexpected, T actual,
 		string file = __FILE__, int line = __LINE__ ) {
 	if (unexpected == actual) {
-		writeln("failed at ", std.path.basename(file), "(", line, "):",
+		writeln("failed at ", baseName(file), "(", line, "):",
 	        	" \"", unexpected, "\" is equal to \"", actual, "\".");
 		return false;
 	}
@@ -85,10 +73,105 @@ unittest {
 	writeln("---------------------------");
 }
 
+interface Assertion {
+	bool assertion();
+}
+
+interface Test {
+	void run();
+	void report();
+}
 
 public void testDecimal() {
 
 }
+
+/*public const long maxLong = 10L^^18 - 1;
+
+unittest {
+	writeln("maxLong...");
+writeln("maxLong = ", maxLong);
+	writeln("test missing");
+}*/
+
+public long randomLong(int digits) {
+	if (digits < 0 || digits > MAX_LONG_DIGITS) return 0L;
+	return std.random.uniform(0L, TENS[digits]);
+}
+
+unittest {
+	write("randomLong...");
+	for (int i = 0; i < 19; i++) {
+		long num = randomLong(i);
+		assertTrue(numDigits(num) < i+1);
+	}
+	writeln("passed");
+}
+
+// Returns a random BigInt with the specified number of digits.
+public BigInt randomBigInt(int digits) {
+	BigInt sum = 0;
+	while (digits > MAX_LONG_DIGITS) {
+		long number = randomLong(MAX_LONG_DIGITS);
+		sum = sum * (MAX_DECIMAL_LONG + 1) + number;
+		digits -= MAX_LONG_DIGITS;
+	}
+	sum = sum * TENS[digits] + randomLong(digits);
+	return sum;
+}
+
+unittest {
+	write("randomBigInt...");
+	for (int i = 0; i < 200; i+=5) {
+		BigInt num = randomBigInt(i);
+		assertTrue(numDigits(num) < i+1);
+	}
+	writeln("passed");
+}
+
+
+public T randomDecimal(T)(int digits) {
+
+	T num = T.zero;
+	if (digits > T.context.precision || digits <= 0) {
+	    digits = T.context.precision;
+	}
+	static if (isBigDecimal!T) {
+		num.coefficient = randomBigInt(digits);
+	}
+	else {
+		num.coefficient = randomLong(digits);
+	}
+	num.exponent = std.random.uniform(T.context.minExpo, T.context.maxExpo);
+//	num.sign = std.random.uniform(0, 2);
+	return num;
+}
+
+unittest {
+	writeln("randomDecimal...");
+	Dec32 num = randomDecimal!Dec32(5);
+writeln("num = ", num.toExact);
+	num = randomDecimal!Dec32(7);
+writeln("num = ", num.toExact);
+	num = randomDecimal!Dec32(-1);
+writeln("num = ", num.toExact);
+	num = randomDecimal!Dec32(0);
+writeln("num = ", num.toExact);
+	num = randomDecimal!Dec32(1);
+writeln("num = ", num.toExact);
+	writeln("test missing");
+}
+
+unittest {
+	write("toExact...");
+	Dec32 num = randomDecimal!Dec32(7);
+	string str = num.toExact;
+	Dec32 copy = Dec32(str);
+writeln("num  = ", num.toExact);
+writeln("copy = ", copy.toExact);
+	writeln("test missing");
+}
+
 //--------------------------------
 // unit tests
 //--------------------------------
@@ -172,7 +255,7 @@ unittest {
 	assertTrue(sciForm!Dec32(num) == "Infinity");
 	assertTrue(num.toAbstract() == "[0,inf]");
 	num = Dec32.infinity(true);
-	assertTrue(sciForm!Dec32(num) == "-Infinity");
+	assertEqual("-Infinity", sciForm!Dec32(num));
 	assertTrue(num.toAbstract() == "[1,inf]");
 	num = Dec32("naN");
 	assertTrue(sciForm!Dec32(num) == "NaN");

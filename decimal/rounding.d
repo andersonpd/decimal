@@ -1,34 +1,32 @@
-﻿/**
- * A D programming language implementation of the
- * General Decimal Arithmetic Specification,
- * Version 1.70, (25 March 2009).
- * (http://www.speleotrove.com/decimal/decarith.pdf)
- *
- * License: <a href="http://www.boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
- * Authors: Paul D. Anderson
- */
+﻿// Written in the D programming language
 
-/* Copyright Paul D. Anderson 2009 - 2012.
- * Distributed under the Boost Software License, Version 1.0.
- * (See accompanying file LICENSE_1_0.txt or copy at
- *  http://www.boost.org/LICENSE_1_0.txt)
- */
+/**
+ *	A D programming language implementation of the
+ *	General Decimal Arithmetic Specification,
+ *	Version 1.70, (25 March 2009).
+ *	http://www.speleotrove.com/decimal/decarith.pdf)
+ *
+ *	Copyright Paul D. Anderson 2009 - 2012.
+ *	Distributed under the Boost Software License, Version 1.0.
+ *	(See accompanying file LICENSE_1_0.txt or copy at
+ *	http://www.boost.org/LICENSE_1_0.txt)
+**/
 
 module decimal.rounding;
 
-import decimal.arithmetic: compare, copyNegate, equals;
-import decimal.context;
-import decimal.conv;
-import decimal.test;
 import std.array: insertInPlace;
 import std.ascii: isDigit;
 import std.bigint;
 
+import decimal.arithmetic: compare, copyNegate, equals;
+import decimal.context;
+import decimal.conv;
 import decimal.decimal;
+import decimal.test;
 
 /// Rounds the referenced number using the precision and rounding mode of
 /// the context parameter.
-/// Flags: SUBNORMAL, CLAMPED, OVERFLOW, INEXACT, ROUNDED
+/// Flags: SUBNORMAL, CLAMPED, OVERFLOW, INEXACT, ROUNDED.
 public void round(T)(ref T num, const DecimalContext context) if (isDecimal!T) {
 
 	// special values aren't rounded
@@ -37,12 +35,13 @@ public void round(T)(ref T num, const DecimalContext context) if (isDecimal!T) {
 	// zero values aren't rounded, but they are checked for
 	// subnormal and out of range exponents.
 	if (num.isZero) {
-		if (num.exponent < context.minExpo) {
+/*		if (num.exponent < context.minExpo) {
 			contextFlags.setFlags(SUBNORMAL);
 			if (num.exponent < context.tinyExpo) {
+				int temp = context.tinyExpo;
 				num.exponent = context.tinyExpo;
 			}
-		}
+		}*/
 		return;
 	}
 
@@ -356,7 +355,8 @@ private void increment(T:ulong)(ref T num, ref uint digits) {
 //-----------------------------
 
 // BigInt has problems with const and immutable; these should be const values.
-// They are private so I know they won't change, but it's inconvenient
+// Best I can do is to make them private.
+// (R)TODO: properties with getters & no setters?
 private BigInt BIG_ZERO = BigInt(0);
 private BigInt BIG_ONE  = BigInt(1);
 private BigInt BIG_FIVE = BigInt(5);
@@ -365,11 +365,29 @@ private BigInt BILLION  = BigInt(1_000_000_000);
 private BigInt QUINTILLION = BigInt(1_000_000_000_000_000_000);
 
 /// An array of unsigned long integers with values of
-/// the powers of ten from 10^^0 to 10^^18
+/// powers of ten from 10^^0 to 10^^18
 public static ulong[19] TENS = [10L^^0,
-		10L^^1,  10^^2,   10L^^3,  10L^^4,  10L^^5,  10L^^6,
+		10L^^1,  10L^^2,  10L^^3,  10L^^4,  10L^^5,  10L^^6,
 		10L^^7,  10L^^8,  10L^^9,  10L^^10, 10L^^11, 10L^^12,
 		10L^^13, 10L^^14, 10L^^15, 10L^^16, 10L^^17, 10L^^18];
+
+/// An array of unsigned long integers with values of
+/// powers of five from 5^^0 to 5^^26
+public static ulong[27] FIVES = [5L^^0,
+		5L^^1,  5L^^2,  5L^^3,  5L^^4,  5L^^5,  5L^^6,
+		5L^^7,  5L^^8,  5L^^9,  5L^^10, 5L^^11, 5L^^12,
+		5L^^13, 5L^^14, 5L^^15, 5L^^16, 5L^^17, 5L^^18,
+		5L^^19, 5L^^20, 5L^^21, 5L^^22, 5L^^23, 5L^^24,
+		5L^^25, 5L^^26];
+
+/// The maximum number of decimal digits that fit in an int value.
+public const int MAX_INT_DIGITS = 9;
+/// The maximum decimal value that fits in an int.
+public const uint MAX_DECIMAL_INT = 10U^^MAX_INT_DIGITS - 1;
+/// The maximum number of decimal digits that fit in a long value.
+public const int MAX_LONG_DIGITS = 18;
+/// The maximum decimal value that fits in a long.
+public const ulong MAX_DECIMAL_LONG = 10UL^^MAX_LONG_DIGITS - 1;
 
 //-----------------------------
 // decimal digit functions
@@ -433,38 +451,162 @@ public int firstDigit(const ulong n, int maxValue = 19) {
 }
 
 /// Shifts the number left by the specified number of decimal digits.
-/// If n <= 0 the number is returned unchanged.
+/// If n == 0 the number is returned unchanged.
+/// If n < 0 the number is shifted right.
 public BigInt decShl(BigInt num, const int n) {
-	if (n <= 0) {
-		return num;
+	if (n > 0) {
+		BigInt fives = n < 27 ? BigInt(FIVES[n]) : BIG_FIVE^^n;
+		num = num << n;
+		num *= fives;
 	}
-	BigInt fives = BIG_FIVE^^n;
-	num = num << n;
-	num *= fives;
+	if (n < 0) {
+		num = decShr(num, -n);
+	}
 	return num;
 }
 
-/// Shifts the number left by the specified number of decimal digits.
-/// If n <= 0 the number is returned unchanged.
+/// Shifts the number right (truncates) the specified number of decimal digits.
+/// If n == 0 the number is returned unchanged.
+/// If n < 0 the number is shifted left.
+public BigInt decShr(BigInt num, const int n) {
+	if (n > 0) {
+		BigInt fives = n < 27 ? BigInt(FIVES[n]) : BIG_FIVE^^n;
+		num = num >> n;
+		num /= fives;
+	}
+	if (n < 0) {
+		num = decShl(num, -n);
+	}
+	return num;
+}
+
+/// Shifts the number to the left by the specified number of decimal digits.
+/// If n == 0 the number is returned unchanged.
+/// If n < 0 the number is shifted to the right.
 public ulong decShl(ulong num, const int n) {
-	if (n <= 0) {
-		return num;
+	if (n > MAX_LONG_DIGITS) return 0;
+	if (n > 0) {
+		// may need to clip before shifting
+		int m = numDigits(num);
+		int diff = MAX_LONG_DIGITS - m - n;
+		if (diff < 0 ) {
+			num %= cast(ulong)TENS[m + diff];
+		}
+		ulong scale = cast(ulong)TENS[n];
+		num *= scale;
 	}
-	ulong scale = TENS[n];
-	num *= scale;
+	if (n < 0) {
+		num = decShr(num, -n);
+	}
 	return num;
 }
 
-// (R)TODO: Check for overflow?? What if it does??
+/// Rotates the number to the left by the specified number of decimal digits.
+/// If n == 0 the number is returned unchanged.
+/// If n < 0 the number is rotated to the right.
+public ulong decRol(ulong num, const int precision, const int n) {
+	if (n > precision) return 0;
+	if (n > 0) {
+		int m = precision - n;
+		ulong rem = num / TENS[m];
+		num %= TENS[m];
+		num *= TENS[n];
+		num += rem;
+	}
+	if (n < 0) {
+		num = decRor(num, precision, -n);
+	}
+	return num;
+}
+
+unittest {
+	writeln("decRol...");
+	ulong num = 1234567;
+writeln("num = ", num);
+	ulong rot = decRol(num, 7, 2);
+writeln("rot = ", rot);
+	writeln("test missing");
+}
+
+/// Rotates the number to the left by the specified number of decimal digits.
+/// If n == 0 the number is returned unchanged.
+/// If n < 0 the number is rotated to the right.
+public ulong decRor(ulong num, const int precision, const int n) {
+	if (n > precision) return 0;
+	if (n == precision) return num;
+	if (n > 0) {
+		int m = precision - n;
+		ulong rem = num / TENS[n];
+		num %= TENS[n];
+		num *= TENS[m];
+		num += rem;
+	}
+	if (n < 0) {
+		num = decRol(num, precision, -n);
+	}
+	return num;
+}
+
+unittest {
+	writeln("decRor...");
+	ulong num = 1234567;
+writeln("num = ", num);
+	ulong rot = decRor(num, 7, 2);
+writeln("rot = ", rot);
+	 rot = decRor(num, 9, 2);
+writeln("rot = ", rot);
+	 rot = decRor(num, 7, -2);
+writeln("rot = ", rot);
+	 rot = decRor(num, 7, 7);
+writeln("rot = ", rot);
+	writeln("test missing");
+}
+
+
+/// Shifts the number right (truncates) the specified number of decimal digits.
+/// If n == 0 the number is returned unchanged.
+/// If n < 0 the number is shifted left.
+public ulong decShr(ulong num, const int n) {
+	if (n > 0) {
+		num /= TENS[n];
+	}
+	if (n < 0) {
+		num = decShl(num, -n);
+	}
+	return num;
+}
 
 /// Shifts the number left by the specified number of decimal digits.
 /// If n <= 0 the number is returned unchanged.
 public uint decShl(uint num, const int n) {
-	if (n <= 0) {
-		return num;
+	if (n > MAX_INT_DIGITS) return 0;
+	if (n > 0) {
+		// may need to clip before shifting
+		int m = numDigits(num);
+		int diff = MAX_INT_DIGITS - m - n;
+		if (diff < 0 ) {
+			num %= cast(uint)TENS[m + diff];
+		}
+		uint scale = cast(uint)TENS[n];
+		num *= scale;
 	}
-	uint scale = cast(uint)TENS[n];
-	num *= scale;
+	if (n < 0) {
+		num = decShr(num, -n);
+	}
+	return num;
+}
+
+/// Shifts the number right (truncates) the specified number of decimal digits.
+/// If n == 0 the number is returned unchanged.
+/// If n < 0 the number is shifted left.
+public uint decShr(uint num, const int n) {
+	if (n > MAX_INT_DIGITS) return 0;
+	if (n > 0) {
+		num /= TENS[n];
+	}
+	if (n < 0) {
+		num = decShl(num, -n);
+	}
 	return num;
 }
 
@@ -793,6 +935,19 @@ unittest {
 	m = 12;
 	n = 4;
 	assertTrue(decShl(m,n) == 120000);
+	uint k;
+	k = 12345;
+	n = 2;
+	assertEqual!uint(1234500, decShl(k,n));
+	k = 1234567890;
+	n = 7;
+	assertEqual!uint(900000000, decShl(k,n));
+	k = 12;
+	n = 2;
+	assertEqual!uint(1200, decShl(k,n));
+	k = 12;
+	n = 4;
+	assertEqual!uint(120000, decShl(k,n));
 }
 
 unittest {

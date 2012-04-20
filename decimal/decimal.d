@@ -1,18 +1,16 @@
-﻿///
-/// A D programming language implementation of the
-/// General Decimal Arithmetic Specification,
-/// Version 1.70, (25 March 2009).
-/// (http://www.speleotrove.com/decimal/decarith.pdf)
-///
-/// License: <a href="http://www.boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
-/// Authors: Paul D. Anderson
-///
+﻿// Written in the D programming language
 
-/// Copyright Paul D. Anderson 2009 - 2012.
-/// Distributed under the Boost Software License, Version 1.0.
-/// (See accompanying file LICENSE_1_0.txt or copy at
-///  http://www.boost.org/LICENSE_1_0.txt)
-///
+/**
+ *	A D programming language implementation of the
+ *	General Decimal Arithmetic Specification,
+ *	Version 1.70, (25 March 2009).
+ *	http://www.speleotrove.com/decimal/decarith.pdf)
+ *
+ *	Copyright Paul D. Anderson 2009 - 2012.
+ *	Distributed under the Boost Software License, Version 1.0.
+ *	(See accompanying file LICENSE_1_0.txt or copy at
+ *	http://www.boost.org/LICENSE_1_0.txt)
+**/
 
 // (B)TODO: write some test cases for flag setting. test the add/sub/mul/div functions
 
@@ -20,19 +18,19 @@
 
 module decimal.decimal;
 
+import std.bigint;
+import std.conv;
+import std.array: replicate;
+import std.ascii: isDigit;
+import std.exception: assumeUnique;
+import std.math: PI, LOG2;
+import std.stdio: write, writeln;
+import std.string;
+
 import decimal.context;
 import decimal.rounding;
 import decimal.arithmetic;
 import decimal.test;
-
-import std.bigint;
-import std.exception: assumeUnique;
-import std.conv;
-import std.array: replicate;
-import std.ascii: isDigit;
-import std.math: PI, LOG2;
-import std.stdio: write, writeln;
-import std.string;
 
 alias BigDecimal.context bigContext;
 
@@ -56,7 +54,6 @@ struct BigDecimal {
 	private bool signed = false;	// true if the value is negative, false otherwise.
 	private int expo = 0;			// the exponent of the BigDecimal value
 	private BigInt mant;			// the coefficient of the BigDecimal value
-	// NOTE: not a uint -- causes math problems down the line.
 	package int digits; 			// the number of decimal digits in this number.
 									// (unless the number is a special value)
 

@@ -1,18 +1,16 @@
-﻿/**
- * A D programming language implementation of the
- * General Decimal Arithmetic Specification,
- * Version 1.70, (25 March 2009).
- * (http://www.speleotrove.com/decimal/decarith.pdf)
- *
- * License: <a href="http://www.boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
- * Authors: Paul D. Anderson
- */
+﻿// Written in the D programming language
 
-/* Copyright Paul D. Anderson 2009 - 2012.
- * Distributed under the Boost Software License, Version 1.0.
- * (See accompanying file LICENSE_1_0.txt or copy at
- *  http://www.boost.org/LICENSE_1_0.txt)
- */
+/**
+ *	A D programming language implementation of the
+ *	General Decimal Arithmetic Specification,
+ *	Version 1.70, (25 March 2009).
+ *	http://www.speleotrove.com/decimal/decarith.pdf)
+ *
+ *	Copyright Paul D. Anderson 2009 - 2012.
+ *	Distributed under the Boost Software License, Version 1.0.
+ *	(See accompanying file LICENSE_1_0.txt or copy at
+ *	http://www.boost.org/LICENSE_1_0.txt)
+**/
 
 module decimal.dec32;
 
@@ -458,7 +456,7 @@ public:
 	/// the number is converted to zero, the exponent is set to tinyExpo
 	/// and the underflow flag is set.
 	@property
-	 int exponent(const int expo) {
+	int exponent(const int expo) {
 		// check for overflow
 		if (expo > context.maxExpo) {
 			this = signed ? NEG_INF : INFINITY;
@@ -1089,7 +1087,7 @@ public:
 	 * Returns uint ten raised to the specified power.
 	 */
 	static uint pow10(const int n) {
-		return 10U^^n;
+		return cast(uint)TENS[n];
 	}
 
 }	// end Dec32 struct
@@ -1689,6 +1687,14 @@ unittest { // pow10
 
 unittest {
 	write("sqrt...");
+	Dec32 num = 1.0;
+	assertEqual(num, sqrt(num));
+	num = 2.0;
+	assertEqual(Dec32(std.math.sqrt(2.0)), sqrt(num));
+//	num = PI;
+	assertEqual!Dec32(Dec32.SQRT_PI, sqrt(Dec32.PI));
+	num = 2.0;
+	assertEqual(Dec32(std.math.sqrt(2.0)), sqrt(num));
 	writeln("test missing");
 }
 
