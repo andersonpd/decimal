@@ -67,6 +67,27 @@ bool assertFalse(bool actual, string file = __FILE__, int line = __LINE__ ) {
 	return assertEqual(false, actual, file, line);
 }
 
+/// tests addition for a specific type of decimal number (T).
+///
+public bool testAddition(T, U = T)(U op1, U op2, U expected)
+	if (isDecimal!T) {
+	T sum = T(op1) + T(op2);
+	return assertEqual!T(T(expected), sum);
+}
+
+unittest {
+	write("add..........");
+	testAddition!(BigDecimal, int)(12, 7, 18);
+	testAddition!(BigDecimal, real)(12.0, 7.1, 19.2);
+	testAddition!(Dec32, int)(12, 7, 18);
+	testAddition!(Dec32, real)(12.0, 7.1, 19.2);
+	testAddition!(Dec64, int)(12, 7, 18);
+	testAddition!(Dec64, real)(12.0, 7.1, 19.2);
+}
+
+public void AdditionTest() {
+}
+
 unittest {
 	writeln("---------------------------");
 	writeln("test................testing");
@@ -1089,6 +1110,7 @@ unittest {
 // and to check the NaN, Inf combinations better.
 unittest {
 	write("add..........");
+	testAddition!(BigDecimal, int)(12, 7, 18);
 	BigDecimal op1 = BigDecimal("12");
 	BigDecimal op2 = BigDecimal("7.00");
 	BigDecimal sum = add(op1, op2, testContext);
@@ -1995,22 +2017,22 @@ unittest {
 }
 
 unittest {
-	write("decShl.......");
+	write("shiftLeft.......");
 	BigInt m;
 	int n;
 	m = 12345;
 	n = 2;
-//	  writeln("decShl(m,n) = ", decShl(m,n));
-	assertEqual!BigInt(decShl(m,n), BigInt(1234500));
+//	  writeln("shiftLeft(m,n) = ", shiftLeft(m,n));
+	assertEqual!BigInt(shiftLeft(m,n), BigInt(1234500));
 	m = 1234567890;
 	n = 7;
-	assertEqual(decShl(m,n), BigInt(12345678900000000));
+	assertEqual(shiftLeft(m,n), BigInt(12345678900000000));
 	m = 12;
 	n = 2;
-	assertEqual!BigInt(decShl(m,n), BigInt(1200));
+	assertEqual!BigInt(shiftLeft(m,n), BigInt(1200));
 	m = 12;
 	n = 4;
-	assertEqual!BigInt(decShl(m,n), BigInt(120000));
+	assertEqual!BigInt(shiftLeft(m,n), BigInt(120000));
 	writeln("passed");
 }
 
@@ -2045,24 +2067,24 @@ unittest {
 }
 
 unittest {
-	write("decShl.......");
+	write("shiftLeft.......");
 	long m;
 	int n;
 	m = 12345;
 	n = 2;
-	assertTrue(decShl(m,n) == 1234500);
+	assertTrue(shiftLeft(m,n) == 1234500);
 	m = 1234567890;
 	n = 7;
-	assertTrue(decShl(m,n) == 12345678900000000);
+	assertTrue(shiftLeft(m,n) == 12345678900000000);
 	m = 12;
 	n = 2;
-	assertTrue(decShl(m,n) == 1200);
+	assertTrue(shiftLeft(m,n) == 1200);
 	m = 12;
 	n = 4;
-	assertTrue(decShl(m,n) == 120000);
+	assertTrue(shiftLeft(m,n) == 120000);
 	/*	  m = long.max;
 		n = 18;
-		assertTrue(decShl(m,n) == 9);*/
+		assertTrue(shiftLeft(m,n) == 9);*/
 	writeln("passed");
 }
 

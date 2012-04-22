@@ -274,6 +274,7 @@ public T nextPlus(T)(const T arg1, const DecimalContext context) if (isDecimal!T
 	if (result > T.max(context)) {
 		result = T.infinity;
 	}
+	// (A)TODO: does this need to be rounded? Check spec.
 	return result;
 }
 
@@ -540,10 +541,101 @@ public int compareTotal(T)(const T arg1, const T arg2) if (isDecimal!T) {
 	BigInt mant1 = arg1.coefficient;
 	BigInt mant2 = arg2.coefficient;
 	if (diff > 0) {
-		mant1 = decShl(mant1, diff);
+		mant1 = shiftLeft(mant1, diff);
 	}
 	else if (diff < 0) {
-		mant2 = decShl(mant2, -diff);
+		mant2 = shiftLeft(mant2, -diff);
+	}
+	auto result = mant1 - mant2;
+
+	// if equal after alignment, compare the original exponents
+	if (result == 0) {
+		return (arg1.exponent > arg2.exponent) ? ret1 : ret2;
+	}
+	// otherwise return the numerically larger
+	return (result > 0) ? ret1 : ret2;
+}
+
+public int compareTotal2(T)(const T arg1, const T arg2) if (isDecimal!T) {
+
+	int ret1 =	1;
+	int ret2 = -1;
+
+	// if signs differ...
+	if (arg1.sign != arg2.sign) {
+		return !arg1.sign ? ret1 : ret2;
+	}
+
+	// if both numbers are signed swap the return values
+	if (arg1.sign) {
+		ret1 = -1;
+		ret2 =	1;
+	}
+
+	// if either is zero...
+	if (arg1.isZero || arg2.isZero) {
+		// if both are zero compare exponents
+		if (arg1.isZero && arg2.isZero) {
+			auto result = arg1.exponent - arg2.exponent;
+			if (result == 0) return 0;
+			return (result > 0) ? ret1 : ret2;
+		}
+		return arg1.isZero ? ret1 : ret2;
+	}
+
+	// if either is infinite...
+	if (arg1.isInfinite || arg2.isInfinite) {
+		if (arg1.isInfinite && arg2.isInfinite) {
+			return 0;
+		}
+		return arg1.isInfinite ? ret1 : ret2;
+	}
+
+	// if either is quiet...
+	if (arg1.isQuiet || arg2.isQuiet) {
+		// if both are quiet compare payloads.
+		if (arg1.isQuiet && arg2.isQuiet) {
+			auto result = arg1.payload - arg2.payload;
+			if (result == 0) return 0;
+			return (result > 0) ? ret1 : ret2;
+		}
+		return arg1.isQuiet ? ret1 : ret2;
+	}
+
+	// if either is signaling...
+	if (arg1.isSignaling || arg2.isSignaling) {
+		// if both are signaling compare payloads.
+		if (arg1.isSignaling && arg2.isSignaling) {
+			auto result = arg1.payload - arg2.payload;
+			if (result == 0) return 0;
+			return (result > 0) ? ret1 : ret2;
+		}
+		return arg1.isSignaling ? ret1 : ret2;
+	}
+
+
+	// if both exponents are equal, any difference is in the coefficient
+	if (arg1.exponent == arg2.exponent) {
+		auto result = arg1.coefficient - arg2.coefficient;
+		if (result == 0) return 0;
+		return (result > 0) ? ret1 : ret2;
+	}
+
+	// if the (finite) numbers have different magnitudes...
+	int diff = (arg1.exponent + arg1.digits) - (arg2.exponent + arg2.digits);
+	if (diff > 0) return ret1;
+	if (diff < 0) return ret2;
+
+	// we know the numbers have the same magnitude;
+	// align the coefficients for comparison
+	diff = arg1.exponent - arg2.exponent;
+	BigInt mant1 = arg1.coefficient;
+	BigInt mant2 = arg2.coefficient;
+	if (diff > 0) {
+		mant1 = shiftLeft(mant1, diff);
+	}
+	else if (diff < 0) {
+		mant2 = shiftLeft(mant2, -diff);
 	}
 	auto result = mant1 - mant2;
 
@@ -695,6 +787,91 @@ public const (T) quantum(T)(const T arg) if (isDecimal!T) {
 		return T(1, arg.exponent);
 	}
 
+// (L)TODO: move this back to arithmetic
+/// Shifts the first operand by the specified number of decimal digits.
+/// (Not binary digits!) Positive values of the second operand shift the
+/// first operand left (multiplying by tens). Negative values shift right
+/// (dividing by tens). If the number is NaN, or if the shift value is less
+/// than -precision or greater than precision, an INVALID_OPERATION is signaled.
+/// An infinite number is returned unchanged.
+/// Implements the 'shift' function in the specification. (p. 49)
+public T shift(T)(const T arg, const int n, DecimalContext context)
+		if (isDecimal!T) {
+
+	T arg2;
+	// check for NaN operand
+	if (invalidOperand!T(arg, arg2)) {
+		return arg2;
+	}
+	if (n < -context.precision || n > context.precision) {
+		arg2 = setInvalidFlag!T();
+		return arg2;
+	}
+	if (arg.isInfinite) {
+		return arg.dup;
+	}
+	if (n == 0) {
+		return arg.dup;
+	}
+	BigDecimal result = toBigDecimal!T(arg);
+	if (n > 0) {
+		shiftLeft(result.coefficient, n, context.precision);
+	}
+	else {
+		shiftRight(result.coefficient, n, context.precision);
+	}
+	return T(result);
+}
+
+import decimal.dec32;
+
+unittest {
+	write("shift...");
+	Dec32 num;
+	shift!Dec32(num, 4, num.context);
+	writeln("test missing");
+}
+
+/// Rotates the first operand by the specified number of decimal digits.
+/// (Not binary digits!) Positive values of the second operand rotate the
+/// first operand left (multiplying by tens). Negative values rotate right
+/// (divide by 10s). If the number is NaN, or if the rotate value is less
+/// than -precision or greater than precision, an INVALID_OPERATION is signaled.
+/// An infinite number is returned unchanged.
+/// Implements the 'rotate' function in the specification. (p. 47-48)
+public T rotate(T)(const T arg, const int n, DecimalContext context)
+		if (isDecimal!T) {
+
+	T result;
+	// check for NaN operand
+	if (invalidOperand!T(arg, result)) {
+		return result;
+	}
+	if (n < -context.precision || n > context.precision) {
+		result = setInvalidFlag();
+		return result;
+	}
+	if (arg.isInfinite) {
+		return arg.dup;
+	}
+	if (n == 0) {
+		return arg.dup;
+	}
+	result = arg.dup;
+	BigDecimal result = toBigDecimal!T(arg);
+	if (n > 0) {
+		shiftLeft(result);
+	}
+	else {
+		shiftRight(result);
+	}
+	return T(result);
+
+//	return n < 0 ? decRotR!T(// (L)TODO: And then a miracle happens....
+
+	return result;
+}
+
 //------------------------------------------
 // binary arithmetic operations
 //------------------------------------------
@@ -753,6 +930,7 @@ public T add(T)(const T arg1, const T arg2, const DecimalContext context,
 	BigDecimal sum = BigDecimal.zero;
 	BigDecimal augend = toBigDecimal!T(arg1);
 	BigDecimal addend = toBigDecimal!T(arg2);
+	// TODO: If the operands are too far apart, one of them will end up zero.
 	// align the operands
 	alignOps(augend, addend, context);
 	// if operands have the same sign...
@@ -1015,13 +1193,13 @@ public T div(T)(const T arg1, const T arg2, const DecimalContext context,
 	BigDecimal quotient = BigDecimal.zero;
 	int diff = dividend.exponent - divisor.exponent;
 	if (diff > 0) {
-		decShl(dividend.coefficient, diff);
+		shiftLeft(dividend.coefficient, diff);
 		dividend.exponent = dividend.exponent - diff;
 		dividend.digits = dividend.digits + diff;
 	}
 	int shift = 4 + context.precision + divisor.digits - dividend.digits;
 	if (shift > 0) {
-		dividend.coefficient = decShl(dividend.coefficient, shift);
+		dividend.coefficient = shiftLeft(dividend.coefficient, shift);
 		dividend.exponent = dividend.exponent - shift;
 		dividend.digits = dividend.digits + diff;
 	}
@@ -1059,10 +1237,10 @@ public T divideInteger(T)(const T arg1, const T arg2,
 	// align operands
 	int diff = dividend.exponent - divisor.exponent;
 	if (diff < 0) {
-		divisor.coefficient = decShl(divisor.coefficient, -diff);
+		divisor.coefficient = shiftLeft(divisor.coefficient, -diff);
 	}
 	if (diff > 0) {
-		dividend.coefficient = decShl(dividend.coefficient, diff);
+		dividend.coefficient = shiftLeft(dividend.coefficient, diff);
 	}
 	quotient.sign = dividend.sign ^ divisor.sign;
 	quotient.coefficient = dividend.coefficient / divisor.coefficient;
@@ -1147,7 +1325,7 @@ public T quantize(T)(const T arg1, const T arg2,
 
 	// (A)TODO: this shift can cause integer overflow for fixed size decimals
 	if (diff > 0) {
-		result.coefficient = decShl(result.coefficient, diff);
+		result.coefficient = shiftLeft(result.coefficient, diff, context.precision);
 		result.digits = result.digits + diff;
 		result.exponent = arg2.exponent;
 		if (result.digits > context.precision) {
@@ -1247,11 +1425,11 @@ private void alignOps(ref BigDecimal arg1, ref BigDecimal arg2,
 		const DecimalContext context) {
 	int diff = arg1.exponent - arg2.exponent;
 	if (diff > 0) {
-		arg1.coefficient = decShl(arg1.coefficient, diff);
+		arg1.coefficient = shiftLeft(arg1.coefficient, diff, context.precision);
 		arg1.exponent = arg2.exponent;
 	}
 	else if (diff < 0) {
-		arg2.coefficient = decShl(arg2.coefficient, -diff);
+		arg2.coefficient = shiftLeft(arg2.coefficient, -diff, context.precision);
 		arg2.exponent = arg1.exponent;
 	}
 }
@@ -1615,7 +1793,7 @@ unittest {	// quantum
 }
 
 unittest {	// add
-	// (A)TODO: change inputs to real njumbers
+	// (A)TODO: change inputs to real numbers
 	BigDecimal arg1, arg2, sum;
 	arg1 = BigDecimal("12");
 	arg2 = BigDecimal("7.00");

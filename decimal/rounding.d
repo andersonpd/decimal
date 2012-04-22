@@ -77,9 +77,10 @@ public void round(T)(ref T num, const DecimalContext context) if (isDecimal!T) {
 // private methods
 //--------------------------------
 
-/// Returns true if the number overflows. (GDA Spec., p. 53) If overflow occurs
-/// the number is converted to the correct value according to the rounding mode.
-/// Also, if overflow occurs the overflow, rounded, and inexact flags are set.
+/// Returns true if the number overflows and adjusts the number
+/// according to the rounding mode.
+/// Implements the 'overflow' processing in the specification. (p. 53)
+/// Flags: OVERFLOW, ROUNDED, INEXACT.
 private bool overflow(T)(ref T num, const DecimalContext context) {
 	if (num.adjustedExponent <= context.maxExpo) return false;
 	switch (context.rounding) {
@@ -172,6 +173,7 @@ private void roundByMode(T)(ref T num, const DecimalContext context)
 /// number is unchanged and the remainder is zero.
 /// Otherwise the rounded flag is set, and if the remainder is not zero
 /// the inexact flag is also set.
+/// Flags: ROUNDED, INEXACT.
 private T getRemainder(T) (ref T num,
 		const DecimalContext context) if (isDecimal!T) {
 
@@ -453,42 +455,45 @@ public int firstDigit(const ulong n, int maxValue = 19) {
 /// Shifts the number left by the specified number of decimal digits.
 /// If n == 0 the number is returned unchanged.
 /// If n < 0 the number is shifted right.
-public BigInt decShl(BigInt num, const int n) {
+public BigInt shiftLeft(BigInt num, const int n, const int precision) {
 	if (n > 0) {
 		BigInt fives = n < 27 ? BigInt(FIVES[n]) : BIG_FIVE^^n;
 		num = num << n;
 		num *= fives;
 	}
 	if (n < 0) {
-		num = decShr(num, -n);
+		num = shiftRight(num, -n, precision);
 	}
 	return num;
 }
 
-/// Shifts the number right (truncates) the specified number of decimal digits.
+/// Shifts the number left by the specified number of decimal digits.
 /// If n == 0 the number is returned unchanged.
-/// If n < 0 the number is shifted left.
-public BigInt decShr(BigInt num, const int n) {
-	if (n > 0) {
+/// If n < 0 the number is shifted right.
+public BigInt shiftLeft(BigInt num, const int n) {
+	return shiftLeft(num, n, int.max);
+// const int precision = int.max
+/*	if (n > 0) {
 		BigInt fives = n < 27 ? BigInt(FIVES[n]) : BIG_FIVE^^n;
-		num = num >> n;
-		num /= fives;
+		num = num << n;
+		num *= fives;
 	}
 	if (n < 0) {
-		num = decShl(num, -n);
+		num = shiftRight(num, -n, precision);
 	}
-	return num;
+	return num;*/
 }
 
 /// Shifts the number to the left by the specified number of decimal digits.
 /// If n == 0 the number is returned unchanged.
 /// If n < 0 the number is shifted to the right.
-public ulong decShl(ulong num, const int n) {
-	if (n > MAX_LONG_DIGITS) return 0;
+public ulong shiftLeft(ulong num, const int n,
+		const int precision = MAX_LONG_DIGITS) {
+	if (n > precision) return 0;
 	if (n > 0) {
 		// may need to clip before shifting
 		int m = numDigits(num);
-		int diff = MAX_LONG_DIGITS - m - n;
+		int diff = precision - m - n;
 		if (diff < 0 ) {
 			num %= cast(ulong)TENS[m + diff];
 		}
@@ -496,7 +501,72 @@ public ulong decShl(ulong num, const int n) {
 		num *= scale;
 	}
 	if (n < 0) {
-		num = decShr(num, -n);
+		num = shiftRight(num, -n, precision);
+	}
+	return num;
+}
+
+/// Shifts the number left by the specified number of decimal digits.
+/// If n <= 0 the number is returned unchanged.
+/// If n < 0 the number is shifted to the right.
+public uint shiftLeft(uint num, const int n, int precision = MAX_INT_DIGITS) {
+	if (n > precision) return 0;
+	if (n > 0) {
+		// may need to clip before shifting
+		int m = numDigits(num);
+		int diff = precision - m - n;
+		if (diff < 0 ) {
+			num %= cast(uint)TENS[m + diff];
+		}
+		uint scale = cast(uint)TENS[n];
+		num *= scale;
+	}
+	if (n < 0) {
+		num = shiftRight(num, -n, precision);
+	}
+	return num;
+}
+
+/// Shifts the number right the specified number of decimal digits.
+/// If n == 0 the number is returned unchanged.
+/// If n < 0 the number is shifted left.
+public BigInt shiftRight(BigInt num, const int n,
+		const int precision = BigDecimal.context.precision) {
+	if (n > 0) {
+		BigInt fives = n < 27 ? BigInt(FIVES[n]) : BIG_FIVE^^n;
+		num = num >> n;
+		num /= fives;
+	}
+	if (n < 0) {
+		num = shiftLeft(num, -n, precision);
+	}
+	return num;
+}
+
+/// Shifts the number right the specified number of decimal digits.
+/// If n == 0 the number is returned unchanged.
+/// If n < 0 the number is shifted left.
+public ulong shiftRight(ulong num, int n,
+		const int precision = MAX_LONG_DIGITS) {
+	if (n > 0) {
+		num /= TENS[n];
+	}
+	if (n < 0) {
+		num = shiftLeft(num, -n, precision);
+	}
+	return num;
+}
+/// Shifts the number right (truncates) the specified number of decimal digits.
+/// If n == 0 the number is returned unchanged.
+/// If n < 0 the number is shifted left.
+public uint shiftRight(uint num, int n,
+		const int precision = MAX_INT_DIGITS) {
+	if (n >precision) return 0;
+	if (n > 0) {
+		num /= TENS[n];
+	}
+	if (n < 0) {
+		num = shiftLeft(num, -n, precision);
 	}
 	return num;
 }
@@ -504,7 +574,7 @@ public ulong decShl(ulong num, const int n) {
 /// Rotates the number to the left by the specified number of decimal digits.
 /// If n == 0 the number is returned unchanged.
 /// If n < 0 the number is rotated to the right.
-public ulong decRol(ulong num, const int precision, const int n) {
+public ulong rotateLeft(ulong num, const int n, const int precision) {
 	if (n > precision) return 0;
 	if (n > 0) {
 		int m = precision - n;
@@ -514,24 +584,24 @@ public ulong decRol(ulong num, const int precision, const int n) {
 		num += rem;
 	}
 	if (n < 0) {
-		num = decRor(num, precision, -n);
+		num = rotateRight(num, precision, -n);
 	}
 	return num;
 }
 
 unittest {
-	writeln("decRol...");
+	writeln("rotateLeft...");
 	ulong num = 1234567;
 writeln("num = ", num);
-	ulong rot = decRol(num, 7, 2);
+	ulong rot = rotateLeft(num, 7, 2);
 writeln("rot = ", rot);
 	writeln("test missing");
 }
 
-/// Rotates the number to the left by the specified number of decimal digits.
+/// Rotates the number to the right by the specified number of decimal digits.
 /// If n == 0 the number is returned unchanged.
-/// If n < 0 the number is rotated to the right.
-public ulong decRor(ulong num, const int precision, const int n) {
+/// If n < 0 the number is rotated to the left.
+public ulong rotateRight(ulong num, const int n, const int precision) {
 	if (n > precision) return 0;
 	if (n == precision) return num;
 	if (n > 0) {
@@ -542,73 +612,26 @@ public ulong decRor(ulong num, const int precision, const int n) {
 		num += rem;
 	}
 	if (n < 0) {
-		num = decRol(num, precision, -n);
+		num = rotateLeft(num, precision, -n);
 	}
 	return num;
 }
 
 unittest {
-	writeln("decRor...");
+	writeln("rotateRight...");
 	ulong num = 1234567;
 writeln("num = ", num);
-	ulong rot = decRor(num, 7, 2);
+	ulong rot = rotateRight(num, 7, 2);
 writeln("rot = ", rot);
-	 rot = decRor(num, 9, 2);
+	 rot = rotateRight(num, 9, 2);
 writeln("rot = ", rot);
-	 rot = decRor(num, 7, -2);
+	 rot = rotateRight(num, 7, -2);
 writeln("rot = ", rot);
-	 rot = decRor(num, 7, 7);
+	 rot = rotateRight(num, 7, 7);
 writeln("rot = ", rot);
 	writeln("test missing");
 }
 
-
-/// Shifts the number right (truncates) the specified number of decimal digits.
-/// If n == 0 the number is returned unchanged.
-/// If n < 0 the number is shifted left.
-public ulong decShr(ulong num, const int n) {
-	if (n > 0) {
-		num /= TENS[n];
-	}
-	if (n < 0) {
-		num = decShl(num, -n);
-	}
-	return num;
-}
-
-/// Shifts the number left by the specified number of decimal digits.
-/// If n <= 0 the number is returned unchanged.
-public uint decShl(uint num, const int n) {
-	if (n > MAX_INT_DIGITS) return 0;
-	if (n > 0) {
-		// may need to clip before shifting
-		int m = numDigits(num);
-		int diff = MAX_INT_DIGITS - m - n;
-		if (diff < 0 ) {
-			num %= cast(uint)TENS[m + diff];
-		}
-		uint scale = cast(uint)TENS[n];
-		num *= scale;
-	}
-	if (n < 0) {
-		num = decShr(num, -n);
-	}
-	return num;
-}
-
-/// Shifts the number right (truncates) the specified number of decimal digits.
-/// If n == 0 the number is returned unchanged.
-/// If n < 0 the number is shifted left.
-public uint decShr(uint num, const int n) {
-	if (n > MAX_INT_DIGITS) return 0;
-	if (n > 0) {
-		num /= TENS[n];
-	}
-	if (n < 0) {
-		num = decShl(num, -n);
-	}
-	return num;
-}
 
 /// Returns the last digit of the argument.
 public uint lastDigit(const BigInt arg) {
@@ -687,7 +710,7 @@ public int trimZeros(ref BigInt n, const int maxValue ) {
 public BigInt tens(const int n) {
 	if (n <= 19) return BigInt(TENS[n]);
 	BigInt num = 1;
-	return decShl(num, n);
+	return shiftLeft(num, n);
 }
 
 //-----------------------------
@@ -920,34 +943,34 @@ unittest {
 }
 
 unittest {
-	// decShl(BigInt)
+	// shiftLeft(BigInt)
 	BigInt m;
 	int n;
 	m = 12345;
 	n = 2;
-	assertTrue(decShl(m,n) == 1234500);
+	assertTrue(shiftLeft(m, n, 100) == 1234500);
 	m = 1234567890;
 	n = 7;
-	assertTrue(decShl(m,n) == BigInt(12345678900000000));
+	assertTrue(shiftLeft(m, n, 100) == BigInt(12345678900000000));
 	m = 12;
 	n = 2;
-	assertTrue(decShl(m,n) == 1200);
+	assertTrue(shiftLeft(m, n, 100) == 1200);
 	m = 12;
 	n = 4;
-	assertTrue(decShl(m,n) == 120000);
+	assertTrue(shiftLeft(m, n, 100) == 120000);
 	uint k;
 	k = 12345;
 	n = 2;
-	assertEqual!uint(1234500, decShl(k,n));
+	assertEqual!uint(1234500, cast(uint)shiftLeft(k, n, 9));
 	k = 1234567890;
 	n = 7;
-	assertEqual!uint(900000000, decShl(k,n));
+	assertEqual!uint(900000000, cast(uint)shiftLeft(k, n, 9));
 	k = 12;
 	n = 2;
-	assertEqual!uint(1200, decShl(k,n));
+	assertEqual!uint(1200, cast(uint)shiftLeft(k, n, 9));
 	k = 12;
 	n = 4;
-	assertEqual!uint(120000, decShl(k,n));
+	assertEqual!uint(120000, cast(uint)shiftLeft(k, n, 9));
 }
 
 unittest {
@@ -1009,21 +1032,21 @@ unittest {
 }
 
 unittest {
-	// decShl
+	// shiftLeft
 	long m;
 	int n;
 	m = 12345;
 	n = 2;
-	assertTrue(decShl(m,n) == 1234500);
+	assertTrue(shiftLeft(m,n) == 1234500);
 	m = 1234567890;
 	n = 7;
-	assertTrue(decShl(m,n) == 12345678900000000);
+	assertTrue(shiftLeft(m,n) == 12345678900000000);
 	m = 12;
 	n = 2;
-	assertTrue(decShl(m,n) == 1200);
+	assertTrue(shiftLeft(m,n) == 1200);
 	m = 12;
 	n = 4;
-	assertTrue(decShl(m,n) == 120000);
+	assertTrue(shiftLeft(m,n) == 120000);
 }
 
 unittest {

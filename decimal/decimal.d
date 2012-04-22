@@ -709,9 +709,9 @@ const string toString() {
 
 	// (B)TODO: move this outside the struct
 	/// Returns a BigInt value of ten raised to the specified power.
-	public static BigInt pow10(const int n) {
+	public static BigInt pow10(int n) {
 		BigInt num = 1;
-		return decShl(num, n);
+		return shiftLeft(num, n, context.precision);
 	}
 
 	/// Returns a copy of the context with a new precision.
