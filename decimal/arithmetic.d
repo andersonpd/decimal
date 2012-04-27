@@ -37,21 +37,21 @@ import std.string;
 // classification functions
 //--------------------------------
 
-/// Returns a string indicating the class and sign of the argument.
-/// Classes are: sNaN, NaN, Infinity, Zero, Normal, and Subnormal.
-/// The sign of any NaN values is ignored in the classification.
-/// The argument is not rounded and no flags are changed.
-/// Implements the 'class' function in the specification. (p. 42)
-public string classify(T)(const T arg) if (isDecimal!T) {
-	if (arg.isFinite) {
-		if (arg.isZero) 	 { return arg.sign ? "-Zero" : "+Zero"; }
-		if (arg.isNormal)	 { return arg.sign ? "-Normal" : "+Normal"; }
-		if (arg.isSubnormal) { return arg.sign ? "-Subnormal" : "+Subnormal"; }
+	/// Returns a string indicating the class and sign of the argument.
+	/// Classes are: sNaN, NaN, Infinity, Zero, Normal, and Subnormal.
+	/// The sign of any NaN values is ignored in the classification.
+	/// The argument is not rounded and no flags are changed.
+	/// Implements the 'class' function in the specification. (p. 42)
+	public string classify(T)(const T arg) if (isDecimal!T) {
+		if (arg.isFinite) {
+			if (arg.isZero) 	 { return arg.sign ? "-Zero" : "+Zero"; }
+			if (arg.isNormal)	 { return arg.sign ? "-Normal" : "+Normal"; }
+			if (arg.isSubnormal) { return arg.sign ? "-Subnormal" : "+Subnormal"; }
+		}
+		if (arg.isInfinite)  { return arg.sign ? "-Infinity" : "+Infinity"; }
+		if (arg.isSignaling) { return "sNaN"; }
+		return "NaN";
 	}
-	if (arg.isInfinite)  { return arg.sign ? "-Infinity" : "+Infinity"; }
-	if (arg.isSignaling) { return "sNaN"; }
-	return "NaN";
-}
 
 //--------------------------------
 // copy functions
@@ -100,7 +100,7 @@ public T copySign(T)(const T arg1, const T arg2) if (isDecimal!T) {
 /// Implements the 'logb' function in the specification. (p. 47)
 public T logb(T)(const T arg) {
 
-	T result;
+	T result = T.nan;
 
 	if (invalidOperand!T(arg, result)) {
 		return result;
@@ -125,7 +125,7 @@ public T logb(T)(const T arg) {
 /// Flags: INVALID_OPERATION, UNDERFLOW, OVERFLOW.
 /// Implements the 'scaleb' function in the specification. (p. 48)
 public T scaleb(T)(const T arg1, const T arg2) if (isDecimal!T) {
-	T result;
+	T result = T.nan;
 	if (invalidBinaryOp!T(arg1, arg2, result)) {
 		return result;
 	}
@@ -162,7 +162,7 @@ public T scaleb(T)(const T arg1, const T arg2) if (isDecimal!T) {
 /// version 1.68 of the specification." (p. 37)
 /// Flags: INVALID_OPERATION
 public T reduce(T)(const T arg) if (isDecimal!T) {
-	T result;
+	T result = T.nan;
 	if (invalidOperand!T(arg, result)) {
 		return result;
 	}
@@ -171,6 +171,8 @@ public T reduce(T)(const T arg) if (isDecimal!T) {
 		return result;
 	}
 
+	// no context is required since the number only gets shorter
+	// TODO: what if the exponent overflows?
 	int digits = result.digits;
 	auto temp = result.coefficient;
 	int zeros = trimZeros(temp, digits);
@@ -183,6 +185,10 @@ public T reduce(T)(const T arg) if (isDecimal!T) {
 	return result;
 }
 
+public T normalize(T)(const T arg) if (isDecimal!T) {
+	return reduce!T(arg);
+}
+
 /// Returns the absolute value of the argument.
 /// This operation rounds the result and may set flags.
 /// The result is equivalent to plus(arg) for positive numbers
@@ -191,8 +197,9 @@ public T reduce(T)(const T arg) if (isDecimal!T) {
 /// use the 'copyAbs' function.
 /// Implements the 'abs' function in the specification. (p. 26)
 /// Flags: INVALID_OPERATION
-public T abs(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
-	T result;
+public T abs(T)(const T arg,
+		const DecimalContext context = T.context) if (isDecimal!T) {
+	T result = T.nan;
 	if (invalidOperand!T(arg, result)) {
 		return result;
 	}
@@ -217,8 +224,9 @@ public int sgn(T)(const T arg) if (isDecimal!T) {
 /// To copy without rounding or setting flags use the 'copy' function.
 /// Implements the 'plus' function in the specification. (p. 33)
 /// Flags: INVALID_OPERATION
-public T plus(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
-	T result;
+public T plus(T)(const T arg,
+		const DecimalContext context = T.context) if (isDecimal!T) {
+	T result = T.nan;
 	if (invalidOperand!T(arg, result)) {
 		return result;
 	}
@@ -233,8 +241,9 @@ public T plus(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
 /// To copy without rounding or setting flags use the 'copyNegate' function.
 /// Implements the 'minus' function in the specification. (p. 37)
 /// Flags: INVALID_OPERATION
-public T minus(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
-	T result;
+public T minus(T)(const T arg,
+		const DecimalContext context = T.context) if (isDecimal!T) {
+	T result = T.nan;
 	if (invalidOperand!T(arg, result)) {
 		return result;
 	}
@@ -251,8 +260,9 @@ public T minus(T)(const T arg, const DecimalContext context) if (isDecimal!T) {
 /// the argument.
 /// Implements the 'next-plus' function in the specification. (p. 34)
 /// Flags: INVALID_OPERATION
-public T nextPlus(T)(const T arg1, const DecimalContext context) if (isDecimal!T) {
-	T result;
+public T nextPlus(T)(const T arg1,
+		const DecimalContext context = T.context) if (isDecimal!T) {
+	T result = T.nan;
 	if (invalidOperand!T(arg1, result)) {
 		return result;
 	}
@@ -282,10 +292,10 @@ public T nextPlus(T)(const T arg1, const DecimalContext context) if (isDecimal!T
 /// the argument.
 /// Implements the 'next-minus' function in the specification. (p. 34)
 /// Flags: INVALID_OPERATION
-public T nextMinus(T)(const T arg, const DecimalContext context)
-		if (isDecimal!T) {
+public T nextMinus(T)(const T arg,
+		const DecimalContext context = T.context) if (isDecimal!T) {
 
-	T result;
+	T result = T.nan;
 	if (invalidOperand!T(arg, result)) {
 		return result;
 	}
@@ -318,8 +328,8 @@ public T nextMinus(T)(const T arg, const DecimalContext context)
 /// Implements the 'next-toward' function in the specification. (p. 34-35)
 /// Flags: INVALID_OPERATION
 public T nextToward(T)(const T arg1, const T arg2,
-		DecimalContext context) if (isDecimal!T) {
-	T result;
+		const DecimalContext context = T.context) if (isDecimal!T) {
+	T result = T.nan;
 	if (invalidBinaryOp!T(arg1, arg2, result)) {
 		return result;
 	}
@@ -341,7 +351,7 @@ public T nextToward(T)(const T arg1, const T arg2,
 /// less than, equal to, or greater than the first operand.
 /// Implements the 'compare' function in the specification. (p. 27)
 /// Flags: INVALID_OPERATION
-public int compare(T)(const T arg1, const T arg2, const DecimalContext context,
+public int compare(T)(const T arg1, const T arg2, const DecimalContext context = T.context,
 		bool rounded = true) if (isDecimal!T) {
 
 	// any operation with a signaling NaN is invalid.
@@ -391,23 +401,23 @@ public int compare(T)(const T arg1, const T arg2, const DecimalContext context,
 /// Returns true if the operands are equal to the current precision.
 /// Finite numbers are equal if they are numerically equal
 /// to the current precision.
-/// A NaN is not equal to any number, not even to another NaN.
+/// A NaN is not equal to any number, not even another NaN or itself.
 /// Infinities are equal if they have the same sign.
 /// Zeros are equal regardless of sign.
 /// A decimal NaN is not equal to itself (this != this).
 /// This function is not included in the specification.
 /// Flags: INVALID_OPERATION
-public bool equals(T)(const T arg1, const T arg2, DecimalContext context,
+public bool equals(T)(const T arg1, const T arg2, const DecimalContext context = T.context,
 		const bool rounded = true) if (isDecimal!T) {
 
 	// any operation with a signaling NaN is invalid.
-	// NaN is never equal to anything, not even another NaN
 	if (arg1.isSignaling || arg2.isSignaling) {
 		contextFlags.setFlags(INVALID_OPERATION);
 		return false;
 	}
 
 	// if either is NaN...
+	// NaN is never equal to any number, not even another NaN
 	if (arg1.isNaN || arg2.isNaN) return false;
 
 	// if either is infinite...
@@ -448,7 +458,7 @@ public bool equals(T)(const T arg1, const T arg2, DecimalContext context,
 /// Implements the 'compare-signal' function in the specification. (p. 27)
 /// Flags: INVALID_OPERATION
 public int compareSignal(T) (const T arg1, const T arg2,
-		DecimalContext context, bool rounded = true) if (isDecimal!T) {
+		const DecimalContext context = T.context, bool rounded = true) if (isDecimal!T) {
 
 	// any operation with NaN is invalid.
 	// if both are NaN, return as if arg1 > arg2.
@@ -459,12 +469,15 @@ public int compareSignal(T) (const T arg1, const T arg2,
 	return (compare!T(arg1, arg2, context, rounded));
 }
 
-// (A)TODO: this is either a true abstract representation compare or it isn't
+/// Numbers (representations which are not NaNs) are ordered such that
+/// a larger numerical value is higher in the ordering.
+/// If two representations have the same numerical value
+/// then the exponent is taken into account;
+/// larger (more positive) exponents are higher in the ordering.
 /// Compares the operands using their abstract representation rather than
 /// their numerical value.
 /// Returns 0 if the numbers are equal and have the same representation.
 /// Implements the 'compare-total' function in the specification. (p. 42-43)
-// (A)TODO: just compare signs, coefficients and exponenents.
 /// Flags: NONE.
 public int compareTotal(T)(const T arg1, const T arg2) if (isDecimal!T) {
 
@@ -476,6 +489,11 @@ public int compareTotal(T)(const T arg1, const T arg2) if (isDecimal!T) {
 		return !arg1.sign ? ret1 : ret2;
 	}
 
+	// quick bitwise comparison
+	static if (isFixedDecimal!T) {
+		if (arg1.bits == arg2.bits) return 0;
+	}
+
 	// if both numbers are signed swap the return values
 	if (arg1.sign) {
 		ret1 = -1;
@@ -530,97 +548,7 @@ public int compareTotal(T)(const T arg1, const T arg2) if (isDecimal!T) {
 		return (result > 0) ? ret1 : ret2;
 	}
 
-	// if the (finite) numbers have different magnitudes...
-	int diff = (arg1.exponent + arg1.digits) - (arg2.exponent + arg2.digits);
-	if (diff > 0) return ret1;
-	if (diff < 0) return ret2;
-
-	// we know the numbers have the same magnitude;
-	// align the coefficients for comparison
-	diff = arg1.exponent - arg2.exponent;
-	BigInt mant1 = arg1.coefficient;
-	BigInt mant2 = arg2.coefficient;
-	if (diff > 0) {
-		mant1 = shiftLeft(mant1, diff);
-	}
-	else if (diff < 0) {
-		mant2 = shiftLeft(mant2, -diff);
-	}
-	auto result = mant1 - mant2;
-
-	// if equal after alignment, compare the original exponents
-	if (result == 0) {
-		return (arg1.exponent > arg2.exponent) ? ret1 : ret2;
-	}
-	// otherwise return the numerically larger
-	return (result > 0) ? ret1 : ret2;
-}
-
-public int compareTotal2(T)(const T arg1, const T arg2) if (isDecimal!T) {
-
-	int ret1 =	1;
-	int ret2 = -1;
-
-	// if signs differ...
-	if (arg1.sign != arg2.sign) {
-		return !arg1.sign ? ret1 : ret2;
-	}
-
-	// if both numbers are signed swap the return values
-	if (arg1.sign) {
-		ret1 = -1;
-		ret2 =	1;
-	}
-
-	// if either is zero...
-	if (arg1.isZero || arg2.isZero) {
-		// if both are zero compare exponents
-		if (arg1.isZero && arg2.isZero) {
-			auto result = arg1.exponent - arg2.exponent;
-			if (result == 0) return 0;
-			return (result > 0) ? ret1 : ret2;
-		}
-		return arg1.isZero ? ret1 : ret2;
-	}
-
-	// if either is infinite...
-	if (arg1.isInfinite || arg2.isInfinite) {
-		if (arg1.isInfinite && arg2.isInfinite) {
-			return 0;
-		}
-		return arg1.isInfinite ? ret1 : ret2;
-	}
-
-	// if either is quiet...
-	if (arg1.isQuiet || arg2.isQuiet) {
-		// if both are quiet compare payloads.
-		if (arg1.isQuiet && arg2.isQuiet) {
-			auto result = arg1.payload - arg2.payload;
-			if (result == 0) return 0;
-			return (result > 0) ? ret1 : ret2;
-		}
-		return arg1.isQuiet ? ret1 : ret2;
-	}
-
-	// if either is signaling...
-	if (arg1.isSignaling || arg2.isSignaling) {
-		// if both are signaling compare payloads.
-		if (arg1.isSignaling && arg2.isSignaling) {
-			auto result = arg1.payload - arg2.payload;
-			if (result == 0) return 0;
-			return (result > 0) ? ret1 : ret2;
-		}
-		return arg1.isSignaling ? ret1 : ret2;
-	}
-
-
-	// if both exponents are equal, any difference is in the coefficient
-	if (arg1.exponent == arg2.exponent) {
-		auto result = arg1.coefficient - arg2.coefficient;
-		if (result == 0) return 0;
-		return (result > 0) ? ret1 : ret2;
-	}
-
+	// is this test really a shortcut? have to get size (digits)!
 	// if the (finite) numbers have different magnitudes...
 	int diff = (arg1.exponent + arg1.digits) - (arg2.exponent + arg2.digits);
 	if (diff > 0) return ret1;
@@ -685,11 +613,12 @@ public bool sameQuantum(T)(const T arg1, const T arg2) if (isDecimal!T) {
 /// 3) If they are negative, the one with the smaller exponent is returned.
 /// 4) Otherwise, they are indistinguishable; the first is returned.
 /// Implements the 'max' function in the specification. (p. 32)
-/// Flags: NONE.
+/// Flags: INVALID_OPERATION, ROUNDED, INEXACT??.
 const(T) max(T)(const T arg1, const T arg2,
-		DecimalContext context) if (isDecimal!T) {
+		const DecimalContext context = T.context) if (isDecimal!T) {
 	// if both are NaNs or either is an sNan, return NaN.
 	if (arg1.isNaN && arg2.isNaN || arg1.isSignaling || arg2.isSignaling) {
+		contextFlags.setFlags(INVALID_OPERATION);
 		return T.nan;
 	}
 	// if one op is a quiet NaN return the other
@@ -722,7 +651,7 @@ const(T) max(T)(const T arg1, const T arg2,
 /// Implements the 'max-magnitude' function in the specification. (p. 32)
 /// Flags: NONE.
 const(T) maxMagnitude(T)(const T arg1, const T arg2,
-		DecimalContext context) if (isDecimal!T) {
+		const DecimalContext context = T.context) if (isDecimal!T) {
 	return max(copyAbs!T(arg1), copyAbs!T(arg2), context);
 }
 
@@ -740,7 +669,7 @@ const(T) maxMagnitude(T)(const T arg1, const T arg2,
 /// Implements the 'min' function in the specification. (p. 32-33)
 /// Flags: NONE.
 const(T) min(T)(const T arg1, const T arg2,
-		DecimalContext context) if (isDecimal!T) {
+		const DecimalContext context = T.context) if (isDecimal!T) {
 	// if both are NaNs or either is an sNan, return NaN.
 	if (arg1.isNaN && arg2.isNaN || arg1.isSignaling || arg2.isSignaling) {
 		return T.nan;
@@ -775,7 +704,7 @@ const(T) min(T)(const T arg1, const T arg2,
 /// Implements the 'min-magnitude' function in the specification. (p. 33)
 /// Flags: NONE.
 const(T) minMagnitude(T)(const T arg1, const T arg2,
-		DecimalContext context) if (isDecimal!T) {
+		const DecimalContext context = T.context) if (isDecimal!T) {
 	return min(copyAbs!T(arg1), copyAbs!T(arg2), context);
 }
 
@@ -787,7 +716,10 @@ public const (T) quantum(T)(const T arg) if (isDecimal!T) {
 		return T(1, arg.exponent);
 	}
 
-// (L)TODO: move this back to arithmetic
+//--------------------------------
+// shift and rotate
+//--------------------------------
+
 /// Shifts the first operand by the specified number of decimal digits.
 /// (Not binary digits!) Positive values of the second operand shift the
 /// first operand left (multiplying by tens). Negative values shift right
@@ -795,24 +727,26 @@ public const (T) quantum(T)(const T arg) if (isDecimal!T) {
 /// than -precision or greater than precision, an INVALID_OPERATION is signaled.
 /// An infinite number is returned unchanged.
 /// Implements the 'shift' function in the specification. (p. 49)
-public T shift(T)(const T arg, const int n, DecimalContext context)
-		if (isDecimal!T) {
+public T shift(T)(const T arg, const int n,
+		const DecimalContext context = T.context) if (isDecimal!T) {
 
-	T arg2;
 	// check for NaN operand
-	if (invalidOperand!T(arg, arg2)) {
-		return arg2;
+	if (invalidOperand!T(arg, arg)) {
+		return T.nan;
 	}
+	// can't shift more than precision
 	if (n < -context.precision || n > context.precision) {
-		arg2 = setInvalidFlag!T();
-		return arg2;
+		return setInvalidFlag!T();
 	}
+	// shift by zero returns the argument
+	if (n == 0) {
+		return arg;
+	}
+	// shift of an infinite number returns the argument
 	if (arg.isInfinite) {
 		return arg.dup;
 	}
-	if (n == 0) {
-		return arg.dup;
-	}
+
 	BigDecimal result = toBigDecimal!T(arg);
 	if (n > 0) {
 		shiftLeft(result.coefficient, n, context.precision);
@@ -823,11 +757,10 @@ public T shift(T)(const T arg, const int n, DecimalContext context)
 	return T(result);
 }
 
-import decimal.dec32;
-
 unittest {
 	write("shift...");
-	Dec32 num;
+	import decimal.dec32;
+    Dec32 num;
 	shift!Dec32(num, 4, num.context);
 	writeln("test missing");
 }
@@ -839,24 +772,23 @@ unittest {
 /// than -precision or greater than precision, an INVALID_OPERATION is signaled.
 /// An infinite number is returned unchanged.
 /// Implements the 'rotate' function in the specification. (p. 47-48)
-public T rotate(T)(const T arg, const int n, DecimalContext context)
-		if (isDecimal!T) {
+public T rotate(T)(const T arg, const int n,
+		const DecimalContext context = T.context) if (isDecimal!T) {
 
-	T result;
 	// check for NaN operand
 	if (invalidOperand!T(arg, result)) {
-		return result;
+		return T.nan;
 	}
 	if (n < -context.precision || n > context.precision) {
-		result = setInvalidFlag();
-		return result;
+		return setInvalidFlag();
 	}
 	if (arg.isInfinite) {
-		return arg.dup;
+		return arg;
 	}
 	if (n == 0) {
-		return arg.dup;
+		return arg;
 	}
+
 	result = arg.dup;
 	BigDecimal result = toBigDecimal!T(arg);
 	if (n > 0) {
@@ -880,7 +812,7 @@ public T rotate(T)(const T arg, const int n, DecimalContext context)
 /// The result may be rounded and context flags may be set.
 /// Implements the 'add' function in the specification. (p. 26)
 /// Flags: INVALID_OPERATION, OVERFLOW.
-public T add(T)(const T arg1, const T arg2, const DecimalContext context,
+public T add(T)(const T arg1, const T arg2, const DecimalContext context = T.context,
 		bool rounded = true) if (isDecimal!T) {
 	T result = T.nan;	 // sum is initialized to quiet NaN
 
@@ -932,7 +864,7 @@ public T add(T)(const T arg1, const T arg2, const DecimalContext context,
 	BigDecimal addend = toBigDecimal!T(arg2);
 	// TODO: If the operands are too far apart, one of them will end up zero.
 	// align the operands
-	alignOps(augend, addend, context);
+	alignOps(augend, addend);//, context);
 	// if operands have the same sign...
 	if (augend.sign == addend.sign) {
 		sum.coefficient = augend.coefficient + addend.coefficient;
@@ -969,7 +901,7 @@ public T add(T)(const T arg1, const T arg2, const DecimalContext context,
 /// The result may be rounded and context flags may be set.
 /// This function is not included in the specification.
 /// Flags: INVALID_OPERATION, OVERFLOW.
-public T addLong(T)(const T arg1, const long arg2, const DecimalContext context,
+public T addLong(T)(const T arg1, const long arg2, const DecimalContext context = T.context,
 		bool rounded = true) if (isDecimal!T) {
 	T result = T.nan;	 // sum is initialized to quiet NaN
 
@@ -1016,7 +948,7 @@ public T addLong(T)(const T arg1, const long arg2, const DecimalContext context,
 	BigDecimal augend = toBigDecimal!T(arg1);
 	BigDecimal addend = BigDecimal(arg2);
 	// align the operands
-	alignOps(augend, addend, context);
+	alignOps(augend, addend); //, context);
 	// if operands have the same sign...
 	if (augend.sign == addend.sign) {
 		sum.coefficient = augend.coefficient + addend.coefficient;
@@ -1050,7 +982,7 @@ public T addLong(T)(const T arg1, const long arg2, const DecimalContext context,
 /// Subtracts the second operand from the first operand.
 /// The result may be rounded and context flags may be set.
 /// Implements the 'subtract' function in the specification. (p. 26)
-public T sub(T) (const T arg1, const T arg2, const DecimalContext context,
+public T sub(T) (const T arg1, const T arg2, const DecimalContext context = T.context,
 		 const bool rounded = true) if (isDecimal!T) {
 	return add!T(arg1, copyNegate!T(arg2), context , rounded);
 }	 // end sub(arg1, arg2)
@@ -1061,7 +993,7 @@ public T sub(T) (const T arg1, const T arg2, const DecimalContext context,
 /// as if the long value were converted to a decimal number.
 /// This function is not included in the specification.
 public T subLong(T) (const T arg1, const long arg2,
-		DecimalContext context, const bool rounded = true) if (isDecimal!T) {
+		const DecimalContext context = T.context, const bool rounded = true) if (isDecimal!T) {
 	return addLong!T(arg1, -arg2, context , rounded);
 }	 // end sub(arg1, arg2)
 
@@ -1069,7 +1001,8 @@ public T subLong(T) (const T arg1, const long arg2,
 /// Multiplies the two operands.
 /// The result may be rounded and context flags may be set.
 /// Implements the 'multiply' function in the specification. (p. 33-34)
-public T mul(T)(const T arg1, const T arg2, const DecimalContext context,
+public T mul(T)(const T arg1, const T arg2,
+		const DecimalContext context = T.context,
 		const bool rounded = true) if (isDecimal!T) {
 
 	T result = T.nan;
@@ -1097,7 +1030,7 @@ public T mul(T)(const T arg1, const T arg2, const DecimalContext context,
 	}
 	// product is non-zero
 	else {
-		BigDecimal product = BigDecimal.zero();
+		BigDecimal product = BigDecimal.zero;
 		BigInt mant1 = arg1.coefficient;
 		BigInt mant2 = arg2.coefficient;
 		product.coefficient = mant1 * mant2;
@@ -1112,7 +1045,7 @@ public T mul(T)(const T arg1, const T arg2, const DecimalContext context,
 
 	// only needs rounding if
 	if (rounded) {
-		round(result, context);
+		round(result, T.context);
 	}
 	return result;
 }
@@ -1121,8 +1054,9 @@ public T mul(T)(const T arg1, const T arg2, const DecimalContext context,
 /// The result may be rounded and context flags may be set.
 /// Not a required function, but useful because it avoids
 /// an unnecessary conversion to a decimal when multiplying.
-public T mulLong(T)(const T arg1, long arg2, DecimalContext context,
-		const bool rounded = true) if (isDecimal!T) {
+public T mulLong(T)(const T arg1, long arg2,
+		const DecimalContext context = T.context, const bool rounded = true)
+		if (isDecimal!T) {
 
 	T result = T.nan;
 	// if invalid, return NaN
@@ -1149,7 +1083,7 @@ public T mulLong(T)(const T arg1, long arg2, DecimalContext context,
 	}
 	// product is non-zero
 	else {
-		BigDecimal product = BigDecimal.zero();
+		BigDecimal product = BigDecimal.zero;
 		product.coefficient = arg1.coefficient * arg2;
 		product.exponent = arg1.exponent;
 		product.sign = arg1.sign ^ (arg2 < 0);
@@ -1169,7 +1103,7 @@ public T mulLong(T)(const T arg1, long arg2, DecimalContext context,
 /// The result may be rounded and context flags may be set.
 /// Implements the 'fused-multiply-add' function in the specification. (p. 30)
 public T fma(T)(const T arg1, const T arg2, const T arg3,
-		DecimalContext context) if (isDecimal!T) {
+		const DecimalContext context = T.context) if (isDecimal!T) {
 
 	// (A)TODO: should these both be BigDecimal?
 	T product = mul!T(arg1, arg2, context, false);
@@ -1180,11 +1114,11 @@ public T fma(T)(const T arg1, const T arg2, const T arg3,
 /// Division by zero sets a flag and returns infinity.
 /// Result may be rounded and context flags may be set.
 /// Implements the 'divide' function in the specification. (p. 27-29)
-public T div(T)(const T arg1, const T arg2, const DecimalContext context,
+public T div(T)(const T arg1, const T arg2, const DecimalContext context = T.context,
 		bool rounded = true) if (isDecimal!T) {
 
 	// check for NaN and divide by zero
-	T result;
+	T result = T.nan;
 	if (invalidDivision!T(arg1, arg2, result)) {
 		return result;
 	}
@@ -1217,15 +1151,16 @@ public T div(T)(const T arg1, const T arg2, const DecimalContext context,
 	return T(quotient);
 }
 
+// TODO: Does this implement the actual spec operation?
 /// Divides the first operand by the second and returns the integer portion
 /// of the quotient.
 /// Division by zero sets a flag and returns infinity.
 /// The result may be rounded and context flags may be set.
 /// Implements the 'divide-integer' function in the specification. (p. 30)
 public T divideInteger(T)(const T arg1, const T arg2,
-		const DecimalContext context) if (isDecimal!T) {
+		const DecimalContext context = T.context) if (isDecimal!T) {
 	// check for NaN and divide by zero
-	T result;
+	T result = T.nan;
 	if (invalidDivision!T(arg1, arg2, result)) {
 		return result;
 	}
@@ -1261,8 +1196,8 @@ public T divideInteger(T)(const T arg1, const T arg2,
 /// The sign of the remainder is the same as that of the first operand.
 /// The result may be rounded and context flags may be set.
 /// Implements the 'remainder' function in the specification. (p. 37-38)
-public T remainder(T)(const T arg1, const T arg2,
-		const DecimalContext context) if (isDecimal!T) {
+public T rem(T)(const T arg1, const T arg2,
+		const DecimalContext context = T.context) if (isDecimal!T) {
 	T quotient;
 	if (invalidDivision!T(arg1, arg2, quotient)) {
 		return quotient;
@@ -1280,7 +1215,7 @@ public T remainder(T)(const T arg1, const T arg2,
 /// This function corresponds to the "remainder" function
 /// in the General Decimal Arithmetic Specification.
 public T remainderNear(T)(const T dividend, const T divisor,
-		DecimalContext context) if (isDecimal!T) {
+		const DecimalContext context = T.context) if (isDecimal!T) {
 	T quotient;
 	if (invalidDivision!T(dividend, divisor, quotient)) {
 		return quotient;
@@ -1302,9 +1237,9 @@ public T remainderNear(T)(const T dividend, const T divisor,
 /// This operation may set the invalid-operation flag.
 /// Implements the 'quantize' function in the specification. (p. 36-37)
 public T quantize(T)(const T arg1, const T arg2,
-		const DecimalContext context) if (isDecimal!T) {
+		const DecimalContext context = T.context) if (isDecimal!T) {
 
-	T result;
+	T result = T.nan;
 	if (invalidBinaryOp!T(arg1, arg2, result)) {
 		return result;
 	}
@@ -1352,7 +1287,7 @@ public T quantize(T)(const T arg1, const T arg2,
 /// Implements the 'round-to-integral-exact' function
 /// in the specification. (p. 39)
 public T roundToIntegralExact(T)(const T arg,
-		DecimalContext context) if (isDecimal!T) {
+		const DecimalContext context = T.context) if (isDecimal!T) {
 	if (arg.isSignaling) return setInvalidFlag!T();
 	if (arg.isSpecial) return arg.dup;
 	if (arg.exponent >= 0) return arg.dup;
@@ -1366,7 +1301,7 @@ public T roundToIntegralExact(T)(const T arg,
 /// Implements the 'round-to-integraL-value' function
 /// in the specification. (p. 39)
 public T roundToIntegralValue(T)(const T arg,
-		DecimalContext context) if (isDecimal!T) {
+		const DecimalContext context = T.context) if (isDecimal!T) {
 	if (arg.isSignaling) return setInvalidFlag!T();
 	if (arg.isQuiet) return arg.dup;
 	if (arg.isSpecial) return arg.dup;
@@ -1382,8 +1317,8 @@ public T roundToIntegralValue(T)(const T arg,
 /// All trailing zeros are removed.
 /// (Used to return the "ideal" value following division. p. 28-29)
 private T reduceToIdeal(T)(const T arg, int ideal,
-		const DecimalContext context) if (isDecimal!T) {
-	T result;
+		const DecimalContext context = T.context) if (isDecimal!T) {
+	T result = T.nan;
 	if (invalidOperand!T(arg, result)) {
 		return result;
 	}
@@ -1406,6 +1341,266 @@ private T reduceToIdeal(T)(const T arg, int ideal,
 	return result;
 }
 
+
+/// Aligns the two operands by raising the smaller exponent
+/// to the value of the larger exponent, and adjusting the
+/// coefficient so the value remains the same.
+/// No flags are set and the result is not rounded.
+private void alignOps(ref BigDecimal arg1, ref BigDecimal arg2)//,
+//		const DecimalContext context = T.context) {
+	{
+	int diff = arg1.exponent - arg2.exponent;
+	if (diff > 0) {
+		arg1.coefficient = shiftLeft(arg1.coefficient, diff); //, context.precision);
+		arg1.exponent = arg2.exponent;
+	}
+	else if (diff < 0) {
+		arg2.coefficient = shiftLeft(arg2.coefficient, -diff); //., context.precision);
+		arg2.exponent = arg1.exponent;
+	}
+}
+
+//--------------------------------
+// logical operations
+//--------------------------------
+
+/// Returns true if the argument is a valid logical string.
+/// All characters in a valid logical string must be either '1' or '0'.
+private bool isLogicalString(const string str) {
+	foreach(char ch; str) {
+		if (ch != '0' && ch != '1') return false;
+	}
+	return true;
+}
+
+/// Returns true if the argument is a valid logical decimal number.
+/// The sign and exponent must both be zero, and all (decimal) digits
+/// in the coefficient must be either '1' or '0'.
+public bool isLogical(T)(const T arg) if (isDecimal!T) {
+	if (arg.sign != 0 || arg.exponent != 0) return false;
+	string str = decimal.conv.to!string(arg.coefficient);
+	return isLogicalString(str);
+}
+
+/// Returns true and outputs a valid logical string if the argument is
+/// a valid logical decimal number.
+/// The sign and exponent must both be zero, and all (decimal) digits
+/// in the coefficient must be either '1' or '0'.
+private bool isLogicalOperand(T)(const T arg, out string str) if (isDecimal!T) {
+	if (arg.sign != 0 || arg.exponent != 0) return false;
+	str = decimal.conv.to!string(arg.coefficient);
+	return isLogicalString(str);
+}
+
+	unittest {	// logical string/number tests
+		import decimal.dec32;
+		assert(isLogicalString("010101010101"));
+		assert(isLogical(Dec32("1010101")));
+		string str;
+		assert(isLogicalOperand(Dec32("1010101"), str));
+		assert(str == "1010101");
+	}
+
+//--------------------------------
+// unary logical operations
+//--------------------------------
+
+/// Inverts and returns a decimal logical number.
+/// Implements the 'invert' function in the specification. (p. 44)
+public T invert(T)(T arg) if (isDecimal!T) {
+	string str;
+	if (!isLogicalOperand(arg, str)) {
+		contextFlags.setFlags(INVALID_OPERATION);
+		return T.nan;
+	}
+	return T(invert(str));
+}
+
+/// Inverts and returns a logical string.
+/// Each each '1' is changed to a '0', and vice versa.
+private T invert(T: string)(T arg) {
+	char[] result = new char[arg.length];
+	for(int i = 0; i < arg.length; i++) {
+		if (arg[i] == '0') {
+			result[i] = '1';
+		} else {
+			result[i] = '0';
+		}
+	}
+	return result.idup;
+}
+
+	unittest {	// inverse
+		import decimal.dec64;
+		assert(invert(Dec64(101001)) == 10110);
+		assert(invert(Dec64(1)) == 0);
+		assert(invert(Dec64(0)) == 1);
+	}
+
+//--------------------------------
+// binary logical operations
+//--------------------------------
+
+/// called by opBinary.
+private T opLogical(string op, T)(const T arg1, const T arg2,
+		const DecimalContext context = T.context) if(isDecimal!T) {
+	int precision = T.context.precision;
+	string str1;
+	if (!isLogicalOperand(arg1, str1)) {
+		return setInvalidFlag!T;
+	}
+	string str2;
+	if (!isLogicalOperand(arg2, str2)) {
+		return setInvalidFlag!T;
+	}
+	static if (op == "and") {
+		string str = and(str1, str2);
+	}
+	static if (op == "or") {
+		string str = or(str1, str2);
+	}
+	static if (op == "xor") {
+		string str = xor(str1, str2);
+	}
+	return T(str);
+}
+
+//----------------------
+
+/// Performs a logical 'and' of the arguments and returns the result
+/// Implements the 'and' function in the specification. (p. 41)
+public T and(T)(const T arg1, const T arg2,
+		const DecimalContext context = T.context) if (isDecimal!T) {
+	return opLogical!("and", T)(arg1, arg2, context);
+}
+
+/// Performs a logical 'and' of the (string) arguments and returns the result
+T and(T: string)(const T arg1, const T arg2) {
+	string str1, str2;
+	int length, diff;
+	if (arg1.length > arg2.length) {
+		length = arg2.length;
+		diff = arg1.length - arg2.length;
+		str2 = arg1;
+		str1 = rightJustify(arg2, arg1.length, '0');
+	}
+	else if (arg1.length < arg2.length) {
+		length = arg1.length;
+		diff = arg2.length - arg1.length;
+		str1 = rightJustify(arg1, arg2.length, '0');
+		str2 = arg2;
+	} else {
+		length = arg1.length;
+		diff = 0;
+		str1 = arg1;
+		str2 = arg2;
+	}
+	char[] result = new char[length];
+	for(int i = 0; i < length; i++) {
+		if (str1[i + diff] == '1' && str2[i + diff] == '1') {
+			result[i] = '1';
+		} else {
+			result[i] = '0';
+		}
+	}
+	return result.idup;
+}
+
+//----------------------
+
+/// Performs a logical 'or' of the arguments and returns the result
+/// Implements the 'or' function in the specification. (p. 47)
+public T or(T)(const T arg1, const T arg2,
+		const DecimalContext context = T.context) if (isDecimal!T) {
+	return opLogical!("or", T)(arg1, arg2, context);
+}
+
+/// Performs a logical 'or' of the (string) arguments and returns the result
+T or(T: string)(const T arg1, const T arg2) {
+	string str1, str2;
+	int length;
+	if (arg1.length > arg2.length) {
+		length = arg1.length;
+		str1 = arg1;
+		str2 = rightJustify(arg2, arg1.length, '0');
+	}
+	if (arg1.length < arg2.length) {
+		length = arg2.length;
+		str1 = rightJustify(arg1, arg2.length, '0');
+		str2 = arg2;
+	} else {
+		length = arg1.length;
+		str1 = arg1;
+		str2 = arg2;
+	}
+	char[] result = new char[length];
+	for(int i = 0; i < length; i++) {
+		if (str1[i] == '1' || str2[i] == '1') {
+			result[i] = '1';
+		} else {
+			result[i] = '0';
+		}
+	}
+	return result.idup;
+}
+
+//----------------------
+
+	/// Performs a logical 'xor' of the arguments and returns the result
+	/// Implements the 'xor' function in the specification. (p. 49)
+	public T xor(T)(const T arg1, const T arg2,
+			const DecimalContext context = T.context) if (isDecimal!T) {
+		return opLogical!("xor", T)(arg1, arg2, context);
+	}
+
+	/// Performs a logical 'xor' of the (string) arguments
+	/// and returns the result.
+	T xor(T: string)(const T arg1, const T arg2) {
+		string str1, str2;
+		int length;
+		if (arg1.length > arg2.length) {
+			length = arg1.length;
+			str1 = arg1;
+			str2 = rightJustify(arg2, arg1.length, '0');
+		}
+		if (arg1.length < arg2.length) {
+			length = arg2.length;
+			str1 = rightJustify(arg1, arg2.length, '0');
+			str2 = arg2;
+		} else {
+			length = arg1.length;
+			str1 = arg1;
+			str2 = arg2;
+		}
+		char[] result = new char[length];
+		for(int i = 0; i < length; i++) {
+			if (str1[i] != str2[i]) {
+				result[i] = '1';
+			} else {
+				result[i] = '0';
+			}
+		}
+		return result.idup;
+	}
+
+	unittest { // binary logical ops
+		BigDecimal op1, op2;
+		op1 = 10010101;
+		op2 = 11100100;
+		assert((op1 & op2) == BigDecimal(10000100));
+		assert((op1 | op2) == BigDecimal(11110101));
+		assert((op1 ^ op2) == BigDecimal( 1110001));
+		op1 =   100101;
+		op2 = 11100100;
+		assert((op1 & op2) == BigDecimal(  100100));
+		assert((op1 | op2) == BigDecimal(11100101));
+		assert((op1 ^ op2) == BigDecimal(11000001));
+	}
+
+//--------------------------------
+// validity functions
+//--------------------------------
+
 /// Sets the invalid-operation flag and returns a quiet NaN.
 private T setInvalidFlag(T)(ushort payload = 0) if (isDecimal!T) {
 	contextFlags.setFlags(INVALID_OPERATION);
@@ -1416,25 +1611,7 @@ private T setInvalidFlag(T)(ushort payload = 0) if (isDecimal!T) {
 	return result;
 }
 
-
-/// Aligns the two operands by raising the smaller exponent
-/// to the value of the larger exponent, and adjusting the
-/// coefficient so the value remains the same.
-/// No flags are set and the result is not rounded.
-private void alignOps(ref BigDecimal arg1, ref BigDecimal arg2,
-		const DecimalContext context) {
-	int diff = arg1.exponent - arg2.exponent;
-	if (diff > 0) {
-		arg1.coefficient = shiftLeft(arg1.coefficient, diff, context.precision);
-		arg1.exponent = arg2.exponent;
-	}
-	else if (diff < 0) {
-		arg2.coefficient = shiftLeft(arg2.coefficient, -diff, context.precision);
-		arg2.exponent = arg1.exponent;
-	}
-}
-
-///  Returns true and sets the invalid-operation flag if either operand
+/// Returns true and sets the invalid-operation flag if either operand
 /// is a NaN.
 /// "The result of any arithmetic operation which has an operand
 /// which is a NaN (a quiet NaN or a signaling NaN) is [s,qNaN]
@@ -1895,11 +2072,11 @@ unittest {	// remainder
 	BigDecimal arg1, arg2, actual, expect;
 	arg1 = 2.1;
 	arg2 = 3;
-	actual = remainder(arg1, arg2, testContext);
+	actual = rem(arg1, arg2, testContext);
 	expect = 2.1;
 	assertEqual(expect, actual);
 	arg1 = 10;
-	actual = remainder(arg1, arg2, testContext);
+	actual = rem(arg1, arg2, testContext);
 	expect = 1;
 	assertEqual(expect, actual);
 }
@@ -2024,7 +2201,7 @@ unittest { // alignOps
 	BigDecimal arg1, arg2;
 	arg1 = 1.3E35;
 	arg2 = -17.4E29;
-	alignOps(arg1, arg2, bigContext);
+	alignOps(arg1, arg2);
 	assertTrue(arg1.coefficient == 13000000);
 	assertTrue(arg2.exponent == 28);
 }

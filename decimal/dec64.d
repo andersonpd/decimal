@@ -618,11 +618,11 @@ writeln("test.toHexString = ", test.toHexString);
 		float f = 1.2345E+16f;
 		Dec64 actual = Dec64(f);
 		Dec64 expect = Dec64("1.234499980283085E+16");
-		assertEqual(expect,actual);
+		assertEqual(actual, expect);
 		real r = 1.2345E+16;
 		actual = Dec64(r);
 		expect = Dec64("1.2345E+16");
-		assertEqual(expect,actual);
+		assertEqual(actual, expect);
 	}
 
 	/**
@@ -964,8 +964,8 @@ public:
 	static int min_exp()	{ return cast(int)(context32.minExpo/LOG2); }
 
 	/// Returns the maximum number of decimal digits in this context.
-	static uint precision(const DecimalContext ctx = context) {
-		return ctx.precision;
+	static uint precision(const DecimalContext context = this.context) {
+		return context.precision;
 	}
 */
 	/*	static int dig()		{ return context.precision; }
@@ -982,44 +982,44 @@ public:
 
 
 	/*	  /// Returns the maximum number of decimal digits in this context.
-		static uint dig(const DecimalContext ctx = context) {
-			return ctx.precision;
+		static uint dig(const DecimalContext context = this.context) {
+			return context.precision;
 		}
 
 		/// Returns the number of binary digits in this context.
-		static uint mant_dig(const DecimalContext ctx = context) {
-			return cast(int)ctx.mant_dig;
+		static uint mant_dig(const DecimalContext context = this.context) {
+			return cast(int)context.mant_dig;
 		}
 
-		static int min_exp(const DecimalContext ctx = context) {
-			return ctx.min_exp;
+		static int min_exp(const DecimalContext context = this.context) {
+			return context.min_exp;
 		}
 
-		static int max_exp(const DecimalContext ctx = context) {
-			return ctx.max_exp;
+		static int max_exp(const DecimalContext context = this.context) {
+			return context.max_exp;
 		}
 
 //		/// Returns the minimum representable normal value in this context.
-//		static Dec64 min_normal(const DecimalContext ctx = context) {
-//			return Dec64(1, ctx.minExpo);
+//		static Dec64 min_normal(const DecimalContext context = this.context) {
+//			return Dec64(1, context.minExpo);
 //		}
 
 		/// Returns the minimum representable subnormal value in this context.
-		static Dec64 min(const DecimalContext ctx = context) {
-			return Dec64(1, ctx.tinyExpo);
+		static Dec64 min(const DecimalContext context = this.context) {
+			return Dec64(1, context.tinyExpo);
 		}
 
 		/// returns the smallest available increment to 1.0 in this context
-		static Dec64 epsilon(const DecimalContext ctx = context) {
-			return Dec64(1, -ctx.precision);
+		static Dec64 epsilon(const DecimalContext context = this.context) {
+			return Dec64(1, -context.precision);
 		}
 
-		static int min_10_exp(const DecimalContext ctx = context) {
-			return ctx.minExpo;
+		static int min_10_exp(const DecimalContext context = this.context) {
+			return context.minExpo;
 		}
 
-		static int max_10_exp(const DecimalContext ctx = context) {
-			return ctx.maxExpo;
+		static int max_10_exp(const DecimalContext context = this.context) {
+			return context.maxExpo;
 		}*/
 
 	/// Returns the radix (10)
@@ -1156,23 +1156,23 @@ public:
 	/**
 	 * Returns true if this number is subnormal.
 	 */
-	const bool isSubnormal(const DecimalContext ctx = context) {
+	const bool isSubnormal(const DecimalContext context = this.context) {
 		if (isSpecial) return false;
-		return adjustedExponent < ctx.minExpo;
+		return adjustedExponent < context.minExpo;
 	}
 
 	/**
 	 * Returns true if this number is normal.
 	 */
-	const bool isNormal(const DecimalContext ctx = context) {
+	const bool isNormal(const DecimalContext context = this.context) {
 		if (isSpecial) return false;
-		return adjustedExponent >= ctx.minExpo;
+		return adjustedExponent >= context.minExpo;
 	}
 
 	/**
 	 * Returns true if this number is an integer.
 	 */
-	const bool isIntegral(const DecimalContext ctx = context) {
+	const bool isIntegral(const DecimalContext context = this.context) {
 		if (isSpecial) return false;
 		if (exponent >= 0) return true;
 		uint expo = std.math.abs(exponent);
@@ -1487,10 +1487,10 @@ const int opCmp(T:Dec64)(const T that) {
 	}
 
 	unittest {
-		Dec64 rhs, lhs;
-		rhs = Dec64(270E-5);
-		lhs = rhs;
-		assertTrue(lhs == rhs);
+		Dec64 that, lhs;
+		that = Dec64(270E-5);
+		lhs = that;
+		assertTrue(lhs == that);
 	}
 
 	// (64)TODO: flags?
@@ -1500,11 +1500,11 @@ const int opCmp(T:Dec64)(const T that) {
 	}
 
 	unittest {
-		Dec64 rhs;
-		rhs = 332089;
-		assertTrue(rhs.toString == "332089");
-		rhs = 3.1415E+3;
-		assertTrue(rhs.toString == "3141.5");
+		Dec64 that;
+		that = 332089;
+		assertTrue(that.toString == "332089");
+		that = 3.1415E+3;
+		assertTrue(that.toString == "3141.5");
 	}
 
 //--------------------------------
@@ -1555,56 +1555,46 @@ const int opCmp(T:Dec64)(const T that) {
 // binary operators
 //--------------------------------
 
-	// NOTE: "const Dec64 opBinary(string op)(const Dec64 rhs)"
+	// NOTE: "const Dec64 opBinary(string op)(const Dec64 that)"
 	//     doesn't work becaus of a DMD compiler bug.
 
 	/// operations on Dec64 arguments
-	private const T opBinary(string op, T:Dec64)(const T rhs)
+	private const T opBinary(string op, T:Dec64)(const T that)
 	{
 		static if (op == "+") {
-			return add!Dec64(this, rhs, context);
+			return add!Dec64(this, that, context);
 		} else static if (op == "-") {
-			return sub!Dec64(this, rhs, context);
+			return sub!Dec64(this, that, context);
 		} else static if (op == "*") {
-			return mul!Dec64(this, rhs, context);
+			return mul!Dec64(this, that, context);
 		} else static if (op == "/") {
-			return div!Dec64(this, rhs, context);
+			return div!Dec64(this, that, context);
 		} else static if (op == "%") {
-			return remainder!Dec64(this, rhs, context);
-		} else static if (op == "%") {
-			return remainder!Dec32(this, rhs, context);
+			return rem!Dec64(this, that, context);
 		} else static if (op == "&") {
-			return and!Dec64(this, rhs, context);
+			return and!Dec64(this, that, context);
 		} else static if (op == "|") {
-			return or!Dec64(this, rhs, context);
+			return or!Dec64(this, that, context);
 		} else static if (op == "^") {
-			return xor!Dec64(this, rhs, context);
+			return xor!Dec64(this, that, context);
 		}
 	}
 
-	unittest {
+	unittest {	// opBinary
 		Dec64 op1, op2, actual, expect;
-		op1 = 4;
-		op2 = 8;
-		actual = op1 + op2;
-		expect = 12;
-		assertEqual(expect,actual);
-		actual = op1 - op2;
-		expect = -4;
-		assertEqual(expect,actual);
-		actual = op1 * op2;
-		expect = 32;
-		assertEqual(expect,actual);
-		op1 = 5;
-		op2 = 2;
-		actual = op1 / op2;
-		expect = 2.5;
-		assertEqual(expect,actual);
-		op1 = 10;
-		op2 = 3;
-		actual = op1 % op2;
-		expect = 1;
-		assertEqual(expect,actual);
+		op1 = 4; op2 = 8;
+		assert(op1 + op2 == Dec64(12));
+		assert(op1 - op2 == Dec64(-4));
+		assert(op1 * op2 == Dec64(32));
+		op1 = 5; op2 = 2;
+		assert(op1 / op2 == Dec64(2.5));
+		op1 = 10; op2 = 3;
+		assert(op1 % op2 == Dec64(1));
+		op1 = 10; op2 = 110;
+		assert(isLogical(op1));
+		assert((op1 & op2) == Dec64(10));
+//		assert((op1 | op2) == Dec64(1100));
+//		assert((op1 ^ op2) == Dec64(1100));
 	}
 
 	 /// Can T be promoted to a Dec64?
@@ -1614,8 +1604,8 @@ const int opCmp(T:Dec64)(const T that) {
 
 	// (64)TODO: fix this to pass integers without promotion
 	/// operations on promotable arguments
-	const Dec64 opBinary(string op, T)(const T rhs) if (isPromotable!T) {
-		return opBinary!(op,Dec64)(Dec64(rhs));
+	const Dec64 opBinary(string op, T)(const T that) if (isPromotable!T) {
+		return opBinary!(op,Dec64)(Dec64(that));
 	}
 
 	unittest {
@@ -1628,13 +1618,13 @@ const int opCmp(T:Dec64)(const T that) {
 // operator assignment
 //-----------------------------
 
-	private ref Dec64 opOpAssign(string op, T:Dec64) (T rhs) {
-		this = opBinary!op(rhs);
+	private ref Dec64 opOpAssign(string op, T:Dec64) (T that) {
+		this = opBinary!op(that);
 		return this;
 	}
 
-	private ref Dec64 opOpAssign(string op, T) (T rhs) if (isPromotable!T) {
-		this = opBinary!op(rhs);
+	private ref Dec64 opOpAssign(string op, T) (T that) if (isPromotable!T) {
+		this = opBinary!op(that);
 		return this;
 	}
 
@@ -1645,16 +1635,16 @@ const int opCmp(T:Dec64)(const T that) {
 		op1 += op2;
 		expect = 21.49;
 		actual = op1;
-		assertEqual(expect,actual);
+		assertEqual(actual, expect);
 		op1 *= op2;
 		expect = -44.4843;
 		actual = op1;
-		assertEqual(expect,actual);
+		assertEqual(actual, expect);
 		op1 = 95;
 		op1 %= 90;
 		actual = op1;
 		expect = 5;
-		assertEqual(expect,actual);
+		assertEqual(actual, expect);
 	}
 
 	/**

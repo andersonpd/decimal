@@ -633,11 +633,11 @@ public:
 		float f = 1.2345E+16f;
 		Dec128 actual = Dec128(f);
 		Dec128 expect = Dec128("1.234499980283085E+16");
-		assertEqual(expect,actual);
+		assertEqual(actual, expect);
 		real r = 1.2345E+16;
 		actual = Dec128(r);
 		expect = Dec128("1.2345E+16");
-		assertEqual(expect,actual);
+		assertEqual(actual, expect);
 	}
 
 	/**
@@ -1589,7 +1589,7 @@ const T opBinary(string op, T:Dec128)(const T rhs)
 		} else static if (op == "/") {
 			return div!Dec128(this, rhs, context);
 		} else static if (op == "%") {
-			return remainder!Dec128(this, rhs, context);
+			return rem!Dec128(this, rhs, context);
 		}
 	}
 
@@ -1599,23 +1599,23 @@ const T opBinary(string op, T:Dec128)(const T rhs)
 		op2 = 8;
 		actual = op1 + op2;
 		expect = 12;
-		assertEqual(expect,actual);
+		assertEqual(actual, expect);
 		actual = op1 - op2;
 		expect = -4;
-		assertEqual(expect,actual);
+		assertEqual(actual, expect);
 		actual = op1 * op2;
 		expect = 32;
-		assertEqual(expect,actual);
+		assertEqual(actual, expect);
 		op1 = 5;
 		op2 = 2;
 		actual = op1 / op2;
 		expect = 2.5;
-		assertEqual(expect,actual);
+		assertEqual(actual, expect);
 		op1 = 10;
 		op2 = 3;
 		actual = op1 % op2;
 		expect = 1;
-		assertEqual(expect,actual);
+		assertEqual(actual, expect);
 	}
 
 	/**
@@ -1657,16 +1657,16 @@ ref Dec128 opOpAssign(string op, T:Dec128) (T rhs) {
 		op1 += op2;
 		expect = 21.49;
 		actual = op1;
-		assertEqual(expect,actual);
+		assertEqual(actual, expect);
 		op1 *= op2;
 		expect = -44.4843;
 		actual = op1;
-		assertEqual(expect,actual);
+		assertEqual(actual, expect);
 		op1 = 95;
 		op1 %= 90;
 		actual = op1;
 		expect = 5;
-		assertEqual(expect,actual);
+		assertEqual(actual, expect);
 	}
 
 	/**

@@ -27,7 +27,19 @@ import decimal.dec128;
 import decimal.decimal;
 import decimal.rounding;
 
-bool assertEqual(T)(T expected, T actual,
+bool assertEqual2(T, U = T)(U actual, U expected,
+		string file = __FILE__, int line = __LINE__ ) if (isDecimal(T))
+{
+	if (expected == actual) {
+		return true;
+	}
+	writeln("failed at ", baseName(file), "(", line, "):",
+	        " expected \"", expected, "\"",
+	        " but found \"", actual, "\".");
+	return false;
+}
+
+bool assertEqual(T)(T actual, T expected,
 		string file = __FILE__, int line = __LINE__ ) {
 	if (expected == actual) {
 		return true;
@@ -1294,30 +1306,30 @@ unittest {
 	BigDecimal op1, op2, actual, expect;
 	op1 = 2.1;
 	op2 = 3;
-	actual = remainder(op1, op2, testContext);
+	actual = rem(op1, op2, testContext);
 	expect = 2.1;
 	assertTrue(actual == expect);
 	op1 = 10;
-	actual = remainder(op1, op2, testContext);
+	actual = rem(op1, op2, testContext);
 	expect = 1;
 	assertTrue(actual == expect);
 	op1 = -10;
-	actual = remainder(op1, op2, testContext);
+	actual = rem(op1, op2, testContext);
 	expect = -1;
 	assertTrue(actual == expect);
 	op1 = 10.2;
 	op2 = 1;
-	actual = remainder(op1, op2, testContext);
+	actual = rem(op1, op2, testContext);
 	expect = 0.2;
 	assertTrue(actual == expect);
 	op1 = 10;
 	op2 = 0.3;
-	actual = remainder(op1, op2, testContext);
+	actual = rem(op1, op2, testContext);
 	expect = 0.1;
 	assertTrue(actual == expect);
 	op1 = 3.6;
 	op2 = 1.3;
-	actual = remainder(op1, op2, testContext);
+	actual = rem(op1, op2, testContext);
 	expect = 1.0;
 	assertTrue(actual == expect);
 	writeln("passed");
@@ -1861,23 +1873,23 @@ unittest {
 	op2 = 8;
 	actual = op1 + op2;
 	expect = 12;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	actual = op1 - op2;
 	expect = -4;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	actual = op1 * op2;
 	expect = 32;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	op1 = 5;
 	op2 = 2;
 	actual = op1 / op2;
 	expect = 2.5;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	op1 = 10;
 	op2 = 3;
 	actual = op1 % op2;
 	expect = 1;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	writeln("passed");
 }
 
@@ -1889,11 +1901,11 @@ unittest {
 	op1 += op2;
 	expect = 21.49;
 	actual = op1;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	op1 *= op2;
 	expect = -44.4843;
 	actual = op1;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	writeln("passed");
 }
 
@@ -2482,7 +2494,7 @@ unittest {
 	real r = 1.2345E+16;
 	Dec32 actual = Dec32(r);
 	Dec32 expect = Dec32("1.2345E+16");
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	writeln("passed");
 }
 
@@ -2615,23 +2627,23 @@ unittest {
 	op2 = 8;
 	actual = op1 + op2;
 	expect = 12;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	actual = op1 - op2;
 	expect = -4;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	actual = op1 * op2;
 	expect = 32;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	op1 = 5;
 	op2 = 2;
 	actual = op1 / op2;
 	expect = 2.5;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	op1 = 10;
 	op2 = 3;
 	actual = op1 % op2;
 	expect = 1;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	writeln("passed");
 }
 
@@ -2643,11 +2655,11 @@ unittest {
 	op1 += op2;
 	expect = 21.49;
 	actual = op1;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	op1 *= op2;
 	expect = -44.4843;
 	actual = op1;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	writeln("passed");
 }
 
@@ -2710,11 +2722,11 @@ unittest {
 unittest {
 	write("toExact...........");
 	Dec32 num;
-	assertTrue(num.toExact == "+NaN");
+	assertEqual("+NaN", num.toExact);
 	num = Dec32.max;
-	assertTrue(num.toExact == "+9999999E+90");
+	assertEqual("+9999999E+90", num.toExact);
 	num = 1;
-	assertTrue(num.toExact == "+1E+00");
+	assertEqual("+1E+00", num.toExact);
 	num = Dec32.infinity(true);
 	assertTrue(num.toExact == "-Infinity");
 	writeln("passed");
@@ -2722,15 +2734,15 @@ unittest {
 
 unittest {
 	write("pow10.............");
-	assertTrue(Dec32.pow10(3) == 1000);
+	assertEqual!int(Dec32.pow10(3), 1000);
 	writeln("passed");
 }
 
 unittest {
 	write("hexstring.........");
 	Dec32 num = 12345;
-	assertTrue(num.toHexString == "0x32803039");
-	assertTrue(num.toBinaryString == "00110010100000000011000000111001");
+	assertEqual(num.toHexString, "0x32803039");
+	assertEqual(num.toBinaryString, "00110010100000000011000000111001");
 	writeln("passed");
 }
 

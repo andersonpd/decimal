@@ -23,7 +23,7 @@ import std.string;
 import decimal.arithmetic;
 import decimal.context;
 import decimal.decimal;
-import decimal.logical;
+//import decimal.logical;
 import decimal.rounding;
 import decimal.test;
 
@@ -211,6 +211,7 @@ private:
 		NEG_FIV = 0xB2800005,
 		POS_TEN = 0x3280000A,
 		NEG_TEN = 0xB280000A,
+
 		PI		 = 0x2FAFEFD9,
 		TAU 	 = 0x2FDFDFB2,
 		PI_2	 = 0x2F97F7EC,
@@ -337,8 +338,11 @@ public:
 			return;
 		}
 
+		// must be finite
+		// copy and round to this context
 		BigDecimal big = plus!BigDecimal(num, context);
 
+		// check that it's still finite after rounding
 		if (big.isFinite) {
 			this = zero;
 			this.coefficient = cast(ulong)big.coefficient.toLong;
@@ -346,7 +350,7 @@ public:
 			this.sign = big.sign;
 			return;
 		}
-		// check again for special values
+		// special values
 		if (big.isInfinite) {
 			this = infinity(big.sign);
 			return;
@@ -634,34 +638,34 @@ public:
 	static int min_exp()	{ return cast(int)(context.minExpo/LOG2); }
 
 	/// Returns the maximum number of decimal digits in this context.
-	static uint precision(const DecimalContext ctx = context) {
-		return ctx.precision;
+	static uint precision(const DecimalContext context = this.context) {
+		return context.precision;
 	}
 
 	/// Returns the maximum number of decimal digits in this context.
-	static uint dig(const DecimalContext ctx = context) {
-		return ctx.precision;
+	static uint dig(const DecimalContext context = this.context) {
+		return context.precision;
 	}
 
 	/// Returns the minimum representable subnormal value in this context.
 	/// NOTE: Creation of any number will not set the
 	/// subnormal flag until it is used. The operations will
 	/// set the flags as needed.
-	static Dec32 min(const DecimalContext ctx = context) {
-		return Dec32(1, ctx.tinyExpo);
+	static Dec32 min(const DecimalContext context = this.context) {
+		return Dec32(1, context.tinyExpo);
 	}
 
 	/// returns the smallest available increment to 1.0 in this context
-	static Dec32 epsilon(const DecimalContext ctx = context) {
-		return Dec32(1, -ctx.precision);
+	static Dec32 epsilon(const DecimalContext context = this.context) {
+		return Dec32(1, -context.precision);
 	}
 
-/*	static int min_10_exp(const DecimalContext ctx = context) {
-		return ctx.minExpo;
+/*	static int min_10_exp(const DecimalContext context = this.context) {
+		return context.minExpo;
 	}
 
-	static int max_10_exp(const DecimalContext ctx = context) {
-		return ctx.maxExpo;
+	static int max_10_exp(const DecimalContext context = this.context) {
+		return context.maxExpo;
 	}
 */
 
@@ -775,15 +779,15 @@ public:
 	}
 
 	/// Returns true if the number is subnormal.
-	const bool isSubnormal(const DecimalContext ctx = context) {
+	const bool isSubnormal(const DecimalContext context = this.context) {
 		if (isSpecial) return false;
-		return adjustedExponent < ctx.minExpo;
+		return adjustedExponent < context.minExpo;
 	}
 
 	/// Returns true if the number is normal.
-	const bool isNormal(const DecimalContext ctx = context) {
+	const bool isNormal(const DecimalContext context = this.context) {
 		if (isSpecial) return false;
-		return adjustedExponent >= ctx.minExpo;
+		return adjustedExponent >= context.minExpo;
 	}
 
 	/// Returns the value of the adjusted exponent.
@@ -794,7 +798,7 @@ public:
 	/**
 	 * Returns true if the number is an integer.
 	 */
-	const bool isIntegral(const DecimalContext ctx = context) {
+	const bool isIntegral(const DecimalContext context = this.context) {
 		if (isSpecial) return false;
 		if (exponent >= 0) return true;
 		uint expo = std.math.abs(exponent);
@@ -981,7 +985,7 @@ public:
 			if (this.isQuiet) return false;
 			// let the main routine handle the signaling NaN
 		}
-		return equals!Dec32(this, that, cast(DecimalContext)context);
+		return equals!Dec32(this, that, context);
 	}
 
 	 /// Returns true if the number is equal to the specified number.
@@ -1036,26 +1040,19 @@ public:
 	{
 		static if (op == "+") {
 			return add!Dec32(this, that, context);
-		}
-		else static if (op == "-") {
+		} else static if (op == "-") {
 			return sub!Dec32(this, that, context);
-		}
-		else static if (op == "*") {
+		} else static if (op == "*") {
 			return mul!Dec32(this, that, context);
-		}
-		else static if (op == "/") {
+		} else static if (op == "/") {
 			return div!Dec32(this, that, context);
-		}
-		else static if (op == "%") {
-			return remainder!Dec32(this, that, context);
-		}
-		else static if (op == "&") {
+		} else static if (op == "%") {
+			return rem!Dec32(this, that, context);
+		} else static if (op == "&") {
 			return and!Dec32(this, that, context);
-		}
-		else static if (op == "|") {
+		} else static if (op == "|") {
 			return or!Dec32(this, that, context);
-		}
-		else static if (op == "^") {
+		} else static if (op == "^") {
 			return xor!Dec32(this, that, context);
 		}
 	}
@@ -1073,13 +1070,13 @@ public:
 // operator assignment
 //-----------------------------
 
-	ref Dec32 opOpAssign(string op, T:Dec32) (T rhs) {
-		this = opBinary!op(rhs);
+	ref Dec32 opOpAssign(string op, T:Dec32) (T that) {
+		this = opBinary!op(that);
 		return this;
 	}
 
-	ref Dec32 opOpAssign(string op, T) (T rhs) if (isPromotable!T) {
-		this = opBinary!op(rhs);
+ 	ref Dec32 opOpAssign(string op, T) (T that) if (isPromotable!T) {
+		this = opBinary!op(that);
 		return this;
 	}
 
@@ -1402,11 +1399,11 @@ unittest {	// this(real)
 	float f = 1.2345E+16f;
 	Dec32 actual = Dec32(f);
 	Dec32 expect = Dec32("1.2345E+16");
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	real r = 1.2345E+16;
 	actual = Dec32(r);
 	expect = Dec32("1.2345E+16");
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 }
 
 unittest {	// exponent
@@ -1576,14 +1573,14 @@ unittest { // opEquals
 }
 
 unittest {	// opAssign
-	Dec32 rhs, lhs;
-	rhs = Dec32(270E-5);
-	lhs = rhs;
-	assertTrue(lhs == rhs);
-	rhs = 332089;
-	assertTrue(rhs.toString == "332089");
-	rhs = 3.1415E+3;
-	assertTrue(rhs.toString == "3141.5");
+	Dec32 that, lhs;
+	that = Dec32(270E-5);
+	lhs = that;
+	assertTrue(lhs == that);
+	that = 332089;
+	assertTrue(that.toString == "332089");
+	that = 3.1415E+3;
+	assertTrue(that.toString == "3141.5");
 }
 
 unittest {	// opUnary
@@ -1603,13 +1600,13 @@ unittest {	// opUnary
 	num = 1.00E12;
 	expect = num;
 	actual = --num;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	actual = num--;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	num = 1.00E12;
 	expect = num;
 	actual = ++num;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	actual = num++;
 	assertEqual(expect, actual);
 	num = Dec32(9999999, 90);
@@ -1627,34 +1624,34 @@ unittest {	// opBinary
 	op2 = 8;
 	actual = op1 + op2;
 	expect = 12;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	actual = op1 - op2;
 	expect = -4;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	actual = op1 * op2;
 	expect = 32;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	op1 = 5;
 	op2 = 2;
 	actual = op1 / op2;
 	expect = 2.5;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	op1 = 10;
 	op2 = 3;
 	actual = op1 % op2;
 	expect = 1;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	op1 = Dec32("101");
 	op2 = Dec32("110");
 	actual = op1 & op2;
 	expect = 100;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	actual = op1 | op2;
 	expect = 111;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	actual = op1 ^ op2;
 	expect = 11;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	Dec32 num = Dec32(591.3);
 	Dec32 result = num * 5;
 	assertTrue(result == Dec32(2956.5));
@@ -1667,16 +1664,16 @@ unittest {	// opOpAssign
 	op1 += op2;
 	expect = 21.49;
 	actual = op1;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	op1 *= op2;
 	expect = -44.4843;
 	actual = op1;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 	op1 = 95;
 	op1 %= 90;
 	actual = op1;
 	expect = 5;
-	assertEqual(expect,actual);
+	assertEqual(actual, expect);
 }
 
 unittest { // pow10

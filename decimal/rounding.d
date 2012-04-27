@@ -27,7 +27,8 @@ import decimal.test;
 /// Rounds the referenced number using the precision and rounding mode of
 /// the context parameter.
 /// Flags: SUBNORMAL, CLAMPED, OVERFLOW, INEXACT, ROUNDED.
-public void round(T)(ref T num, const DecimalContext context) if (isDecimal!T) {
+public void round(T)(ref T num,
+		const DecimalContext context = T.context) if (isDecimal!T) {
 
 	// special values aren't rounded
 	if (!num.isFinite) return;
@@ -81,7 +82,8 @@ public void round(T)(ref T num, const DecimalContext context) if (isDecimal!T) {
 /// according to the rounding mode.
 /// Implements the 'overflow' processing in the specification. (p. 53)
 /// Flags: OVERFLOW, ROUNDED, INEXACT.
-private bool overflow(T)(ref T num, const DecimalContext context) {
+private bool overflow(T)(ref T num,
+		const DecimalContext context = T.context) if (isDecimal!T) {
 	if (num.adjustedExponent <= context.maxExpo) return false;
 	switch (context.rounding) {
 		case Rounding.HALF_UP:
@@ -108,9 +110,8 @@ private bool overflow(T)(ref T num, const DecimalContext context) {
 
 /// Rounds the number to the context precision.
 /// The number is rounded using the context rounding mode.
-private void roundByMode(T)(ref T num, const DecimalContext context)
-		if (isDecimal!T) {
-
+private void roundByMode(T)(ref T num,
+		const DecimalContext context = T.context) if (isDecimal!T) {
 	// calculate remainder
 	T remainder = getRemainder(num, context);
 	// if the number wasn't rounded, return
@@ -175,7 +176,7 @@ private void roundByMode(T)(ref T num, const DecimalContext context)
 /// the inexact flag is also set.
 /// Flags: ROUNDED, INEXACT.
 private T getRemainder(T) (ref T num,
-		const DecimalContext context) if (isDecimal!T) {
+		const DecimalContext context = T.context) if (isDecimal!T) {
 
 	T remainder = T.zero;
 	int diff = num.digits - context.precision;
@@ -248,7 +249,7 @@ public int testFive(const BigInt arg) {
 /// The input value is rounded to the context precision,
 /// the number of digits is adjusted, and the exponent is returned.
 public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
-                        const DecimalContext context) {
+		const DecimalContext context) {
 
 	uint inDigits = digits;
 	ulong remainder = clipRemainder(mant, digits, context.precision);
@@ -766,27 +767,27 @@ unittest {
 	before = BigDecimal(1234567890);
 	after = before;
 	round(after, ctx3);
-	assertTrue(after.toString() == "1.23E+9");
+	assertEqual(after.toString(), "1.23E+9");
 	after = before;
 	DecimalContext ctx4 = DecimalContext(4, 99, Rounding.HALF_EVEN);
 	round(after, ctx4);;
-	assertTrue(after.toString() == "1.235E+9");
+	assertEqual(after.toString(), "1.235E+9");
 	after = before;
 	DecimalContext ctx5 = DecimalContext(5, 99, Rounding.HALF_EVEN);
 	round(after, ctx5);;
-	assertTrue(after.toString() == "1.2346E+9");
+	assertEqual(after.toString(), "1.2346E+9");
 	after = before;
 	DecimalContext ctx6 = DecimalContext(6, 99, Rounding.HALF_EVEN);
 	round(after, ctx6);;
-	assertTrue(after.toString() == "1.23457E+9");
+	assertEqual(after.toString(), "1.23457E+9");
 	after = before;
 	DecimalContext ctx7 = DecimalContext(7, 99, Rounding.HALF_EVEN);
 	round(after, ctx7);;
-	assertTrue(after.toString() == "1.234568E+9");
+	assertEqual(after.toString(), "1.234568E+9");
 	after = before;
 	DecimalContext ctx8 = DecimalContext(8, 99, Rounding.HALF_EVEN);
 	round(after, ctx8);;
-	assertTrue(after.toString() == "1.2345679E+9");
+	assertEqual(after.toString(), "1.2345679E+9");
 	before = 1235;
 	after = before;
 	round(after, ctx3);;
@@ -804,22 +805,25 @@ unittest {
 	round(after, ctx3);;
 	assertTrue(after.toAbstract() == "[0,125,2]");
 	Dec32 a = Dec32(0.1);
+writeln("********** a = ", a);
 	Dec32 b = Dec32.min * Dec32(8888888);
-	assertTrue(b.toAbstract == "[0,8888888,-101]");
+writeln("********** b = ", b);
+	assertEqual("[0,8888888,-101]", b.toAbstract);
 	Dec32 c = a * b;
-	assertTrue(c.toAbstract == "[0,888889,-101]");
+writeln("********* c = ", c);
+	assertEqual("[0,888889,-101]",c.toAbstract);
 	Dec32 d = a * c;
-	assertTrue(d.toAbstract == "[0,88889,-101]");
+	assertEqual("[0,88889,-101]", d.toAbstract);
 	Dec32 e = a * d;
-	assertTrue(e.toAbstract == "[0,8889,-101]");
+	assertEqual("[0,8889,-101]", e.toAbstract);
 	Dec32 f = a * e;
-	assertTrue(f.toAbstract == "[0,889,-101]");
+	assertEqual("[0,889,-101]", f.toAbstract);
 	Dec32 g = a * f;
-	assertTrue(g.toAbstract == "[0,89,-101]");
+	assertEqual("[0,89,-101]", g.toAbstract);
 	Dec32 h = a * g;
-	assertTrue(h.toAbstract == "[0,9,-101]");
+	assertEqual("[0,9,-101]", h.toAbstract);
 	Dec32 i = a * h;
-	assertTrue(i.toAbstract == "[0,0,-101]");
+	assertEqual("[0,0,-101]", i.toAbstract);
 }
 
 unittest {
