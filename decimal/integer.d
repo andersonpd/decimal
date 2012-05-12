@@ -13,11 +13,15 @@ import std.conv;
 
 public struct Int {
 
+	private static const N = 2;
+
 //--------------------------------
 // structure
 //--------------------------------
 
-	private int data = 0;
+	private int[N] data =  [0];
+
+	private static const long BASE = 2L^^32;
 
 	@property
 	public Int init() {
@@ -39,13 +43,17 @@ public struct Int {
 //--------------------------------
 
 	public this(int value) {
-		data = value;
+		data[0] = value;
+	}
+
+	public this(long value) {
+		data[0] = cast(int)(value % BASE) ;
 	}
 
 	unittest {	// construction
 		Int num = Int(7503);
-		assert(num.data == 7503);
-		assert(num.data != 7502);
+		assert(num.data[0] == 7503);
+		assert(num.data[0] != 7502);
 	}
 
 //--------------------------------
@@ -54,7 +62,7 @@ public struct Int {
 
 	/// Copy constructor.
 	public this(const Int that) {
-		this.data = that.data;
+		this.data[0] = that.data[0];
 	}
 
 	/// Returns a copy of the number.
@@ -64,7 +72,7 @@ public struct Int {
 
 	/// Returns the absolute value of the number.
 	public const Int abs() {
-		return Int(std.math.abs(this.data));
+		return Int(std.math.abs(this.data[0]));
 	}
 
 	unittest {	// copy
@@ -98,17 +106,17 @@ public struct Int {
 
 	/// Returns a string representation.
 	public const string toString() {
-		return std.conv.to!string(data);
+		return std.conv.to!string(data[0]);
 	}
 
 	/// Returns an integer representation.
 	public const int toInt() {
-		return data;
+		return data[0];
 	}
 
 	/// Returns a long representation.
 	public const long toLong() {
-		return data;
+		return data[0];
 	}
 
 	unittest {	// conversion
@@ -124,14 +132,14 @@ public struct Int {
 	/// Returns -1, 0 or 1, if this number is, respectively,
 	/// less than, equal to or greater than the argument.
 	private const int opCmp(T:Int)(const T that) {
-		if (this.data < that.data) return -1;
-		if (this.data > that.data) return 1;
+		if (this.data[0] < that.data[0]) return -1;
+		if (this.data[0] > that.data[0]) return 1;
 		return 0;
 	}
 
 	 ///Returns true if the number is equal to the argument.
 	private const bool opEquals(T:Int)(const T that) {
-		return this.data == that.data;
+		return this.data[0] == that.data[0];
 	}
 
 	unittest { // comparison
@@ -156,12 +164,12 @@ public struct Int {
 
 	/// Assigns an Int (copies that to this).
 	private void opAssign(T:Int)(const T that) {
-		this.data = that.data;
+		this.data[0] = that.data[0];
 	}
 
 	/// Assigns an Int (copies that to this).
 	private void opAssign(T:int)(const T that) {
-		this.data = that;
+		this.data[0] = that;
 	}
 
 	private ref Int opOpAssign(string op, T:Int) (T that) {
@@ -186,11 +194,11 @@ public struct Int {
 	}
 
 	public const Int plus(T:Int)() {
-		return Int(+this.data);
+		return Int(+this.data[0]);
 	}
 
 	public const Int minus(T:Int)() {
-		return Int(-this.data);
+		return Int(-this.data[0]);
 	}
 
 	unittest {	// opUnary
@@ -266,47 +274,47 @@ writeln("op1 = ", op1++);
 	}
 
 	public const Int add(T:Int)(const T arg1, const T arg2) {
-		return Int(arg1.data + arg2.data);
+		return Int(arg1.data[0] + arg2.data[0]);
 	}
 
 	public const Int sub(T:Int)(const T arg1, const T arg2) {
-		return Int(arg1.data - arg2.data);
+		return Int(arg1.data[0] - arg2.data[0]);
 	}
 
 	public const Int mul(T:Int)(const T arg1, const T arg2) {
-		return Int(arg1.data * arg2.data);
+		return Int(arg1.data[0] * arg2.data[0]);
 	}
 
 	public const Int div(T:Int)(const T arg1, const T arg2) {
-		return Int(arg1.data / arg2.data);
+		return Int(arg1.data[0] / arg2.data[0]);
 	}
 
 	public const Int mod(T:Int)(const T arg1, const T arg2) {
-		return Int(arg1.data % arg2.data);
+		return Int(arg1.data[0] % arg2.data[0]);
 	}
 
 	public const Int pow(T:Int)(const T arg1, const T arg2) {
-		return Int(arg1.data ^^ arg2.data);
+		return Int(arg1.data[0] ^^ arg2.data[0]);
 	}
 
 	public const Int and(T:Int)(const T arg1, const T arg2) {
-		return Int(arg1.data & arg2.data);
+		return Int(arg1.data[0] & arg2.data[0]);
 	}
 
 	public const Int or(T:Int)(const T arg1, const T arg2) {
-		return Int(arg1.data | arg2.data);
+		return Int(arg1.data[0] | arg2.data[0]);
 	}
 
 	public const Int xor(T:Int)(const T arg1, const T arg2) {
-		return Int(arg1.data ^ arg2.data);
+		return Int(arg1.data[0] ^ arg2.data[0]);
 	}
 
 	public const Int shl(T:Int)(const T arg1, const T arg2) {
-		return Int(arg1.data << arg2.data);
+		return Int(arg1.data[0] << arg2.data[0]);
 	}
 
 	public const Int shr(T:Int)(const T arg1, const T arg2) {
-		return Int(arg1.data >> arg2.data);
+		return Int(arg1.data[0] >> arg2.data[0]);
 	}
 
 

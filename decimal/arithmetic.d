@@ -351,8 +351,9 @@ public T nextToward(T)(const T arg1, const T arg2,
 /// less than, equal to, or greater than the first operand.
 /// Implements the 'compare' function in the specification. (p. 27)
 /// Flags: INVALID_OPERATION
-public int compare(T)(const T arg1, const T arg2, const DecimalContext context = T.context,
-		bool rounded = true) if (isDecimal!T) {
+public int compare(T)(const T arg1, const T arg2,
+		const DecimalContext context = T.context,
+		bool roundResult = true) if (isDecimal!T) {
 
 	// any operation with a signaling NaN is invalid.
 	// if both are signaling, return as if arg1 > arg2.
@@ -388,7 +389,7 @@ public int compare(T)(const T arg1, const T arg2, const DecimalContext context =
 	}
 
 	// when all else fails, subtract
-	T result = sub!T(arg1, arg2, context, rounded);
+	T result = sub!T(arg1, arg2, context, roundResult);
 
 	// test the coefficient
 	// result.isZero may not be true if the result hasn't been rounded
@@ -407,8 +408,9 @@ public int compare(T)(const T arg1, const T arg2, const DecimalContext context =
 /// A decimal NaN is not equal to itself (this != this).
 /// This function is not included in the specification.
 /// Flags: INVALID_OPERATION
-public bool equals(T)(const T arg1, const T arg2, const DecimalContext context = T.context,
-		const bool rounded = true) if (isDecimal!T) {
+public bool equals(T)(const T arg1, const T arg2,
+		const DecimalContext context = T.context,
+		const bool roundResult = true) if (isDecimal!T) {
 
 	// any operation with a signaling NaN is invalid.
 	if (arg1.isSignaling || arg2.isSignaling) {
@@ -448,7 +450,7 @@ public bool equals(T)(const T arg1, const T arg2, const DecimalContext context =
 	}
 
 	// otherwise they are equal if they represent the same value
-	T result = sub!T(arg1, arg2, context, rounded);
+	T result = sub!T(arg1, arg2, context, roundResult);
 	return result.coefficient == 0;
 }
 
@@ -458,7 +460,8 @@ public bool equals(T)(const T arg1, const T arg2, const DecimalContext context =
 /// Implements the 'compare-signal' function in the specification. (p. 27)
 /// Flags: INVALID_OPERATION
 public int compareSignal(T) (const T arg1, const T arg2,
-		const DecimalContext context = T.context, bool rounded = true) if (isDecimal!T) {
+		const DecimalContext context = T.context,
+		bool roundResult = true) if (isDecimal!T) {
 
 	// any operation with NaN is invalid.
 	// if both are NaN, return as if arg1 > arg2.
@@ -466,7 +469,7 @@ public int compareSignal(T) (const T arg1, const T arg2,
 		contextFlags.setFlags(INVALID_OPERATION);
 		return arg1.isNaN ? 1 : -1;
 	}
-	return (compare!T(arg1, arg2, context, rounded));
+	return (compare!T(arg1, arg2, context, roundResult));
 }
 
 /// Numbers (representations which are not NaNs) are ordered such that
@@ -812,8 +815,9 @@ public T rotate(T)(const T arg, const int n,
 /// The result may be rounded and context flags may be set.
 /// Implements the 'add' function in the specification. (p. 26)
 /// Flags: INVALID_OPERATION, OVERFLOW.
-public T add(T)(const T arg1, const T arg2, const DecimalContext context = T.context,
-		bool rounded = true) if (isDecimal!T) {
+public T add(T)(const T arg1, const T arg2,
+		const DecimalContext context = T.context,
+		bool roundResult = true) if (isDecimal!T) {
 	T result = T.nan;	 // sum is initialized to quiet NaN
 
 	// check for NaN operand(s)
@@ -889,7 +893,7 @@ public T add(T)(const T arg1, const T arg2, const DecimalContext context = T.con
 
 	result = T(sum);
 	// round the result
-	if (rounded) {
+	if (roundResult) {
 		round(result, context);
 	}
 	return result;
@@ -901,8 +905,9 @@ public T add(T)(const T arg1, const T arg2, const DecimalContext context = T.con
 /// The result may be rounded and context flags may be set.
 /// This function is not included in the specification.
 /// Flags: INVALID_OPERATION, OVERFLOW.
-public T addLong(T)(const T arg1, const long arg2, const DecimalContext context = T.context,
-		bool rounded = true) if (isDecimal!T) {
+public T addLong(T)(const T arg1, const long arg2,
+		const DecimalContext context = T.context,
+		bool roundResult = true) if (isDecimal!T) {
 	T result = T.nan;	 // sum is initialized to quiet NaN
 
 	// check for NaN operand(s)
@@ -973,7 +978,7 @@ public T addLong(T)(const T arg1, const long arg2, const DecimalContext context 
 
 	result = T(sum);
 	// round the result
-	if (rounded) {
+	if (roundResult) {
 		round(result, context);
 	}
 	return result;
@@ -982,9 +987,10 @@ public T addLong(T)(const T arg1, const long arg2, const DecimalContext context 
 /// Subtracts the second operand from the first operand.
 /// The result may be rounded and context flags may be set.
 /// Implements the 'subtract' function in the specification. (p. 26)
-public T sub(T) (const T arg1, const T arg2, const DecimalContext context = T.context,
-		 const bool rounded = true) if (isDecimal!T) {
-	return add!T(arg1, copyNegate!T(arg2), context , rounded);
+public T sub(T) (const T arg1, const T arg2,
+		const DecimalContext context = T.context,
+		const bool roundResult = true) if (isDecimal!T) {
+	return add!T(arg1, copyNegate!T(arg2), context , roundResult);
 }	 // end sub(arg1, arg2)
 
 
@@ -993,8 +999,9 @@ public T sub(T) (const T arg1, const T arg2, const DecimalContext context = T.co
 /// as if the long value were converted to a decimal number.
 /// This function is not included in the specification.
 public T subLong(T) (const T arg1, const long arg2,
-		const DecimalContext context = T.context, const bool rounded = true) if (isDecimal!T) {
-	return addLong!T(arg1, -arg2, context , rounded);
+		const DecimalContext context = T.context,
+		const bool roundResult = true) if (isDecimal!T) {
+	return addLong!T(arg1, -arg2, context , roundResult);
 }	 // end sub(arg1, arg2)
 
 
@@ -1003,7 +1010,7 @@ public T subLong(T) (const T arg1, const long arg2,
 /// Implements the 'multiply' function in the specification. (p. 33-34)
 public T mul(T)(const T arg1, const T arg2,
 		const DecimalContext context = T.context,
-		const bool rounded = true) if (isDecimal!T) {
+		const bool roundResult = true) if (isDecimal!T) {
 
 	T result = T.nan;
 	// if invalid, return NaN
@@ -1044,7 +1051,7 @@ public T mul(T)(const T arg1, const T arg2,
 	}
 
 	// only needs rounding if
-	if (rounded) {
+	if (roundResult) {
 		round(result, T.context);
 	}
 	return result;
@@ -1055,7 +1062,8 @@ public T mul(T)(const T arg1, const T arg2,
 /// Not a required function, but useful because it avoids
 /// an unnecessary conversion to a decimal when multiplying.
 public T mulLong(T)(const T arg1, long arg2,
-		const DecimalContext context = T.context, const bool rounded = true)
+		const DecimalContext context = T.context,
+		const bool roundResult = true)
 		if (isDecimal!T) {
 
 	T result = T.nan;
@@ -1091,7 +1099,7 @@ public T mulLong(T)(const T arg1, long arg2,
 		result = T(product);
 	}
 	// only needs rounding if
-	if (rounded) {
+	if (roundResult) {
 		round(result, context);
 	}
 	return result;
@@ -1114,8 +1122,9 @@ public T fma(T)(const T arg1, const T arg2, const T arg3,
 /// Division by zero sets a flag and returns infinity.
 /// Result may be rounded and context flags may be set.
 /// Implements the 'divide' function in the specification. (p. 27-29)
-public T div(T)(const T arg1, const T arg2, const DecimalContext context = T.context,
-		bool rounded = true) if (isDecimal!T) {
+public T div(T)(const T arg1, const T arg2,
+		const DecimalContext context = T.context,
+		bool roundResult = true) if (isDecimal!T) {
 
 	// check for NaN and divide by zero
 	T result = T.nan;
@@ -1141,7 +1150,7 @@ public T div(T)(const T arg1, const T arg2, const DecimalContext context = T.con
 	quotient.exponent = dividend.exponent - divisor.exponent;
 	quotient.sign = dividend.sign ^ divisor.sign;
 	quotient.digits = numDigits(quotient.coefficient);
-	if (rounded) {
+	if (roundResult) {
 		round(quotient, context);
 		/// TODO why is this flag being checked?
 		if (!contextFlags.getFlag(INEXACT)) {
