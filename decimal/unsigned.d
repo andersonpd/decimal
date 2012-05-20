@@ -170,13 +170,13 @@ public struct Unsigned {
 // comparison
 //--------------------------------
 
-	/// Returns -1, 0 or 1, if this number is, respectively,
+	/// Returns -1, 0, or 1, if this number is, respectively,
 	/// less than, equal to or greater than the argument.
 	private const int opCmp(T:unsigned)(const T that) {
 		return compare(this.digits, that.digits);
 	}
 
-	/// Returns -1, 0 or 1, if this number is, respectively,
+	/// Returns -1, 0, or 1, if this number is, respectively,
 	/// less than, equal to or greater than the argument.
 	private const int opCmp(T)(const T that) if (isIntegral!T) {
 		return opCmp(unsigned(that));
@@ -193,11 +193,11 @@ public struct Unsigned {
 	}
 
 	unittest { // comparison
-/*		assert(unsigned(5) < unsigned(6));
+		assert(unsigned(5) < unsigned(6));
 		assert(unsigned(5) < 6);
-		assert(unsigned(-3) > unsigned(-10));
+		assert(unsigned(3) < unsigned(10));
 		assert(unsigned(195) >= unsigned(195));
-		assert(unsigned(195) >= 195);*/
+		assert(unsigned(195) >= 195);
 	}
 
 	public static unsigned max(const unsigned arg1, const unsigned arg2) {
@@ -494,14 +494,6 @@ private ulong pack(uint hi, uint lo) {
 }
 
 // shifts by whole digits (not bits)
-private uint[] scale(uint[] array, int n) {
-	uint[] shifted = array.dup;
-	if (n > 0) {
-		shifted = new uint[n] ~ shifted;
-	}
-	return shifted;
-}
-// shifts by whole digits (not bits)
 private uint[] padRight(uint[] array, int n) {
 	return new uint[n] ~ array;
 }
@@ -533,14 +525,14 @@ private uint[] shift(uint[] array, int n) {
 		digits = -digits;
 		bits = -bits;
 	}
-	scale(array, digits);
+	shlDigits(array, digits);
 	bitShift(array, bits);
 	return array;
 }
 
-//--------------------------------
+//================================
 // array operations
-//--------------------------------
+//================================
 
 	/// Returns the number of digits in the array.
 	/// Trailing zero digits are not counted.
@@ -553,7 +545,7 @@ private uint[] shift(uint[] array, int n) {
 		return count;
 	}
 
-/*	unittest {
+	unittest {
 		uint[] array;
 		array = [ 1, 2, 3, 5 ];
 		assert(numDigits(array) == 4);
@@ -563,21 +555,57 @@ private uint[] shift(uint[] array, int n) {
 		assert(numDigits(array) == 1);
 		array = [ 0, 0, 0, 0, 0 ];
 		assert(numDigits(array) == 0);
-	}*/
+	}
+
+	// shifts by whole digits (not bits)
+	private uint[] shlDigits(const uint[] array, int n) {
+		uint[] shifted = array.dup;
+		if (n > 0) {
+			shifted = new uint[n] ~ shifted;
+		}
+		return shifted;
+	}
+
+	// shifts by whole digits (not bits)
+	// TODO: this is really a padding operation, not a shift
+	private uint[] shrDigits(const uint[] array, int n) {
+		uint[] shifted = array.dup;
+		if (n > 0) {
+			shifted ~= new uint[n];
+		}
+		return shifted;
+	}
+
+	unittest {
+		uint[] array, shifted;
+		array = [ 1, 2, 3, 5 ];
+		shifted = shlDigits(array, 1);
+		assert(shifted == [0, 1, 2, 3, 5]);
+		assert(compare(array, shifted) < 0);
+		array = [ 1, 2, 3, 0 ];
+		shifted = shrDigits(array, 1);
+		assert(shifted == [1, 2, 3, 0, 0]);
+		assert(compare(array, shifted) == 0);
+	}
+
+//--------------------------------
+// comparison
+//--------------------------------
 
 	/// Compares two arrays of digits.
 	/// Returns -1, 0, or 1 if the first argument is, respectively,
 	/// smaller than, equal to or larger than the second.
 	private int compare(const uint[] a, const uint[] b) {
+		return compare(a, numDigits(a), b, numDigits(b));
+	}
 
-		// if lengths differ...
-//writefln("unsigned(a) = %s", unsigned(a));
-		uint na = numDigits(a);
-//writefln("na = %s", na);
-		uint nb = numDigits(b);
-//writefln("unsigned(b) = %s", unsigned(b));
+	/// Compares two arrays of digits.
+	/// Returns -1, 0, or 1 if the first argument is, respectively,
+	/// smaller than, equal to or larger than the second.
+	private int compare(const uint[] a, uint na, const uint[] b, uint nb) {
+
+		// if lengths differ just compare lengths
 		if (na < nb) return -1;
-//writefln("nb = %s", nb);
 		if (na > nb) return +1;
 
 		// same length; return the first difference
@@ -589,22 +617,30 @@ private uint[] shift(uint[] array, int n) {
 		return 0;
 	}
 
-	/// Compares two arrays of digits.
+	/// Compares an array of digits to a single digit.
 	/// Returns -1, 0, or 1 if the second argument is, respectively,
 	/// smaller than, equal to or larger than the first.
 	private int compare(const uint[] a, const uint k) {
-		uint[] b = [ k ];
-		return compare(a,b);
+		if (numDigits(a) > 1) return +1;
+		if (a[0] < k) return -1;
+		if (a[0] > k) return +1;
+		return 0;
 	}
 
-/*	unittest {
-		writeln("compare...");
+	unittest {
 		uint[] a, b;
+		int c;
+		a = [5];
+		b = [6];
+		assert(compare(a, b) < 0);
 		a = [4, 3, 2, 0 ];
 		b = [4, 3, 2];
-		int c = compare(a, b);
-		writeln("test missing");
-	}*/
+		assert(compare(a, b) == 0);
+		b = [4, 3, 2, 1];
+		assert(compare(a, b) < 0);
+		a = [5, 3, 2, 1 ];
+		assert(compare(a, b) > 0);
+	}
 
 //--------------------------------
 // addition and subtraction
@@ -650,13 +686,13 @@ private uint[] shift(uint[] array, int n) {
 		return sum;
 	}
 
-	/// Returns the sum of the array and a single uint.
-	private static uint[] addDigits(const uint[] x, const uint y) {
-		return addDigits(x, numDigits(x), y);
+	/// Returns the sum of the array and a single digit.
+	private static uint[] addDigit(const uint[] x, const uint y) {
+		return addDigit(x, numDigits(x), y);
 	}
 
-	/// Returns the sum of the array and a single uint.
-	private static uint[] addDigits(const uint[] x, uint nx, const uint y) {
+	/// Returns the sum of the array and a single digit.
+	private static uint[] addDigit(const uint[] x, uint nx, const uint y) {
 		uint[] sum = new uint[nx + 1];
 		ulong temp = x[0] + y;
 		sum[0] = low(temp);
@@ -727,46 +763,56 @@ private uint[] shift(uint[] array, int n) {
 	}
 
 //--------------------------------
-// multiplication and squaring
+// multiplication, squaring, exponentiation
 //--------------------------------
 
 	// Returns the product of the two arrays.
 	private uint[] mulDigits(const uint[] x, const uint[] y) {
-		uint n = numDigits(x);
-		uint t = numDigits(y);
-		uint[] w = new uint[n + t + 1];
-		w[] = 0;
-		for (uint i = 0; i < t; i++) {
-			ulong carry = 0;
-			for (uint j = 0; j < n; j++) {
-				ulong inner = carry + w[i+j]
-					+ cast(ulong)(x[j]) * cast(ulong)(y[i]);
-				carry = high(inner);
-				w[i+j] = low(inner);
-			}
-			w[i+n] = low(carry);
-		// if (n >= N && carry > 1) { overflow }
-		}
-		return w;
+		uint nx = numDigits(x);
+		uint ny = numDigits(y);
+		return mulDigits(x, nx, y, ny);
 	}
 
-	/// Multiplies an array of digits by a single uint
-	private uint[] mulDigits(const uint[] x, const uint k) {
-		int m = numDigits(x);
-		uint[] w = new uint[m+1];
+	// Returns the product of the two arrays.
+	private uint[] mulDigits(const uint[] x, uint nx, const uint[] y, uint ny) {
+		uint[] p = new uint[nx + ny + 1];
+		p[] = 0;
+		for (uint i = 0; i < ny; i++) {
+			ulong carry = 0;
+			for (uint j = 0; j < nx; j++) {
+				ulong temp = carry + p[i+j]
+					+ cast(ulong)(x[j]) * cast(ulong)(y[i]);
+				carry = high(temp);
+				p[i+j] = low(temp);
+			}
+			p[i+nx] = low(carry);
+		// if (nx >= N && carry > 1) { overflow }
+		}
+		return p;
+	}
+
+	/// Multiplies an array of digits by a single digit
+	private uint[] mulDigit(const uint[] x, const uint k) {
+		int nx = numDigits(x);
+		return mulDigit(x, nx, k);
+	}
+
+	/// Multiplies an array of digits by a single digit
+	private uint[] mulDigit(const uint[] x, uint nx, const uint k) {
+		uint[] p = new uint[nx+1];
 		ulong carry = 0;
-		for (int i = 0; i < m; i++) {
+		for (int i = 0; i < nx; i++) {
 			ulong temp = cast(long)k * x[i] + carry;
-			w[i] = low(temp);
+			p[i] = low(temp);
 			carry = high(temp);
 		}
-		w[m] = low(carry);
+		p[nx] = low(carry);
 		// if carry != 0 then overflow
-		return w;
+		return p;
 	}
 
 	// Returns the square of the argument.
-	public uint[] sqr(const uint[] x) {
+	public uint[] sqrDigits(const uint[] x) {
 		uint n = numDigits(x);
 		uint[] sqrx = new uint[2*n];
 		for (uint i = 0; i < n; i++) {
@@ -784,32 +830,57 @@ private uint[] shift(uint[] array, int n) {
 		return sqrx;
 	}
 
+	// returns the argument raised to the specified power.
+	public uint[] powDigits(const uint[] b, uint e) {
+		uint[] a = [1];
+		uint[] s = b.dup;
+		while (e > 0) {
+			if (e & 1) a = mulDigits(a, s);
+			e /= 2;
+			if (e > 0) s = sqrDigits(s);
+		}
+		return a;
+	}
+
+unittest {
+	uint[] b = random(1);
+	uint e = 7;
+	uint[] p = powDigits(b, e);
+	uint[] t = [1];
+	for (int i = 0; i < e; i++) {
+		t = mulDigits(t, b);
+	}
+	assert(compare(p,t) == 0);
+}
+
 //--------------------------------
 // division and modulus
 //--------------------------------
 
 	/// Returns the quotient of the first array divided by the second.
-	private uint[] divDigits(const uint[] a, const uint[] b) {
-		return divDigits(a, numDigits(a), b, numDigits(b));
+	private uint[] divDigits(const uint[] x, const uint[] y) {
+		return divDigits(x, numDigits(x), y, numDigits(y));
 	}
 
 	/// Returns the quotient of the first array divided by the second.
 	private uint[] divDigits(
-		const uint[] a, const uint na, const uint[] b, const uint nb) {
+		const uint[] a, uint na, const uint[] b, uint nb) {
 
-		if (nb == 1) return divDigits(a, na, b[0]);
+		if (nb == 1) return divDigit(a, na, b[0]);
         if (nb == 0) throw new Exception("division by zero");
 
 		uint[] x = a[0..na].dup;
 		uint[] y = b[0..nb].dup;
 		// normalize the operands
-		uint f = divDigits([0u, 1u], y[nb-1])[0];
+		uint f = divDigit([0u, 1u], y[nb-1])[0];
 		if (f != 1) {
-			x = mulDigits(x, f);
-			y = mulDigits(y, f);
+			x = mulDigit(x, na, f);
+			na = numDigits(x);
+			y = mulDigit(y, nb, f);
+			nb = numDigits(y);
 		}
 		uint[] q = new uint[na-nb+1];
-		uint[] ys = scale(y, na-nb);
+		uint[] ys = shlDigits(y, na-nb);
 		while (compare(x,ys) > 0) {
 			q[na-nb]++;
 			x = subDigits(x, ys);
@@ -820,15 +891,15 @@ private uint[] shift(uint[] array, int n) {
 				q[ix] = uint.max;
 			}
 			else {
-				q[ix] = divDigits(x[i-1..i+1], y[nb-1])[0];
+				q[ix] = divDigit(x[i-1..i+1], 2, y[nb-1])[0];
 			}
-			uint[] yq = mulDigits(y[nb-2..nb], q[ix]);
+			uint[] yq = mulDigit(y[nb-2..nb], 2, q[ix]);
 			while ((compare(yq, x[i-2..i+1])) > 0) {
 				q[ix]--;
 				yq = subDigits(yq, y[nb-2..nb]);
 			}
-			uint[] yb = scale(y, i-nb);
-			uint[] xs = mulDigits(yb, q[ix]);
+			uint[] yb = shlDigits(y, i-nb);
+			uint[] xs = mulDigit(yb, i, q[ix]);
 			if (compare(x, xs) < 0) {
 				q[ix]--;
 				xs = subDigits(xs, yb);
@@ -838,19 +909,17 @@ private uint[] shift(uint[] array, int n) {
 		return q;
 	}
 
-	/// Divides an array of digits by a single uint
-	private uint[] divDigits(const uint[] x, const uint k) {
-		int m = numDigits(x);
-		return divDigits(x, m, k);
+	/// Divides an array of digits by a single digit
+	private uint[] divDigit(const uint[] x, const uint k) {
+		return divDigit(x, numDigits(x), k);
 	}
 
-	/// Divides an array of digits by a single uint
-	private uint[] divDigits(const uint[] x, const uint nx, const uint k) {
-		int m = numDigits(x);
-		uint[] q = x[0..m].dup;
+	/// Divides an array of digits by a single digit
+	private uint[] divDigit(const uint[] x, const uint nx, const uint k) {
+		uint[] q = x[0..nx].dup;
 		uint[] remainder;
 		ulong carry = 0;
-		for (int i = m-1; i >= 0; i--) {
+		for (int i = nx-1; i >= 0; i--) {
 			ulong temp = carry * unsigned.BASE + x[i];
 			q[i] = low(temp / k);
 			carry = temp % k;
@@ -858,12 +927,30 @@ private uint[] shift(uint[] array, int n) {
 		return q;
 	}
 
+	/// Divides an array of digits by a single digit
+	private uint modDigit(uint[] x, uint k) {
+		return modDigit(x, numDigits(x), k);
+	}
+
+	/// Divides an array of digits by a single digit
+	private uint modDigit(uint[] x, uint nx, const uint k) {
+//		uint[] quotient = x[0..nx];
+//		uint[] remainder;
+		ulong carry = 0;
+		for (int i = nx-1; i >= 0; i--) {
+			ulong temp = carry * unsigned.BASE + x[i];
+//			x[i] = cast(uint)temp / k;
+			carry = temp % k;
+		}
+		return cast(uint)carry;
+	}
+
 unittest {
 	write("divDigits...");
 	uint[] input, output;
 	uint k;
 	input = [28, 20, 48, 76];
-	output = divDigits(input, 2);
+	output = divDigit(input, 2);
 //writefln("output = %s", output);
 //writefln("unsigned(output) = %s", unsigned(output));
 	input = random(4);
@@ -871,7 +958,7 @@ unittest {
 writefln("unsigned(input) = %s", unsigned(input));
 	k = randomDigit;
 writefln("k = %X", k);
-	output = divDigits(input, k);
+	output = divDigit(input, k);
 writefln("unsigned(output) = %s", unsigned(output));
 //writefln("output = %s", output);
 	uint[] ka = [ k ];
@@ -879,24 +966,10 @@ writefln("unsigned(output) = %s", unsigned(output));
 	uint r = modDigit(input, k);
 writefln("r = %X", r);
 writefln("unsigned(m) = %s", unsigned(m));
-writefln("unsigned( ) = %s", unsigned(addDigits(m, r)));
+writefln("unsigned( ) = %s", unsigned(addDigit(m, r)));
 
 	writeln("test  ----- missing");
 }
-
-	// Minefield, Algorithm 5: Remainder
-	private uint modDigit(uint[] x, uint k) {
-		int m = numDigits(x);
-		uint[] quotient = x[0..m];
-		uint[] remainder;
-		ulong carry = 0;
-		for (int i = m-1; i >= 0; i--) {
-			ulong temp = carry * unsigned.BASE + x[i];
-//			x[i] = cast(uint)temp / k;
-			carry = temp % k;
-		}
-		return cast(uint)carry;
-	}
 
 //--------------------------------
 // logical operations
@@ -905,9 +978,14 @@ writefln("unsigned( ) = %s", unsigned(addDigits(m, r)));
 	private uint[] andDigits(const uint[] a, const uint[] b) {
 		uint na = numDigits(a);
 		uint nb = numDigits(b);
+		uint[] ac, bc;
 		if (nb > na) {
+			ac = shlDigits(a, nb-na);
+			bc = b.dup;
 		}
 		else if (na > nb) {
+			bc = shlDigits(b, na-nb);
+			ac = a.dup;
 		}
 		uint[] and = new uint[nb];
 		for (int i = 0; i < nb; i++) {
@@ -970,7 +1048,7 @@ writefln("unsigned(x) = %s", unsigned(x));
 //writefln("unsigned(rt) = %s", unsigned(rt));
 //	uint[] px = mulDigits(rt,rt);
 //writefln("unsigned(px) = %s", unsigned(px));
-//	rt = sqr(rt);
+//	rt = sqrDigits(rt);
 //writefln("unsigned(rt) = %s", unsigned(rt));
 	writeln("passed");
 }
