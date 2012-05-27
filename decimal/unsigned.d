@@ -20,7 +20,6 @@ unittest {
 }
 
 alias Unsigned unsigned;
-//alias uint uint;
 
 public struct Unsigned {
 
@@ -29,7 +28,7 @@ public struct Unsigned {
 //--------------------------------
 
 	private static const uint N = 4;
-	private static const ulong BASE_BITS = uint.sizeof;
+	private static const ulong BASE_BITS = 32;
 	public static const ulong BASE = 1UL << 32;
 
 	// digits are right to left:
@@ -66,7 +65,7 @@ public struct Unsigned {
 			digits[i] = array[i];
 	}
 
-/*	unittest {	// construction
+	unittest {	// construction
 		unsigned num = unsigned(7503UL);
 		assert(num.digits[0] == 7503);
 		assert(num.digits[0] != 7502);
@@ -77,7 +76,7 @@ public struct Unsigned {
 		assert(num.digits[1] == 1);
 		num.digits[0] = 16;
 		num.digits[1] = 32;
-	}*/
+	}
 
 //--------------------------------
 // copy
@@ -93,13 +92,13 @@ public struct Unsigned {
 		return unsigned(this);
 	}
 
-/*	unittest {	// copy
+	unittest {	// copy
 		unsigned num = unsigned(9305);
 		assert(unsigned(num) == num);
 		assert(num.dup == num);
 //		assert(num.abs == unsigned(9305));
 //		assert(abs(num) == unsigned(9305));
-	}*/
+	}
 
 //--------------------------------
 // constants
@@ -114,18 +113,13 @@ public struct Unsigned {
 	public const unsigned MAX = unsigned([uint.max, uint.max, uint.max, uint.max]);
 	public static unsigned MIN = unsigned(0);
 
-/*	unittest {	// constants
-		unsigned num = FIVE;
-		assert(num == unsigned(5));
-	}*/
-
 //--------------------------------
 // classification
 //--------------------------------
 
-//	public const bool isZero() {
-//		return digits = 0;
-//	}
+	public const bool isZero() {
+		return numDigits(this.digits) == 0;
+	}
 
 //--------------------------------
 // conversion
@@ -143,10 +137,8 @@ public struct Unsigned {
 			return ("0x_00000000");
 		}
 		for (int i = 0; i < length; i++) {
-//		foreach(ulong value; digits) {
 			str = format("_%08X", digits[i]) ~ str;
 		}
-//  		while (front(str) == '0' && str.length > 0) popFront(str);
 		return "0x" ~ str.idup;
 	}
 
@@ -160,11 +152,11 @@ public struct Unsigned {
 		return digits[0];
 	}
 
-/*	unittest {	// conversion
+	unittest {	// conversion
 //		assert(unsigned(156).toString == "_0x9C");
 		assert(unsigned(8754).toInt == 8754);
 		assert(unsigned(9100).toLong == 9100L);
-	}*/
+	}
 
 //--------------------------------
 // comparison
@@ -218,25 +210,16 @@ public struct Unsigned {
 		return digits[i];
 	}
 
-	private void opIndexAssign(T)(const uint i, const T that)
-			if (isIntegral!T) {
+	private void opIndexAssign(T)(const uint i, const T that) if (isIntegral!T) {
 		digits[i] = that;
 	}
-
-//	private const uint opIndexUnary(uint i) {
-//		return opUnaryords[i];
-//	}
-//
-//	private const uint opIndexOpAssign( uint i) {
-//		return digits[i];
-//	}
 
 	/// Assigns an unsigned integer (copies that to this).
 	private void opAssign(T:unsigned)(const T that) {
 		this.digits = that.digits;
 	}
 
-	/// Assigns an integral number
+	/// Assigns an unsigned integral value
 	private void opAssign(T)(const T that) if (isIntegral!T) {
 		opAssign(unsigned(that));
 	}
@@ -247,7 +230,8 @@ public struct Unsigned {
 	}
 
 	/// Assigns an unsigned (copies that to this).
-	private ref unsigned opOpAssign(T)(string op, const T that) if (isIntegral!T) {
+	private ref unsigned opOpAssign(T)
+			(string op, const T that) if (isIntegral!T) {
 		opOpAssign(unsigned(that));
 	}
 
@@ -285,29 +269,7 @@ public struct Unsigned {
 		return ++w;
 	}
 
-	public const unsigned sqr() {
-		// special cases
-		if (this == ZERO) return ZERO;
-		if (this == ONE)  return ONE;
-
-		unsigned x = this;
-		uint[2*N] w;
-		for (uint i = 0; i < N; i++) {
-			ulong inner = w[2*i]
-					+ cast(ulong)(x[i]) * cast(ulong)(x[i]);
-			ulong carry = high(inner);
-			w[2*i] = low(inner);
-			for (uint j = i+1; j < N; j++) {
-				inner = carry + w[i+j] + 2UL * x[j] * x[i];
-				carry = high(inner);
-				w[i+j] = low(inner);
-			}
-		// if (carry >1) { overflow }
-		}
-		return unsigned(w[0..N-1]);
-	}
-
-/*	unittest {	// opUnary
+	unittest {	// opUnary
 		unsigned op1 = 4;
 		import std.stdio;
 //		assert(+op1 == op1);
@@ -319,7 +281,7 @@ public struct Unsigned {
 //		assert(~op1 == 0xFFFFFFFFEEEEEEFFUL);
 //		assert(op1.negate == 0xFFFFFFFFEEEEEF00UL);
 
-	}*/
+	}
 
 //--------------------------------
 // binary operations
@@ -411,11 +373,11 @@ public struct Unsigned {
 	}
 
 	public const unsigned mod(const unsigned x, const unsigned y) {
-		return unsigned(x.digits[0] % y.digits[0]);
+		return ZERO; // unsigned(x.digits[0] % y.digits[0]);
 	}
 
 	public const unsigned pow(const unsigned x, const unsigned y) {
-		return unsigned(x.digits[0] ^^ y.digits[0]);
+		return ZERO; unsigned(x.digits[0] ^^ y.digits[0]);
 	}
 
 	public const unsigned and(const unsigned x, const unsigned y) {
@@ -440,14 +402,29 @@ public struct Unsigned {
 	}
 
 	public const unsigned shl(const unsigned x, const unsigned y) {
-		return unsigned(x.digits[0] << y.digits[0]);
+		return ZERO; //unsigned(x.digits[0] << y.digits[0]);
 	}
 
 	public const unsigned shr(const unsigned x, const unsigned y) {
-		return unsigned(x.digits[0] >> y.digits[0]);
+		return ZERO; //unsigned(x.digits[0] >> y.digits[0]);
 	}
 
+}	// end Unsigned
 
+//--------------------------------
+// digit pack/unpack methods
+//--------------------------------
+
+private uint low(const ulong packed)
+    { return packed & 0xFFFFFFFFUL; }
+
+private uint high(const ulong packed)
+    { return (packed & 0xFFFFFFFF00000000UL) >> 32; }
+
+private ulong pack(uint hi, uint lo) {
+	ulong packed = (cast(ulong) hi) << 32;
+	packed |= lo;
+	return packed;
 }
 
 //--------------------------------
@@ -459,76 +436,6 @@ public struct Unsigned {
 	public unsigned abs(const unsigned arg) {
 		return arg.dup;
 	}
-
-/*	public unsigned sqr(const unsigned x) {
-		// special cases
-//		if (this == ZERO) return ZERO;
-//		if (this == ONE)  return ONE;
-
-		uint[2*N] w;
-		for (uint i = 0; i < N; i++) {
-			ulong inner = w[2*i]
-					+ cast(ulong)(x[i]) * cast(ulong)(x[i]);
-			ulong carry = high(inner);
-			w[2*i] = low(inner);
-			for (uint j = i+1; j < N; j++) {
-				inner = carry + w[i+j] + 2UL * x[j] * x[i];
-				carry = high(inner);
-				w[i+j] = low(inner);
-			}
-		// if (carry >1) { overflow }
-		}
-		return unsigned(w[0..N-1]);
-	}*/
-
-private uint low(const ulong pr)
-    { return pr & 0xFFFFFFFFUL; }
-
-private uint high(const ulong pr)
-    { return (pr & 0xFFFFFFFF00000000UL) >> 32; }
-
-private ulong pack(uint hi, uint lo) {
-	ulong pr = (cast(ulong) hi) << 32;
-	pr |= lo;
-	return pr;
-}
-
-// shifts by whole digits (not bits)
-private uint[] padRight(uint[] array, int n) {
-	return new uint[n] ~ array;
-}
-
-/*unittest {
-	writeln("digitShift...");
-	uint[] input, output;
-	input = [ 1, 2, 3 ];
-	output = digitShift(input, 0);
-	input = [ 1, 2, 3 ];
-	output = digitShift(input, 2);
-	output = digitShift(input, -2);
-	writeln("test missing");
-}*/
-
-private uint[] bitShift(uint[] array, int n) {
-	return array;
-}
-
-private uint[] shift(uint[] array, int n) {
-	bool sign = false;
-	if (n < 0) {
-		n = -n;
-		sign = true;
-	}
-	int digits = n / uint.sizeof;
-	int bits = n % uint.sizeof;
-	if (sign) {
-		digits = -digits;
-		bits = -bits;
-	}
-	shlDigits(array, digits);
-	bitShift(array, bits);
-	return array;
-}
 
 //================================
 // array operations
@@ -557,6 +464,23 @@ private uint[] shift(uint[] array, int n) {
 		assert(numDigits(array) == 0);
 	}
 
+	private uint[] shift(uint[] array, int n) {
+		bool sign = false;
+		if (n < 0) {
+			n = -n;
+			sign = true;
+		}
+		int digits = n / 32;
+		int bits = n % 32;
+		if (sign) {
+			digits = -digits;
+			bits = -bits;
+		}
+		shlDigits(array, digits);
+		shlBits(array, bits);
+		return array;
+	}
+
 	// shifts by whole digits (not bits)
 	private uint[] shlDigits(const uint[] array, int n) {
 		uint[] shifted = array.dup;
@@ -566,14 +490,46 @@ private uint[] shift(uint[] array, int n) {
 		return shifted;
 	}
 
-	// shifts by whole digits (not bits)
-	// TODO: this is really a padding operation, not a shift
-	private uint[] shrDigits(const uint[] array, int n) {
-		uint[] shifted = array.dup;
-		if (n > 0) {
-			shifted ~= new uint[n];
+	// shifts by bits
+	private uint[] shlBits(const uint[] x, int n) {
+		uint nx = numDigits(x);
+		uint[] shifted = new uint[nx + 1];
+		uint shout, shin;
+		for (uint i = 0; i < nx; i++) {
+			ulong temp = x[i];
+			temp <<= n;
+			shout = high(temp);
+			shifted[i] = low(temp) | shin;
+			shin = shout;
+		}
+		shifted[nx] = shin;
+		return shifted;
+	}
+
+	// shifts by bits
+	private uint[] shrBits(const uint[] x, int n) {
+		uint nx = numDigits(x);
+		uint[] shifted = new uint[nx];
+		uint shout, shin;
+		for (uint i = 0; i < nx; i++) {
+			ulong temp = x[i];
+			temp >>= n;
+			shout = high(temp);
+			shifted[i] = low(temp) | shin;
+			shin = shout;
 		}
 		return shifted;
+	}
+
+	// shifts by whole digits (not bits)
+	private uint[] shrDigits(const uint[] x, int n) {
+		if (n >= x.length) {
+			return [0];
+		}
+		if (n > 0) {
+			return x[n..$].dup;
+		}
+		return x.dup;
 	}
 
 	unittest {
@@ -582,11 +538,53 @@ private uint[] shift(uint[] array, int n) {
 		shifted = shlDigits(array, 1);
 		assert(shifted == [0, 1, 2, 3, 5]);
 		assert(compare(array, shifted) < 0);
+		shifted = shrDigits(shifted, 1);
+		assert(compare(array, shifted) == 0);
+
+		shifted = shlBits(array, 1);
+		assert(shifted == [2, 4, 6, 10, 0]);
+		shifted = shrBits(shifted, 1);
+writefln("shifted = %s", shifted);
+		assert(shifted == array);
+
 		array = [ 1, 2, 3, 0 ];
 		shifted = shrDigits(array, 1);
-		assert(shifted == [1, 2, 3, 0, 0]);
-		assert(compare(array, shifted) == 0);
+		assert(shifted == [2, 3, 0]);
+		assert(compare(array, shifted) > 0);
+		array = random(4);
+		shifted = shlBits(array, 4);
+		assert(compare(shifted, mulDigit(array, 16)) == 0);
 	}
+
+	public bool isZero(const uint[] a) {
+		return numDigits(a) == 0;
+	}
+
+	public bool isOdd(const uint[] a) {
+		return a[0] & 1;
+	}
+
+	public bool isEven(const uint[] a) {
+		return !isOdd(a);
+	}
+
+unittest {
+	uint[] a = [7];
+	assert(isOdd(a));
+	a = [7, 3, 0];
+	assert(isOdd(a));
+	a = [0, 0, 0];
+	assert(isEven(a));
+	a = [0, 0, 15];
+	assert(isEven(a));
+	a = [64, 0, 15];
+	assert(isEven(a));
+	a = [64, 0, 0];
+	assert(isEven(a));
+	a = [63, 0, 0];
+	assert(isOdd(a));
+}
+
 
 //--------------------------------
 // comparison
@@ -649,7 +647,9 @@ private uint[] shift(uint[] array, int n) {
 	/// Returns the sum of the two arrays.
 	private uint[] addDigits(const uint[] x, const uint[] y) {
 		uint nx = numDigits(x);
+		if (nx == 0) return y.dup;
 		uint ny = numDigits(y);
+		if (ny == 0) return x.dup;
 		if (nx >= ny) return addDigits(x, nx, y, ny);
 		else return addDigits(y, ny, x, nx);
 	}
@@ -807,7 +807,7 @@ private uint[] shift(uint[] array, int n) {
 			carry = high(temp);
 		}
 		p[nx] = low(carry);
-		// if carry != 0 then overflow
+		assert(high(carry) == 0);// if carry != 0 then overflow
 		return p;
 	}
 
@@ -815,23 +815,45 @@ private uint[] shift(uint[] array, int n) {
 	public uint[] sqrDigits(const uint[] x) {
 		uint n = numDigits(x);
 		uint[] sqrx = new uint[2*n];
+		ulong overflow = 0;
 		for (uint i = 0; i < n; i++) {
-			ulong inner = sqrx[2*i]	+ cast(ulong)x[i] * cast(ulong)x[i];
+			ulong inner = sqrx[2*i]	+ cast(ulong)x[i] * cast(ulong)x[i] + overflow;
 			ulong carry = high(inner);
 			sqrx[2*i] = low(inner);
 			for (uint j = i+1; j < n; j++) {
-				inner = carry + sqrx[i+j] + 2 * cast(ulong)x[j] * cast(ulong)x[i];
+				ulong temp = cast(ulong)x[j] * cast(ulong)x[i];
+				overflow = temp & 0x8000_0000_0000_0000 ? 0x010000_0000 : 0;
+				inner = carry + sqrx[i+j] + (temp << 1);
 				carry = high(inner);
 				sqrx[i+j] = low(inner);
 			}
 			sqrx[i+n] = low(carry);
-		// if (carry >1) { overflow }
+		assert(high(carry) == 0);// if (carry >1) { overflow }
 		}
 		return sqrx;
 	}
 
+unittest {
+	writeln("squaring...");
+	uint[] d = [0xF4DEF769, 0x941F2754];
+	writeln("unsquared: ");
+writefln("unsigned(d) = %s", unsigned(d));
+	d = sqrDigits(d);
+	writeln("squared: ");
+writefln("unsigned(d) = %s", unsigned(d));
+string expect = "0x_55B40944_C7C01ADE_DF5C24BA_3137C911";
+writefln("expect =      %s", expect);
+assert(unsigned(d).toString() == expect);
+//	d = sqrDigits(d);
+//writefln("unsigned(d) = %s", unsigned(d));
+	writeln("test missing");
+}
+
 	// returns the argument raised to the specified power.
 	public uint[] powDigits(const uint[] b, uint e) {
+		if (e == 0) return [1];
+		if (e == 1) return b.dup;
+		if (e == 2) return sqrDigits(b);
 		uint[] a = [1];
 		uint[] s = b.dup;
 		while (e > 0) {
@@ -842,16 +864,70 @@ private uint[] shift(uint[] array, int n) {
 		return a;
 	}
 
+	// greatest common denominator
+	public uint[] gcd(const uint[] xin, const uint[] yin) {
+		uint[] x = xin.dup;
+		uint[] y = yin.dup;
+		uint[] g = [1];
+		while (isEven(x) && isEven(y)) {
+			x = divDigit(x,2);
+			y = divDigit(y,2);
+			g = mulDigit(g,2);
+		}
+		while (!isZero(x)) {
+			while (isEven(x)) {
+				x = divDigit(x,2);
+			}
+			while (isEven(y)) {
+				y = divDigit(y,2);
+			}
+			if (compare(x,y) >= 0) {
+				uint [] t = subDigits(x,y);
+				x = divDigit(t, 2);
+			}
+			else {
+				uint[] t = subDigits(y,x);
+				y = divDigit(t, 2);
+			}
+		}
+		return mulDigits(g, y);
+	}
+
 unittest {
+	uint[] b = [0xC2BA7913U]; //random(1);
+	uint e = 4;
+	uint[] p = powDigits(b, e);
+	uint[] t = [1];
+	for (int i = 0; i < e; i++) {
+		t = mulDigits(t, b);
+writefln("(t) = %s", (t));
+	}
+writefln("unsigned(p) = %s", unsigned(p));
+writefln("unsigned(t) = %s", unsigned(t));
+	assert(compare(p,t) == 0);
+	uint[] x, y, g;
+	x = [174]; //random(1);;
+//writefln("unsigned(x) = %s", unsigned(x));
+	y = [36]; //random(1);
+//writefln("unsigned(y) = %s", unsigned(y));
+	g = gcd(x,y);
+writefln("*unsigned(g) = %s", (g));
+}
+unittest {
+	for (int j = 0; j < 10; j++) {
 	uint[] b = random(1);
 	uint e = 7;
 	uint[] p = powDigits(b, e);
 	uint[] t = [1];
 	for (int i = 0; i < e; i++) {
 		t = mulDigits(t, b);
+writefln("(t) = %s", (t));
 	}
+writefln("unsigned(p) = %s", unsigned(p));
+writefln("unsigned(t) = %s", unsigned(t));
 	assert(compare(p,t) == 0);
-}
+	}
+	}
 
 //--------------------------------
 // division and modulus
@@ -866,6 +942,7 @@ unittest {
 	private uint[] divDigits(
 		const uint[] a, uint na, const uint[] b, uint nb) {
 
+		if (na == 0) return [0]; // divDigit(a, na, b[0]);
 		if (nb == 1) return divDigit(a, na, b[0]);
         if (nb == 0) throw new Exception("division by zero");
 
@@ -916,6 +993,7 @@ unittest {
 
 	/// Divides an array of digits by a single digit
 	private uint[] divDigit(const uint[] x, const uint nx, const uint k) {
+		if (nx == 0) return [0];
 		uint[] q = x[0..nx].dup;
 		uint[] remainder;
 		ulong carry = 0;
