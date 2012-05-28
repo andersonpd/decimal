@@ -21,13 +21,21 @@ unittest {
 
 alias Unsigned unsigned;
 
-public struct Unsigned {
+public enum Overflow {
+	ROLLOVER,
+	SATURATE,
+	THROW
+};
+
+public struct Unsigned { //(int Z = 128) {
 
 //--------------------------------
 // structure
 //--------------------------------
 
-	private static const uint N = 4;
+//	private static const uint DIGITS = B / 32;
+//	private static const bool EXTRAS = B % 32;
+	private static const uint N = 4; //B/32;
 	private static const ulong BASE_BITS = 32;
 	public static const ulong BASE = 1UL << 32;
 
@@ -361,15 +369,8 @@ public struct Unsigned {
 		return unsigned(w[0..N-1]);
 	}
 
-	public const unsigned div(const unsigned a, const unsigned b) {
-
-		uint n = numDigits(a.digits);
-		if (n == 0) return ZERO;
-		uint t = numDigits(b.digits);
-		if (t == 0) return ZERO; // TODO: should throw
-		if (b == ONE) return a;
-
-		return unsigned(divDigits(a.digits, b.digits));
+	public const unsigned div(const unsigned x, const unsigned y) {
+		return unsigned(divDigits(x.digits, y.digits));
 	}
 
 	public const unsigned mod(const unsigned x, const unsigned y) {
@@ -383,21 +384,21 @@ public struct Unsigned {
 	public const unsigned and(const unsigned x, const unsigned y) {
 		unsigned result;
 		for (int i = 0; i < N; i++)
-			result.digits[i] = (x.digits[i] & y.digits[i]);
+			result[i] = (x[i] & y[i]);
 		return result;
 	}
 
 	public const unsigned or(const unsigned x, const unsigned y) {
 		unsigned result;
 		for (int i = 0; i < N; i++)
-			result.digits[i] = (x.digits[i] | y.digits[i]);
+			result[i] = (x[i] | y[i]);
 		return result;
 	}
 
 	public const unsigned xor(const unsigned x, const unsigned y) {
 		unsigned result;
 		for (int i = 0; i < N; i++)
-			result.digits[i] = (x.digits[i] ^ y.digits[i]);
+			result[i] = (x[i] ^ y[i]);
 		return result;
 	}
 
@@ -540,13 +541,10 @@ private ulong pack(uint hi, uint lo) {
 		assert(compare(array, shifted) < 0);
 		shifted = shrDigits(shifted, 1);
 		assert(compare(array, shifted) == 0);
-
 		shifted = shlBits(array, 1);
 		assert(shifted == [2, 4, 6, 10, 0]);
 		shifted = shrBits(shifted, 1);
-writefln("shifted = %s", shifted);
 		assert(shifted == array);
-
 		array = [ 1, 2, 3, 0 ];
 		shifted = shrDigits(array, 1);
 		assert(shifted == [2, 3, 0]);
@@ -556,15 +554,15 @@ writefln("shifted = %s", shifted);
 		assert(compare(shifted, mulDigit(array, 16)) == 0);
 	}
 
-	public bool isZero(const uint[] a) {
+	private bool isZero(const uint[] a) {
 		return numDigits(a) == 0;
 	}
 
-	public bool isOdd(const uint[] a) {
+	private bool isOdd(const uint[] a) {
 		return a[0] & 1;
 	}
 
-	public bool isEven(const uint[] a) {
+	private bool isEven(const uint[] a) {
 		return !isOdd(a);
 	}
 
@@ -811,83 +809,92 @@ unittest {
 		return p;
 	}
 
+	private ulong longMul(const uint x, const uint y) {
+		return cast(ulong)x * cast(ulong)y;
+	}
+
+	// Returns the number of significant digits in the input array.
+	/// Copies the significant digits in the input array to the output array.
+	private uint numCopy(const uint[] x, out uint[] y) {
+		uint nx = numDigits(x);
+		y = x[0..nx].dup;
+		return nx;
+	}
+
 	// Returns the square of the argument.
 	public uint[] sqrDigits(const uint[] x) {
-		uint n = numDigits(x);
-		uint[] sqrx = new uint[2*n];
+		uint nx = numDigits(x);
+		uint[] sqrx = new uint[2*nx];
 		ulong overflow = 0;
-		for (uint i = 0; i < n; i++) {
-			ulong inner = sqrx[2*i]	+ cast(ulong)x[i] * cast(ulong)x[i] + overflow;
+		for (uint i = 0; i < nx; i++) {
+			ulong inner = sqrx[2*i]	+ longMul(x[i], x[i]) + overflow;
 			ulong carry = high(inner);
 			sqrx[2*i] = low(inner);
-			for (uint j = i+1; j < n; j++) {
-				ulong temp = cast(ulong)x[j] * cast(ulong)x[i];
+			for (uint j = i+1; j < nx; j++) {
+				ulong temp = longMul(x[j], x[i]);
 				overflow = temp & 0x8000_0000_0000_0000 ? 0x010000_0000 : 0;
 				inner = carry + sqrx[i+j] + (temp << 1);
 				carry = high(inner);
 				sqrx[i+j] = low(inner);
 			}
-			sqrx[i+n] = low(carry);
+			sqrx[i+nx] = low(carry);
 		assert(high(carry) == 0);// if (carry >1) { overflow }
 		}
 		return sqrx;
 	}
 
-unittest {
-	writeln("squaring...");
-	uint[] d = [0xF4DEF769, 0x941F2754];
-	writeln("unsquared: ");
-writefln("unsigned(d) = %s", unsigned(d));
-	d = sqrDigits(d);
-	writeln("squared: ");
-writefln("unsigned(d) = %s", unsigned(d));
-string expect = "0x_55B40944_C7C01ADE_DF5C24BA_3137C911";
-writefln("expect =      %s", expect);
-assert(unsigned(d).toString() == expect);
-//	d = sqrDigits(d);
-//writefln("unsigned(d) = %s", unsigned(d));
-	writeln("test missing");
-}
+	unittest {
+		uint[] d = [0xF4DEF769, 0x941F2754];
+		d = sqrDigits(d);
+		string expect = "0x_55B40944_C7C01ADE_DF5C24BA_3137C911";
+		assert(unsigned(d).toString() == expect);
+	}
 
 	// returns the argument raised to the specified power.
-	public uint[] powDigits(const uint[] b, uint e) {
-		if (e == 0) return [1];
-		if (e == 1) return b.dup;
-		if (e == 2) return sqrDigits(b);
+	public uint[] powDigits(const uint[] base, uint expo) {
+		if (expo == 0) return [1];
+		if (expo == 1) return base.dup;
+		if (expo == 2) return sqrDigits(base);
 		uint[] a = [1];
-		uint[] s = b.dup;
-		while (e > 0) {
-			if (e & 1) a = mulDigits(a, s);
-			e /= 2;
-			if (e > 0) s = sqrDigits(s);
+		uint[] s = base.dup;
+		while (expo > 0) {
+			if (expo & 1) a = mulDigits(a, s);
+			expo /= 2;
+			if (expo > 0) s = sqrDigits(s);
 		}
 		return a;
 	}
 
 	// greatest common denominator
 	public uint[] gcd(const uint[] xin, const uint[] yin) {
-		uint[] x = xin.dup;
-		uint[] y = yin.dup;
+		uint[] x, y;
+		uint nx = numCopy(xin, x);
+		uint ny = numCopy(yin, y);
+		if (nx == 0 && ny == 0) return [1];
+		if (nx == 0) return y;
+		if (ny == 0) return x;
+		if (compare(x, nx, y, ny) == 0) return x;
 		uint[] g = [1];
+
 		while (isEven(x) && isEven(y)) {
-			x = divDigit(x,2);
-			y = divDigit(y,2);
-			g = mulDigit(g,2);
+			x = shrBits(x, 1);
+			y = shrBits(y, 1);
+			g = shlBits(g, 1);
 		}
 		while (!isZero(x)) {
 			while (isEven(x)) {
-				x = divDigit(x,2);
+				x = shrBits(x, 1);
 			}
 			while (isEven(y)) {
-				y = divDigit(y,2);
+				y = shrBits(y, 1);
 			}
 			if (compare(x,y) >= 0) {
 				uint [] t = subDigits(x,y);
-				x = divDigit(t, 2);
+				x = shrBits(t, 1);
 			}
 			else {
 				uint[] t = subDigits(y,x);
-				y = divDigit(t, 2);
+				y = shrBits(t, 1);
 			}
 		}
 		return mulDigits(g, y);
@@ -900,33 +907,27 @@ unittest {
 	uint[] t = [1];
 	for (int i = 0; i < e; i++) {
 		t = mulDigits(t, b);
-writefln("(t) = %s", (t));
 	}
-writefln("unsigned(p) = %s", unsigned(p));
-writefln("unsigned(t) = %s", unsigned(t));
 	assert(compare(p,t) == 0);
+
 	uint[] x, y, g;
 	x = [174]; //random(1);;
-//writefln("unsigned(x) = %s", unsigned(x));
 	y = [36]; //random(1);
-//writefln("unsigned(y) = %s", unsigned(y));
 	g = gcd(x,y);
-writefln("*unsigned(g) = %s", (g));
+	assert(compare(g, [6]) == 0);
 }
-unittest {
-	for (int j = 0; j < 10; j++) {
-	uint[] b = random(1);
-	uint e = 7;
-	uint[] p = powDigits(b, e);
-	uint[] t = [1];
-	for (int i = 0; i < e; i++) {
-		t = mulDigits(t, b);
-writefln("(t) = %s", (t));
-	}
-writefln("unsigned(p) = %s", unsigned(p));
-writefln("unsigned(t) = %s", unsigned(t));
-	assert(compare(p,t) == 0);
-	}
+
+	unittest {
+		for (int j = 0; j < 10; j++) {
+			uint[] b = random(1);
+			uint e = 7;
+			uint[] p = powDigits(b, e);
+			uint[] t = [1];
+			for (int i = 0; i < e; i++) {
+				t = mulDigits(t, b);
+			}
+		assert(compare(p,t) == 0);
+		}
 	}
 
 //--------------------------------
@@ -934,48 +935,57 @@ writefln("unsigned(t) = %s", unsigned(t));
 //--------------------------------
 
 	/// Returns the quotient of the first array divided by the second.
-	private uint[] divDigits(const uint[] x, const uint[] y) {
-		return divDigits(x, numDigits(x), y, numDigits(y));
+	private uint[] divmodDigits(const uint[] xin, const uint[] yin, out uint[] mod) {
+		// mutable copies
+		uint[] x, y;
+		uint nx = numCopy(xin, x);
+		uint ny = numCopy(yin, y);
+        if (ny == 0) throw new Exception("division by zero");
+		// special cases
+		if (nx == 0)  {
+			mod = [0];
+			return [0];
+		}
+		if (ny == 1) {
+			return divmodDigit(x, nx, y[0], mod[0]);
+		}
+		return divmodDigits(x, numDigits(x), y, numDigits(y), mod);
 	}
 
 	/// Returns the quotient of the first array divided by the second.
-	private uint[] divDigits(
-		const uint[] a, uint na, const uint[] b, uint nb) {
+	/// Preconditions: y != 0
+	private uint[] divmodDigits(
+			ref uint[] x, uint nx, ref uint[] y, uint ny, out uint[] mod) {
 
-		if (na == 0) return [0]; // divDigit(a, na, b[0]);
-		if (nb == 1) return divDigit(a, na, b[0]);
-        if (nb == 0) throw new Exception("division by zero");
-
-		uint[] x = a[0..na].dup;
-		uint[] y = b[0..nb].dup;
 		// normalize the operands
-		uint f = divDigit([0u, 1u], y[nb-1])[0];
+		uint f = divDigit([0u, 1u], y[ny-1])[0];
 		if (f != 1) {
-			x = mulDigit(x, na, f);
-			na = numDigits(x);
-			y = mulDigit(y, nb, f);
-			nb = numDigits(y);
+			x = mulDigit(x, nx, f);
+			nx = numDigits(x);
+			y = mulDigit(y, ny, f);
+			ny = numDigits(y);
 		}
-		uint[] q = new uint[na-nb+1];
-		uint[] ys = shlDigits(y, na-nb);
+
+		uint[] q = new uint[nx-ny+1];
+		uint[] ys = shlDigits(y, nx-ny);
 		while (compare(x,ys) > 0) {
-			q[na-nb]++;
+			q[nx-ny]++;
 			x = subDigits(x, ys);
 		}
-		for (int i = na-1; i >= nb; i--) {
-			int ix = i-nb;
-			if (x[i] == y[nb-1]) {
+		for (uint i = nx-1; i >= ny; i--) {
+			uint ix = i-ny;
+			if (x[i] == y[ny-1]) {
 				q[ix] = uint.max;
 			}
 			else {
-				q[ix] = divDigit(x[i-1..i+1], 2, y[nb-1])[0];
+				q[ix] = divDigit(x[i-1..i+1], 2U, y[ny-1])[0];
 			}
-			uint[] yq = mulDigit(y[nb-2..nb], 2, q[ix]);
+			uint[] yq = mulDigit(y[ny-2..ny], 2U, q[ix]);
 			while ((compare(yq, x[i-2..i+1])) > 0) {
 				q[ix]--;
-				yq = subDigits(yq, y[nb-2..nb]);
+				yq = subDigits(yq, y[ny-2..ny]);
 			}
-			uint[] yb = shlDigits(y, i-nb);
+			uint[] yb = shlDigits(y, i-ny);
 			uint[] xs = mulDigit(yb, i, q[ix]);
 			if (compare(x, xs) < 0) {
 				q[ix]--;
@@ -983,21 +993,65 @@ writefln("unsigned(t) = %s", unsigned(t));
 			}
 			x = subDigits(x, xs);
 		}
+		mod = f == 1 ? x : divDigit(x, f);
 		return q;
 	}
 
 	/// Divides an array of digits by a single digit
-	private uint[] divDigit(const uint[] x, const uint k) {
+	private uint[] divmodDigit(const uint[] x, uint n, uint k, out uint mod) {
+		if (n == 0) {
+			mod = 0;
+			return [0];
+		}
+		if (k == 1) {
+			mod = 0;
+			return x.dup;
+		}
+		if (k == 0) throw new Exception("division by zero");
+		uint[] q = x.dup;
+		ulong carry = 0;
+		for (int i = n-1; i >= 0; i--) {
+			ulong temp = carry * unsigned.BASE + x[i];
+			q[i] = low(temp / k);
+			carry = temp % k;
+		}
+		mod = cast(uint)carry;
+		return q;
+	}
+
+	/// Returns the quotient of the first array divided by the second.
+	private uint[] divDigits(const uint[] xin, const uint[] yin) {
+		// mutable copies
+		uint[] x, y, mod;
+		uint nx = numCopy(xin, x);
+		uint ny = numCopy(yin, y);
+		// special cases
+		if (nx == 0) return [0];
+        if (ny == 0) throw new Exception("division by zero");
+		if (ny == 1) return divDigit(x, nx, y[0]);
+		// divide arrays
+		return divmodDigits(x, nx, y, ny, mod);
+	}
+
+	/// Returns the quotient of the first array divided by the second.
+	private uint[] divDigits(ref uint[] x, uint nx, ref uint[] y, uint ny) {
+		uint [] mod;
+		return divmodDigits(x, nx, y, ny, mod);
+	}
+
+	/// Divides an array of digits by a single digit
+	private uint[] divDigit(const uint[] x, uint k) {
 		return divDigit(x, numDigits(x), k);
 	}
 
 	/// Divides an array of digits by a single digit
-	private uint[] divDigit(const uint[] x, const uint nx, const uint k) {
-		if (nx == 0) return [0];
-		uint[] q = x[0..nx].dup;
-		uint[] remainder;
+	private uint[] divDigit(const uint[] x, uint n, uint k) {
+		if (n == 0) return [0];
+		if (k == 1) return x.dup;
+		if (k == 0) throw new Exception("division by zero");
+		uint[] q = x.dup;
 		ulong carry = 0;
-		for (int i = nx-1; i >= 0; i--) {
+		for (int i = n-1; i >= 0; i--) {
 			ulong temp = carry * unsigned.BASE + x[i];
 			q[i] = low(temp / k);
 			carry = temp % k;
@@ -1005,26 +1059,44 @@ writefln("unsigned(t) = %s", unsigned(t));
 		return q;
 	}
 
-	/// Divides an array of digits by a single digit
-	private uint modDigit(uint[] x, uint k) {
+	/// Returns the quotient of the first array divided by the second.
+	private uint[] modDigits(const uint[] xin, const uint[] yin) {
+		// mutable copies
+		uint[] x, y, mod;
+		uint nx = numCopy(xin, x);
+		uint ny = numCopy(yin, y);
+		// special cases
+		if (nx == 0) return [0];
+        if (ny == 0) throw new Exception("division by zero");
+		if (ny == 1) return [modDigit(x, nx, y[0])];
+		// divide arrays
+		divmodDigits(x, nx, y, ny, mod);
+		return mod;
+	}
+
+	/// Returns the quotient of the first array divided by the second.
+	private uint[] modDigits(ref uint[] x, uint nx, ref uint[] y, uint ny) {
+		uint [] mod;
+		divmodDigits(x, nx, y, ny, mod);
+		return mod;
+	}
+
+	/// Divides an array of digits by a single digit and returns the remainder.
+	private uint modDigit(const uint[] x, uint k) {
 		return modDigit(x, numDigits(x), k);
 	}
 
-	/// Divides an array of digits by a single digit
-	private uint modDigit(uint[] x, uint nx, const uint k) {
-//		uint[] quotient = x[0..nx];
-//		uint[] remainder;
+	/// Divides an array of digits by a single digit and returns the remainder.
+	private uint modDigit(const uint[] x, uint n, const uint k) {
 		ulong carry = 0;
-		for (int i = nx-1; i >= 0; i--) {
+		for (int i = n-1; i >= 0; i--) {
 			ulong temp = carry * unsigned.BASE + x[i];
-//			x[i] = cast(uint)temp / k;
 			carry = temp % k;
 		}
 		return cast(uint)carry;
 	}
 
 unittest {
-	write("divDigits...");
 	uint[] input, output;
 	uint k;
 	input = [28, 20, 48, 76];
@@ -1033,45 +1105,57 @@ unittest {
 //writefln("unsigned(output) = %s", unsigned(output));
 	input = random(4);
 //writefln("input = %s", input);
-writefln("unsigned(input) = %s", unsigned(input));
+//writefln("unsigned(input) = %s", unsigned(input));
 	k = randomDigit;
-writefln("k = %X", k);
+//writefln("k = %X", k);
 	output = divDigit(input, k);
-writefln("unsigned(output) = %s", unsigned(output));
+//writefln("unsigned(output) = %s", unsigned(output));
 //writefln("output = %s", output);
 	uint[] ka = [ k ];
 	uint[] m = mulDigits(output, ka);
 	uint r = modDigit(input, k);
-writefln("r = %X", r);
-writefln("unsigned(m) = %s", unsigned(m));
-writefln("unsigned( ) = %s", unsigned(addDigit(m, r)));
-
-	writeln("test  ----- missing");
+//writefln("r = %X", r);
+//writefln("unsigned(m) = %s", unsigned(m));
+//writefln("unsigned( ) = %s", unsigned(addDigit(m, r)));
 }
 
 //--------------------------------
 // logical operations
 //--------------------------------
 
+	/// Returns the logical and of the two arrays.
+	/// precondition: a and b must have the same length
 	private uint[] andDigits(const uint[] a, const uint[] b) {
-		uint na = numDigits(a);
-		uint nb = numDigits(b);
-		uint[] ac, bc;
-		if (nb > na) {
-			ac = shlDigits(a, nb-na);
-			bc = b.dup;
-		}
-		else if (na > nb) {
-			bc = shlDigits(b, na-nb);
-			ac = a.dup;
-		}
-		uint[] and = new uint[nb];
-		for (int i = 0; i < nb; i++) {
+		assert(a.length == b.length);
+		uint[] and = new uint[a.length];
+		for (int i = 0; i < a.length; i++) {
 			and[i] = a[i] & b[i];
 		}
 		return and[];
-
 	}
+
+	/// Returns the logical or of the two arrays.
+	/// precondition: a and b must have the same length
+	private uint[] orDigits(const uint[] a, const uint[] b) {
+		assert(a.length == b.length);
+		uint[] or = new uint[a.length];
+		for (int i = 0; i < a.length; i++) {
+			or[i] = a[i] | b[i];
+		}
+		return or[];
+	}
+
+	/// Returns the logical xor of the two arrays.
+	/// precondition: a and b must have the same length
+	private uint[] xorDigits(const uint[] a, const uint[] b) {
+		assert(a.length == b.length);
+		uint[] xor = new uint[a.length];
+		for (int i = 0; i < a.length; i++) {
+			xor[i] = a[i] ^ b[i];
+		}
+		return xor[];
+	}
+
 
 //--------------------------------
 // random numbers
@@ -1092,31 +1176,31 @@ writefln("unsigned( ) = %s", unsigned(addDigit(m, r)));
 unittest {
 	writeln("random digits...");
 	uint[] r = random(4);
-writefln("unsigned(r) = %s", unsigned(r));
+/*writefln*/("unsigned(r) = %s", unsigned(r));
 	uint[] s = random(4);
-writefln("unsigned(s) = %s", unsigned(s));
-writefln("compare(r,s) = %s", compare(r,s));
+//writefln("unsigned(s) = %s", unsigned(s));
+//writefln("compare(r,s) = %s", compare(r,s));
 	uint[] t;
 	if (compare(r,s) > 0) {
 		t = subDigits(r,s);
-writefln("t == r - s = %s", unsigned(t));
-writefln("r ?= t - s = %s", unsigned(addDigits(t,s)));
+//writefln("t == r - s = %s", unsigned(t));
+//writefln("r ?= t - s = %s", unsigned(addDigits(t,s)));
 	}
 	else {
 		t = addDigits(r,s);
-writefln("t == r + s = %s", unsigned(t));
-writefln("s ?= t - r = %s", unsigned(subDigits(t,r)));
+//writefln("t == r + s = %s", unsigned(t));
+//writefln("s ?= t - r = %s", unsigned(subDigits(t,r)));
 	}
    	uint[] x = random(2);
 	uint[] y = random(2);
 	uint[] z = mulDigits(x,y);
-writefln("unsigned(x) = %s", unsigned(x));
-writefln("unsigned(y) = %s", unsigned(y));
-writefln("unsigned(z) = %s", unsigned(z));
+//writefln("unsigned(x) = %s", unsigned(x));
+//writefln("unsigned(y) = %s", unsigned(y));
+//writefln("unsigned(z) = %s", unsigned(z));
 
 	uint[] w = divDigits(z,y);
-writefln("unsigned(w) = %s", unsigned(w));
-writefln("unsigned(x) = %s", unsigned(x));
+//writefln("unsigned(w) = %s", unsigned(w));
+//writefln("unsigned(x) = %s", unsigned(x));
 //	uint[] k = random(1);
 //	z = mulDigits(x,k[0..1]);
 //writefln("unsigned(k) = %s", unsigned(k));
