@@ -133,19 +133,43 @@ public struct Unsigned { //(int Z = 128) {
 // conversion
 //--------------------------------
 
-	import std.array;
-	import std.format;
-	import std.string;
-
 	/// Converts to a string.
 	public const string toString() {
+		char[] str;
+		uint[] from = digits.dup;
+		uint n = numDigits(from);
+		if (n == 0) return "0";
+		while (n > 0) {
+			uint mod;
+			char[1] ch;
+			from = divmodDigit(from, n, 10, mod);
+			std.string.sformat(ch, "%d", mod);
+			str = ch ~ str;
+			n = numDigits(from);
+		}
+		return str.idup;
+	}
+
+	unittest // toString
+	{
+		unsigned a;
+		a = unsigned([11]);
+		assert(a.toString == "11");
+		a = unsigned(1234567890123);
+		assert(a.toString == "1234567890123");
+		a = unsigned(0x4872EACF123346FF);
+		assert(a.toString == "5220493093160306431");
+	}
+
+	/// Converts to a string.
+	public const string toHexString() {
 		char[] str;
 		int length = numDigits(digits);
 		if (length == 0) {
 			return ("0x_00000000");
 		}
 		for (int i = 0; i < length; i++) {
-			str = format("_%08X", digits[i]) ~ str;
+			str = std.string.format("_%08X", digits[i]) ~ str;
 		}
 		return "0x" ~ str.idup;
 	}
@@ -161,7 +185,7 @@ public struct Unsigned { //(int Z = 128) {
 	}
 
 	unittest {	// conversion
-//		assert(unsigned(156).toString == "_0x9C");
+		assert(unsigned(156).toHexString == "0x_0000009C");
 		assert(unsigned(8754).toInt == 8754);
 		assert(unsigned(9100).toLong == 9100L);
 	}
@@ -374,11 +398,15 @@ public struct Unsigned { //(int Z = 128) {
 	}
 
 	public const unsigned mod(const unsigned x, const unsigned y) {
-		return ZERO; // unsigned(x.digits[0] % y.digits[0]);
+		return unsigned(modDigits(x.digits, y.digits));
 	}
 
 	public const unsigned pow(const unsigned x, const unsigned y) {
-		return ZERO; unsigned(x.digits[0] ^^ y.digits[0]);
+		return unsigned(powDigits(x.digits, y.toInt));
+	}
+
+	public const unsigned pow(const unsigned x, const uint n) {
+		return unsigned(powDigits(x.digits, n));
 	}
 
 	public const unsigned and(const unsigned x, const unsigned y) {
@@ -403,11 +431,29 @@ public struct Unsigned { //(int Z = 128) {
 	}
 
 	public const unsigned shl(const unsigned x, const unsigned y) {
-		return ZERO; //unsigned(x.digits[0] << y.digits[0]);
+		return shl(x, y.toInt);
+	}
+
+	public const unsigned shl(const unsigned x, const uint n) {
+		int digits = n / 32;
+		int bits = n % 32;
+		uint [] array = x.digits.dup;
+		shlDigits(array, digits);
+		shlBits(array, bits);
+		return unsigned(array);
 	}
 
 	public const unsigned shr(const unsigned x, const unsigned y) {
-		return ZERO; //unsigned(x.digits[0] >> y.digits[0]);
+		return shr(x, y.toInt);
+	}
+
+	public const unsigned shr(const unsigned x, const uint n) {
+		int digits = n / 32;
+		int bits = n % 32;
+		uint [] array = x.digits.dup;
+		shrDigits(array, digits);
+		shrBits(array, bits);
+		return unsigned(array);
 	}
 
 }	// end Unsigned
@@ -473,10 +519,6 @@ private ulong pack(uint hi, uint lo) {
 		}
 		int digits = n / 32;
 		int bits = n % 32;
-		if (sign) {
-			digits = -digits;
-			bits = -bits;
-		}
 		shlDigits(array, digits);
 		shlBits(array, bits);
 		return array;
@@ -847,7 +889,7 @@ unittest {
 		uint[] d = [0xF4DEF769, 0x941F2754];
 		d = sqrDigits(d);
 		string expect = "0x_55B40944_C7C01ADE_DF5C24BA_3137C911";
-		assert(unsigned(d).toString() == expect);
+		assert(unsigned(d).toHexString() == expect);
 	}
 
 	// returns the argument raised to the specified power.
