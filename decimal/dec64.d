@@ -24,7 +24,6 @@ import std.string;
 import decimal.arithmetic;
 import decimal.context;
 import decimal.decimal;
-//import decimal.dec32;
 import decimal.rounding;
 import decimal.test;
 
@@ -232,11 +231,11 @@ private:
 
 private:
 	// The value of the (6) special bits when the number is a signaling NaN.
-	immutable uint SIG_VAL = 0x3F;
+	immutable uint SIG_BITS = 0x3F;
 	// The value of the (6) special bits when the number is a quiet NaN.
-	immutable uint NAN_VAL = 0x3E;
+	immutable uint NAN_BITS = 0x3E;
 	// The value of the (5) special bits when the number is infinity.
-	immutable uint INF_VAL = 0x1E;
+	immutable uint INF_BITS = 0x1E;
 
 //--------------------------------
 //	special values and constants
@@ -269,8 +268,8 @@ private:
 		NEG_TEN = 0xB1C000000000000A,
 
 		// pi and related values
-		TAU 	 = 0x2FF65286144ADA42,
 		PI		 = 0x2FEB29430A256D21,
+		TAU 	 = 0x2FF65286144ADA42,
 		PI_2	 = 0x2FE594A18512B691,
 		PI_SQR	 = 0x6BFB105A58668B4F,
 		SQRT_PI  = 0x2FE64C099229FBAC,
@@ -416,7 +415,7 @@ writeln("test.toHexString = ", test.toHexString);
 	public this(const long n) {
 		this = zero;
 		signed = n < 0;
-		coefficient = std.math.abs(n);
+		coefficient = signed ? -n : n;
 	}
 
 	unittest {
@@ -1078,28 +1077,28 @@ public:
 	 * Returns true if this number is a quiet or signaling NaN.
 	 */
 	const bool isNaN() {
-		return testNaN == NAN_VAL || testNaN == SIG_VAL;
+		return testNaN == NAN_BITS || testNaN == SIG_BITS;
 	}
 
 	/**
 	 * Returns true if this number is a signaling NaN.
 	 */
 	const bool isSignaling() {
-		return testNaN == SIG_VAL;
+		return testNaN == SIG_BITS;
 	}
 
 	/**
 	 * Returns true if this number is a quiet NaN.
 	 */
 	const bool isQuiet() {
-		return testNaN == NAN_VAL;
+		return testNaN == NAN_BITS;
 	}
 
 	/**
 	 * Returns true if this number is +\- infinity.
 	 */
 	const bool isInfinite() {
-		return testInf == INF_VAL;
+		return testInf == INF_BITS;
 	}
 
 	/**
