@@ -492,6 +492,7 @@ public int compareTotal(T)(const T arg1, const T arg2) if (isDecimal!T) {
 		return !arg1.sign ? ret1 : ret2;
 	}
 
+	// TODO: Move this back into the fixed modules
 	// quick bitwise comparison
 	static if (isFixedDecimal!T) {
 		if (arg1.bits == arg2.bits) return 0;
@@ -1038,9 +1039,17 @@ public T mul(T)(const T arg1, const T arg2,
 	// product is non-zero
 	else {
 		BigDecimal product = BigDecimal.zero;
+		static if (is(T:BigDecimal)) {
+			product.coefficient = arg1.coefficient * arg2.coefficient;
+		}
+		else {
+			product.coefficient = T.bigmul(arg1, arg2);
+		}
+
+/*		BigDecimal product = BigDecimal.zero;
 		BigInt mant1 = arg1.coefficient;
 		BigInt mant2 = arg2.coefficient;
-		product.coefficient = mant1 * mant2;
+		product.coefficient = mant1 * mant2;*/
 		// (A)TODO: can't convert to BigInt below because the template can't
 		// determine the type.
 //		product.coefficient = BigInt(arg1.coefficient) * BigInt(arg2.coefficient);

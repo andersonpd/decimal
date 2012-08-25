@@ -17,12 +17,22 @@ module decimal.rounding;
 import std.array: insertInPlace;
 import std.ascii: isDigit;
 import std.bigint;
+import decimal.integer;
 
 import decimal.arithmetic: compare, copyNegate, equals;
 import decimal.context;
 import decimal.conv;
 import decimal.decimal;
 import decimal.test;
+
+private const uint128 TEN128 = uint128(10);
+private const uint128 THOU128 = TEN128^^3;
+private const uint128 MILL128 = THOU128^^3;
+private const uint128 BILL128 = MILL128^^3;
+private const uint128 TRIL128 = BILL128^^3;
+private const uint128 QUAD128 = TRIL128^^3;
+private const uint128 QUINT128 = QUAD128^^3;
+private const uint128 FIVE128 = uint128(5);
 
 /// Rounds the referenced number using the precision and rounding mode of
 /// the context parameter.
@@ -224,6 +234,7 @@ private void incrementAndRound(T)(ref T num) if (isDecimal!T) {
 /// Returns -1, 0, or 1 if the remainder is less than, equal to, or more than
 /// half of the least significant digit of the shortened coefficient.
 /// Exactly half is a five followed by zero or more zero digits.
+// TODO: calls firstDigit and then numDigits: combine these calls.
 public int testFive(const ulong n) {
 	int digits = numDigits(n);
 	int first = cast(int)(n / TENS[digits-1]);
@@ -236,6 +247,19 @@ public int testFive(const ulong n) {
 /// Returns -1, 1, or 0 if the remainder is less than, more than,
 /// or exactly half the least significant digit of the shortened coefficient.
 /// Exactly half is a five followed by zero or more zero digits.
+// TODO: calls firstDigit and then numDigits: combine these calls.
+public int testFive(const uint128 arg) {
+	int first = firstDigit(arg);
+	if (first < 5) return -1;
+	if (first > 5) return +1;
+	uint128 zeros = (arg % TEN128^^(numDigits(arg)-1)).toInt;
+	return (zeros != 0) ? 1 : 0;
+}
+
+/// Returns -1, 1, or 0 if the remainder is less than, more than,
+/// or exactly half the least significant digit of the shortened coefficient.
+/// Exactly half is a five followed by zero or more zero digits.
+// TODO: calls firstDigit and then numDigits: combine these calls.
 public int testFive(const BigInt arg) {
 	BigInt big = mutable(arg);
 	int first = firstDigit(arg);
@@ -367,6 +391,9 @@ private BigInt BIG_TEN  = BigInt(10);
 private BigInt BILLION  = BigInt(1_000_000_000);
 private BigInt QUINTILLION = BigInt(1_000_000_000_000_000_000);
 
+//private uint128 TEN128 = 10;
+//private uint128 QUINT128 = uint128.TEN^^18; //uint128(1_000_000_000_000_000_000);
+
 /// An array of unsigned long integers with values of
 /// powers of ten from 10^^0 to 10^^18
 public static ulong[19] TENS = [10L^^0,
@@ -413,6 +440,23 @@ public int numDigits(const BigInt arg) {
 	return count + numDigits(n);
 }
 
+/// Returns the number of digits in the argument.
+public int numDigits(const uint128 arg) {
+    // special cases
+	if (arg == 0) return 0;
+    if (arg < 10) return 1;
+    // otherwise reduce until number fits into a long integer...
+	int count = 0;
+	uint128 num = arg;
+	if (num > QUINT128) {
+		num /= QUINT128;
+		count += 18;
+	}
+	/// ...and delegate result to long integer version
+	long n = num.toLong;
+	return count + numDigits(n);
+}
+
 /// Returns the number of digits in the argument,
 /// where the argument is an unsigned long integer.
 public int numDigits(const ulong n, const int maxValue = 19) {
@@ -443,6 +487,17 @@ public int firstDigit(const BigInt arg) {
 	}
 	long n = big.toLong();
 	return firstDigit(n);
+}
+
+/// Returns the first digit of the argument.
+public int firstDigit(const uint128 arg) {
+	if (arg == 0) return 0;
+	if (arg < 10) return arg.toInt();
+	uint128 n = arg;
+	while (n > QUINT128) {
+		n /= QUINT128;
+	}
+	return firstDigit(n.toLong());
 }
 
 /// Returns the first digit of the argument.
@@ -643,9 +698,13 @@ public uint lastDigit(const BigInt arg) {
 }
 
 /// Returns the last digit of the argument.
+public uint lastDigit(const uint128 arg) {
+	return (abs(arg) % 10UL).toInt();
+}
+
+/// Returns the last digit of the argument.
 public uint lastDigit(const long num) {
-	ulong n = std.math.abs(num);
-	return cast(uint)(n % 10UL);
+	return cast(uint)(std.math.abs(num) % 10UL);
 }
 
 /// Returns the number of trailing zeros in the argument.
@@ -733,6 +792,12 @@ public BigInt mutable(const BigInt num) {
 public BigInt abs(const BigInt num) {
 	BigInt big = mutable(num);
 	return big < BIG_ZERO ? -big : big;
+}
+
+/// Returns the absolute value of a BigInt
+public uint128 abs(const uint128 num) {
+//	BigInt big = mutable(num);
+	return num < 0 ? -num : num;
 }
 
 /// Returns -1, 0, or 1

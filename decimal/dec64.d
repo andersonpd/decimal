@@ -115,7 +115,7 @@ private:
 	// The exponent bias. The exponent is stored as an unsigned number and
 	// the bias is subtracted from the unsigned value to give the true
 	// (signed) exponent.
-	immutable int BIAS = 398;		 // = 0x65
+	immutable int BIAS = 398;		 // = 0x18E
 	// The maximum representable exponent.
 	immutable int E_LIMIT = 369;	 // MAX_EXPO - BIAS
 	// The min and max adjusted exponents.
@@ -1658,6 +1658,16 @@ const int opCmp(T:Dec64)(const T that) {
 		n = 3;
 		assertTrue(pow10(n) == 1000);
 	}
+
+	/**
+	 *	Helper function used in arithmetic multiply
+	 */
+	static BigInt bigmul(const Dec64 arg1, const Dec64 arg2) {
+		BigInt big = BigInt(arg1.coefficient);
+		return big * arg2.coefficient;
+	}
+
+
 
 }	// end Dec64 struct
 

@@ -1087,6 +1087,14 @@ public:
 		return cast(uint)TENS[n];
 	}
 
+	/**
+	 *	Helper function used in arithmetic multiply
+	 */
+	static BigInt bigmul(const Dec32 arg1, const Dec32 arg2) {
+		BigInt big = BigInt(arg1.coefficient);
+		return big * arg2.coefficient;
+	}
+
 }	// end Dec32 struct
 
 // (32)TODO: set context flags

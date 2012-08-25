@@ -18,6 +18,7 @@ import std.array: insertInPlace;
 import std.bigint;
 import std.string;
 import std.format;
+import decimal.integer;
 
 import decimal.context;
 import decimal.rounding: round;
@@ -28,7 +29,7 @@ import decimal.decimal;
 import decimal.test;
 
 //--------------------------------
-//  conversions
+//   to!string conversions
 //--------------------------------
 
 /// to!string(BigInt).
@@ -45,6 +46,25 @@ T to(T: string)(const BigInt num) {
 T to(T: string)(const long n) {
 	return format("%d", n);
 }
+
+/// to!string(Unsigned!Z).
+T to(T: string)(const uint128 n) {
+	return n.toString();
+}
+
+//--------------------------------
+//  uint128 conversions
+//--------------------------------
+
+BigInt toBigInt(const uint128 arg) {
+	BigInt big = BigInt(0);
+	big = BigInt(arg.toString);
+	return big;
+}
+
+//--------------------------------
+//  decimal tests
+//--------------------------------
 
 /// Returns true if T is a decimal type.
 public template isDecimal(T) {

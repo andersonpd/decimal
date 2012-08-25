@@ -27,7 +27,7 @@ import decimal.dec32;
 import decimal.dec64;
 import decimal.rounding;
 import decimal.test;
-import decimal.unsigned;
+import decimal.integer;
 
 unittest {
 	writeln("===================");
@@ -35,7 +35,11 @@ unittest {
 	writeln("===================");
 }
 
+private static ZERO = uint128.ZERO;
+
 struct Dec128 {
+
+//private static const uint128 TEST = uint128(127UL, 123UL);
 
 private:
 	// The total number of bits in the decimal number.
@@ -130,8 +134,9 @@ private:
 
 	// union providing different views of the number representation.
 	union {
+		uint128 intBits = uint128(0x7C00000000000000UL, 0x0000000000000000UL);
 		union {	// entire 64-bit unsigned integer
-			ulong hiWord = BITS.POS_NAN;    // set to the initial value: NaN
+			ulong hiWord; // = BITS.POS_NAN;    // set to the initial value: NaN
 
 			// unsigned value and sign bit
 			mixin (bitfields!(
@@ -247,20 +252,33 @@ private:
 // and inserted into the sign, coefficient and exponent fields.
 // This enum is used to force the constructor to copy the bit pattern,
 // rather than treating it as a integer.
-private:
-	static enum BITS : ulong
-	{
-		POS_SIG = 0x7E00000000000000,
-		NEG_SIG = 0xFE00000000000000,
-		POS_NAN = 0x7C00000000000000,
-		NEG_NAN = 0xFC00000000000000,
-		POS_INF = 0x7800000000000000,
-		NEG_INF = 0xF800000000000000,
-		POS_ZRO = 0x31C0000000000000,
-		NEG_ZRO = 0xB1C0000000000000,
 
-		POS_MAX = 0x77FB86F26FC0FFFF, //  0x77F8967FFFFFFFFF (128)TODO: why is this different?
-		NEG_MAX = 0xF7FB86F26FC0FFFF
+private const TEST = uint128(0x0UL, 0x0UL);
+
+//private:
+//	static enum BITS : uint128
+//	{
+/*		POS_SIG = uint128(0x7E00000000000000UL,0x0UL),
+		NEG_SIG = uint128(0xFE00000000000000UL,0x0UL),
+		POS_NAN = uint128(0x7C00000000000000UL,0x0UL),
+		NEG_NAN = uint128(0xFC00000000000000UL,0x0UL),
+		POS_INF = uint128(0x7800000000000000UL,0x0UL),
+		NEG_INF = uint128(0xF800000000000000UL,0x0UL),
+		POS_ZRO = uint128(0x3040000000000000UL,0x0UL),
+		NEG_ZRO = uint128(0xB040000000000000UL,0x0UL),
+		POS_MAX = uint128(0x77FB86F26FC0FFFFUL,0x0UL), //  0x77F8967FFFFFFFFF (128)TODO: why is this different?
+		NEG_MAX = uint128(0xF7FB86F26FC0FFFFUL,0x0UL),
+
+		// common small integers
+		POS_ONE = uint128(0x3040000000000000UL,0x1UL),
+		NEG_ONE = uint128(0xB040000000000000UL,0x1UL),
+		POS_TWO = uint128(0x3040000000000000UL,0x2UL),
+		NEG_TWO = uint128(0xB040000000000000UL,0x2UL),
+		POS_FIV = uint128(0x3040000000000000UL,0x5UL),
+		NEG_FIV = uint128(0xB040000000000000UL,0x5UL),
+		POS_TEN = uint128(0x3040000000000000UL,0xAUL),
+		NEG_TEN = uint128(0xB040000000000000UL,0xAUL)
+*/
 /*	Dec128 diff
 		// common small integers
 		POS_ONE = 0x32800001,
@@ -287,6 +305,8 @@ private:
 		GAMMA	= 0x2F58137D,
 
 		// logarithms
+
+
 		E		= 0x2FA97A4A,
 		LOG2_E	= 0x2F960387,
 		LOG10_E = 0x2F4244A1,
@@ -299,10 +319,29 @@ private:
 		SQRT2	= 0x2F959446,
 		SQRT1_2 = 0x2F6BE55C
 	}
-
-*/	}
-
+*/
+//	}
+//
 public:
+	immutable Dec128 NAN      = Dec128(uint128(0x7E00000000000000UL,0x0UL));
+	immutable Dec128 SNAN     = Dec128(uint128(0xFE00000000000000UL,0x0UL));
+	immutable Dec128 INFINITY = Dec128(uint128(0x7800000000000000UL,0x0UL));
+	immutable Dec128 NEG_INF  = Dec128(uint128(0xF800000000000000UL,0x0UL));
+	immutable Dec128 ZERO     = Dec128(uint128(0x3040000000000000UL,0x0UL));
+	immutable Dec128 NEG_ZERO = Dec128(uint128(0xB040000000000000UL,0x0UL));
+	immutable Dec128 MAX      = Dec128(uint128(0x77FB86F26FC0FFFFUL,0x0UL));
+	immutable Dec128 NEG_MAX  = Dec128(uint128(0xF7FB86F26FC0FFFFUL,0x0UL));
+
+	// small integers
+	immutable Dec128 ONE 	  = Dec128(uint128(0x3040000000000000UL,0x1UL));
+	immutable Dec128 NEG_ONE  = Dec128(uint128(0xB040000000000000UL,0x1UL));
+	immutable Dec128 TWO 	  = Dec128(uint128(0x3040000000000000UL,0x2UL));
+	immutable Dec128 NEG_TWO  = Dec128(uint128(0xB040000000000000UL,0x2UL));
+	immutable Dec128 FIVE	  = Dec128(uint128(0x3040000000000000UL,0x5UL));
+	immutable Dec128 NEG_FIVE = Dec128(uint128(0xB040000000000000UL,0x5UL));
+	immutable Dec128 TEN 	  = Dec128(uint128(0x3040000000000000UL,0xAUL));
+	immutable Dec128 NEG_TEN  = Dec128(uint128(0xB040000000000000UL,0xAUL));
+/*
 	immutable Dec128 NAN      = Dec128(BITS.POS_NAN);
 	immutable Dec128 SNAN     = Dec128(BITS.POS_SIG);
 	immutable Dec128 INFINITY = Dec128(BITS.POS_INF);
@@ -311,20 +350,18 @@ public:
 	immutable Dec128 NEG_ZERO = Dec128(BITS.NEG_ZRO);
 	immutable Dec128 MAX      = Dec128(BITS.POS_MAX);
 	immutable Dec128 NEG_MAX  = Dec128(BITS.NEG_MAX);
-	immutable Dec128 ONE      = Dec128( 1);
-	immutable Dec128 NEG_ONE  = Dec128(-1);
 
-/*	Dec128 diff
 	// small integers
-	immutable Dec128 ONE 	 = Dec128(BITS.POS_ONE);
+	immutable Dec128 ONE 	  = Dec128(BITS.POS_ONE);
 	immutable Dec128 NEG_ONE  = Dec128(BITS.NEG_ONE);
-	immutable Dec128 TWO 	 = Dec128(BITS.POS_TWO);
+	immutable Dec128 TWO 	  = Dec128(BITS.POS_TWO);
 	immutable Dec128 NEG_TWO  = Dec128(BITS.NEG_TWO);
-	immutable Dec128 FIVE	 = Dec128(BITS.POS_FIV);
+	immutable Dec128 FIVE	  = Dec128(BITS.POS_FIV);
 	immutable Dec128 NEG_FIVE = Dec128(BITS.NEG_FIV);
-	immutable Dec128 TEN 	 = Dec128(BITS.POS_TEN);
+	immutable Dec128 TEN 	  = Dec128(BITS.POS_TEN);
 	immutable Dec128 NEG_TEN  = Dec128(BITS.NEG_TEN);
 
+/*
 	// mathamatical constants
 	immutable Dec128 TAU 	 = Dec128(BITS.TAU);
 	immutable Dec128 PI		 = Dec128(BITS.PI);
@@ -355,54 +392,54 @@ public:
 	/**
 	 * Creates a Dec128 from a special value.
 	 */
-	private this(const BITS bits) {
-		hiWord = bits;
-	}
+//	private this(const BITS bits) {
+//		intBits = bits;
+//	}
 
-	private this(const BITS hiBits, ulong lowBits) {
+/*	private this(const BITS hiBits, BITS lowBits) {
 		hiWord = hiBits;
 		lowWord = lowBits;
-	}
+	}*/
 
 	// this unit test uses private values
 	unittest {
 		Dec128 num;
-		num = Dec128(BITS.POS_SIG);
+		num = SNAN;
 		assertTrue(num.isSignaling);
 		assertTrue(num.isNaN);
 		assertTrue(!num.isNegative);
 		assertTrue(!num.isNormal);
-		num = Dec128(BITS.NEG_SIG);
+		num = -SNAN;
 		assertTrue(num.isSignaling);
 		assertTrue(num.isNaN);
 		assertTrue(num.isNegative);
 		assertTrue(!num.isNormal);
-		num = Dec128(BITS.POS_NAN);
+		num = NAN;
 		assertTrue(!num.isSignaling);
 		assertTrue(num.isNaN);
 		assertTrue(!num.isNegative);
 		assertTrue(!num.isNormal);
-		num = Dec128(BITS.NEG_NAN);
+		num = -NAN;
 		assertTrue(!num.isSignaling);
 		assertTrue(num.isNaN);
 		assertTrue(num.isNegative);
 		assertTrue(num.isQuiet);
-		num = Dec128(BITS.POS_INF);
+		num = INFINITY;
 		assertTrue(num.isInfinite);
 		assertTrue(!num.isNaN);
 		assertTrue(!num.isNegative);
 		assertTrue(!num.isNormal);
-		num = Dec128(BITS.NEG_INF);
+		num = NEG_INF;
 		assertTrue(!num.isSignaling);
 		assertTrue(num.isInfinite);
 		assertTrue(num.isNegative);
 		assertTrue(!num.isFinite);
-		num = Dec128(BITS.POS_ZRO);
+		num = ZERO;
 		assertTrue(num.isFinite);
 		assertTrue(num.isZero);
 		assertTrue(!num.isNegative);
 		assertTrue(num.isNormal);
-		num = Dec128(BITS.NEG_ZRO);
+		num = NEG_ZERO;
 		assertTrue(!num.isSignaling);
 		assertTrue(num.isZero);
 		assertTrue(num.isNegative);
@@ -415,7 +452,7 @@ public:
 	public this(const long n) {
 		this = zero;
 		signed = n < 0;
-		coefficient = signed ? -n : n;
+		coefficient = signed ? uint128(-n) : uint128(n);
 	}
 
 /*	Dec128 diff
@@ -545,7 +582,7 @@ public:
 
 		if (big.isFinite) {
 			this = zero;
-			this.coefficient = cast(ulong)big.coefficient.toLong;
+			this.coefficient = toUint(big.coefficient);
 			this.exponent = big.exponent;
 			this.sign = big.sign;
 			return;
@@ -792,28 +829,33 @@ public:
 	/// Returns the coefficient of this number.
 	/// The exponent is undefined for infinities and NaNs: zero is returned.
 	@property
-	const ulong coefficient() {
+	const uint128 coefficient() {
 		if (this.isExplicit) {
-			return mantEx;
+			return uint128(0); //mantEx;
 		}
 		if (this.isFinite) {
-			return mantIm | (4UL << implicitBits);
+			return uint128(0); //mantIm | (4UL << implicitBits);
 		}
 		// Infinity or NaN.
-		return 0;
+		return uint128(0);
 	}
 
-	// Sets the coefficient of this number. This may cause an
+/*	// Sets the coefficient of this number. This may cause an
 	// explicit number to become an implicit number, and vice versa.
 	@property
-	ulong coefficient(const ulong mant) {
+	uint128 coefficient(const ulong hiWord, const ulong lowWord) {
+		return coefficient(uint128(hiWord, lowWord));
+	}*/
+
+	@property
+	uint128 coefficient(const uint128 mant) {
 		// if not finite, convert to NaN and return 0.
 		if (!this.isFinite) {
 			this = nan;
 			contextFlags.setFlags(INVALID_OPERATION);
-			return 0;
+			return uint128(0);
 		}
-		ulong copy = mant;
+		ulong copy = 0; //mant;
 		// if too large for explicit representation, round
 		if (copy > C_MAX_IMPLICIT) {
 			int expo = 0;
@@ -834,7 +876,7 @@ public:
 			}
 			mantEx = cast(ulong)copy;
 writefln("mantEx = %s", mantEx);
-			return mantEx;
+			return uint128(0); //mantEx;
 		}
 		else {	// copy <= C_MAX_IMPLICIT
 			// if explicit, convert to implicit
@@ -845,7 +887,7 @@ writefln("mantEx = %s", mantEx);
 writefln("copy = %s", copy);
 			mantIm = cast(ulong)copy & C_IMPLICIT_MASK;
 writefln("mantIm = %s", mantIm);
-			return mantIm | (0b100UL << implicitBits);
+			return uint128(0);  //mantIm | (0b100UL << implicitBits);
 		}
 	}
 
@@ -870,7 +912,7 @@ writefln("mantIm = %s", mantIm);
 	/// Returns the number of digits in this number's coefficient.
 	@property
 	const int digits() {
-		return numDigits(this.coefficient);
+		return numDigits(0); //this.coefficient);
 	}
 
 	/// Has no effect.
@@ -1222,7 +1264,7 @@ writefln("mantIm = %s", mantIm);
 	 */
 	const BigDecimal toBigDecimal() {
 		if (isFinite) {
-			return BigDecimal(sign, BigInt(coefficient), exponent);
+			return BigDecimal(0); //sign, BigInt(coefficient), exponent);
 		}
 		if (isInfinite) {
 			return BigDecimal.infinity(sign);
@@ -1256,8 +1298,8 @@ writefln("mantIm = %s", mantIm);
 		}
 		if (this > Dec128(int.max) || (isInfinite && !isSigned)) return int.max;
 		if (this < Dec128(int.min) || (isInfinite &&  isSigned)) return int.min;
-		quantize!Dec128(this, ONE, context);
-		n = cast(int)coefficient;
+		//quantize!Dec128(this, ONE, context);
+		n = 0;  //cast(int)coefficient;
 		return signed ? -n : n;
 	}
 
@@ -1283,8 +1325,8 @@ writefln("mantIm = %s", mantIm);
 		}
 		if (this > Dec128(long.max) || (isInfinite && !isSigned)) return long.max;
 		if (this < Dec128(long.min) || (isInfinite &&  isSigned)) return long.min;
-		quantize!Dec128(this, ONE, context);
-		n = coefficient;
+		//quantize!Dec128(this, ONE, context);
+		n = 0; //coefficient;
 		return signed ? -n : n;
 	}
 
@@ -1312,8 +1354,9 @@ writefln("mantIm = %s", mantIm);
 		if (isZero) {
 			return isNegative ? -0.0 : 0.0;
 		}
-		string str = this.toSciString;
-		return to!real(str);
+		//string str = this.toSciString;
+		// return to!real(str);
+		return 0.0;
 	}
 
 	unittest {
@@ -1438,7 +1481,7 @@ writefln("mantIm = %s", mantIm);
 	 * greater than the argument, respectively.
 	 */
 const int opCmp(T:Dec128)(const T that) {
-		return compare!Dec128(this, that, context);
+		return 0; //compare!Dec128(this, that, context);
 	}
 
 	/**
@@ -1449,13 +1492,13 @@ const int opCmp(T:Dec128)(const T that) {
 		return opCmp!Dec128(Dec128(that));
 	}
 
-	unittest {
+/*	unittest {
 		Dec128 a, b;
 		a = Dec128(104.0);
 		b = Dec128(105.0);
 		assertTrue(a < b);
 		assertTrue(b > a);
-	}
+	}*/
 
 	/**
 	 * Returns true if this number is equal to the specified number.
@@ -1468,7 +1511,9 @@ const bool opEquals(T:Dec128)(const T that) {
 			if (this.isQuiet) return false;
 			// let the main routine handle the signaling NaN
 		}
-		return equals!Dec128(this, that, context);
+		// TODO: calls toBigDecimal
+		//return equals!Dec128(this, that, context);
+		return false;
 	}
 
 	unittest {
@@ -1673,10 +1718,10 @@ ref Dec128 opOpAssign(string op, T:Dec128) (T rhs) {
 	}
 
 	/**
-	 * Returns ulong ten raised to the specified power.
+	 * Returns a uint128 value of ten raised to the specified power.
 	 */
-	static ulong pow10(const int n) {
-		return 10U^^n;
+	static uint128 pow10(const int n) {
+		return uint128(10U)^^n;
 	}
 
 	unittest {
@@ -1685,7 +1730,24 @@ ref Dec128 opOpAssign(string op, T:Dec128) (T rhs) {
 		assertTrue(pow10(n) == 1000);
 	}
 
+	/**
+	 *	Helper function used in arithmetic multiply
+	 */
+	static BigInt bigmul(const Dec128 arg1, const Dec128 arg2) {
+		BigInt big = arg1.coefficient.toBigInt;
+		return big * arg2.coefficient.toBigInt;
+	}
+
 }	// end Dec128 struct
+
+// NOTE: this is used only when a BigDecimal is converted to a Decimal128.
+// The BigInt is guaranteed to be < uint128.max;
+private uint128 toUint(BigInt big) {
+	BigInt divisor = 1; //BigInt(1) << 64;
+	ulong hi = (big / divisor).toLong;
+	ulong lo = (big % divisor).toLong;
+	return uint128(hi, lo);
+}
 
 unittest {
 	writeln("===================");

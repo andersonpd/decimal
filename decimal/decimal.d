@@ -31,6 +31,7 @@ import decimal.context;
 import decimal.rounding;
 import decimal.arithmetic;
 import decimal.test;
+import decimal.integer;
 
 alias BigDecimal.context bigContext;
 
@@ -175,6 +176,26 @@ public:
 	/// and an optional integer exponent.
 	this(const long coefficient) {
 		this(BigInt(coefficient), 0);
+	}
+
+	// uint128 constructors:
+
+	/// Constructs a number from a sign, a uint128 integer coefficient and
+	/// an integer exponent.
+	this(const bool sign, const uint128 coefficient, const int exponent) {
+		this(sign, coefficient.toBigInt(), exponent);
+	}
+
+	/// Constructs a number from an uint128 coefficient
+	/// and an optional integer exponent.
+	this(const uint128 coefficient, const int exponent) {
+		this(coefficient.toBigInt(), exponent);
+	}
+
+	/// Constructs a number from an uint128 coefficient
+	/// and an optional integer exponent.
+	this(const uint128 coefficient) {
+		this(coefficient.toBigInt(), 0);
 	}
 
 	// string constructors:
@@ -583,7 +604,7 @@ const string toString() {
 	/// Returns -1, 0 or 1, if this number is less than, equal to,
 	/// or greater than the argument, respectively.
 	const int opCmp(const BigDecimal that) {
-		return compare!BigDecimal(this, that, context);
+		return decimal.arithmetic.compare!BigDecimal(this, that, context);
 	}
 
 	/// Returns true if this number is equal to the argument.
