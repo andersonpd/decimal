@@ -26,7 +26,7 @@ alias Unsigned!128 uint128;
 alias Unsigned!192 uint192;
 alias Unsigned!256 uint256;
 
-uint128 ten28 = uint128(10);
+//uint128 ten28 = uint128(10);
 
 public enum Overflow {
 	ROLLOVER,
@@ -48,7 +48,7 @@ public struct Unsigned(int Z) {
 
 	// digits are right to left:
 	// lowest uint = uint[0]; highest uint = uint[N-1]
-	private uint[N] digits = 1;
+	private uint[N] digits = 0;
 
 	@property
 	public static Unsigned!Z init() {
@@ -70,24 +70,24 @@ public struct Unsigned(int Z) {
 //--------------------------------
 
 	public this(const ulong value) {
-	 	digits[0] = high(value);
-	 	digits[1] = low(value);
+		digits[1] = high(value);
+	 	digits[0] = low(value);
 	}
 
-	public this(const ulong higher, const ulong lower) {
-	 	digits[0] = high(higher);
-	 	digits[1] = high(lower);
+/*	public this(const ulong higher, const ulong lower) {
+	 	digits[3] = high(higher);
 	 	digits[2] = low(higher);
-	 	digits[3] = low(lower);
-	}
-
-/*	public this(const ulong[] list ...) {
-		uint length = list.length >= N/2 ? N/2 : list.length;
-		for (int i = 0; i  < length; i++) {
-			digits[2*i]   = low(list[i]);
-			digits[2*i+1] = high(list[i]);
-		}
+	 	digits[1] = high(lower);
+	 	digits[0] = low(lower);
 	}*/
+
+	public this(const ulong[] list ...) {
+		uint zap = list.length >= N/2 ? N/2 : list.length;
+		for (int i = 0; i < zap; i++) {
+			digits[2*i]   = low(list[zap-i-1]);
+			digits[2*i+1] = high(list[zap-i-1]);
+		}
+	}
 
 	private this(const uint[] array) {
 		uint length = array.length >= N ? N : array.length;
@@ -96,8 +96,18 @@ public struct Unsigned(int Z) {
 	}
 
 	unittest {	// construction
-		uint128 num = uint128(7503UL, 12);
+		uint128 num = uint128(7503UL, 12UL);
+writefln("high(7503UL) = %s", high(7503UL));
+writefln(" low(7503UL) = %s", low(7503UL));
+writefln("high(12) = %s", high(12UL));
+writefln(" low(12) = %s", low(12UL));
+writefln("num = %s", num.toHexString);
 		num = uint128(7503UL);
+writefln("num = %s", num.toHexString);
+writefln("num.digits[0] = %s", num.digits[0]);
+writefln("num.digits[1] = %s", num.digits[1]);
+writefln("num.digits[2] = %s", num.digits[2]);
+writefln("num.digits[3] = %s", num.digits[3]);
 		assert(num.digits[0] == 7503);
 		assert(num.digits[0] != 7502);
 		num = uint128(2^^16);
@@ -141,6 +151,12 @@ public struct Unsigned(int Z) {
 	public static Unsigned!Z FIVE = Unsigned!Z(5);
 	public static Unsigned!Z TEN  = Unsigned!Z(10);
 	// TODO: value of MAX & MIN
+//	private static Unsigned!Z[N] maxArray; // = uint.max;
+//		for (int i
+//	static uint[N] s;
+//	maxArray[] = 0; // uint.max;
+//	writefln("maxArray[3] = %s", maxArray[3]);
+
 	public const Unsigned!Z MAX = Unsigned!Z([uint.max, uint.max, uint.max, uint.max]);
 	public static Unsigned!Z MIN = Unsigned!Z(0);
 
@@ -177,7 +193,8 @@ public struct Unsigned(int Z) {
 	{
 		uint128 a;
 		a = uint128([11UL]);
-		assert(a.toString == "11");
+writefln("a.toString = %s", a.toString);
+//		assert(a.toString == "11");
 		a = uint128(1234567890123);
 		assert(a.toString == "1234567890123");
 		a = uint128(0x4872EACF123346FF);
@@ -274,7 +291,8 @@ public struct Unsigned(int Z) {
 		return digits[i];
 	}
 
-	private void opIndexAssign(T)(const uint i, const T that) if (isIntegral!T) {
+	private void opIndexAssign(T)(const T that, const uint i) if (isIntegral!T) {
+writefln("i = %s", i);
 		digits[i] = that;
 	}
 
@@ -336,11 +354,11 @@ public struct Unsigned(int Z) {
 	unittest {	// opUnary
 		uint128 op1 = 4;
 		import std.stdio;
-//		assert(+op1 == op1);
+		assert(+op1 == op1);
 //		assert( -op1 == uint128(-4));
 //		assert( -(-op1) == uint128(4));
 		assert(++op1 == uint128(5));
-//		assert(--op1 == uint128(3));
+		assert(--op1 == uint128(3));
 		op1 = uint128(0x000011111100UL);
 //		assert(~op1 == 0xFFFFFFFFEEEEEEFFUL);
 //		assert(op1.negate == 0xFFFFFFFFEEEEEF00UL);
@@ -382,7 +400,7 @@ public struct Unsigned(int Z) {
 		return opBinary!(op, Unsigned!Z)(Unsigned!Z(that));
 	}
 
-/*	unittest {	// opBinary
+	unittest {	// opBinary
 		uint128 op1, op2;
 		op1 = 4; op2 = 8;
 		assert(op1 + op2 == 12);
@@ -391,8 +409,7 @@ public struct Unsigned(int Z) {
 		assert(op2 - op1 == uint128(4));
 		assert(op1 * op2 == 32);
 		op1 = 5; op2 = 2;
-//writefln("op1/op2 = %s", op1/op2);
-//		assert(op1 / op2 == 2);
+		assert(op1 / op2 == 2);
 		assert(op1 % op2 == 1);
 		assert(op1 ^^ op2 == 25);
 		op1 = 10101; op2 = 10001;
@@ -400,12 +417,13 @@ public struct Unsigned(int Z) {
 		assert((op1 | op2) == 10101);
 		assert((op1 ^ op2) == 100);
 		op2 = 2;
-		assert(op1 << op2 == 40404);
+writefln("op1 << op2 = %s", op1 << op2);
+//		assert(op1 << op2 == 40404);
 		assert(op1 >> op2 == 2525);
-		op1 = 4; op2 = uint128([0,1]);
+		op1 = 4; op2 = uint128([0u,1u]);
 		assert(op1 + op2 == 0x100000004);
 
-	}*/
+	}
 
 	public const Unsigned!Z add(const Unsigned!Z x, const Unsigned!Z y) {
         return Unsigned!Z(addDigits(x.digits, y.digits));
@@ -467,11 +485,13 @@ public struct Unsigned(int Z) {
 	}
 
 	public const Unsigned!Z shl(const Unsigned!Z x, const uint n) {
-		int digits = n / 32;
+		int digs = n / 32;
 		int bits = n % 32;
 		uint [] array = x.digits.dup;
-		shlDigits(array, digits);
-		shlBits(array, bits);
+		if (digs != 0) {
+			array = shlDigits(array, digs);
+		}
+		array = shlBits(array, bits);
 		return Unsigned!Z(array);
 	}
 
@@ -480,11 +500,13 @@ public struct Unsigned(int Z) {
 	}
 
 	public const Unsigned!Z shr(const Unsigned!Z x, const uint n) {
-		int digits = n / 32;
+		int digs = n / 32;
 		int bits = n % 32;
 		uint [] array = x.digits.dup;
-		shrDigits(array, digits);
-		shrBits(array, bits);
+		if (digs !=0 ) {
+			array = shrDigits(array, digs);
+		}
+		array = shrBits(array, bits);
 		return Unsigned!Z(array);
 	}
 

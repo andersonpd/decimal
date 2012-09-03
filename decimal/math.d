@@ -161,7 +161,7 @@ BigDecimal pi(uint precision) {
 	BigDecimal t = BigDecimal("0.25");
 	BigDecimal x = ONE.dup;
 	int i = 0;
-	while ((a -b) > epsilon && i < 10) {
+	while ((a - b) > epsilon && i < 10) {
 		BigDecimal y = a;        // save the value of a
 		a = (a + b)/TWO;    // arithmetic mean
 		b = sqrt(b*y, precision);        // geometric means

@@ -15,9 +15,7 @@
 module decimal.context;
 
 import std.array: replicate;
-import std.bigint;
 import std.string: format;
-import std.stdio;
 
 unittest {
 	import std.stdio;
@@ -32,8 +30,10 @@ unittest {
 
 /// The context used in examples of operations in the specification.
 //immutable static DecimalContext TEST_CONTEXT = DecimalContext(9, 99, Rounding.HALF_EVEN);
+
 /// The context used in examples of operations in the specification.
 static DecimalContext testContext = DecimalContext(9, 99, Rounding.HALF_EVEN);
+
 /// The basic default context. In addition the inexact, rounded and subnormal
 /// trap-enablers should set to 0; all others should be set to 1 (that is,
 /// the other conditions are treated as errors)
@@ -42,9 +42,8 @@ immutable static DecimalContext BASIC_CONTEXT =
 		DecimalContext(9, 999, Rounding.HALF_UP);
 
 /// An extended default context. No trap-enablers should be set.
-immutable static DecimalContext EXTENDED_CONTEXT
-		= DecimalContext(999, 9999,
-	Rounding.HALF_EVEN);
+immutable static DecimalContext EXTENDED_CONTEXT =
+	DecimalContext(999, 9999, Rounding.HALF_EVEN);
 
 //--------------------------
 // DecimalContext struct
@@ -70,8 +69,7 @@ public enum Rounding {
 /// If more than one flag is set by an operation and traps are enabled,
 /// the flag with higher precedence will throw its exception.
 /// General Decimal Arithmetic Specification, p. 15.
-public enum : ubyte
-{
+public enum : ubyte {
 	INVALID_OPERATION  = 0x80,
 	DIVISION_BY_ZERO   = 0x40,
 	OVERFLOW           = 0x20,

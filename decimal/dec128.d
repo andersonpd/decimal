@@ -255,40 +255,10 @@ private:
 
 private const TEST = uint128(0x0UL, 0x0UL);
 
-//private:
-//	static enum BITS : uint128
-//	{
-/*		POS_SIG = uint128(0x7E00000000000000UL,0x0UL),
-		NEG_SIG = uint128(0xFE00000000000000UL,0x0UL),
-		POS_NAN = uint128(0x7C00000000000000UL,0x0UL),
-		NEG_NAN = uint128(0xFC00000000000000UL,0x0UL),
-		POS_INF = uint128(0x7800000000000000UL,0x0UL),
-		NEG_INF = uint128(0xF800000000000000UL,0x0UL),
-		POS_ZRO = uint128(0x3040000000000000UL,0x0UL),
-		NEG_ZRO = uint128(0xB040000000000000UL,0x0UL),
-		POS_MAX = uint128(0x77FB86F26FC0FFFFUL,0x0UL), //  0x77F8967FFFFFFFFF (128)TODO: why is this different?
-		NEG_MAX = uint128(0xF7FB86F26FC0FFFFUL,0x0UL),
-
+/*
+private:
+//	Dec128 diff
 		// common small integers
-		POS_ONE = uint128(0x3040000000000000UL,0x1UL),
-		NEG_ONE = uint128(0xB040000000000000UL,0x1UL),
-		POS_TWO = uint128(0x3040000000000000UL,0x2UL),
-		NEG_TWO = uint128(0xB040000000000000UL,0x2UL),
-		POS_FIV = uint128(0x3040000000000000UL,0x5UL),
-		NEG_FIV = uint128(0xB040000000000000UL,0x5UL),
-		POS_TEN = uint128(0x3040000000000000UL,0xAUL),
-		NEG_TEN = uint128(0xB040000000000000UL,0xAUL)
-*/
-/*	Dec128 diff
-		// common small integers
-		POS_ONE = 0x32800001,
-		NEG_ONE = 0xB2800001,
-		POS_TWO = 0x32800002,
-		NEG_TWO = 0xB2800002,
-		POS_FIV = 0x32800005,
-		NEG_FIV = 0xB2800005,
-		POS_TEN = 0x3280000A,
-		NEG_TEN = 0xB280000A,
 
 		// pi and related values
 		PI		 = 0x2FAFEFD9,
@@ -306,7 +276,6 @@ private const TEST = uint128(0x0UL, 0x0UL);
 
 		// logarithms
 
-
 		E		= 0x2FA97A4A,
 		LOG2_E	= 0x2F960387,
 		LOG10_E = 0x2F4244A1,
@@ -320,8 +289,7 @@ private const TEST = uint128(0x0UL, 0x0UL);
 		SQRT1_2 = 0x2F6BE55C
 	}
 */
-//	}
-//
+
 public:
 	immutable Dec128 NAN      = Dec128(uint128(0x7E00000000000000UL,0x0UL));
 	immutable Dec128 SNAN     = Dec128(uint128(0xFE00000000000000UL,0x0UL));
@@ -405,6 +373,7 @@ public:
 	unittest {
 		Dec128 num;
 		num = SNAN;
+writefln("SNAN.toHexString = %s", SNAN.toHexString);
 		assertTrue(num.isSignaling);
 		assertTrue(num.isNaN);
 		assertTrue(!num.isNegative);
@@ -1142,6 +1111,8 @@ writefln("mantIm = %s", mantIm);
 	 * Returns true if this number is a signaling NaN.
 	 */
 	const bool isSignaling() {
+writefln("testNaN = %s", testNaN);
+writefln("SIG_BITS = %s", SIG_BITS);
 		return testNaN == SIG_BITS;
 	}
 
