@@ -69,45 +69,47 @@ public struct Unsigned(int Z) {
 // construction
 //--------------------------------
 
+/*
+	// these constructors are covered by the following ctor.
 	public this(const ulong value) {
 		digits[1] = high(value);
 	 	digits[0] = low(value);
 	}
 
-/*	public this(const ulong higher, const ulong lower) {
+	public this(const ulong higher, const ulong lower) {
 	 	digits[3] = high(higher);
 	 	digits[2] = low(higher);
 	 	digits[1] = high(lower);
 	 	digits[0] = low(lower);
 	}*/
 
+	/// Constructs an integer from a list of unsigned long values.
+	/// The list can be a single value or a comma-separated list
+	/// or an array.
+	/// The list should be ordered right to left:
+	/// most significant value first, least significant value last.
 	public this(const ulong[] list ...) {
-		uint zap = list.length >= N/2 ? N/2 : list.length;
-		for (int i = 0; i < zap; i++) {
-			digits[2*i]   = low(list[zap-i-1]);
-			digits[2*i+1] = high(list[zap-i-1]);
+		uint len = list.length >= N/2 ? N/2 : list.length;
+		for (int i = 0; i < len; i++) {
+			digits[2*i]   = low(list[len-i-1]);
+			digits[2*i+1] = high(list[len-i-1]);
 		}
 	}
 
+	/// Private constructor for internal use.
+	/// Constructs an integer from a list of unsigned int (not long) values.
+	/// The list must be an array.
+	/// The list should be ordered left to right:
+	/// least significant value first, most significant value last.
 	private this(const uint[] array) {
-		uint length = array.length >= N ? N : array.length;
-		for (int i = 0; i < length; i++)
+		uint len = array.length >= N ? N : array.length;
+		for (int i = 0; i < len; i++)
 			digits[i] = array[i];
 	}
 
 	unittest {	// construction
 		uint128 num = uint128(7503UL, 12UL);
-writefln("high(7503UL) = %s", high(7503UL));
-writefln(" low(7503UL) = %s", low(7503UL));
-writefln("high(12) = %s", high(12UL));
-writefln(" low(12) = %s", low(12UL));
-writefln("num = %s", num.toHexString);
 		num = uint128(7503UL);
-writefln("num = %s", num.toHexString);
-writefln("num.digits[0] = %s", num.digits[0]);
-writefln("num.digits[1] = %s", num.digits[1]);
-writefln("num.digits[2] = %s", num.digits[2]);
-writefln("num.digits[3] = %s", num.digits[3]);
 		assert(num.digits[0] == 7503);
 		assert(num.digits[0] != 7502);
 		num = uint128(2^^16);
@@ -219,9 +221,27 @@ writefln("a.toString = %s", a.toString);
 		return cast(uint)digits[0];
 	}
 
+	// reads left-to-right, i.e., getInt(0) returns the highest order value
+	public const uint getInt(int n) {
+		return cast(uint)digits[N-n];
+	}
+
+	// reads left-to-right, i.e., getLong(0) returns the highest order value
+	public const ulong getLong(int index) {
+		index *= 2;
+		return pack(digits[N-1 - index], digits[N-2 - index]);
+	}
+
+	// reads left-to-right, i.e., setLong(0) sets the highest order value
+	public void setLong(int index, ulong value) {
+		index *= 2;
+		digits[N-1 - index] = high(value);
+		digits[N-2 - index] = low(value);
+	}
+
 	/// Converts to a long integer.
 	public const ulong toLong() {
-		return digits[0];
+		return getLong(0);
 	}
 
 	/// Converts to a big integer.

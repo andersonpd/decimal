@@ -342,6 +342,79 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
 
 } // end setExponent()
 
+/// Converts an integer to a decimal (coefficient and exponent) form.
+/// The input value is rounded to the context precision,
+/// the number of digits is adjusted, and the exponent is returned.
+public uint setExponent(const bool sign, ref uint128 mant, ref uint digits,
+		const DecimalContext context) {
+
+	uint inDigits = digits;
+	uint128 remainder = clipRemainder(mant, digits, context.precision);
+	int expo = inDigits - digits;
+
+	// if the remainder is zero, return
+	if (remainder == 0) {
+		return expo;
+	}
+
+	switch (context.rounding) {
+	case Rounding.DOWN:
+		break;
+	case Rounding.HALF_UP:
+		if (firstDigit(remainder) >= 5) {
+			increment(mant, digits);
+		}
+		break;
+	case Rounding.HALF_EVEN:
+		int five = testFive(remainder);
+		if (five > 0) {
+			increment(mant, digits);
+			break;
+		}
+		if (five < 0) {
+			break;
+		}
+		// remainder == 5
+		// if last digit is odd...
+		if (isOdd(mant)) {
+			increment(mant, digits);
+		}
+		break;
+	case Rounding.CEILING:
+		if (!sign) {
+			increment(mant, digits);
+		}
+		break;
+	case Rounding.FLOOR:
+		if (sign) {
+			increment(mant, digits);
+		}
+		break;
+	case Rounding.HALF_DOWN:
+		if (firstDigit(remainder) > 5) {
+			increment(mant, digits);
+		}
+		break;
+	case Rounding.UP:
+		if (remainder != 0) {
+			increment(mant, digits);
+		}
+		break;
+	default:
+		break;
+	}	 // end switch(mode)
+
+	// this can only be true if the number was all 9s and rolled over;
+	// e.g., 999 + 1 = 1000. So clip a zero and increment the exponent.
+	if (digits > context.precision) {
+		mant  =  mant / 10;
+		expo++;
+		digits--;
+	}
+	return expo;
+
+} // end setExponent()
+
 /// Shortens the number to the specified precision and
 /// returns the (unsigned) remainder.
 /// Flags: ROUNDED, INEXACT.
@@ -369,10 +442,37 @@ private ulong clipRemainder(ref ulong num, ref uint digits, uint precision) {
 	return remainder;
 }
 
+/// Shortens the number to the specified precision and
+/// returns the (unsigned) remainder.
+/// Flags: ROUNDED, INEXACT.
+private uint128 clipRemainder(ref uint128 num, ref uint digits, uint precision) {
+	uint128 remainder = 0;
+	int diff = digits - precision;
+	// if diff is less than or equal to zero no rounding is required.
+	if (diff <= 0) {
+		return remainder;
+	}
+	// if (remainder != 0) {...} ?
+	//contextFlags.setFlags(ROUNDED);
+
+	if (precision == 0) {
+		num = 0;
+	} else {
+		// can't overflow -- diff <= 19
+		uint128 divisor = 10L^^diff;
+		uint128 dividend = num;
+		uint128 quotient = dividend / divisor;
+		num = quotient;
+		remainder = dividend - quotient*divisor;
+		digits = precision;
+	}
+	return remainder;
+}
+
 /// Increments the number by 1.
 /// Re-calculates the number of digits -- the increment may have caused
 /// an increase in the number of digits, i.e., input number was all 9s.
-private void increment(T:ulong)(ref T num, ref uint digits) {
+private void increment(T)(ref T num, ref uint digits) {
 	num++;
 	digits = numDigits(num);
 }
@@ -781,6 +881,11 @@ public BigInt tens(const int n) {
 public bool isOdd(const ulong n) {
 	return n & 1;
 }
+
+public bool isOdd(const uint128 n) {
+	return n.getLong(1) & 1;
+}
+
 
 /// Returns a mutable copy of a BigInt
 public BigInt mutable(const BigInt num) {

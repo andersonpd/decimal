@@ -16,7 +16,7 @@ module decimal.dec128;
 
 import std.array: insertInPlace;
 import std.bigint;
-import std.bitmanip;
+//import std.bitmanip;
 import std.conv;
 import std.string;
 
@@ -45,20 +45,20 @@ private:
 	// The total number of bits in the decimal number.
 	// This is equal to the number of bits in the underlying integer;
 	// (must be 32, 64, or 128).
-	immutable uint bitLength = 64;
+	immutable uint bitLength = 129;
 
 	// the number of bits in the sign bit (1, obviously)
 	immutable uint signBit = 1;
 
 	// The number of bits in the unsigned value of the decimal number.
-	immutable uint unsignedBits = 63; // = bitLength - signBit;
+	immutable uint unsignedBits = 127; // = bitLength - signBit;
 
 	// The number of bits in the (biased) exponent.
 	immutable uint expoBits = 14;
 
 	// The number of bits in the coefficient when the value is
 	// explicitly represented.
-	immutable uint explicitBits = 49;
+	immutable uint EXPL_SHFT = 49;
 
 	// The number of bits used to indicate special values and implicit
 	// representation
@@ -67,7 +67,7 @@ private:
 	// The number of bits in the coefficient when the value is implicitly
 	// represented. The three missing bits (the most significant bits)
 	// are always '100'.
-	immutable uint implicitBits = 47; // = explicitBits - testBits;
+	immutable uint IMPL_SHFT = 47; // = EXPL_SHFT - testBits;
 
 	// The number of special bits, including the two test bits.
 	// These bits are used to denote infinities and NaNs.
@@ -107,12 +107,12 @@ private:
 	// length of the coefficient in decimal digits.
 	immutable int PRECISION = 34;
 	// The maximum coefficient that fits in an explicit number.
-	immutable ulong C_MAX_EXPLICIT = 0x1FFFFFFFFFFFFF;  // = 36028797018963967
+/*	immutable ulong C_MAX_EXPLICIT = 0x1FFFFFFFFFFFFF;  // = 36028797018963967
 	// The maximum coefficient allowed in an implicit number.
 	immutable ulong C_MAX_IMPLICIT = 9999999999999999;  // = 0x2386F26FC0FFFF
 	// masks for coefficients
-	immutable ulong C_IMPLICIT_MASK = 0x1FFFFFFFFFFFFF;
-	immutable ulong C_EXPLICIT_MASK =  0x7FFFFFFFFFFFF;
+	immutable ulong C_IMPLICIT_BITS = 0x1FFFFFFFFFFFFF;
+	immutable ulong C_EXPLICIT_BITS = 0x7FFFFFFFFFFFF;*/
 
 	// The maximum unbiased exponent. The largest binary number that can fit
 	// in the width of the exponent field without setting
@@ -132,167 +132,51 @@ private:
 	private static const DecimalContext
 		context = DecimalContext(PRECISION, E_MAX, Rounding.HALF_EVEN);
 
-	// union providing different views of the number representation.
-	union {
-		uint128 intBits = uint128(0x7C00000000000000UL, 0x0000000000000000UL);
-		union {	// entire 64-bit unsigned integer
-			ulong hiWord; // = BITS.POS_NAN;    // set to the initial value: NaN
+	/*public*/ private uint128 bits = uint128(0x7C00000000000000UL, 0x0000000000000000UL);
 
-			// unsigned value and sign bit
-			mixin (bitfields!(
-				ulong, "uBits", unsignedBits,
-				bool, "signed", signBit)
-			);
-			// Ex = explicit finite number:
-			//	   full coefficient, exponent and sign
-			mixin (bitfields!(
-				ulong, "mantEx", explicitBits,
-				uint, "expoEx", expoBits,
-				bool, "signEx", signBit)
-			);
-			// Im = implicit finite number:
-			//		partial coefficient, exponent, test bits and sign bit.
-			mixin (bitfields!(
-				ulong, "mantIm", implicitBits,
-				uint, "expoIm", expoBits,
-				uint, "testIm", testBits,
-				bool, "signIm", signBit)
-			);
-			// Spcl = special values: non-finite numbers
-			//		unused bits, special bits and sign bit.
-			mixin (bitfields!(
-				ulong, "padSpcl",  spclPadBits,
-				uint, "testSpcl", specialBits,
-				bool, "signSpcl", signBit)
-			);
-			// Inf = infinities:
-			//		payload, unused bits, infinitu bits and sign bit.
-			mixin (bitfields!(
-				uint, "padInf",  infPadBits,
-				ulong, "testInf", infinityBits,
-				bool, "signInf", signBit)
-			);
-			// Nan = not-a-number: qNaN and sNan
-			//		payload, unused bits, nan bits and sign bit.
-			mixin (bitfields!(
-				ushort, "pyldNaN", payloadBits,
-				ulong, "padNaN",  nanPadBits,
-				uint, "testNaN", nanBits,
-				bool, "signNaN", signBit)
-			);
-		}
-		ulong lowWord;
+	private const ulong highBits() {
+		return bits.getLong(0);
 	}
 
-/*	// (128)TODO: Move this test to test.d?
-	unittest {
-		Dec128 num;
-		assertTrue(num.toHexString == "0x7C00000000000000");
-		num.pyldNaN = 1;
-		// NOTE: this test should fail when bitmanip is fixed.
-		assertTrue(num.toHexString != "0x7C00000000000001");
-		assertTrue(num.toHexString == "0x0000000000000001");
-		num.bits = ulong.max;
-		assertTrue(num.toHexString == "0xFFFFFFFFFFFFFFFF");
-		num.pyldNaN = 2;
-		// NOTE: this test should fail when bitmanip is fixed.
-		assertTrue(num.toHexString != "0xFFFFFFFFFFFF0002");
-		assertTrue(num.toHexString == "0x00000000FFFF0002");
-		num.bits = ulong.max;
-		assertTrue(num.toHexString == "0xFFFFFFFFFFFFFFFF");
-		num.testNaN = 0b10;
-		assertTrue(num.toHexString == "0x85FFFFFFFFFFFFFF");
-		num.bits = ulong.max;
-		assertTrue(num.toHexString == "0xFFFFFFFFFFFFFFFF");
-		num = nan;
-		assertTrue(num.toHexString == "0x7C00000000000000");
-		num.pyldNaN = ushort.max;
-		// NOTE: this test should fail when bitmanip is fixed.
-		assertTrue(num.toHexString == "0x000000000000FFFF");
-		num = nan;
-		assertTrue(num.toHexString == "0x7C00000000000000");
-		num.padInf = ushort.max;
-		// NOTE: This works as expected;
-		assertTrue(num.toHexString == "0x7C0000000000FFFF");
-		num = nan;
-		assertTrue(num.toHexString == "0x7C00000000000000");
-		num.padSpcl = ushort.max;
-		assertTrue(num.toHexString == "0x780000000000FFFF");
-		num = nan;
-		assertTrue(num.toHexString == "0x7C00000000000000");
-		num.bits = num.bits | 0xFFFF;
-		assertTrue(num.toHexString == "0x7C0000000000FFFF");
-		num = nan;
-		assertTrue(num.toHexString == "0x7C00000000000000");
-		num.mantEx = uint.max;
-		assertTrue(num.toHexString == "0x7C000000FFFFFFFF");
-		num = nan;
-		assertTrue(num.toHexString == "0x7C00000000000000");
-		num.mantIm = uint.max;
-		assertTrue(num.toHexString == "0x7C000000FFFFFFFF");
-	}*/
-
-//--------------------------------
-//	special bit patterns
-//--------------------------------
-
-private:
-	// The value of the (6) special bits when the number is a signaling NaN.
-	immutable uint SIG_BITS = 0x3F;
-	// The value of the (6) special bits when the number is a quiet NaN.
-	immutable uint NAN_BITS = 0x3E;
-	// The value of the (5) special bits when the number is infinity.
-	immutable uint INF_BITS = 0x1E;
-
-//--------------------------------
-//	special values and constants
-//--------------------------------
-
-// Integer values passed to the constructors are not copied but are modified
-// and inserted into the sign, coefficient and exponent fields.
-// This enum is used to force the constructor to copy the bit pattern,
-// rather than treating it as a integer.
-
-private const TEST = uint128(0x0UL, 0x0UL);
-
-/*
-private:
-//	Dec128 diff
-		// common small integers
-
-		// pi and related values
-		PI		 = 0x2FAFEFD9,
-		TAU 	 = 0x2FDFDFB2,
-		PI_2	 = 0x2F97F7EC,
-		PI_SQR	 = 0x6BF69924,
-		SQRT_PI  = 0x2F9B0BA6,
-		SQRT_2PI = 0x2F9B0BA6,
-		// 1/PI
-		// 1/SQRT_PI
-		// 1/SQRT_2PI
-
-		PHI 	= 0x2F98B072,
-		GAMMA	= 0x2F58137D,
-
-		// logarithms
-
-		E		= 0x2FA97A4A,
-		LOG2_E	= 0x2F960387,
-		LOG10_E = 0x2F4244A1,
-		LN2 	= 0x2F69C410,
-		LOG10_2 = 0x30007597,
-		LN10	= 0x2FA32279,
-		LOG2_10 = 0x2FB2B048,
-
-		// roots and squares of common values
-		SQRT2	= 0x2F959446,
-		SQRT1_2 = 0x2F6BE55C
+	private void highBits(ulong value) {
+		bits.setLong(0, value);
 	}
-*/
+
+	private const ulong lowBits() {
+		return bits.getLong(1);
+	}
+
+	private void lowBits(ulong value) {
+		bits.setLong(1, value);
+	}
+	private ulong SIGN_BIT =  0x8000000000000000UL;
+
+	private ulong IMPL_BITS = 0x7000000000000000UL; // mask = s111_0000_0...
+	private ulong IMPL_TEST = 0x6000000000000000UL; // impl = s110_0000_0...
+
+	private ulong INF_BITS =  0x7C00000000000000UL;	// mask = s111_1100_0...
+	private ulong INF_TEST =  0x7800000000000000UL;	// inf  = s111_1000_0...
+
+	private ulong NAN_BITS =  0x7E00000000000000UL; // mask = s111_1110_0...
+	private ulong NAN_TEST =  0x7C00000000000000UL; // nan  = s111_1100_0...
+
+	private ulong SIG_BITS =  0x7F00000000000000UL; // mask = s111_1111_0...
+	private ulong SIG_TEST =  0x7E00000000000000UL; // snan = s111_1110_0...
+
+	private ulong SPCL_TEST = 0x7800000000000000UL; // spcl = s111_1000_0...
+
+/*	private ulong IMPL_EXPO = 0x1FFF800000000000UL;
+	private ulong IMPL_MANT = 0x00007FFFFFFFFFFFUL;
+	private ulong IMPLIED   = 4UL << IMPL_SHFT;*/
+
+	private ulong EXPL_EXPO = 0x7FFE000000000000UL;
+	private ulong EXPL_MANT = 0x0001FFFFFFFFFFFFUL;
+	private uint128 MAX_COEFFICIENT = uint128(0x00001ED9BEA987C0UL, 0x378D8E633FFFFFFFUL);
 
 public:
 	immutable Dec128 NAN      = Dec128(uint128(0x7E00000000000000UL,0x0UL));
-	immutable Dec128 SNAN     = Dec128(uint128(0xFE00000000000000UL,0x0UL));
+//	immutable Dec128 SNAN     = Dec128(uint128(0xFE00000000000000UL));//,0x0UL));
+	immutable Dec128 SNAN     = Dec128(0xFE00000000000000UL,0x0UL);
 	immutable Dec128 INFINITY = Dec128(uint128(0x7800000000000000UL,0x0UL));
 	immutable Dec128 NEG_INF  = Dec128(uint128(0xF800000000000000UL,0x0UL));
 	immutable Dec128 ZERO     = Dec128(uint128(0x3040000000000000UL,0x0UL));
@@ -364,10 +248,9 @@ public:
 //		intBits = bits;
 //	}
 
-/*	private this(const BITS hiBits, BITS lowBits) {
-		hiWord = hiBits;
-		lowWord = lowBits;
-	}*/
+	private this(const ulong highBits, const ulong lowBits) {
+		bits = uint128(highBits, lowBits);
+	}
 
 	// this unit test uses private values
 	unittest {
@@ -420,8 +303,8 @@ writefln("SNAN.toHexString = %s", SNAN.toHexString);
 	 */
 	public this(const long n) {
 		this = zero;
-		signed = n < 0;
-		coefficient = signed ? uint128(-n) : uint128(n);
+		sign = n < 0;
+		coefficient = sign ? uint128(-n) : uint128(n);
 	}
 
 /*	Dec128 diff
@@ -503,7 +386,7 @@ writefln("SNAN.toHexString = %s", SNAN.toHexString);
 	 */
 	public this(const bool sign, const ulong mant, const int expo) {
 		this(mant, expo);
-		signed = sign;
+		this.sign = sign;
 	}
 
 	unittest {
@@ -647,8 +530,7 @@ writefln("expect = %s", expect);
 	 * Copy constructor.
 	 */
 	public this(const Dec128 that) {
-		this.hiWord = that.hiWord;
-		this.lowWord = that.lowWord;
+		this.bits = that.bits;
 	}
 
 	/**
@@ -666,28 +548,28 @@ public:
 
 /*	/// Returns the raw bits of this number.
 	@property
-	const ulong bits() {
-		return intBits;
+	const uint128 bits() {
+		return this.bits;
 	}
 
 	/// Sets the raw bits of this number.
 	@property
-	ulong bits(const ulong raw) {
-		intBits = raw;
-		return intBits;
+	uint128 bits(const uint128 raw) {
+		this.bits = raw;
+		return raw;
 	}*/
 
 	/// Returns the sign of this number.
 	@property
 	const bool sign() {
-		return signed;
+		return (highBits & SIGN_BIT) ? true: false;
 	}
 
 	/// Sets the sign of this number and returns the sign.
 	@property
 	bool sign(const bool value) {
-		signed = value;
-		return signed;
+		highBits = highBits | SIGN_BIT;
+		return value;
 	}
 
 	/// Returns the exponent of this number.
@@ -695,10 +577,7 @@ public:
 	@property
 	const int exponent() {
 		if (this.isExplicit) {
-			return expoEx - BIAS;
-		}
-		if (this.isImplicit) {
-			return expoIm - BIAS;
+			return cast(int)((highBits & EXPL_EXPO) >> EXPL_SHFT) - BIAS;
 		}
 		// infinity or NaN.
 		return 0;
@@ -748,7 +627,7 @@ public:
 	int exponent(const int expo) {
 		// check for overflow
 		if (expo > context.maxExpo) {
-			this = signed ? NEG_INF : INFINITY;
+			this = sign ? NEG_INF : INFINITY;
 			contextFlags.setFlags(OVERFLOW);
 			return 0;
 		}
@@ -757,8 +636,8 @@ public:
 			// if the exponent is too small even for a subnormal number,
 			// the number is set to zero.
 			if (expo < context.tinyExpo) {
-				this = signed ? NEG_ZERO : ZERO;
-				expoEx = context.tinyExpo + BIAS;
+				this = sign ? NEG_ZERO : ZERO;
+				setExplicitExponent(context.tinyExpo);
 				contextFlags.setFlags(SUBNORMAL);
 				contextFlags.setFlags(UNDERFLOW);
 				return context.tinyExpo;
@@ -768,19 +647,22 @@ public:
 		}
 		// if explicit...
 		if (this.isExplicit) {
-			expoEx = expo + BIAS;
-			return expoEx;
-		}
-		// if implicit...
-		if (this.isFinite) {
-			expoIm = expo + BIAS;
-			return expoIm;
+			setExplicitExponent(expo);
+			return expo;
 		}
 		// if this point is reached the number is either infinity or NaN;
 		// these have undefined exponent values.
 		contextFlags.setFlags(INVALID_OPERATION);
 		this = nan;
 		return 0;
+	}
+
+	private void setExplicitExponent(const int expo) {
+		ulong biased = expo + BIAS;
+		ulong expoMask = ~EXPL_EXPO;
+		ulong high = highBits & expoMask;
+		biased = biased << EXPL_SHFT;
+		highBits = high | biased;
 	}
 
 	unittest {
@@ -800,64 +682,38 @@ public:
 	@property
 	const uint128 coefficient() {
 		if (this.isExplicit) {
-			return uint128(0); //mantEx;
-		}
-		if (this.isFinite) {
-			return uint128(0); //mantIm | (4UL << implicitBits);
+			return uint128(highBits & EXPL_MANT, lowBits);
 		}
 		// Infinity or NaN.
 		return uint128(0);
 	}
 
-/*	// Sets the coefficient of this number. This may cause an
-	// explicit number to become an implicit number, and vice versa.
-	@property
-	uint128 coefficient(const ulong hiWord, const ulong lowWord) {
-		return coefficient(uint128(hiWord, lowWord));
-	}*/
+	private void setCoefficient(uint128 mant) {
+		ulong mantMask = ~EXPL_MANT;
+		ulong high = highBits & mantMask;
+		highBits = high | mant.getLong(0);
+		lowBits = mant.getLong(1);
+	}
 
+	// Sets the coefficient of this number.
 	@property
 	uint128 coefficient(const uint128 mant) {
 		// if not finite, convert to NaN and return 0.
-		if (!this.isFinite) {
+		if (!this.isExplicit) {
 			this = nan;
 			contextFlags.setFlags(INVALID_OPERATION);
 			return uint128(0);
 		}
-		ulong copy = 0; //mant;
-		// if too large for explicit representation, round
-		if (copy > C_MAX_IMPLICIT) {
+		// if too large, round
+		if (mant > MAX_COEFFICIENT) {
 			int expo = 0;
-			uint digits = numDigits(copy);
+			uint digits = numDigits(mant);
+			uint128 copy = mant;
 			expo = setExponent(sign, copy, digits, context);
-			if (this.isExplicit) {
-				expoEx = expoEx + expo;
-			}
-			else {
-				expoIm = expoIm + expo;
-			}
+			setExplicitExponent(exponent + expo);
 		}
-		// at this point, the number <= C_MAX_IMPLICIT
-		if (copy <= C_MAX_EXPLICIT) {
-			// if implicit, convert to explicit
-			if (this.isImplicit) {
-				expoEx = expoIm;
-			}
-			mantEx = cast(ulong)copy;
-writefln("mantEx = %s", mantEx);
-			return uint128(0); //mantEx;
-		}
-		else {	// copy <= C_MAX_IMPLICIT
-			// if explicit, convert to implicit
-			if (this.isExplicit) {
-				expoIm = expoEx;
-				testIm = 0x3;
-			}
-writefln("copy = %s", copy);
-			mantIm = cast(ulong)copy & C_IMPLICIT_MASK;
-writefln("mantIm = %s", mantIm);
-			return uint128(0);  //mantIm | (0b100UL << implicitBits);
-		}
+		setCoefficient(mant);
+		return mant;
 	}
 
 	unittest {
@@ -896,7 +752,7 @@ writefln("mantIm = %s", mantIm);
 	@property
 	const ushort payload() {
 		if (this.isNaN) {
-			return pyldNaN;
+			return 0;// pyldNaN;
 		}
 		return 0;
 	}
@@ -1061,8 +917,8 @@ writefln("mantIm = %s", mantIm);
 	 * Infinities and NaNs are canonical if their unused bits are zero.
 	 */
 	const bool isCanonical() {
-		if (isInfinite) return padInf == 0;
-		if (isNaN) return signed == 0 && padNaN == 0;
+//		if (isInfinite) return padInf == 0;
+//		if (isNaN) return sign == 0 && padNaN == 0;
 		// finite numbers are always canonical
 		return true;
 	}
@@ -1076,12 +932,12 @@ writefln("mantIm = %s", mantIm);
 		Dec128 copy = this;
 		if (this.isCanonical) return copy;
 		if (this.isInfinite) {
-			copy.padInf = 0;
+//			copy.padInf = 0;
 			return copy;
 		}
 		else { /* isNaN */
-			copy.signed = 0;
-			copy.padNaN = 0;
+			copy.sign = 0;
+//			copy.padNaN = 0;
 			return copy;
 		}
 	}
@@ -1090,7 +946,7 @@ writefln("mantIm = %s", mantIm);
 	 * Returns true if this number is +\- zero.
 	 */
 	const bool isZero() {
-		return isExplicit && mantEx == 0;
+		return isFinite && coefficient == 0;
 	}
 
 	/**
@@ -1101,66 +957,64 @@ writefln("mantIm = %s", mantIm);
 	}
 
 	/**
+	 * Returns true if this number is a NaN or infinity.
+	 */
+	const bool isSpecial() {
+		return (highBits & SPCL_TEST) == SPCL_TEST;
+	}
+
+	/**
 	 * Returns true if this number is a quiet or signaling NaN.
 	 */
 	const bool isNaN() {
-		return testNaN == NAN_BITS || testNaN == SIG_BITS;
+		return (highBits & NAN_TEST) == NAN_TEST;
 	}
 
 	/**
 	 * Returns true if this number is a signaling NaN.
 	 */
 	const bool isSignaling() {
-writefln("testNaN = %s", testNaN);
-writefln("SIG_BITS = %s", SIG_BITS);
-		return testNaN == SIG_BITS;
+		return (highBits & SIG_BITS) == SIG_TEST;
 	}
 
 	/**
 	 * Returns true if this number is a quiet NaN.
 	 */
 	const bool isQuiet() {
-		return testNaN == NAN_BITS;
+		return (highBits & NAN_BITS) == NAN_TEST;
 	}
 
 	/**
 	 * Returns true if this number is +\- infinity.
 	 */
 	const bool isInfinite() {
-		return testInf == INF_BITS;
+		return (highBits & INF_BITS) == INF_TEST;
 	}
 
 	/**
 	 * Returns true if this number is neither infinite nor a NaN.
 	 */
 	const bool isFinite() {
-		return testSpcl != 0xF;
-	}
-
-	/**
-	 * Returns true if this number is a NaN or infinity.
-	 */
-	const bool isSpecial() {
-		return testSpcl == 0xF;
+		return !isSpecial;
 	}
 
 	const bool isExplicit() {
-		return testIm != 0x3;
+		return (highBits & IMPL_TEST) != IMPL_TEST;
 	}
 
 	const bool isImplicit() {
-		return testIm == 0x3 && testSpcl != 0xF;
+		return (highBits & IMPL_BITS) == IMPL_TEST;
 	}
 
 	/**
 	 * Returns true if this number is negative. (Includes -0)
 	 */
 	const bool isSigned() {
-		return signed;
+		return (highBits & SIGN_BIT) ? true: false;
 	}
 
 	const bool isNegative() {
-		return signed;
+		return isSigned;
 	}
 
 	const bool isPositive() {
@@ -1271,7 +1125,7 @@ writefln("SIG_BITS = %s", SIG_BITS);
 		if (this < Dec128(int.min) || (isInfinite &&  isSigned)) return int.min;
 		//quantize!Dec128(this, ONE, context);
 		n = 0;  //cast(int)coefficient;
-		return signed ? -n : n;
+		return sign ? -n : n;
 	}
 
 // (128)TODO: These tests cause out-of-range errors in rounding
@@ -1298,7 +1152,7 @@ writefln("SIG_BITS = %s", SIG_BITS);
 		if (this < Dec128(long.min) || (isInfinite &&  isSigned)) return long.min;
 		//quantize!Dec128(this, ONE, context);
 		n = 0; //coefficient;
-		return signed ? -n : n;
+		return sign ? -n : n;
 	}
 
 /*	unittest {
@@ -1398,22 +1252,22 @@ writefln("SIG_BITS = %s", SIG_BITS);
 	 */
 	const string toAbstract() {
 		if (this.isFinite) {
-			return format("[%d,%s,%d]", signed ? 1 : 0, coefficient, exponent);
+			return format("[%d,%s,%d]", sign ? 1 : 0, coefficient, exponent);
 		}
 		if (this.isInfinite) {
-			return format("[%d,%s]", signed ? 1 : 0, "inf");
+			return format("[%d,%s]", sign ? 1 : 0, "inf");
 		}
 		if (this.isQuiet) {
 			if (payload) {
-				return format("[%d,%s,%d]", signed ? 1 : 0, "qNaN", payload);
+				return format("[%d,%s,%d]", sign ? 1 : 0, "qNaN", payload);
 			}
-			return format("[%d,%s]", signed ? 1 : 0, "qNaN");
+			return format("[%d,%s]", sign ? 1 : 0, "qNaN");
 		}
 		// this.isSignaling
 		if (payload) {
-			return format("[%d,%s,%d]", signed ? 1 : 0, "sNaN", payload);
+			return format("[%d,%s,%d]", sign ? 1 : 0, "sNaN", payload);
 		}
-		return format("[%d,%s]", signed ? 1 : 0, "sNaN");
+		return format("[%d,%s]", sign ? 1 : 0, "sNaN");
 	}
 
 	unittest {
@@ -1426,14 +1280,14 @@ writefln("SIG_BITS = %s", SIG_BITS);
 	 * Converts this number to a hexadecimal string representation.
 	 */
 	const string toHexString() {
-		return format("0x%016X%016X", hiWord, lowWord);
+		return format("0x%016X%016X", highBits, lowBits);
 	}
 
 	/**
 	 * Converts this number to a binary string representation.
 	 */
 	const string toBinaryString() {
-		return format("%0#64b%0#64b", hiWord,lowWord);
+		return format("%0#64b%0#64b", highBits, lowBits);
 	}
 
 	unittest {
@@ -1476,7 +1330,7 @@ const int opCmp(T:Dec128)(const T that) {
 	 */
 const bool opEquals(T:Dec128)(const T that) {
 		// quick bitwise check
-		if (this.hiWord == that.hiWord && this.lowWord == that.lowWord) {
+		if (this.bits == that.bits) {
 			if (this.isFinite) return true;
 			if (this.isInfinite) return true;
 			if (this.isQuiet) return false;
@@ -1512,8 +1366,7 @@ const bool opEquals(T:Dec128)(const T that) {
 	}
 
 	const bool isIdentical(const Dec128 that) {
-		return this.hiWord == that.hiWord &&
-				this.lowWord == that.lowWord;
+		return this.bits == that.bits;
 	}
 
 //--------------------------------
@@ -1523,8 +1376,7 @@ const bool opEquals(T:Dec128)(const T that) {
 	// (128)TODO: flags?
 	/// Assigns a Dec128 (copies that to this).
 	void opAssign(T:Dec128)(const T that) {
-		this.hiWord = that.hiWord;
-		this.lowWord = that.lowWord;
+		this.bits = that.bits;
 	}
 
 	unittest {
@@ -1725,4 +1577,162 @@ unittest {
 	writeln("dec128...........end");
 	writeln("===================");
 }
+
+/*	// union providing different views of the number representation.
+	union {
+		uint128 intBits = uint128(0x7C00000000000000UL, 0x0000000000000000UL);
+		union {	// entire 64-bit unsigned integer
+			ulong hiWord; // = BITS.POS_NAN;    // set to the initial value: NaN
+
+			// unsigned value and sign bit
+			mixin (bitfields!(
+				ulong, "uBits", unsignedBits,
+				bool, "signed", signBit)
+			);
+			// Ex = explicit finite number:
+			//	   full coefficient, exponent and sign
+			mixin (bitfields!(
+				ulong, "mantEx", EXPL_SHFT,
+				uint, "expoEx", expoBits,
+				bool, "signEx", signBit)
+			);
+			// Im = implicit finite number:
+			//		partial coefficient, exponent, test bits and sign bit.
+			mixin (bitfields!(
+				ulong, "mantIm", IMPL_SHFT,
+				uint, "expoIm", expoBits,
+				uint, "testIm", testBits,
+				bool, "signIm", signBit)
+			);
+			// Spcl = special values: non-finite numbers
+			//		unused bits, special bits and sign bit.
+			mixin (bitfields!(
+				ulong, "padSpcl",  spclPadBits,
+				uint, "testSpcl", specialBits,
+				bool, "signSpcl", signBit)
+			);
+			// Inf = infinities:
+			//		payload, unused bits, infinitu bits and sign bit.
+			mixin (bitfields!(
+				uint, "padInf",  infPadBits,
+				ulong, "testInf", infinityBits,
+				bool, "signInf", signBit)
+			);
+			// Nan = not-a-number: qNaN and sNan
+			//		payload, unused bits, nan bits and sign bit.
+			mixin (bitfields!(
+				ushort, "pyldNaN", payloadBits,
+				ulong, "padNaN",  nanPadBits,
+				uint, "testNaN", nanBits,
+				bool, "signNaN", signBit)
+			);
+		}
+		ulong lowWord;
+	}*/
+
+/*	// (128)TODO: Move this test to test.d?
+	unittest {
+		Dec128 num;
+		assertTrue(num.toHexString == "0x7C00000000000000");
+		num.pyldNaN = 1;
+		// NOTE: this test should fail when bitmanip is fixed.
+		assertTrue(num.toHexString != "0x7C00000000000001");
+		assertTrue(num.toHexString == "0x0000000000000001");
+		num.bits = ulong.max;
+		assertTrue(num.toHexString == "0xFFFFFFFFFFFFFFFF");
+		num.pyldNaN = 2;
+		// NOTE: this test should fail when bitmanip is fixed.
+		assertTrue(num.toHexString != "0xFFFFFFFFFFFF0002");
+		assertTrue(num.toHexString == "0x00000000FFFF0002");
+		num.bits = ulong.max;
+		assertTrue(num.toHexString == "0xFFFFFFFFFFFFFFFF");
+		num.testNaN = 0b10;
+		assertTrue(num.toHexString == "0x85FFFFFFFFFFFFFF");
+		num.bits = ulong.max;
+		assertTrue(num.toHexString == "0xFFFFFFFFFFFFFFFF");
+		num = nan;
+		assertTrue(num.toHexString == "0x7C00000000000000");
+		num.pyldNaN = ushort.max;
+		// NOTE: this test should fail when bitmanip is fixed.
+		assertTrue(num.toHexString == "0x000000000000FFFF");
+		num = nan;
+		assertTrue(num.toHexString == "0x7C00000000000000");
+		num.padInf = ushort.max;
+		// NOTE: This works as expected;
+		assertTrue(num.toHexString == "0x7C0000000000FFFF");
+		num = nan;
+		assertTrue(num.toHexString == "0x7C00000000000000");
+		num.padSpcl = ushort.max;
+		assertTrue(num.toHexString == "0x780000000000FFFF");
+		num = nan;
+		assertTrue(num.toHexString == "0x7C00000000000000");
+		num.bits = num.bits | 0xFFFF;
+		assertTrue(num.toHexString == "0x7C0000000000FFFF");
+		num = nan;
+		assertTrue(num.toHexString == "0x7C00000000000000");
+		num.mantEx = uint.max;
+		assertTrue(num.toHexString == "0x7C000000FFFFFFFF");
+		num = nan;
+		assertTrue(num.toHexString == "0x7C00000000000000");
+		num.mantIm = uint.max;
+		assertTrue(num.toHexString == "0x7C000000FFFFFFFF");
+	}*/
+
+//--------------------------------
+//	special bit patterns
+//--------------------------------
+
+/*private:
+	// The value of the (6) special bits when the number is a signaling NaN.
+	immutable uint SIG_BITS = 0x3F;
+	// The value of the (6) special bits when the number is a quiet NaN.
+	immutable uint NAN_BITS = 0x3E;
+	// The value of the (5) special bits when the number is infinity.
+	immutable uint INF_BITS = 0x1E;*/
+
+//--------------------------------
+//	special values and constants
+//--------------------------------
+
+// Integer values passed to the constructors are not copied but are modified
+// and inserted into the sign, coefficient and exponent fields.
+// This enum is used to force the constructor to copy the bit pattern,
+// rather than treating it as a integer.
+
+private const TEST = uint128(0x0UL, 0x0UL);
+
+/*
+private:
+//	Dec128 diff
+		// common small integers
+
+		// pi and related values
+		PI		 = 0x2FAFEFD9,
+		TAU 	 = 0x2FDFDFB2,
+		PI_2	 = 0x2F97F7EC,
+		PI_SQR	 = 0x6BF69924,
+		SQRT_PI  = 0x2F9B0BA6,
+		SQRT_2PI = 0x2F9B0BA6,
+		// 1/PI
+		// 1/SQRT_PI
+		// 1/SQRT_2PI
+
+		PHI 	= 0x2F98B072,
+		GAMMA	= 0x2F58137D,
+
+		// logarithms
+
+		E		= 0x2FA97A4A,
+		LOG2_E	= 0x2F960387,
+		LOG10_E = 0x2F4244A1,
+		LN2 	= 0x2F69C410,
+		LOG10_2 = 0x30007597,
+		LN10	= 0x2FA32279,
+		LOG2_10 = 0x2FB2B048,
+
+		// roots and squares of common values
+		SQRT2	= 0x2F959446,
+		SQRT1_2 = 0x2F6BE55C
+	}
+*/
 
