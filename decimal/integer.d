@@ -253,6 +253,19 @@ writefln("a.toString = %s", a.toString);
 		return big;
 	}
 
+	/// Converts from a big integer.
+	public this(BigInt big) {
+		if (big < 0) big = - big;
+		BigInt base = BigInt(BASE);
+		int len = big.uintLength;
+		if (len > N) len = N;
+		for (int i = 0; i < len; i++) {
+			digits[i] = cast(uint)(big % base).toLong;
+			big /= base;
+			if (big == 0) break;
+		}
+	}
+
 	unittest {	// conversion
 		assert(uint128(156).toHexString == "0x_0000009C");
 		assert(uint128(8754).toInt == 8754);

@@ -25,6 +25,7 @@ import std.ascii: isDigit;
 import std.exception: assumeUnique;
 import std.math: PI, LOG2;
 import std.stdio: write, writeln;
+import std.stdio: writefln;
 import std.string;
 
 import decimal.context;
@@ -214,7 +215,10 @@ public:
 	///
 	this(const real r) {
 		string str = format("%.*G", cast(int)context.precision, r);
+writefln("r = %s", r);
+writefln("str = %s", str);
 		this(str);
+writefln("this = %s", this);
 	}
 
 	// copy constructor

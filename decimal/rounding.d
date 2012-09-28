@@ -548,10 +548,11 @@ public int numDigits(const uint128 arg) {
     // otherwise reduce until number fits into a long integer...
 	int count = 0;
 	uint128 num = arg;
-	if (num > QUINT128) {
+/*	if (num > QUINT128) {
 		num /= QUINT128;
+writefln("QUINT128 = %s", QUINT128);
 		count += 18;
-	}
+	}*/
 	/// ...and delegate result to long integer version
 	long n = num.toLong;
 	return count + numDigits(n);

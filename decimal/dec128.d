@@ -174,9 +174,9 @@ private:
 	private uint128 MAX_COEFFICIENT = uint128(0x00001ED9BEA987C0UL, 0x378D8E633FFFFFFFUL);
 
 public:
-	immutable Dec128 NAN      = Dec128(uint128(0x7E00000000000000UL,0x0UL));
+	immutable Dec128 NAN      = Dec128(uint128(0x7C00000000000000UL,0x0UL));
 //	immutable Dec128 SNAN     = Dec128(uint128(0xFE00000000000000UL));//,0x0UL));
-	immutable Dec128 SNAN     = Dec128(0xFE00000000000000UL,0x0UL);
+	immutable Dec128 SNAN     = Dec128(uint128(0x7E00000000000000UL,0x0UL));
 	immutable Dec128 INFINITY = Dec128(uint128(0x7800000000000000UL,0x0UL));
 	immutable Dec128 NEG_INF  = Dec128(uint128(0xF800000000000000UL,0x0UL));
 	immutable Dec128 ZERO     = Dec128(uint128(0x3040000000000000UL,0x0UL));
@@ -252,16 +252,14 @@ public:
 		bits = uint128(highBits, lowBits);
 	}
 
-	// this unit test uses private values
-	unittest {
+	unittest {	// classification tests
 		Dec128 num;
 		num = SNAN;
-writefln("SNAN.toHexString = %s", SNAN.toHexString);
 		assertTrue(num.isSignaling);
 		assertTrue(num.isNaN);
 		assertTrue(!num.isNegative);
 		assertTrue(!num.isNormal);
-		num = -SNAN;
+		num = copyNegate(SNAN);
 		assertTrue(num.isSignaling);
 		assertTrue(num.isNaN);
 		assertTrue(num.isNegative);
@@ -271,7 +269,7 @@ writefln("SNAN.toHexString = %s", SNAN.toHexString);
 		assertTrue(num.isNaN);
 		assertTrue(!num.isNegative);
 		assertTrue(!num.isNormal);
-		num = -NAN;
+		num = copyNegate(NAN);
 		assertTrue(!num.isSignaling);
 		assertTrue(num.isNaN);
 		assertTrue(num.isNegative);
@@ -411,30 +409,37 @@ writefln("SNAN.toHexString = %s", SNAN.toHexString);
 	 * Creates a Dec128 from a BigDecimal
 	 */
 	public this(const BigDecimal num) {
+writefln("num = %s", num);
 
 		// check for special values
 		if (num.isInfinite) {
 			this = infinity(num.sign);
+writefln("this = %s", this);
 			return;
 		}
 		if (num.isQuiet) {
 			this = nan();
 			this.sign = num.sign;
 			this.payload = num.payload;
+writefln("this = %s", this);
 			return;
 		}
 		if (num.isSignaling) {
 			this = snan();
 			this.sign = num.sign;
 			this.payload = num.payload;
+writefln("this = %X", this);
 			return;
 		}
 
 		BigDecimal big = plus!BigDecimal(num, context);
+writefln("big = %s", big);
 
 		if (big.isFinite) {
 			this = zero;
-			this.coefficient = toUint(big.coefficient);
+writefln("big.coefficient = %s", big.coefficient);
+			this.coefficient = uint128(big.coefficient);
+writefln("this.coefficient = %s", this.coefficient);
 			this.exponent = big.exponent;
 			this.sign = big.sign;
 			return;
@@ -463,6 +468,8 @@ writefln("SNAN.toHexString = %s", SNAN.toHexString);
 		assertTrue(dec.toString == num.toString);
 		dec = 1;
 		num = dec;
+//writefln("dec = |%s|", dec.toString);
+//writefln("num = |%s|", num.toString);
 		assertTrue(dec.toString == num.toString);
 		dec = -1;
 		num = dec;
@@ -484,7 +491,9 @@ writefln("SNAN.toHexString = %s", SNAN.toHexString);
 	 */
 	public this(const string str) {
 		BigDecimal big = BigDecimal(str);
+writefln("biggie = %s", big);
 		this(big);
+writefln("this one = %s", this);
 	}
 
 	unittest {
@@ -509,16 +518,22 @@ writefln("SNAN.toHexString = %s", SNAN.toHexString);
 		}
 		// (128)TODO: this won't do -- no rounding has occured.
 		string str = format("%.*G", cast(int)context.precision, r);
+writefln("r = %g", r);
+writefln("real str = %s", str);
 		this(str);
+writefln("real this = %s", this);
 	}
 
 	unittest {
 		float f = 1.2345E+16f;
+writefln("f = %g", f);
+//string str = f;
 		Dec128 actual = Dec128(f);
-writefln("actual = %s", actual);
+writefln("actual1 = %s", actual);
+writefln("actualx = %s", actual.toAbstract);
 		Dec128 expect = Dec128("1.234499980283085E+16");
-writefln("actual = %s", actual);
-writefln("expect = %s", expect);
+writefln("actual3 = %s", actual);
+writefln("expect4 = %s", expect);
 		assertEqual(actual, expect);
 		real r = 1.2345E+16;
 		actual = Dec128(r);
@@ -568,7 +583,12 @@ public:
 	/// Sets the sign of this number and returns the sign.
 	@property
 	bool sign(const bool value) {
-		highBits = highBits | SIGN_BIT;
+		if (value) {
+			highBits = highBits | SIGN_BIT;
+		}
+		else {
+			highBits = highBits & (~SIGN_BIT);
+		}
 		return value;
 	}
 
@@ -974,6 +994,10 @@ public:
 	 * Returns true if this number is a signaling NaN.
 	 */
 	const bool isSignaling() {
+//writefln("highBits = %X", highBits);
+//writefln("SIG_BITS = %X", SIG_BITS);
+//writefln("SIG_TEST = %X", SIG_TEST);
+//writefln("highBits & SIG_BITS = %X", highBits & SIG_BITS);
 		return (highBits & SIG_BITS) == SIG_TEST;
 	}
 
@@ -981,6 +1005,9 @@ public:
 	 * Returns true if this number is a quiet NaN.
 	 */
 	const bool isQuiet() {
+//writefln("highBits = %X", highBits);
+//writefln("NAN_BITS = %X", NAN_BITS);
+//writefln("highBits & NAN_BITS = %X", highBits & NAN_BITS);
 		return (highBits & NAN_BITS) == NAN_TEST;
 	}
 
@@ -1239,10 +1266,10 @@ public:
 		num = Dec128.min;
 		num = 1;
 		assertTrue(num.toExact == "+1E+00");
-		num = C_MAX_EXPLICIT;
+/*		num = C_MAX_EXPLICIT;
 		assertTrue(num.toExact == "+9007199254740991E+00");
 		num = C_MAX_IMPLICIT;
-		assertTrue(num.toExact == "+9999999999999999E+00");
+		assertTrue(num.toExact == "+9999999999999999E+00");*/
 		num = infinity(true);
 		assertTrue(num.toExact == "-Infinity");
 	}
@@ -1563,14 +1590,21 @@ ref Dec128 opOpAssign(string op, T:Dec128) (T rhs) {
 
 }	// end Dec128 struct
 
-// NOTE: this is used only when a BigDecimal is converted to a Decimal128.
+/*// NOTE: this is used only when a BigDecimal is converted to a Decimal128.
 // The BigInt is guaranteed to be < uint128.max;
 private uint128 toUint(BigInt big) {
-	BigInt divisor = 1; //BigInt(1) << 64;
+writefln("big = %s", big);
+writefln("big = %X", big);
+	BigInt divisor = BigInt(1) << 64;
+writefln("divisor = %X", divisor);
+writefln("big/divisor = %X", big/divisor);
 	ulong hi = (big / divisor).toLong;
+writefln("hi = %X", hi);
+writefln("big mod divisor = %X", big % divisor);
 	ulong lo = (big % divisor).toLong;
+writefln("lo = %X", lo);
 	return uint128(hi, lo);
-}
+}*/
 
 unittest {
 	writeln("===================");
