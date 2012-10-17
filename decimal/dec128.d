@@ -409,37 +409,37 @@ public:
 	 * Creates a Dec128 from a BigDecimal
 	 */
 	public this(const BigDecimal num) {
-writefln("num = %s", num);
+//writefln("num = %s", num);
 
 		// check for special values
 		if (num.isInfinite) {
 			this = infinity(num.sign);
-writefln("this = %s", this);
+//writefln("this = %s", this);
 			return;
 		}
 		if (num.isQuiet) {
 			this = nan();
 			this.sign = num.sign;
 			this.payload = num.payload;
-writefln("this = %s", this);
+//writefln("this = %s", this);
 			return;
 		}
 		if (num.isSignaling) {
 			this = snan();
 			this.sign = num.sign;
 			this.payload = num.payload;
-writefln("this = %X", this);
+//writefln("this = %X", this);
 			return;
 		}
 
 		BigDecimal big = plus!BigDecimal(num, context);
-writefln("big = %s", big);
+//writefln("big = %s", big);
 
 		if (big.isFinite) {
 			this = zero;
-writefln("big.coefficient = %s", big.coefficient);
+//writefln("big.coefficient = %s", big.coefficient);
 			this.coefficient = uint128(big.coefficient);
-writefln("this.coefficient = %s", this.coefficient);
+//writefln("this.coefficient = %s", this.coefficient);
 			this.exponent = big.exponent;
 			this.sign = big.sign;
 			return;
@@ -491,9 +491,9 @@ writefln("this.coefficient = %s", this.coefficient);
 	 */
 	public this(const string str) {
 		BigDecimal big = BigDecimal(str);
-writefln("biggie = %s", big);
+//writefln("biggie = %s", big);
 		this(big);
-writefln("this one = %s", this);
+//writefln("this one = %s", this);
 	}
 
 	unittest {
@@ -518,27 +518,23 @@ writefln("this one = %s", this);
 		}
 		// (128)TODO: this won't do -- no rounding has occured.
 		string str = format("%.*G", cast(int)context.precision, r);
-writefln("r = %g", r);
-writefln("real str = %s", str);
+//writefln("r = %g", r);
+//writefln("real str = %s", str);
 		this(str);
-writefln("real this = %s", this);
+//writefln("real this = %s", this);
 	}
 
 	unittest {
 		float f = 1.2345E+16f;
-writefln("f = %g", f);
+//writefln("f = %g", f);
 //string str = f;
 		Dec128 actual = Dec128(f);
-writefln("actual1 = %s", actual);
-writefln("actualx = %s", actual.toAbstract);
-		Dec128 expect = Dec128("1.234499980283085E+16");
-writefln("actual3 = %s", actual);
-writefln("expect4 = %s", expect);
-		assertEqual(actual, expect);
+		Dec128 expect = Dec128("12344999802830847.999");
+		assertEqual(expect, actual);
 		real r = 1.2345E+16;
 		actual = Dec128(r);
 		expect = Dec128("1.2345E+16");
-		assertEqual(actual, expect);
+		assertEqual(expect, actual);
 	}
 
 	/**
@@ -605,34 +601,39 @@ public:
 
 	unittest {
 		Dec128 num;
-		int expected, actual;
+		int expect, actual;
 		// reals
 		num = std.math.PI;
-		expected = -15;
+		expect = -19;
 		actual = num.exponent;
-		assertEqual(expected, actual);
+		assertEqual(expect, actual);
 		num = 9.75E9;
-		expected = 0;
+		expect = 0;
 		actual = num.exponent;
-		assertEqual(expected, actual);
+		assertEqual(expect, actual);
 		// explicit
 		num = 8388607;
-		expected = 0;
+		expect = 0;
 		actual = num.exponent;
-		assertEqual(expected, actual);
+		assertEqual(expect, actual);
 		// implicit
 		num = 8388610;
-		expected = 0;
+		expect = 0;
 		actual = num.exponent;
-		assertEqual(expected, actual);
-		num = 9.999998E23;
-		expected = 17;
+		assertEqual(expect, actual);
+/*
+		// These should test rounding of long coefficients.
+		num = Dec128("9.999998E23");
+		expect = 17;
 		actual = num.exponent;
-		assertEqual(expected, actual);
-		num = 9.999999E23;
-		expected = 8;
+		assertEqual(expect, actual);
+		num = Dec128("9.999999E23");
+writefln("num = %s", num);
+writefln("num.toAbstract = %s", num.toAbstract);
+writefln("num.toExact = %s", num.toExact);
+		expect = 8;
 		actual = num.exponent;
-		assertEqual(expected, actual);
+		assertEqual(expect, actual);*/
 	}
 
 	/// Sets the exponent of this number.
@@ -739,10 +740,10 @@ public:
 	unittest {
 		Dec128 num;
 		assertTrue(num.coefficient == 0);
-		num = 9.998742;
+		num = Dec128("9.998742");
 		assertTrue(num.coefficient == 9998742);
-		num = 9.998743;
-		assertTrue(num.coefficient == 9998742999999999);
+//		num = 9.998743;
+//		assertTrue(num.coefficient == 9998742999999999);
 		// note the difference between real and string values!
 		num = Dec128("9.998743");
 		assertTrue(num.coefficient == 9998743);
@@ -757,7 +758,7 @@ public:
 	/// Returns the number of digits in this number's coefficient.
 	@property
 	const int digits() {
-		return numDigits(0); //this.coefficient);
+		return numDigits(this.coefficient);
 	}
 
 	/// Has no effect.
@@ -1116,7 +1117,10 @@ public:
 	 */
 	const BigDecimal toBigDecimal() {
 		if (isFinite) {
-			return BigDecimal(0); //sign, BigInt(coefficient), exponent);
+			BigInt big = coefficient.toBigInt;
+writefln("coefficient = %s", coefficient);
+writefln("big = %s", big);
+			return BigDecimal(sign, big, exponent);
 		}
 		if (isInfinite) {
 			return BigDecimal.infinity(sign);
@@ -1137,9 +1141,9 @@ public:
 
 	unittest {
 		Dec128 num = Dec128("12345E+17");
-		BigDecimal expected = BigDecimal("12345E+17");
+		BigDecimal expect = BigDecimal("12345E+17");
 		BigDecimal actual = num.toBigDecimal;
-		assertTrue(actual == expected);
+		assertTrue(actual == expect);
 	}
 
 	const int toInt() {
@@ -1178,7 +1182,8 @@ public:
 		if (this > Dec128(long.max) || (isInfinite && !isSigned)) return long.max;
 		if (this < Dec128(long.min) || (isInfinite &&  isSigned)) return long.min;
 		//quantize!Dec128(this, ONE, context);
-		n = 0; //coefficient;
+writefln("coefficient = %s", coefficient);
+		n = coefficient.toLong;
 		return sign ? -n : n;
 	}
 
@@ -1364,8 +1369,8 @@ const bool opEquals(T:Dec128)(const T that) {
 			// let the main routine handle the signaling NaN
 		}
 		// TODO: calls toBigDecimal
-		//return equals!Dec128(this, that, context);
-		return false;
+		return equals!Dec128(this, that, context);
+//		return false;
 	}
 
 	unittest {
@@ -1497,23 +1502,23 @@ const T opBinary(string op, T:Dec128)(const T rhs)
 		op2 = 8;
 		actual = op1 + op2;
 		expect = 12;
-		assertEqual(actual, expect);
+		assertEqual(expect, actual);
 		actual = op1 - op2;
 		expect = -4;
-		assertEqual(actual, expect);
+		assertEqual(expect, actual);
 		actual = op1 * op2;
 		expect = 32;
-		assertEqual(actual, expect);
+		assertEqual(expect, actual);
 		op1 = 5;
 		op2 = 2;
 		actual = op1 / op2;
 		expect = 2.5;
-		assertEqual(actual, expect);
+		assertEqual(expect, actual);
 		op1 = 10;
 		op2 = 3;
 		actual = op1 % op2;
 		expect = 1;
-		assertEqual(actual, expect);
+		assertEqual(expect, actual);
 	}
 
 	/**
@@ -1555,16 +1560,16 @@ ref Dec128 opOpAssign(string op, T:Dec128) (T rhs) {
 		op1 += op2;
 		expect = 21.49;
 		actual = op1;
-		assertEqual(actual, expect);
+		assertEqual(expect, actual);
 		op1 *= op2;
 		expect = -44.4843;
 		actual = op1;
-		assertEqual(actual, expect);
+		assertEqual(expect, actual);
 		op1 = 95;
 		op1 %= 90;
 		actual = op1;
 		expect = 5;
-		assertEqual(actual, expect);
+		assertEqual(expect, actual);
 	}
 
 	/**

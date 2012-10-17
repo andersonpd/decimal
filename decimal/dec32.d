@@ -1407,11 +1407,11 @@ unittest {	// this(real)
 	float f = 1.2345E+16f;
 	Dec32 actual = Dec32(f);
 	Dec32 expect = Dec32("1.2345E+16");
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	real r = 1.2345E+16;
 	actual = Dec32(r);
 	expect = Dec32("1.2345E+16");
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 }
 
 unittest {	// exponent
@@ -1608,13 +1608,13 @@ unittest {	// opUnary
 	num = 1.00E12;
 	expect = num;
 	actual = --num;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	actual = num--;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	num = 1.00E12;
 	expect = num;
 	actual = ++num;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	actual = num++;
 	assertEqual(expect, actual);
 	num = Dec32(9999999, 90);
@@ -1632,34 +1632,34 @@ unittest {	// opBinary
 	op2 = 8;
 	actual = op1 + op2;
 	expect = 12;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	actual = op1 - op2;
 	expect = -4;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	actual = op1 * op2;
 	expect = 32;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	op1 = 5;
 	op2 = 2;
 	actual = op1 / op2;
 	expect = 2.5;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	op1 = 10;
 	op2 = 3;
 	actual = op1 % op2;
 	expect = 1;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	op1 = Dec32("101");
 	op2 = Dec32("110");
 	actual = op1 & op2;
 	expect = 100;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	actual = op1 | op2;
 	expect = 111;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	actual = op1 ^ op2;
 	expect = 11;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	Dec32 num = Dec32(591.3);
 	Dec32 result = num * 5;
 	assertTrue(result == Dec32(2956.5));
@@ -1672,16 +1672,16 @@ unittest {	// opOpAssign
 	op1 += op2;
 	expect = 21.49;
 	actual = op1;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	op1 *= op2;
 	expect = -44.4843;
 	actual = op1;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	op1 = 95;
 	op1 %= 90;
 	actual = op1;
 	expect = 5;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 }
 
 unittest { // pow10

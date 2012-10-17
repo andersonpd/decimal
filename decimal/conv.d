@@ -47,7 +47,7 @@ T to(T: string)(const long n) {
 	return format("%d", n);
 }
 
-/// to!string(Unsigned!Z).
+/// to!string(USizedInt!Z).
 T to(T: string)(const uint128 n) {
 	return n.toString();
 }

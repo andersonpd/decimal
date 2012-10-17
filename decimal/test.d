@@ -40,7 +40,7 @@ bool assertEqual2(T, U = T)(U actual, U expected,
 	return false;
 }
 
-bool assertEqual(T)(T actual, T expected,
+bool assertEqual(T)(T expected, T actual,
 		string file = __FILE__, int line = __LINE__ ) {
 	if (expected == actual) {
 		return true;
@@ -1874,23 +1874,23 @@ unittest {
 	op2 = 8;
 	actual = op1 + op2;
 	expect = 12;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	actual = op1 - op2;
 	expect = -4;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	actual = op1 * op2;
 	expect = 32;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	op1 = 5;
 	op2 = 2;
 	actual = op1 / op2;
 	expect = 2.5;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	op1 = 10;
 	op2 = 3;
 	actual = op1 % op2;
 	expect = 1;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	writeln("passed");
 }
 
@@ -1902,11 +1902,11 @@ unittest {
 	op1 += op2;
 	expect = 21.49;
 	actual = op1;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	op1 *= op2;
 	expect = -44.4843;
 	actual = op1;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	writeln("passed");
 }
 
@@ -2135,54 +2135,54 @@ unittest {
 	write("firstDigit...");
 	long n;
 	n = 7;
-	int expected, actual;
-	expected = 7;
+	int expect, actual;
+	expect = 7;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 13;
-	expected = 1;
+	expect = 1;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 999;
-	expected = 9;
+	expect = 9;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 9999;
-	expected = 9;
+	expect = 9;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 25987;
-	expected = 2;
+	expect = 2;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 5008617;
-	expected = 5;
+	expect = 5;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 3234567890;
-	expected = 3;
+	expect = 3;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 10000000000;
-	expected = 1;
+	expect = 1;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 823456789012345;
-	expected = 8;
+	expect = 8;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 4234567890123456;
-	expected = 4;
+	expect = 4;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 623456789012345678;
-	expected = 6;
+	expect = 6;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = long.max;
-	expected = 9;
+	expect = 9;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	writeln("passed");
 }
 
@@ -2495,7 +2495,7 @@ unittest {
 	real r = 1.2345E+16;
 	Dec32 actual = Dec32(r);
 	Dec32 expect = Dec32("1.2345E+16");
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	writeln("passed");
 }
 
@@ -2628,23 +2628,23 @@ unittest {
 	op2 = 8;
 	actual = op1 + op2;
 	expect = 12;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	actual = op1 - op2;
 	expect = -4;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	actual = op1 * op2;
 	expect = 32;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	op1 = 5;
 	op2 = 2;
 	actual = op1 / op2;
 	expect = 2.5;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	op1 = 10;
 	op2 = 3;
 	actual = op1 % op2;
 	expect = 1;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	writeln("passed");
 }
 
@@ -2656,11 +2656,11 @@ unittest {
 	op1 += op2;
 	expect = 21.49;
 	actual = op1;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	op1 *= op2;
 	expect = -44.4843;
 	actual = op1;
-	assertEqual(actual, expect);
+	assertEqual(expect, actual);
 	writeln("passed");
 }
 

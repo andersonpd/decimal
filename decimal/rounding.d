@@ -542,6 +542,7 @@ public int numDigits(const BigInt arg) {
 
 /// Returns the number of digits in the argument.
 public int numDigits(const uint128 arg) {
+//writefln("arg = %s", arg);
     // special cases
 	if (arg == 0) return 0;
     if (arg < 10) return 1;
@@ -555,6 +556,8 @@ writefln("QUINT128 = %s", QUINT128);
 	}*/
 	/// ...and delegate result to long integer version
 	long n = num.toLong;
+//writefln("num = %s", num);
+//writefln("n = %s", n);
 	return count + numDigits(n);
 }
 
@@ -1228,54 +1231,54 @@ unittest {
 	// firstDigit
 	long n;
 	n = 7;
-	int expected, actual;
-	expected = 7;
+	int expect, actual;
+	expect = 7;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 13;
-	expected = 1;
+	expect = 1;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 999;
-	expected = 9;
+	expect = 9;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 9999;
-	expected = 9;
+	expect = 9;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 25987;
-	expected = 2;
+	expect = 2;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 5008617;
-	expected = 5;
+	expect = 5;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 3234567890;
-	expected = 3;
+	expect = 3;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 10000000000;
-	expected = 1;
+	expect = 1;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 823456789012345;
-	expected = 8;
+	expect = 8;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 4234567890123456;
-	expected = 4;
+	expect = 4;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = 623456789012345678;
-	expected = 6;
+	expect = 6;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 	n = long.max;
-	expected = 9;
+	expect = 9;
 	actual = firstDigit(n);
-	assertEqual(expected, actual);
+	assertEqual(expect, actual);
 }
 
 unittest {

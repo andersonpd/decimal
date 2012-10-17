@@ -215,10 +215,10 @@ public:
 	///
 	this(const real r) {
 		string str = format("%.*G", cast(int)context.precision, r);
-writefln("r = %s", r);
-writefln("str = %s", str);
+//writefln("r = %s", r);
+//writefln("str = %s", str);
 		this(str);
-writefln("this = %s", this);
+//writefln("this = %s", this);
 	}
 
 	// copy constructor

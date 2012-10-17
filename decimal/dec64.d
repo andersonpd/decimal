@@ -617,11 +617,11 @@ writeln("test.toHexString = ", test.toHexString);
 		float f = 1.2345E+16f;
 		Dec64 actual = Dec64(f);
 		Dec64 expect = Dec64("1.234499980283085E+16");
-		assertEqual(actual, expect);
+		assertEqual(expect, actual);
 		real r = 1.2345E+16;
 		actual = Dec64(r);
 		expect = Dec64("1.2345E+16");
-		assertEqual(actual, expect);
+		assertEqual(expect, actual);
 	}
 
 	/**
@@ -686,34 +686,34 @@ public:
 
 	unittest {
 		Dec64 num;
-		int expected, actual;
+		int expect, actual;
 		// reals
 		num = std.math.PI;
-		expected = -15;
+		expect = -15;
 		actual = num.exponent;
-		assertEqual(expected, actual);
+		assertEqual(expect, actual);
 		num = 9.75E9;
-		expected = 0;
+		expect = 0;
 		actual = num.exponent;
-		assertEqual(expected, actual);
+		assertEqual(expect, actual);
 		// explicit
 		num = 8388607;
-		expected = 0;
+		expect = 0;
 		actual = num.exponent;
-		assertEqual(expected, actual);
+		assertEqual(expect, actual);
 		// implicit
 		num = 8388610;
-		expected = 0;
+		expect = 0;
 		actual = num.exponent;
-		assertEqual(expected, actual);
+		assertEqual(expect, actual);
 		num = 9.999998E23;
-		expected = 17;
+		expect = 17;
 		actual = num.exponent;
-		assertEqual(expected, actual);
+		assertEqual(expect, actual);
 		num = 9.999999E23;
-		expected = 8;
+		expect = 8;
 		actual = num.exponent;
-		assertEqual(expected, actual);
+		assertEqual(expect, actual);
 	}
 
 	/// Sets the exponent of this number.
@@ -1634,16 +1634,16 @@ const int opCmp(T:Dec64)(const T that) {
 		op1 += op2;
 		expect = 21.49;
 		actual = op1;
-		assertEqual(actual, expect);
+		assertEqual(expect, actual);
 		op1 *= op2;
 		expect = -44.4843;
 		actual = op1;
-		assertEqual(actual, expect);
+		assertEqual(expect, actual);
 		op1 = 95;
 		op1 %= 90;
 		actual = op1;
 		expect = 5;
-		assertEqual(actual, expect);
+		assertEqual(expect, actual);
 	}
 
 	/**

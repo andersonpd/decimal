@@ -412,6 +412,8 @@ public bool equals(T)(const T arg1, const T arg2,
 		const DecimalContext context = T.context,
 		const bool roundResult = true) if (isDecimal!T) {
 
+writefln("arg1 = %s", arg1);
+writefln("arg2 = %s", arg2);
 	// any operation with a signaling NaN is invalid.
 	if (arg1.isSignaling || arg2.isSignaling) {
 		contextFlags.setFlags(INVALID_OPERATION);
@@ -437,7 +439,14 @@ public bool equals(T)(const T arg1, const T arg2,
 		return false;
 	}
 
+//writefln("arg1.coefficient = %s", arg1.coefficient);
+//writefln("arg1.digits = %s", arg1.digits);
+//writefln("arg1.exponent = %s", arg1.exponent);
+//writefln("arg2.coefficient = %s", arg2.coefficient);
+//writefln("arg2.digits = %s", arg2.digits);
+//writefln("arg2.exponent = %s", arg2.exponent);
 	int diff = (arg1.exponent + arg1.digits) - (arg2.exponent + arg2.digits);
+//writefln("diff = %s", diff);
 	if (diff != 0) {
 		return false;
 	}
@@ -445,12 +454,16 @@ public bool equals(T)(const T arg1, const T arg2,
 	// if they have the same representation, they are equal
 	auto op1c = arg1.coefficient;
 	auto op2c = arg2.coefficient;
+//writefln("op1c = %s", op1c);
+//writefln("op2c = %s", op2c);
+//writefln("op1c == op2c = %s", op1c == op2c);
 	if (arg1.exponent == arg2.exponent && op1c == op2c) { //arg1.coefficient == arg2.coefficient) {
 		return true;
 	}
 
 	// otherwise they are equal if they represent the same value
 	T result = sub!T(arg1, arg2, context, roundResult);
+writefln("result = %s", result);
 	return result.coefficient == 0;
 }
 
@@ -819,6 +832,8 @@ public T rotate(T)(const T arg, const int n,
 public T add(T)(const T arg1, const T arg2,
 		const DecimalContext context = T.context,
 		bool roundResult = true) if (isDecimal!T) {
+//writefln("add.arg1 = %s", arg1);
+//writefln("add.arg2 = %s", arg2);
 	T result = T.nan;	 // sum is initialized to quiet NaN
 
 	// check for NaN operand(s)
@@ -867,6 +882,8 @@ public T add(T)(const T arg1, const T arg2,
 	BigDecimal sum = BigDecimal.zero;
 	BigDecimal augend = toBigDecimal!T(arg1);
 	BigDecimal addend = toBigDecimal!T(arg2);
+//writefln("augend = %s", augend);
+//writefln("addend = %s", addend);
 	// TODO: If the operands are too far apart, one of them will end up zero.
 	// align the operands
 	alignOps(augend, addend);//, context);
@@ -991,6 +1008,8 @@ public T addLong(T)(const T arg1, const long arg2,
 public T sub(T) (const T arg1, const T arg2,
 		const DecimalContext context = T.context,
 		const bool roundResult = true) if (isDecimal!T) {
+//writefln("sub.arg1 = %s", arg1);
+//writefln("sub.arg2 = %s", arg2);
 	return add!T(arg1, copyNegate!T(arg2), context , roundResult);
 }	 // end sub(arg1, arg2)
 
