@@ -412,8 +412,8 @@ public bool equals(T)(const T arg1, const T arg2,
 		const DecimalContext context = T.context,
 		const bool roundResult = true) if (isDecimal!T) {
 
-writefln("arg1 = %s", arg1);
-writefln("arg2 = %s", arg2);
+//writefln("arg1 = %s", arg1);
+//writefln("arg2 = %s", arg2);
 	// any operation with a signaling NaN is invalid.
 	if (arg1.isSignaling || arg2.isSignaling) {
 		contextFlags.setFlags(INVALID_OPERATION);
@@ -463,7 +463,6 @@ writefln("arg2 = %s", arg2);
 
 	// otherwise they are equal if they represent the same value
 	T result = sub!T(arg1, arg2, context, roundResult);
-writefln("result = %s", result);
 	return result.coefficient == 0;
 }
 

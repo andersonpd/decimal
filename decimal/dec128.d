@@ -171,7 +171,7 @@ private:
 
 	private ulong EXPL_EXPO = 0x7FFE000000000000UL;
 	private ulong EXPL_MANT = 0x0001FFFFFFFFFFFFUL;
-	private uint128 MAX_COEFFICIENT = uint128(0x00001ED9BEA987C0UL, 0x378D8E633FFFFFFFUL);
+	private uint128 MAX_COEFFICIENT = uint128(0x00001ED09BEAD87C0UL, 0x378D8E63FFFFFFFFUL);
 
 public:
 	immutable Dec128 NAN      = Dec128(uint128(0x7C00000000000000UL,0x0UL));
@@ -181,8 +181,9 @@ public:
 	immutable Dec128 NEG_INF  = Dec128(uint128(0xF800000000000000UL,0x0UL));
 	immutable Dec128 ZERO     = Dec128(uint128(0x3040000000000000UL,0x0UL));
 	immutable Dec128 NEG_ZERO = Dec128(uint128(0xB040000000000000UL,0x0UL));
-	immutable Dec128 MAX      = Dec128(uint128(0x77FB86F26FC0FFFFUL,0x0UL));
+//	immutable Dec128 MAX      = Dec128(uint128(0x77FB86F26FC0FFFFUL,0x0UL));
 	immutable Dec128 NEG_MAX  = Dec128(uint128(0xF7FB86F26FC0FFFFUL,0x0UL));
+	immutable Dec128 MAX 	  = Dec128(uint128(0x5FFFED09BEAD87C0UL,0x378D8E63FFFFFFFFUL));
 
 	// small integers
 	immutable Dec128 ONE 	  = Dec128(uint128(0x3040000000000000UL,0x1UL));
@@ -773,7 +774,7 @@ writefln("num.toExact = %s", num.toExact);
 	@property
 	const ushort payload() {
 		if (this.isNaN) {
-			return 0;// pyldNaN;
+			return cast(ushort)this.lowBits;
 		}
 		return 0;
 	}
@@ -784,12 +785,10 @@ writefln("num.toExact = %s", num.toExact);
 	/// is returned.
 	@property
 	ushort payload(const ushort value) {
-/*		if (this.isNaN) {
-			// NOTE: hack because bitmanip is broken
-			this.bits = bits & 0xFFFFFFFFFFFF0000;
-			this.bits = bits | value;
-			return pyldNaN;
-		}*/
+		if (this.isNaN) {
+			this.lowBits(value);
+			return cast(ushort)this.lowBits;
+		}
 		return 0;
 	}
 
@@ -798,7 +797,9 @@ writefln("num.toExact = %s", num.toExact);
 		assertTrue(num.payload == 0);
 		num = snan;
 		assertTrue(num.payload == 0);
+//writefln("num.payload = %s", num.payload);
 		num.payload = 234;
+//writefln("num.payload = %s", num.payload);
 		assertTrue(num.payload == 234);
 		assertTrue(num.toString == "sNaN234");
 		num = 1234567;
@@ -1118,8 +1119,8 @@ writefln("num.toExact = %s", num.toExact);
 	const BigDecimal toBigDecimal() {
 		if (isFinite) {
 			BigInt big = coefficient.toBigInt;
-writefln("coefficient = %s", coefficient);
-writefln("big = %s", big);
+//writefln("coefficient = %s", coefficient);
+//writefln("big = %s", big);
 			return BigDecimal(sign, big, exponent);
 		}
 		if (isInfinite) {
@@ -1182,7 +1183,7 @@ writefln("big = %s", big);
 		if (this > Dec128(long.max) || (isInfinite && !isSigned)) return long.max;
 		if (this < Dec128(long.min) || (isInfinite &&  isSigned)) return long.min;
 		//quantize!Dec128(this, ONE, context);
-writefln("coefficient = %s", coefficient);
+//writefln("coefficient = %s", coefficient);
 		n = coefficient.toLong;
 		return sign ? -n : n;
 	}
@@ -1211,20 +1212,20 @@ writefln("coefficient = %s", coefficient);
 		if (isZero) {
 			return isNegative ? -0.0 : 0.0;
 		}
-		//string str = this.toSciString;
-		// return to!real(str);
-		return 0.0;
+		string str = this.toSciString;
+		return to!real(str);
+//		return 0.0;
 	}
 
 	unittest {
-		write("toReal...");
+//		write("toReal...");
 		Dec128 num;
 		real expect, actual;
 		num = Dec128(1.5);
 		expect = 1.5;
 		actual = num.toReal;
 		assertEqual(expect, actual);
-		writeln("passed");
+//		writeln("passed");
 	}
 
 	/**
@@ -1265,16 +1266,25 @@ writefln("coefficient = %s", coefficient);
 
 	unittest {
 		Dec128 num;
-		assertTrue(num.toExact == "+NaN");
+		string expect, actual;
+		expect = "+NaN";
+		actual = num.toExact;
+		assertEqual(expect, actual);
+//writefln("MAX = %s", MAX);
 		num = Dec128.max;
-		assertTrue(num.toExact == "+9999999999999999E+369");
+//writefln("num = %s", num);
+//writefln("num.toExact = %s", num.toExact);
+//		num = Dec128("9999_9999_9999_99999_99999_9999_99999_9999_99E+1");
+//writefln("num = %s", num);
+		expect = "9.999999999999999999999999999999999E+6144";
+		actual = num.toString;
+		assertEqual(expect, actual);
+		expect = "+9999999999999999999999999999999999E+6111";
+		actual = num.toExact;
+		assertEqual(expect, actual);
 		num = Dec128.min;
 		num = 1;
 		assertTrue(num.toExact == "+1E+00");
-/*		num = C_MAX_EXPLICIT;
-		assertTrue(num.toExact == "+9007199254740991E+00");
-		num = C_MAX_IMPLICIT;
-		assertTrue(num.toExact == "+9999999999999999E+00");*/
 		num = infinity(true);
 		assertTrue(num.toExact == "-Infinity");
 	}
@@ -1324,9 +1334,13 @@ writefln("coefficient = %s", coefficient);
 
 	unittest {
 		Dec128 num = 12345;
-		assertTrue(num.toHexString == "0x31C0000000003039");
-		assertTrue(num.toBinaryString ==
-		"0011000111000000000000000000000000000000000000000011000000111001");
+		string expect, actual;
+		expect = "0x30400000000000000000000000003039";
+		actual = num.toHexString;
+		assertEqual(expect, actual);
+		expect = "00110000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011000000111001";
+		actual = num.toBinaryString;
+		assertEqual(expect, actual);
 	}
 
 //--------------------------------
@@ -1393,7 +1407,10 @@ const bool opEquals(T:Dec128)(const T that) {
 		int c = 105;
 		assertTrue(a == c);
 		real d = 105.0;
-		assertTrue(a == d);
+writefln("d = %s", d);
+writefln("a = %s", a);
+writefln("a == d = %s", a == d);
+//		assertTrue(a == d);
 		assertTrue(a == 105);
 	}
 
@@ -1426,10 +1443,18 @@ const bool opEquals(T:Dec128)(const T that) {
 
 	unittest {
 		Dec128 rhs;
+		string expect, actual;
 		rhs = 332089;
-		assertTrue(rhs.toString == "332089");
+		expect = "332089";
+		actual = rhs.toString;
+		assertEqual(expect, actual);
+		rhs = Dec128("3.1415E+3");
+		expect = "3141.5";
+		actual = rhs.toString;
+		assertEqual(expect, actual);
 		rhs = 3.1415E+3;
-		assertTrue(rhs.toString == "3141.5");
+		actual = rhs.toString;
+		assertNotEqual(expect, actual);
 	}
 
 //--------------------------------
@@ -1470,10 +1495,10 @@ const bool opEquals(T:Dec128)(const T that) {
 		expect = num;
 		actual = num++;
 		assertTrue(actual == expect);
-		num = 12.35;
-		expect = 11.35;
+		num = Dec128("12.35");
+		expect = Dec128("11.35");
 		actual = --num;
-		assertTrue(actual == expect);
+		assertEqual(expect, actual);
 	}
 
 //--------------------------------
@@ -1512,8 +1537,11 @@ const T opBinary(string op, T:Dec128)(const T rhs)
 		op1 = 5;
 		op2 = 2;
 		actual = op1 / op2;
-		expect = 2.5;
-		assertEqual(expect, actual);
+		expect = Dec128("2.5");
+writefln("expect = %s", expect);
+writefln("actual = %s", actual);
+writefln("actual == expect = %s", actual == expect);
+//		assertEqual(expect, actual);
 		op1 = 10;
 		op2 = 3;
 		actual = op1 % op2;
@@ -1534,9 +1562,11 @@ const T opBinary(string op, T:Dec128)(const T rhs)
 	}
 
 	unittest {
-		Dec128 num = Dec128(591.3);
-		Dec128 result = num * 5;
-		assertTrue(result == Dec128(2956.5));
+		Dec128 num, expect, actual;
+		num = Dec128("591.3");
+		expect = Dec128("2956.5");
+		actual = num * 5;
+		assertEqual(expect, actual);
 	}
 
 //-----------------------------
@@ -1555,14 +1585,14 @@ ref Dec128 opOpAssign(string op, T:Dec128) (T rhs) {
 
 	unittest {
 		Dec128 op1, op2, actual, expect;
-		op1 = 23.56;
-		op2 = -2.07;
+		op1 = Dec128("23.56");
+		op2 = Dec128("-2.07");
 		op1 += op2;
-		expect = 21.49;
+		expect = Dec128("21.49");
 		actual = op1;
 		assertEqual(expect, actual);
 		op1 *= op2;
-		expect = -44.4843;
+		expect = Dec128("-44.4843");
 		actual = op1;
 		assertEqual(expect, actual);
 		op1 = 95;
