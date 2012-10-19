@@ -521,7 +521,9 @@ void writeTo(T)(const T num, scope void delegate(const(char)[]) sink,
 
 };  // end writeTo
 
-/// Converts a string into a BigDecimal.
+/// Converts a string into a BigDecimal. This departs from the specification
+/// in that the coefficient string may contain underscores.
+// TODO: what about .nnn and nnn. ?
 public BigDecimal toNumber(const string inStr) {
 	BigDecimal num;
 	BigDecimal NAN = BigDecimal.nan;
@@ -538,58 +540,22 @@ public BigDecimal toNumber(const string inStr) {
 	}
 	// check for NaN
 	if (startsWith(str, "nan")) {
-		num = NAN;
-		num.sign = sign;
-		// if no payload, return
-		if (str == "nan") {
-			return num;
+		num = BigDecimal.nan(sign);
+		// check for payload
+		if (str.length > 3) {
+			return setPayload(num, str, 3);
 		}
-		// set payload
-		str = str[3..$];
-		// payload has a max length of 6 digits
-		if (str.length > 6) return NAN;
-		// ensure string is all digits
-		foreach(char c; str) {
-			if (!isDigit(c)) {
-				return NAN;
-			}
-		}
-		// convert string to number
-		uint payload = std.conv.to!uint(str);
-		// check for overflow
-		if (payload > ushort.max) {
-			return NAN;
-		}
-		num.payload = cast(ushort)payload;
 		return num;
-	};
+	}
 	// check for sNaN
 	if (startsWith(str, "snan")) {
-		num = BigDecimal.snan;
-		num.sign = sign;
-		if (str == "snan") {
-			num.payload = 0;
-			return num;
+		num = BigDecimal.snan(sign);
+		// check for payload
+		if (str.length > 4) {
+			return setPayload(num, str, 4);
 		}
-		// set payload
-		str = str[4..$];
-		// payload has a max length of 6 digits
-		if (str.length > 6) return NAN;
-		// ensure string is all digits
-		foreach(char c; str) {
-			if (!isDigit(c)) {
-				return NAN;
-			}
-		}
-		// convert string to payload
-		uint payload = std.conv.to!uint(str);
-		// check for overflow
-		if (payload > ushort.max) {
-			return NAN;
-		}
-		num.payload = cast(ushort)payload;
 		return num;
-	};
+	}
 	// check for infinity
 	if (str == "inf" || str == "infinity") {
 		num = BigDecimal.infinity(sign);
@@ -662,6 +628,17 @@ public BigDecimal toNumber(const string inStr) {
 	while(str[0] == '0' && str.length > 1) {
 		str = str[1..$];
 	}
+	// make sure first char is a digit
+	// (or a decimal point, in which case check the second char)
+	if (!isDigit(str[0])) {
+		if (str[0] == '.' && !isDigit(str[1])) {
+		 return NAN;
+		}
+	}
+	// strip underscores
+	if (indexOf(str, '_') >= 0) {
+  		str = removechars(str.idup, "_").dup;
+	}
 	// remove internal decimal point
 	int point = indexOf(str, '.');
 	if (point >= 0) {
@@ -674,16 +651,44 @@ public BigDecimal toNumber(const string inStr) {
 	if (str.length < 1) {
 		return NAN;
 	}
-	// TODO: add underscores
-	// ensure string is all digits or underscores
+	// ensure chars are all digits
 	foreach(char c; str) {
-		if (!isDigit(c) && c != '_') {
+		if (!isDigit(c)) {
 			return NAN;
 		}
 	}
 	// convert coefficient string to BigInt
 	num.coefficient = BigInt(str.idup);
 	num.digits = decimal.rounding.numDigits(num.coefficient);
+	return num;
+}
+
+private BigDecimal setPayload(BigDecimal num, char[] str, int len) {
+	// if no payload, return
+	if (str.length == len) {
+			return num;
+	}
+	// get payload
+	str = str[len..$];
+	// trim leading zeros
+	while(str[0] == '0' && str.length > 1) {
+		str = str[1..$];
+	}
+	// payload has a max length of 6 digits
+	if (str.length > 6) return num;
+	// ensure string is all digits
+	foreach(char c; str) {
+		if (!isDigit(c)) {
+			return num;
+		}
+	}
+	// convert string to number
+	uint payload = std.conv.to!uint(str);
+	// check for overflow
+	if (payload > ushort.max) {
+		return num;
+	}
+	num.payload = cast(ushort)payload;
 	return num;
 }
 
@@ -940,16 +945,32 @@ unittest {
 }
 
 unittest {	// toNumber
-	BigDecimal f = BigDecimal("1.0");
-	assertTrue(f.toString() == "1.0");
-	f = BigDecimal(".1");
-	assertTrue(f.toString() == "0.1");
-	f = BigDecimal("-123");
-	assertTrue(f.toString() == "-123");
-	f = BigDecimal("1.23E3");
-	assertTrue(f.toString() == "1.23E+3");
-	f = BigDecimal("1.23E-3");
-	assertTrue(f.toString() == "0.00123");
+	BigDecimal big;
+	string expect, actual;
+	big = BigDecimal("1.0");
+	expect = "1.0";
+	actual = big.toString();
+	assertEqual(expect, actual);
+	big = BigDecimal(".1");
+	expect = "0.1";
+	actual = big.toString();
+	assertEqual(expect, actual);
+	big = BigDecimal("-123");
+	expect = "-123";
+	actual = big.toString();
+	assertEqual(expect, actual);
+	big = BigDecimal("1.23E3");
+	expect = "1.23E+3";
+	actual = big.toString();
+	assertEqual(expect, actual);
+	big = BigDecimal("1.23E-3");
+	expect = "0.00123";
+	actual = big.toString();
+	assertEqual(expect, actual);
+	big = BigDecimal("1.2_3E3");
+	expect = "1.23E+3";
+	actual = big.toString();
+	assertEqual(expect, actual);
 }
 
 unittest {

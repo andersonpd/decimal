@@ -274,14 +274,13 @@ public T nextPlus(T)(const T arg1,
 	if (adjustedExpo < context.tinyExpo) {
 			return T(0L, context.tinyExpo);
 	}
+	// (A)TODO: must add the increment w/o setting flags
 	T arg2 = T(1L, adjustedExpo);
-	// (A)TODO: this needs to avoid overflow;really? does this guarantee no flags?
 	result = add!T(arg1, arg2, context, true);
 	// (A)TODO: should be context.max
 	if (result > T.max(context)) {
 		result = T.infinity;
 	}
-	// (A)TODO: does this need to be rounded? Check spec.
 	return result;
 }
 
