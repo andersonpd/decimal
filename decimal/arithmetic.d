@@ -161,32 +161,28 @@ public T scaleb(T)(const T arg1, const T arg2) if (isDecimal!T) {
 /// "This operation was called 'normalize' prior to
 /// version 1.68 of the specification." (p. 37)
 /// Flags: INVALID_OPERATION
-public T reduce(T)(const T arg) if (isDecimal!T) {
-	T result = T.nan;
-	if (invalidOperand!T(arg, result)) {
-		return result;
-	}
-	result = arg;
-	if (!result.isFinite()) {
-		return result;
+public T reduce(T)(const T arg,
+		const DecimalContext context = T.context) if (isDecimal!T) {
+	T reduced = plus!T(arg, context);
+	if (!reduced.isFinite()) {
+		return reduced;
 	}
 
-	// no context is required since the number only gets shorter
-	// TODO: what if the exponent overflows?
-	int digits = result.digits;
-	auto temp = result.coefficient;
+	int digits = reduced.digits;
+	auto temp = reduced.coefficient;
 	int zeros = trimZeros(temp, digits);
 
 	if (zeros) {
-		result.coefficient = temp;
-		result.digits  = digits - zeros;
-		result.exponent = result.exponent + zeros;
+		reduced.coefficient = temp;
+		reduced.digits = digits - zeros;
+		reduced.exponent = reduced.exponent + zeros;
 	}
-	return result;
+	return reduced;
 }
 
-public T normalize(T)(const T arg) if (isDecimal!T) {
-	return reduce!T(arg);
+public T normalize(T)(const T arg,
+		const DecimalContext context = T.context) if (isDecimal!T) {
+	return reduce!T(arg, context);
 }
 
 /// Returns the absolute value of the argument.
@@ -274,12 +270,13 @@ public T nextPlus(T)(const T arg1,
 			return arg1.dup;
 		}
 	}
-	int adjx = arg1.exponent + arg1.digits - context.precision;
-	if (adjx < context.tinyExpo) {
+	int adjustedExpo = arg1.exponent + arg1.digits - context.precision;
+	if (adjustedExpo < context.tinyExpo) {
 			return T(0L, context.tinyExpo);
 	}
-	T arg2 = T(1L, adjx);
-	result = add!T(arg1, arg2, context, true); // (A)TODO: FIXTHIS: really? does this guarantee no flags?
+	T arg2 = T(1L, adjustedExpo);
+	// (A)TODO: this needs to avoid overflow;really? does this guarantee no flags?
+	result = add!T(arg1, arg2, context, true);
 	// (A)TODO: should be context.max
 	if (result > T.max(context)) {
 		result = T.infinity;
@@ -307,14 +304,14 @@ public T nextMinus(T)(const T arg,
 			return arg.dup;
 		}
 	}
-	// This is necessary to catch the special case where coefficient == 1
-	T red = reduce!T(arg);
-	int adjx = red.exponent + red.digits - context.precision;
-	if (arg.coefficient == 1) adjx--;
-	if (adjx < context.tinyExpo) {
+	// This is necessary to catch the special case where the coefficient == 1
+	T reduced = reduce!T(arg, context);
+	int adjustedExpo = reduced.exponent + reduced.digits - context.precision;
+	if (arg.coefficient == 1) adjustedExpo--;
+	if (adjustedExpo < context.tinyExpo) {
 		return T(0L, context.tinyExpo);
 	}
-	T addend = T(1, adjx);
+	T addend = T(1, adjustedExpo);
 	result = sub!T(arg, addend, context, true);	//(A)TODO: are the flags set/not set correctly?
 		if (result < copyNegate!T(T.max(context))) {
 		result = copyNegate!T(T.infinity);

@@ -674,9 +674,10 @@ public BigDecimal toNumber(const string inStr) {
 	if (str.length < 1) {
 		return NAN;
 	}
-	// ensure string is all digits
+	// TODO: add underscores
+	// ensure string is all digits or underscores
 	foreach(char c; str) {
-		if (!isDigit(c)) {
+		if (!isDigit(c) && c != '_') {
 			return NAN;
 		}
 	}
