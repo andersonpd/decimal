@@ -614,18 +614,18 @@ public bool sameQuantum(T)(const T arg1, const T arg2) if (isDecimal!T) {
 	return arg1.exponent == arg2.exponent;
 }
 
-// (A)TODO: Need to set flags per specification (p. 32).
 /// Returns the maximum of the two operands (or NaN).
 /// If either is a signaling NaN, or both are quiet NaNs, a NaN is returned.
-/// Otherwise, Any (finite or infinite) number is larger than a NaN.
+/// Otherwise, Any finite or infinite number is larger than a NaN.
 /// If they are not numerically equal, the larger is returned.
 /// If they are numerically equal:
 /// 1) If the signs differ, the one with the positive sign is returned.
 /// 2) If they are positive, the one with the larger exponent is returned.
 /// 3) If they are negative, the one with the smaller exponent is returned.
 /// 4) Otherwise, they are indistinguishable; the first is returned.
+/// The returned number will be rounded to the current context.
 /// Implements the 'max' function in the specification. (p. 32)
-/// Flags: INVALID_OPERATION, ROUNDED, INEXACT??.
+/// Flags: INVALID_OPERATION, ROUNDED.
 const(T) max(T)(const T arg1, const T arg2,
 		const DecimalContext context = T.context) if (isDecimal!T) {
 	// if both are NaNs or either is an sNan, return NaN.
@@ -633,29 +633,41 @@ const(T) max(T)(const T arg1, const T arg2,
 		contextFlags.setFlags(INVALID_OPERATION);
 		return T.nan;
 	}
+
+	// result will be a finite number or infinity
+	// use arg1 as default value
+	T result = arg1.dup;
+
 	// if one op is a quiet NaN return the other
 	if (arg1.isQuiet || arg2.isQuiet) {
-		return (arg1.isQuiet) ? arg2 : arg1;
+		if (arg1.isQuiet) result = arg2;
 	}
 	// if the signs differ, return the unsigned operand
-	if (arg1.sign != arg2.sign) {
-		return arg1.sign ? arg2 : arg1;
+	else if (arg1.sign != arg2.sign) {
+		if (arg1.sign) result = arg2;
 	}
-	// if not numerically equal, return the larger
-	int comp = compare!T(arg1, arg2, context);
-	if (comp != 0) {
-		return comp > 0 ? arg1 : arg2;
+	else {
+		// if not numerically equal, return the larger
+		int comp = compare!T(arg1, arg2, context);
+		if (comp != 0) {
+			if (comp < 0) result = arg2;
+		}
+		// if they have the same exponent they are identical, return either
+		else if (arg1.exponent == arg2.exponent) {
+			// no assignment -- use default value
+		}
+		// if they are non-negative, return the one with larger exponent.
+		else if (arg1.sign == 0) {
+			if (arg1.exponent < arg2.exponent) result = arg2;
+		}
+		// else they are negative; return the one with smaller exponent.
+		else {
+			if (arg1.exponent > arg2.exponent) result = arg2;
+		}
 	}
-	// if they have the same exponent they are identical, return either
-	if (arg1.exponent == arg2.exponent) {
-		return arg1;
-	}
-	// if they are non-negative, return the one with larger exponent.
-	if (arg1.sign == 0) {
-		return arg1.exponent > arg2.exponent ? arg1 : arg2;
-	}
-	// else they are negative; return the one with smaller exponent.
-	return arg1.exponent > arg2.exponent ? arg2 : arg1;
+	// result must be rounded
+	round(result);
+	return result;
 }
 
 /// Returns the larger of the two operands (or NaN). Returns the same result
@@ -668,7 +680,6 @@ const(T) maxMagnitude(T)(const T arg1, const T arg2,
 }
 
 
-// (A)TODO: Need to set flags per specification (p. 32).
 /// Returns the minimum of the two operands (or NaN).
 /// If either is a signaling NaN, or both are quiet NaNs, a NaN is returned.
 /// Otherwise, Any (finite or infinite) number is smaller than a NaN.
@@ -679,42 +690,56 @@ const(T) maxMagnitude(T)(const T arg1, const T arg2,
 /// 3) If they are positive, the one with the smaller exponent is returned.
 /// 4) Otherwise, they are indistinguishable; the first is returned.
 /// Implements the 'min' function in the specification. (p. 32-33)
-/// Flags: NONE.
+/// Flags: INVALID OPERATION, ROUNDED.
 const(T) min(T)(const T arg1, const T arg2,
 		const DecimalContext context = T.context) if (isDecimal!T) {
+
 	// if both are NaNs or either is an sNan, return NaN.
 	if (arg1.isNaN && arg2.isNaN || arg1.isSignaling || arg2.isSignaling) {
 		return T.nan;
 	}
+
+	// result will be a finite number or infinity
+	// use arg1 as default value
+	T result = arg1.dup;
+
 	// if one op is a quiet NaN return the other
 	if (arg1.isQuiet || arg2.isQuiet) {
-		return (arg1.isQuiet) ? arg2 : arg1;
+		if (arg1.isQuiet) result = arg2;
 	}
-	// if the signs differ, return the unsigned operand
+
+	// if the signs differ, return the signed operand
 	if (arg1.sign != arg2.sign) {
-		return arg1.sign ? arg1 : arg2;
+		if (!arg1.sign) result = arg2;
 	}
-	// if not numerically equal, return the smaller
-	int comp = compare!T(arg1, arg2, context);
-	if (comp != 0) {
-		return comp < 0 ? arg1 : arg2;
+	else {
+		// if not numerically equal, return the smaller
+		int comp = compare!T(arg1, arg2, context);
+		if (comp != 0) {
+			if (comp > 0) result = arg2;
+		}
+		// if they have the same exponent they are identical, return either
+		else if (arg1.exponent == arg2.exponent) {
+			// no assignment -- use default value
+		}
+		// if they are non-negative, return the one with smaller exponent.
+		else if (arg1.sign == 0) {
+			if (arg1.exponent > arg2.exponent) result = arg2;
+		}
+		else {
+		// else they are negative; return the one with larger exponent.
+		if (arg1.exponent < arg2.exponent) result = arg2;
+		}
 	}
-	// if they have the same exponent they are identical, return either
-	if (arg1.exponent == arg2.exponent) {
-		return arg1;
-	}
-	// if they are non-negative, return the one with smaller exponent.
-	if (arg1.sign == 0) {
-		return arg1.exponent < arg2.exponent ? arg1 : arg2;
-	}
-	// else they are negative; return the one with larger exponent.
-	return arg1.exponent < arg2.exponent ? arg2 : arg1;
+	// result must be rounded
+	round(result);
+	return result;
 }
 
 /// Returns the smaller of the two operands (or NaN). Returns the same result
-/// as the 'max' ((A)TODO: ?) function if the signs of the operands are ignored.
+/// as the 'max' function if the signs of the operands are ignored.
 /// Implements the 'min-magnitude' function in the specification. (p. 33)
-/// Flags: NONE.
+/// Flags: INVALID OPERATION, ROUNDED.
 const(T) minMagnitude(T)(const T arg1, const T arg2,
 		const DecimalContext context = T.context) if (isDecimal!T) {
 	return min(copyAbs!T(arg1), copyAbs!T(arg2), context);
