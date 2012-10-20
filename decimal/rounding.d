@@ -616,14 +616,18 @@ public int firstDigit(const ulong n, int maxValue = 19) {
 /// If n == 0 the number is returned unchanged.
 /// If n < 0 the number is shifted right.
 public BigInt shiftLeft(BigInt num, const int n, const int precision) {
+//writefln("num = %s", num);
+//writefln("n = %s", n);
 	if (n > 0) {
 		BigInt fives = n < 27 ? BigInt(FIVES[n]) : BIG_FIVE^^n;
+//writefln("fives = %s", fives);
 		num = num << n;
 		num *= fives;
 	}
 	if (n < 0) {
 		num = shiftRight(num, -n, precision);
 	}
+//writefln("num = %s", num);
 	return num;
 }
 

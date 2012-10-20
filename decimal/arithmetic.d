@@ -1184,7 +1184,7 @@ public T div(T)(const T arg1, const T arg2,
 	BigDecimal quotient = BigDecimal.zero;
 	int diff = dividend.exponent - divisor.exponent;
 	if (diff > 0) {
-		shiftLeft(dividend.coefficient, diff);
+		dividend.coefficient = shiftLeft(dividend.coefficient, diff);
 		dividend.exponent = dividend.exponent - diff;
 		dividend.digits = dividend.digits + diff;
 	}
@@ -1192,7 +1192,7 @@ public T div(T)(const T arg1, const T arg2,
 	if (shift > 0) {
 		dividend.coefficient = shiftLeft(dividend.coefficient, shift);
 		dividend.exponent = dividend.exponent - shift;
-		dividend.digits = dividend.digits + diff;
+		dividend.digits = dividend.digits + shift;
 	}
 	quotient.coefficient = dividend.coefficient / divisor.coefficient;
 	quotient.exponent = dividend.exponent - divisor.exponent;
@@ -1200,7 +1200,7 @@ public T div(T)(const T arg1, const T arg2,
 	quotient.digits = numDigits(quotient.coefficient);
 	if (roundResult) {
 		round(quotient, context);
-		/// TODO why is this flag being checked?
+//		/// TODO why is this flag being checked?
 		if (!contextFlags.getFlag(INEXACT)) {
 			quotient = reduceToIdeal(quotient, diff, context);
 		}
@@ -1375,6 +1375,7 @@ public T roundToIntegralValue(T)(const T arg,
 /// (Used to return the "ideal" value following division. p. 28-29)
 private T reduceToIdeal(T)(const T arg, int ideal,
 		const DecimalContext context = T.context) if (isDecimal!T) {
+//writefln("arg in = %s", arg);
 	T result = T.nan;
 	if (invalidOperand!T(arg, result)) {
 		return result;
@@ -1395,6 +1396,7 @@ private T reduceToIdeal(T)(const T arg, int ideal,
 		result.exponent = 0;
 	}
 	result.digits = numDigits(result.coefficient);
+//writefln("arg out = %s", result);
 	return result;
 }
 

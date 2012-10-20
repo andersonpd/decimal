@@ -1891,6 +1891,11 @@ unittest {
 	actual = op1 % op2;
 	expect = 1;
 	assertEqual(expect, actual);
+	op1 = 2;
+	op2 = 1.5;
+	expect = 1.333;
+	actual = op1 / op2;
+	assertEqual(expect, actual);
 	writeln("passed");
 }
 

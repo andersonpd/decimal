@@ -148,6 +148,8 @@ unittest {
 
 /**
  * Returns the value of pi to the specified precision.
+ * TODO: AGM version -- use less expensive?
+ * TODO: pre-computed string;
  */
 BigDecimal pi(uint precision) {
 	uint savedPrecision = bigContext.precision;
@@ -164,7 +166,7 @@ BigDecimal pi(uint precision) {
 	while ((a - b) > epsilon && i < 10) {
 		BigDecimal y = a;        // save the value of a
 		a = (a + b)/TWO;    // arithmetic mean
-		b = sqrt(b*y, precision);        // geometric means
+		b = sqrt(b*y, precision);        // geometric mean
 		t -= x*(a*a - b*b);    // weighted sum of the difference of the means
 		x = x * 2;
 		i++;
@@ -177,6 +179,9 @@ BigDecimal pi(uint precision) {
 
 unittest {
 	write("pi.............");
+	BigDecimal num = pi(15);
+writeln;
+writefln("num = %s", num);
 	writeln("test missing");
 }
 
@@ -234,18 +239,16 @@ unittest {
  * Returns the square root of the argument to the specified precision.
  * Uses Newton's method. The starting value should be close to the result
  * to speed convergence and to avoid unstable operation.
+ * TODO: better to compute (1/sqrt(arg)) * arg?
  */
 BigDecimal sqrt(const BigDecimal arg, uint precision) {
 	// check for negative numbers.
 	if (arg.isNegative) {
 		return BigDecimal.nan;
 	}
-	uint savedPrecision = bigContext.precision;
-	precision += 2;
-//        writeln("precision = ", precision);
-
-//	bigContext.precision = precision;
-//        write("sqrt(", arg, ") = ");
+//	BigDecimal.context = BigDecimal.context.setPrecision(15);
+//	uint savedPrecision = bigContext.precision;
+//	precision += 2;
 	const BigDecimal HALF = BigDecimal(0.5);
 	const BigDecimal ONE = BigDecimal(1);
 	BigDecimal x = HALF*(arg + ONE);
@@ -278,20 +281,21 @@ BigDecimal sqrt(const BigDecimal arg, uint precision) {
 	}
 	BigDecimal xp;
 	int i = 0;
-	while(i < 2000) {
+	while(i < 100) {
 		xp = x;
 		x = HALF * (x + (arg/x));
 		if (x == xp) break;
 		i++;
 	}
-//        writeln(xp);
-	round(xp, bigContext);
-	precision = savedPrecision;
+//	round(xp, bigContext);
+//	precision = savedPrecision;
 	return xp;
 }
 
 unittest {
 	write("sqrt...........");
+writeln;
+writefln("sqrt(2, 9) = %s", sqrt(2, 9));
 	writeln("test missing");
 }
 
@@ -328,6 +332,9 @@ BigDecimal exp(const BigDecimal arg) {
 
 unittest {
 	write("exp............");
+writeln;
+	BigDecimal one = BigDecimal(1);
+writefln("exp(1) = %s", exp(one));
 	writeln("test missing");
 }
 
@@ -371,11 +378,8 @@ BigDecimal log(const BigDecimal arg) {
 	BigDecimal sum  = y; //ONE;
 	BigDecimal newSum;
 	for (long n = 3; ; n+=2) {
-//            write("sum = ", sum);
-//            write(", term = ", term, ", 1/n = ", ONE/n, ", term/n =", term/n);
 		term *= y2;
 		newSum = sum + (term/n);
-//            writeln(", newSum = ", newSum);
 		if (sum == newSum) {
 			return sum * 2;
 		}
@@ -385,6 +389,9 @@ BigDecimal log(const BigDecimal arg) {
 
 unittest {
 	write("log............");
+writeln;
+	BigDecimal one = BigDecimal(1);
+writefln("log(exp(one)) = %s", log(exp(one)));
 	writeln("test missing");
 }
 

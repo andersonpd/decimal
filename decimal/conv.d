@@ -110,13 +110,19 @@ public T toDecimal(T, U)(const U num) if (isDecimal!T && isFixedDecimal!U) {
 
 /// Converts a decimal number to a big decimal
 public BigDecimal toBigDecimal(T)(const T num) if (isDecimal!T) {
+//writefln("toBigDecimal(num) = %s", num);
 	static if (is(typeof(num) == BigDecimal)) {
+//writefln("num.dup = %s", num.dup);
 		return num.dup;
 	}
 	bool sign = num.sign;
 	if (num.isFinite) {
 		auto mant = num.coefficient;
 		int  expo = num.exponent;
+//writefln("mant = %s", mant);
+//writefln("expo = %s", expo);
+//writefln("BigDecimal(sign, mant, expo) = %s", BigDecimal(sign, mant, expo));
+//writeln("*****");
 		return BigDecimal(sign, mant, expo);
 	} else if (num.isInfinite) {
 		return BigDecimal.infinity(sign);
