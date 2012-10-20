@@ -37,11 +37,11 @@ private const uint128 FIVE128 = uint128(5);
 /// Rounds the referenced number using the precision and rounding mode of
 /// the context parameter.
 /// Flags: SUBNORMAL, CLAMPED, OVERFLOW, INEXACT, ROUNDED.
-public void round(T)(ref T num,
+public T round(T)(ref T num,
 		const DecimalContext context = T.context) if (isDecimal!T) {
 
 	// special values aren't rounded
-	if (!num.isFinite) return;
+	if (!num.isFinite) return num;
 
 	// zero values aren't rounded, but they are checked for
 	// subnormal and out of range exponents.
@@ -53,7 +53,7 @@ public void round(T)(ref T num,
 				num.exponent = context.tinyExpo;
 			}
 		}*/
-		return;
+		return num;
 	}
 
 	// handle subnormal numbers
@@ -72,15 +72,16 @@ public void round(T)(ref T num,
 			num.exponent = context.tinyExpo;
 			contextFlags.setFlags(CLAMPED);
 		}
-		return;
+		return num;
 	}
 
 	// check for overflow
-	if (overflow(num, context)) return;
+	if (overflow(num, context)) return num;
 	// round the number
 	roundByMode(num, context);
 	// check again for an overflow
 	overflow(num, context);
+	return num;
 
 } // end round()
 
@@ -940,47 +941,47 @@ unittest {
 	BigDecimal before = BigDecimal(9999);
 	BigDecimal after = before;
 	DecimalContext ctx3 = DecimalContext(3, 99, Rounding.HALF_EVEN);
-	round(after, ctx3);
+	after = round(after, ctx3);
 	assertEqual("1.00E+4", after.toString);
 	before = BigDecimal(1234567890);
 	after = before;
-	round(after, ctx3);
+	after = round(after, ctx3);
 	assertEqual(after.toString(), "1.23E+9");
 	after = before;
 	DecimalContext ctx4 = DecimalContext(4, 99, Rounding.HALF_EVEN);
-	round(after, ctx4);;
+	after = round(after, ctx4);;
 	assertEqual(after.toString(), "1.235E+9");
 	after = before;
 	DecimalContext ctx5 = DecimalContext(5, 99, Rounding.HALF_EVEN);
-	round(after, ctx5);;
+	after = round(after, ctx5);;
 	assertEqual(after.toString(), "1.2346E+9");
 	after = before;
 	DecimalContext ctx6 = DecimalContext(6, 99, Rounding.HALF_EVEN);
-	round(after, ctx6);;
+	after = round(after, ctx6);;
 	assertEqual(after.toString(), "1.23457E+9");
 	after = before;
 	DecimalContext ctx7 = DecimalContext(7, 99, Rounding.HALF_EVEN);
-	round(after, ctx7);;
+	after = round(after, ctx7);;
 	assertEqual(after.toString(), "1.234568E+9");
 	after = before;
 	DecimalContext ctx8 = DecimalContext(8, 99, Rounding.HALF_EVEN);
-	round(after, ctx8);;
+	after = round(after, ctx8);;
 	assertEqual(after.toString(), "1.2345679E+9");
 	before = 1235;
 	after = before;
-	round(after, ctx3);;
+	after = round(after, ctx3);;
 	assertEqual("[0,124,1]", after.toAbstract());
 	before = 12359;
 	after = before;
-	round(after, ctx3);;
+	after = round(after, ctx3);;
 	assertEqual("[0,124,2]", after.toAbstract());
 	before = 1245;
 	after = before;
-	round(after, ctx3);
+	after = round(after, ctx3);
 	assertEqual("[0,124,1]", after.toAbstract());
 	before = 12459;
 	after = before;
-	round(after, ctx3);;
+	after = round(after, ctx3);;
 	assertTrue(after.toAbstract() == "[0,125,2]");
 	Dec32 a = Dec32(0.1);
 writeln("********** a = ", a);

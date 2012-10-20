@@ -328,6 +328,7 @@ public struct ContextFlags {
 
 };
 
+// this is the single instance of the context flags
 static ContextFlags contextFlags;
 
 unittest {

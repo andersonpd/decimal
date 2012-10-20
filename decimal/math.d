@@ -172,9 +172,9 @@ BigDecimal pi(uint precision) {
 		i++;
 	}
 	BigDecimal result = a*a/t;
-	round(result, bigContext);
+	return round(result, bigContext);
 //	bigContext.precision = savedPrecision;
-	return result;
+//	return result;
 }
 
 unittest {
@@ -214,24 +214,6 @@ private bool odd(int n) {
 
 unittest {
 	write("odd............");
-	writeln("test missing");
-}
-
-BigDecimal sqrt(const long arg, uint precision) {
-	return sqrt(BigDecimal(arg), precision);
-}
-
-unittest {
-	write("sqrt...........");
-	writeln("test missing");
-}
-
-BigDecimal sqrt(const long arg) {
-	return sqrt(BigDecimal(arg));
-}
-
-unittest {
-	write("sqrt...........");
 	writeln("test missing");
 }
 
@@ -294,8 +276,8 @@ BigDecimal sqrt(const BigDecimal arg, uint precision) {
 
 unittest {
 	write("sqrt...........");
-writeln;
-writefln("sqrt(2, 9) = %s", sqrt(2, 9));
+/*writeln;
+writefln("sqrt(2, 9) = %s", sqrt(2, 9));*/
 	writeln("test missing");
 }
 

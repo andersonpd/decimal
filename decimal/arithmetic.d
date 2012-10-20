@@ -180,6 +180,7 @@ public T reduce(T)(const T arg,
 	return reduced;
 }
 
+// just a wrapper TODO: can we alias this? does that work?
 public T normalize(T)(const T arg,
 		const DecimalContext context = T.context) if (isDecimal!T) {
 	return reduce!T(arg, context);
@@ -200,8 +201,7 @@ public T abs(T)(const T arg,
 		return result;
 	}
 	result = copyAbs!T(arg);
-	round(result, context);
-	return result;
+	return round!T(result, context);
 }
 
 /// Returns the sign of the argument: -1, 0, -1.
@@ -227,8 +227,7 @@ public T plus(T)(const T arg,
 		return result;
 	}
 	result = arg;
-	round(result, context);
-	return result;
+	return round(result, context);
 }
 
 /// Returns a copy of the argument with the opposite sign.
@@ -244,8 +243,7 @@ public T minus(T)(const T arg,
 		return result;
 	}
 	result = copyNegate!T(arg);
-	round(result, context);
-	return result;
+	return round(result, context);
 }
 
 //-----------------------------------
@@ -334,8 +332,7 @@ public T nextToward(T)(const T arg1, const T arg2,
 	if (comp < 0) return nextPlus!T(arg1, context);
 	if (comp > 0) return nextMinus!T(arg1, context);
 	result = copySign!T(arg1, arg2);
-	round(result, context);
-	return result;
+	return round(result, context);
 }
 
 //--------------------------------
@@ -628,6 +625,7 @@ public bool sameQuantum(T)(const T arg1, const T arg2) if (isDecimal!T) {
 /// Flags: INVALID_OPERATION, ROUNDED.
 const(T) max(T)(const T arg1, const T arg2,
 		const DecimalContext context = T.context) if (isDecimal!T) {
+
 	// if both are NaNs or either is an sNan, return NaN.
 	if (arg1.isNaN && arg2.isNaN || arg1.isSignaling || arg2.isSignaling) {
 		contextFlags.setFlags(INVALID_OPERATION);
@@ -660,14 +658,13 @@ const(T) max(T)(const T arg1, const T arg2,
 		else if (arg1.sign == 0) {
 			if (arg1.exponent < arg2.exponent) result = arg2;
 		}
-		// else they are negative; return the one with smaller exponent.
 		else {
+			// else they are negative; return the one with smaller exponent.
 			if (arg1.exponent > arg2.exponent) result = arg2;
 		}
 	}
 	// result must be rounded
-	round(result);
-	return result;
+	return round(result);
 }
 
 /// Returns the larger of the two operands (or NaN). Returns the same result
@@ -696,6 +693,7 @@ const(T) min(T)(const T arg1, const T arg2,
 
 	// if both are NaNs or either is an sNan, return NaN.
 	if (arg1.isNaN && arg2.isNaN || arg1.isSignaling || arg2.isSignaling) {
+		contextFlags.setFlags(INVALID_OPERATION);
 		return T.nan;
 	}
 
@@ -727,13 +725,12 @@ const(T) min(T)(const T arg1, const T arg2,
 			if (arg1.exponent > arg2.exponent) result = arg2;
 		}
 		else {
-		// else they are negative; return the one with larger exponent.
-		if (arg1.exponent < arg2.exponent) result = arg2;
+			// else they are negative; return the one with larger exponent.
+			if (arg1.exponent > arg2.exponent) result = arg2;
 		}
 	}
 	// result must be rounded
-	round(result);
-	return result;
+	return round(result);
 }
 
 /// Returns the smaller of the two operands (or NaN). Returns the same result
@@ -745,6 +742,7 @@ const(T) minMagnitude(T)(const T arg1, const T arg2,
 	return min(copyAbs!T(arg1), copyAbs!T(arg2), context);
 }
 
+// TODO: need to check for overflow?
 /// Returns a number with a coefficient of 1 and
 /// the same exponent as the argument.
 /// Not required by the specification.
@@ -932,7 +930,7 @@ public T add(T)(const T arg1, const T arg2,
 	result = T(sum);
 	// round the result
 	if (roundResult) {
-		round(result, context);
+		return round(result, context);
 	}
 	return result;
 }	 // end add(arg1, arg2)
@@ -1017,7 +1015,7 @@ public T addLong(T)(const T arg1, const long arg2,
 	result = T(sum);
 	// round the result
 	if (roundResult) {
-		round(result, context);
+		return round(result, context);
 	}
 	return result;
 }	 // end add(arg1, arg2)
@@ -1100,7 +1098,7 @@ public T mul(T)(const T arg1, const T arg2,
 
 	// only needs rounding if
 	if (roundResult) {
-		round(result, T.context);
+		return round(result, T.context);
 	}
 	return result;
 }
@@ -1148,7 +1146,7 @@ public T mulLong(T)(const T arg1, long arg2,
 	}
 	// only needs rounding if
 	if (roundResult) {
-		round(result, context);
+		return round(result, context);
 	}
 	return result;
 }
@@ -1202,7 +1200,7 @@ public T div(T)(const T arg1, const T arg2,
 		round(quotient, context);
 //		/// TODO why is this flag being checked?
 		if (!contextFlags.getFlag(INEXACT)) {
-			quotient = reduceToIdeal(quotient, diff, context);
+			quotient = reduce(quotient, context);
 		}
 	}
 	return T(quotient);
@@ -1355,7 +1353,7 @@ public T roundToIntegralExact(T)(const T arg,
 
 // (A)TODO: need to re-implement this so no flags are set.
 /// The result may be rounded and context flags may be set.
-/// Implements the 'round-to-integraL-value' function
+/// Implements the 'round-to-integral-value' function
 /// in the specification. (p. 39)
 public T roundToIntegralValue(T)(const T arg,
 		const DecimalContext context = T.context) if (isDecimal!T) {
@@ -1370,6 +1368,7 @@ public T roundToIntegralValue(T)(const T arg,
 
 // (A)TODO: Need to check for subnormal and inexact(?). Or is this done by caller?
 // (A)TODO: has non-standard flag setting
+// TODO: Try to combine reduce, reduceToIdeal and quantize.
 /// Reduces operand to the specified (ideal) exponent.
 /// All trailing zeros are removed.
 /// (Used to return the "ideal" value following division. p. 28-29)
@@ -1399,7 +1398,6 @@ private T reduceToIdeal(T)(const T arg, int ideal,
 //writefln("arg out = %s", result);
 	return result;
 }
-
 
 /// Aligns the two operands by raising the smaller exponent
 /// to the value of the larger exponent, and adjusting the
