@@ -87,15 +87,15 @@ public enum : ubyte {
 public struct DecimalContext {
 
 	/// Maximum length of the coefficient in (decimal) digits.
-	immutable uint precision;
+	public uint precision;
 	/// Maximum value of the adjusted exponent.
-	immutable int maxExpo;
+	public int maxExpo;
 	/// Smallest normalized exponent.
-	immutable int minExpo;
+	public int minExpo;
 	/// Smallest non-normalized exponent.
-	immutable int tinyExpo;
+	public int tinyExpo;
 	/// Rounding mode.
-	immutable Rounding rounding;
+	public Rounding rounding;
 
 	/// Constructs a context with the specified parameters.
 	public this(const uint precision, const int maxExpo,
@@ -106,6 +106,11 @@ public struct DecimalContext {
 		this.tinyExpo = minExpo - precision + 1;
 		this.rounding = rounding;
 	}
+
+/*	@property
+	public uint precision() {
+		return precision;
+	}*/
 
 	/// Returns a copy of the context with a new precision.
 	public const DecimalContext setPrecision(immutable uint precision) {

@@ -29,30 +29,10 @@ unittest {
 // CONSTANTS
 //--------------------------------
 
-//    public BigDecimal HALF;
-//    private static immutable  BigDecimal ONE = BigDecimal.ONE;
-
-/*    static {
-        HALF = BigDecimal("0.5");
-    }*/
-
-/**
- * Returns the value of e to the default precision.
- */
-BigDecimal e() {
-	BigDecimal result;
-	return result;
-}
-
-unittest {
-	write("e..............");
-	writeln("test missing");
-}
-
 /**
  * Returns the value of e to the specified precision.
  */
-BigDecimal e(uint precision) {
+BigDecimal e(uint precision = bigContext.precision, uint guardDigits = 0) {
 	BigDecimal result;
 	return result;
 }
@@ -62,80 +42,6 @@ unittest {
 	writeln("test missing");
 }
 
-/**
- * Returns the value of pi to the default precision.
- */
-/*    BigDecimal pi() {
-        BigDecimal ONE = ONE;
-        writeln("ONE = ", ONE);
-        BigDecimal TWO = BigDecimal(2);
-        writeln("TWO  = ", TWO);
-        BigDecimal HALF = BigDecimal(0.5);
-        writeln("HALF = ", HALF);
-        BigDecimal x = sqrt(TWO);
-        writeln("x = sqrt(2) = ", x);
-        BigDecimal y = sqrt(x);
-        writeln("y = sqrt(x) = ", y);
-        BigDecimal p = TWO + x;
-        writeln("p = 2 + x = ", p);
-        x = y;
-        int i = 0;
-        while (true) {
-            writeln("i = ", i);
-            x = HALF * (x + ONE/x);
-            writeln("x = ", x);
-            writeln("y = ", y);
-//            writeln("step 1");
-            // (M)TODO: if x == y then this division never ends.
-            // Check the division routine for this case.
-            BigDecimal np;
-            if (x == y) {
-              np = p;
-            }
-            else {
-            np = p * ((x + ONE)/(y + ONE));
-            }
-//            writeln("step 2");
-            writeln("np = ", np);
-            if (p == np) return p;
-//            writeln("step 3");
-            p = np;
-//            writeln("step 4");
-            BigDecimal xx = sqrt(x);
-            x = xx;
-//            writeln("step 5");
-//            writeln("x = ", x);
-            BigDecimal oox = ONE/x;
-//            writeln("ONE/x = ", oox);
-//            writeln ("x + ONE/x = ", x + oox);
-//            BigDecimal t1 = oox + x;
-//            writeln("t1 = ", t1);
-//            BigDecimal t1 = x + oox; // ONE + oox; //x + x; // + ONE/x;
-            writeln("step 6");
-//            BigDecimal t2 = (y  * x) + ONE; ///x; //ONE / (y + ONE);
-//            y = ONE/x + y * x;
-            writeln("step 7");
-            y = (ONE/x + y * x) / (y + ONE); //t1 / t2;
-            writeln("step 8");
-            i++;
-//            break;
-        }
-        return p;
-    }
-*/
-
-BigDecimal pi() {
-	return pi (bigContext.precision);
-}
-
-unittest {
-	write("pi.............");
-	writeln("test missing");
-}
-/*    unittest {
-        write("pi....");
-        writeln("pi = ", pi());
-    }*/
 
 BigDecimal sqr(const BigDecimal x) {
 	return x * x;
@@ -151,9 +57,11 @@ unittest {
  * TODO: AGM version -- use less expensive?
  * TODO: pre-computed string;
  */
-BigDecimal pi(uint precision) {
+BigDecimal pi(uint precision = bigContext.precision, uint guardDigits = 0) {
 	uint savedPrecision = bigContext.precision;
-	precision += 2;
+//writefln("bigContext.precision = %s", bigContext.precision);
+	bigContext.precision = precision + guardDigits;	// add 2 guard digits
+//writefln("bigContext.precision = %s", bigContext.precision);
 //	bigContext.precision = precision;
 	const BigDecimal ONE = BigDecimal(1L);
 	const BigDecimal TWO = BigDecimal(2L);
@@ -172,28 +80,20 @@ BigDecimal pi(uint precision) {
 		i++;
 	}
 	BigDecimal result = a*a/t;
-	return round(result, bigContext);
-//	bigContext.precision = savedPrecision;
-//	return result;
+	bigContext.precision = precision - guardDigits;	// round off the guard digits
+//writefln("bigContext.precision = %s", bigContext.precision);
+	round(result, bigContext);
+	bigContext.precision = savedPrecision;
+//writefln("bigContext.precision = %s", bigContext.precision);
+	return result;
 }
 
 unittest {
 	write("pi.............");
+writefln("pi = %s", pi);
 	BigDecimal num = pi(15);
 writeln;
 writefln("num = %s", num);
-	writeln("test missing");
-}
-
-/**
- * Returns the square root of the argument to the current precision.
- */
-BigDecimal sqrt(const BigDecimal arg) {
-	return sqrt(arg, bigContext.precision);
-}
-
-unittest {
-	write("sqrt...........");
 	writeln("test missing");
 }
 
@@ -214,6 +114,7 @@ private bool odd(int n) {
 
 unittest {
 	write("odd............");
+writefln("odd(3) = %s", odd(3));
 	writeln("test missing");
 }
 
@@ -223,14 +124,16 @@ unittest {
  * to speed convergence and to avoid unstable operation.
  * TODO: better to compute (1/sqrt(arg)) * arg?
  */
-BigDecimal sqrt(const BigDecimal arg, uint precision) {
+BigDecimal sqrt(const BigDecimal arg,
+		uint precision = bigContext.precision, uint guardDigits = 0) {
 	// check for negative numbers.
 	if (arg.isNegative) {
 		return BigDecimal.nan;
 	}
-//	BigDecimal.context = BigDecimal.context.setPrecision(15);
-//	uint savedPrecision = bigContext.precision;
-//	precision += 2;
+//writefln("bigContext.precision = %s", bigContext.precision);
+	uint savedPrecision = bigContext.precision;
+	bigContext.precision = precision;
+//writefln("bigContext.precision = %s", bigContext.precision);
 	const BigDecimal HALF = BigDecimal(0.5);
 	const BigDecimal ONE = BigDecimal(1);
 	BigDecimal x = HALF*(arg + ONE);
@@ -269,15 +172,17 @@ BigDecimal sqrt(const BigDecimal arg, uint precision) {
 		if (x == xp) break;
 		i++;
 	}
-//	round(xp, bigContext);
-//	precision = savedPrecision;
+//writefln("bigContext.precision = %s", bigContext.precision);
+	round(xp, bigContext);
+	bigContext.precision = savedPrecision;
+//writefln("bigContext.precision = %s", bigContext.precision);
 	return xp;
 }
 
 unittest {
 	write("sqrt...........");
-/*writeln;
-writefln("sqrt(2, 9) = %s", sqrt(2, 9));*/
+writeln;
+writefln("sqrt(2, 29) = %s", sqrt(BigDecimal(2), 29));
 	writeln("test missing");
 }
 
@@ -292,7 +197,7 @@ writefln("sqrt(2, 9) = %s", sqrt(2, 9));*/
  * Required by General Decimal Arithmetic Specification
  *
  */
-BigDecimal exp(const BigDecimal arg) {
+BigDecimal exp(const BigDecimal arg, uint precision = bigContext.precision, uint guardDigits = 0) {
 	BigDecimal x2 = arg*arg;
 	const BigDecimal ONE = BigDecimal(1);
 	BigDecimal f = ONE.dup;
