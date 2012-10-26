@@ -32,9 +32,11 @@ unittest {
 /**
  * Returns the value of e to the specified precision.
  */
-BigDecimal e(const uint precision) {
-	pushContext(precision);
-	BigDecimal value = e();
+Decimal e(const uint precision) {
+	pushContext(precision+2);
+	Decimal value = e();
+	bigContext.precision -= 2;
+	round(value);
 	popContext();
 	return value;
 }
@@ -42,14 +44,14 @@ BigDecimal e(const uint precision) {
 /**
  * Returns the value of e to the current precision.
  */
-BigDecimal e() {
-	BigDecimal x = 1;
+Decimal e() {
+	Decimal x = 1;
 	int n = 1;
-	BigDecimal fact = 1;
-	BigDecimal sum = 1;
-	BigDecimal term = 1;
-//writefln("BigDecimal.epsilon = %s", BigDecimal.epsilon);
-	while (term > BigDecimal.epsilon) {
+	Decimal fact = 1;
+	Decimal sum = 1;
+	Decimal term = 1;
+//writefln("Decimal.epsilon = %s", Decimal.epsilon);
+	while (term > Decimal.epsilon) {
 		sum += term;
 		n++;
 		fact = fact * n;
@@ -67,7 +69,7 @@ writeln();
 	writeln("test missing");
 }
 
-BigDecimal sqr(const BigDecimal x) {
+Decimal sqr(const Decimal x) {
 	return x * x;
 }
 
@@ -77,9 +79,9 @@ unittest {
 }
 
 // Returns the value of pi to the specified precision.
-BigDecimal pi(uint precision) {
+Decimal pi(uint precision) {
 	pushContext(precision); // plus two guard digits?
-	BigDecimal value = pi();
+	Decimal value = pi();
 	popContext();
 	return value;
 }
@@ -89,23 +91,23 @@ BigDecimal pi(uint precision) {
  * TODO: AGM version -- use less expensive?
  * TODO: pre-computed string;
  */
-BigDecimal pi() {
-	const BigDecimal ONE = BigDecimal(1L);
-	const BigDecimal TWO = BigDecimal(2L);
-	BigDecimal a = 1; //ONE.dup;
-	BigDecimal b = a/sqrt(TWO);
-	BigDecimal t = BigDecimal("0.25");
-	BigDecimal x = 1; //ONE.dup;
+Decimal pi() {
+	const Decimal ONE = Decimal(1L);
+	const Decimal TWO = Decimal(2L);
+	Decimal a = 1; //ONE.dup;
+	Decimal b = a/sqrt(TWO);
+	Decimal t = Decimal("0.25");
+	Decimal x = 1; //ONE.dup;
 	int i = 0;
 	while (a != b) {
-		BigDecimal y = a;    // save the value of a
+		Decimal y = a;    // save the value of a
 		a = (a + b)/TWO;     // arithmetic mean
 		b = sqrt(b*y);       // geometric mean
 		t -= x*(a*a - b*b);  // weighted sum of the difference of the means
 		x = x * 2;
 		i++;
 	}
-	BigDecimal result = a*a/t;
+	Decimal result = a*a/t;
 	return result;
 }
 
@@ -119,12 +121,12 @@ writefln("pi(25) = %s", pi(25));
 
 /*    unittest {
         write("sqrt.....");
-        BigDecimal dcm = BigDecimal(4);
-        assert(sqrt(dcm) == BigDecimal(2));
-        writeln("sqrt(2) = ", sqrt(BigDecimal(2)));
-        dcm = BigDecimal(125348);
+        Decimal dcm = Decimal(4);
+        assert(sqrt(dcm) == Decimal(2));
+        writeln("sqrt(2) = ", sqrt(Decimal(2)));
+        dcm = Decimal(125348);
         writeln("sqrt of ", dcm);
-        //assert(sqrt(dcm) == BigDecimal(2));
+        //assert(sqrt(dcm) == Decimal(2));
         writeln("sqrt(125348) = 354.045 = ", sqrt(dcm));
     }*/
 
@@ -138,9 +140,9 @@ writefln("odd(3) = %s", odd(3));
 	writeln("test missing");
 }
 
-BigDecimal sqrt(const BigDecimal arg, uint precision) {
+Decimal sqrt(const Decimal arg, uint precision) {
 	pushContext(precision);
-	BigDecimal value = sqrt(arg);
+	Decimal value = sqrt(arg);
 	popContext();
 	return value;
 }
@@ -151,14 +153,14 @@ BigDecimal sqrt(const BigDecimal arg, uint precision) {
  * to speed convergence and to avoid unstable operation.
  * TODO: better to compute (1/sqrt(arg)) * arg?
  */
-BigDecimal sqrt(const BigDecimal arg) {
+Decimal sqrt(const Decimal arg) {
 	// check for negative numbers.
 	if (arg.isNegative) {
-		return BigDecimal.nan;
+		return Decimal.nan;
 	}
-	const BigDecimal HALF = BigDecimal(0.5);
-	const BigDecimal ONE = BigDecimal(1);
-	BigDecimal x = HALF*(arg + ONE);
+	const Decimal HALF = Decimal(0.5);
+	const Decimal ONE = Decimal(1);
+	Decimal x = HALF*(arg + ONE);
 	if (arg > ONE) {
 		int expo = arg.exponent;
 		uint digs = arg.getDigits;
@@ -170,10 +172,10 @@ BigDecimal sqrt(const BigDecimal arg) {
 		}
 		if (odd(d)) {
 			uint n = (d - 1)/2;
-			x = BigDecimal(2, n);
+			x = Decimal(2, n);
 		} else {
 			uint n = (d - 2)/2;
-			x = BigDecimal(6, n);
+			x = Decimal(6, n);
 		}
 	} else if (arg < ONE) {
 		int expo = arg.exponent;
@@ -181,13 +183,13 @@ BigDecimal sqrt(const BigDecimal arg) {
 		int d = -expo;
 		int n = (d + 1)/2;
 		if (odd(d)) {
-			x = BigDecimal(6, -n);
+			x = Decimal(6, -n);
 		} else {
-			x = BigDecimal(2, -n);
+			x = Decimal(2, -n);
 		}
 	}
-//	BigDecimal x = BigDecimal(std.math.sqrt(arg));
-	BigDecimal xp;
+//	Decimal x = Decimal(std.math.sqrt(arg));
+	Decimal xp;
 	int i = 0;
 	while(i < 100) {
 		xp = x;
@@ -201,7 +203,7 @@ BigDecimal sqrt(const BigDecimal arg) {
 unittest {
 	write("sqrt...........");
 writeln;
-writefln("sqrt(2, 29) = %s", sqrt(BigDecimal(2), 29));
+writefln("sqrt(2, 29) = %s", sqrt(Decimal(2), 29));
 	writeln("test missing");
 }
 
@@ -211,30 +213,30 @@ writefln("sqrt(2, 29) = %s", sqrt(BigDecimal(2), 29));
 //
 //--------------------------------
 
-BigDecimal exp(const BigDecimal arg, const uint precision) {
+Decimal exp(const Decimal arg, const uint precision) {
 	pushContext(precision);
-	BigDecimal value = exp(arg);
+	Decimal value = exp(arg);
 	popContext();
 	return value;
 }
 
 /**
- * BigDecimal version of std.math function.
+ * Decimal version of std.math function.
  * Required by General Decimal Arithmetic Specification
  *
  */
-BigDecimal exp(const BigDecimal arg) {
-	BigDecimal x2 = arg*arg;
-	const BigDecimal ONE = BigDecimal(1);
-	BigDecimal f = ONE.dup;
-	BigDecimal t1 = ONE.dup;
-	BigDecimal t2 = arg.dup;
-	BigDecimal sum = t1 + t2;
+Decimal exp(const Decimal arg) {
+	Decimal x2 = arg*arg;
+	const Decimal ONE = Decimal(1);
+	Decimal f = ONE.dup;
+	Decimal t1 = ONE.dup;
+	Decimal t2 = arg.dup;
+	Decimal sum = t1 + t2;
 	for (long n = 3; true; n += 2) {
 		t1 = t2*arg*n;
 		t2 = t2*x2;
 		f = f*n*(n-1);
-		BigDecimal newSum = sum + (t1 + t2)/f;
+		Decimal newSum = sum + (t1 + t2)/f;
 		if (sum == newSum) {
 			break;
 		}
@@ -246,17 +248,17 @@ BigDecimal exp(const BigDecimal arg) {
 unittest {
 	write("exp............");
 writeln;
-	BigDecimal one = BigDecimal(1);
+	Decimal one = Decimal(1);
 writefln("exp(1) = %s", exp(one));
 	writeln("test missing");
 }
 
 /**
- * BigDecimal version of std.math function.
+ * Decimal version of std.math function.
  * 2^x
  */
-BigDecimal exp2(BigDecimal arg) {
-	BigDecimal result;
+Decimal exp2(Decimal arg) {
+	Decimal result;
 	return result;
 }
 
@@ -266,11 +268,11 @@ unittest {
 }
 
 /**
- * BigDecimal version of std.math function.
+ * Decimal version of std.math function.
  * exp(x) - 1
  */
-BigDecimal expm1(BigDecimal arg) {
-	BigDecimal result;
+Decimal expm1(Decimal arg) {
+	Decimal result;
 	return result;
 }
 
@@ -280,16 +282,16 @@ unittest {
 }
 
 /**
- * BigDecimal version of std.math function.
+ * Decimal version of std.math function.
  * Required by General Decimal Arithmetic Specification
  *
  */
-BigDecimal log(const BigDecimal arg) {
-	BigDecimal y = (arg - 1)/(arg + 1);
-	BigDecimal y2 = y*y;
-	BigDecimal term = y; //ONE;
-	BigDecimal sum  = y; //ONE;
-	BigDecimal newSum;
+Decimal log(const Decimal arg) {
+	Decimal y = (arg - 1)/(arg + 1);
+	Decimal y2 = y*y;
+	Decimal term = y; //ONE;
+	Decimal sum  = y; //ONE;
+	Decimal newSum;
 	for (long n = 3; ; n+=2) {
 		term *= y2;
 		newSum = sum + (term/n);
@@ -303,17 +305,17 @@ BigDecimal log(const BigDecimal arg) {
 unittest {
 	write("log............");
 writeln;
-	BigDecimal one = BigDecimal(1);
+	Decimal one = Decimal(1);
 writefln("log(exp(one)) = %s", log(exp(one)));
 	writeln("test missing");
 }
 
 /**
  * log1p (== log(1 + x)).
- * BigDecimal version of std.math function.
+ * Decimal version of std.math function.
  */
-BigDecimal log1p(BigDecimal arg) {
-	BigDecimal result;
+Decimal log1p(Decimal arg) {
+	Decimal result;
 	return result;
 }
 
@@ -323,12 +325,12 @@ unittest {
 }
 
 /**
- * BigDecimal version of std.math.log10.
+ * Decimal version of std.math.log10.
  * Required by General Decimal Arithmetic Specification
  *
  */
-BigDecimal log10(BigDecimal arg) {
-	BigDecimal result;
+Decimal log10(Decimal arg) {
+	Decimal result;
 	return result;
 }
 
@@ -338,11 +340,11 @@ unittest {
 }
 
 /**
- * BigDecimal version of std.math.log2.
+ * Decimal version of std.math.log2.
  * Required by General Decimal Arithmetic Specification
  */
-BigDecimal log2(BigDecimal arg) {
-	BigDecimal result;
+Decimal log2(Decimal arg) {
+	Decimal result;
 	return result;
 }
 
@@ -352,11 +354,11 @@ unittest {
 }
 
 /**
- * BigDecimal version of std.math.pow.
+ * Decimal version of std.math.pow.
  * Required by General Decimal Arithmetic Specification
  */
-BigDecimal pow(BigDecimal op1, BigDecimal op2) {
-	BigDecimal result;
+Decimal pow(Decimal op1, Decimal op2) {
+	Decimal result;
 	return result;
 }
 
@@ -369,8 +371,8 @@ unittest {
  * power.
  * Required by General Decimal Arithmetic Specification
  */
-BigDecimal power(BigDecimal op1, BigDecimal op2) {
-	BigDecimal result;
+Decimal power(Decimal op1, Decimal op2) {
+	Decimal result;
 	return result;
 }
 
@@ -387,20 +389,20 @@ unittest {
 //--------------------------------
 
 /**
- * BigDecimal version of std.math function.
+ * Decimal version of std.math function.
  *
  */
-BigDecimal sin(const BigDecimal arg) {
-	BigDecimal sum = 0;
+Decimal sin(const Decimal arg) {
+	Decimal sum = 0;
 	return sum;
 }
 /**
- * BigDecimal version of std.math function.
+ * Decimal version of std.math function.
  *
  */
-BigDecimal sin(const BigDecimal arg, uint precision) {
+Decimal sin(const Decimal arg, uint precision) {
 	pushContext(precision);
-	BigDecimal value = sin(arg);
+	Decimal value = sin(arg);
 	popContext();
 	return value;
 }
@@ -411,11 +413,11 @@ unittest {
 }
 
 /**
- * BigDecimal version of std.math function.
+ * Decimal version of std.math function.
  *
  */
-BigDecimal cos(BigDecimal arg) {
-	BigDecimal result;
+Decimal cos(Decimal arg) {
+	Decimal result;
 	return result;
 }
 
@@ -428,8 +430,8 @@ unittest {
  * Replaces std.math function expi
  *
  */
-BigDecimal[] sincos(BigDecimal arg) {
-	BigDecimal[] result;
+Decimal[] sincos(Decimal arg) {
+	Decimal[] result;
 	return result;
 }
 
@@ -439,11 +441,11 @@ unittest {
 }
 
 /**
- * BigDecimal version of std.math function.
+ * Decimal version of std.math function.
  *
  */
-BigDecimal tan(BigDecimal arg) {
-	BigDecimal result;
+Decimal tan(Decimal arg) {
+	Decimal result;
 	return result;
 }
 
@@ -453,11 +455,11 @@ unittest {
 }
 
 /**
- * BigDecimal version of std.math function.
+ * Decimal version of std.math function.
  *
  */
-BigDecimal asin(BigDecimal arg) {
-	BigDecimal result;
+Decimal asin(Decimal arg) {
+	Decimal result;
 	return result;
 }
 
@@ -467,11 +469,11 @@ unittest {
 }
 
 /**
- * BigDecimal version of std.math function.
+ * Decimal version of std.math function.
  *
  */
-BigDecimal acos(BigDecimal arg) {
-	BigDecimal result;
+Decimal acos(Decimal arg) {
+	Decimal result;
 	return result;
 }
 
@@ -481,11 +483,11 @@ unittest {
 }
 
 /**
- * BigDecimal version of std.math function.
+ * Decimal version of std.math function.
  *
  */
-BigDecimal atan(BigDecimal arg) {
-	BigDecimal result;
+Decimal atan(Decimal arg) {
+	Decimal result;
 	return result;
 }
 
@@ -495,11 +497,11 @@ unittest {
 }
 
 /**
- * BigDecimal version of std.math function.
+ * Decimal version of std.math function.
  *
  */
-BigDecimal atan2(BigDecimal y, BigDecimal x) {
-	BigDecimal result;
+Decimal atan2(Decimal y, Decimal x) {
+	Decimal result;
 	return result;
 }
 
@@ -515,11 +517,11 @@ unittest {
 //--------------------------------
 
 /**
- * BigDecimal version of std.math function.
+ * Decimal version of std.math function.
  *
  */
-BigDecimal sinh(BigDecimal arg) {
-	BigDecimal result;
+Decimal sinh(Decimal arg) {
+	Decimal result;
 	return result;
 }
 
@@ -529,11 +531,11 @@ unittest {
 }
 
 /**
- * BigDecimal version of std.math function.
+ * Decimal version of std.math function.
  *
  */
-BigDecimal cosh(BigDecimal arg) {
-	BigDecimal result;
+Decimal cosh(Decimal arg) {
+	Decimal result;
 	return result;
 }
 
@@ -543,11 +545,11 @@ unittest {
 }
 
 /**
- * BigDecimal version of std.math function.
+ * Decimal version of std.math function.
  *
  */
-BigDecimal tanh(BigDecimal arg) {
-	BigDecimal result;
+Decimal tanh(Decimal arg) {
+	Decimal result;
 	return result;
 }
 
@@ -557,11 +559,11 @@ unittest {
 }
 
 /**
- * BigDecimal version of std.math function.
+ * Decimal version of std.math function.
  *
  */
-BigDecimal asinh(BigDecimal arg) {
-	BigDecimal result;
+Decimal asinh(Decimal arg) {
+	Decimal result;
 	return result;
 }
 
@@ -571,11 +573,11 @@ unittest {
 }
 
 /**
- * BigDecimal version of std.math function.
+ * Decimal version of std.math function.
  *
  */
-BigDecimal acosh(BigDecimal arg) {
-	BigDecimal result;
+Decimal acosh(Decimal arg) {
+	Decimal result;
 	return result;
 }
 
@@ -585,11 +587,11 @@ unittest {
 }
 
 /**
- * BigDecimal version of std.math function.
+ * Decimal version of std.math function.
  *
  */
-BigDecimal atanh(BigDecimal arg) {
-	BigDecimal result;
+Decimal atanh(Decimal arg) {
+	Decimal result;
 	return result;
 }
 
@@ -609,8 +611,8 @@ unittest {
  *
  * (M)TODO: implement
  */
-BigDecimal ln(BigDecimal op1) {
-	BigDecimal result;
+Decimal ln(Decimal op1) {
+	Decimal result;
 	return result;
 }
 

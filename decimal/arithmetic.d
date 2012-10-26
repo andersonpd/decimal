@@ -782,7 +782,7 @@ public T shift(T)(const T arg, const int n,
 		return arg.dup;
 	}
 
-	BigDecimal result = toBigDecimal!T(arg);
+	Decimal result = toBigDecimal!T(arg);
 	if (n > 0) {
 		shiftLeft(result.coefficient, n, context.precision);
 	}
@@ -825,7 +825,7 @@ public T rotate(T)(const T arg, const int n,
 	}
 
 	result = arg.dup;
-	BigDecimal result = toBigDecimal!T(arg);
+	Decimal result = toBigDecimal!T(arg);
 	if (n > 0) {
 		shiftLeft(result);
 	}
@@ -896,10 +896,10 @@ public T add(T)(const T arg1, const T arg2,
 	}
 
 	// at this point, the result will be finite and not zero.
-	// calculate in BigDecimal and convert before return
-	BigDecimal sum = BigDecimal.zero;
-	BigDecimal augend = toBigDecimal!T(arg1);
-	BigDecimal addend = toBigDecimal!T(arg2);
+	// calculate in Decimal and convert before return
+	Decimal sum = Decimal.zero;
+	Decimal augend = toBigDecimal!T(arg1);
+	Decimal addend = toBigDecimal!T(arg2);
 //writefln("augend = %s", augend);
 //writefln("addend = %s", addend);
 	// TODO: If the operands are too far apart, one of them will end up zero.
@@ -984,10 +984,10 @@ public T addLong(T)(const T arg1, const long arg2,
 	}
 
 	// at this point, the result will be finite and not zero.
-	// calculate in BigDecimal and convert before return
-	BigDecimal sum = BigDecimal.zero;
-	BigDecimal augend = toBigDecimal!T(arg1);
-	BigDecimal addend = BigDecimal(arg2);
+	// calculate in Decimal and convert before return
+	Decimal sum = Decimal.zero;
+	Decimal augend = toBigDecimal!T(arg1);
+	Decimal addend = Decimal(arg2);
 	// align the operands
 	alignOps(augend, addend); //, context);
 	// if operands have the same sign...
@@ -1075,15 +1075,15 @@ public T mul(T)(const T arg1, const T arg2,
 	}
 	// product is non-zero
 	else {
-		BigDecimal product = BigDecimal.zero;
-		static if (is(T:BigDecimal)) {
+		Decimal product = Decimal.zero;
+		static if (is(T:Decimal)) {
 			product.coefficient = arg1.coefficient * arg2.coefficient;
 		}
 		else {
 			product.coefficient = T.bigmul(arg1, arg2);
 		}
 
-/*		BigDecimal product = BigDecimal.zero;
+/*		Decimal product = Decimal.zero;
 		BigInt mant1 = arg1.coefficient;
 		BigInt mant2 = arg2.coefficient;
 		product.coefficient = mant1 * mant2;*/
@@ -1137,7 +1137,7 @@ public T mulLong(T)(const T arg1, long arg2,
 	}
 	// product is non-zero
 	else {
-		BigDecimal product = BigDecimal.zero;
+		Decimal product = Decimal.zero;
 		product.coefficient = arg1.coefficient * arg2;
 		product.exponent = arg1.exponent;
 		product.sign = arg1.sign ^ (arg2 < 0);
@@ -1159,7 +1159,7 @@ public T mulLong(T)(const T arg1, long arg2,
 public T fma(T)(const T arg1, const T arg2, const T arg3,
 		const DecimalContext context = T.context) if (isDecimal!T) {
 
-	// (A)TODO: should these both be BigDecimal?
+	// (A)TODO: should these both be Decimal?
 	T product = mul!T(arg1, arg2, context, false);
 	return add!T(product, arg3, context);
 }
@@ -1177,9 +1177,9 @@ public T div(T)(const T arg1, const T arg2,
 	if (invalidDivision!T(arg1, arg2, result)) {
 		return result;
 	}
-	BigDecimal dividend = toBigDecimal!T(arg1);
-	BigDecimal divisor	= toBigDecimal!T(arg2);
-	BigDecimal quotient = BigDecimal.zero;
+	Decimal dividend = toBigDecimal!T(arg1);
+	Decimal divisor	= toBigDecimal!T(arg2);
+	Decimal quotient = Decimal.zero;
 	int diff = dividend.exponent - divisor.exponent;
 	if (diff > 0) {
 		dividend.coefficient = shiftLeft(dividend.coefficient, diff);
@@ -1220,9 +1220,9 @@ public T divideInteger(T)(const T arg1, const T arg2,
 		return result;
 	}
 
-	BigDecimal dividend = toBigDecimal!T(arg1);
-	BigDecimal divisor	= toBigDecimal!T(arg2);
-	BigDecimal quotient = BigDecimal.zero;
+	Decimal dividend = toBigDecimal!T(arg1);
+	Decimal divisor	= toBigDecimal!T(arg2);
+	Decimal quotient = Decimal.zero;
 
 	// align operands
 	int diff = dividend.exponent - divisor.exponent;
@@ -1403,7 +1403,7 @@ public T roundToIntegralValue(T)(const T arg,
 /// to the value of the larger exponent, and adjusting the
 /// coefficient so the value remains the same.
 /// No flags are set and the result is not rounded.
-private void alignOps(ref BigDecimal arg1, ref BigDecimal arg2)//,
+private void alignOps(ref Decimal arg1, ref Decimal arg2)//,
 //		const DecimalContext context = T.context) {
 	{
 	int diff = arg1.exponent - arg2.exponent;
@@ -1641,17 +1641,17 @@ T or(T: string)(const T arg1, const T arg2) {
 	}
 
 	unittest { // binary logical ops
-		BigDecimal op1, op2;
+		Decimal op1, op2;
 		op1 = 10010101;
 		op2 = 11100100;
-		assert((op1 & op2) == BigDecimal(10000100));
-		assert((op1 | op2) == BigDecimal(11110101));
-		assert((op1 ^ op2) == BigDecimal( 1110001));
+		assert((op1 & op2) == Decimal(10000100));
+		assert((op1 | op2) == Decimal(11110101));
+		assert((op1 ^ op2) == Decimal( 1110001));
 		op1 =   100101;
 		op2 = 11100100;
-		assert((op1 & op2) == BigDecimal(  100100));
-		assert((op1 | op2) == BigDecimal(11100101));
-		assert((op1 ^ op2) == BigDecimal(11000001));
+		assert((op1 & op2) == Decimal(  100100));
+		assert((op1 | op2) == Decimal(11100101));
+		assert((op1 ^ op2) == Decimal(11000001));
 	}
 
 //--------------------------------
@@ -1768,49 +1768,49 @@ unittest {
 }
 
 unittest {	// classify
-	BigDecimal arg;
-	arg = BigDecimal("Inf");
+	Decimal arg;
+	arg = Decimal("Inf");
 	assertEqual("+Infinity", classify(arg));
-	arg = BigDecimal("1E-10");
+	arg = Decimal("1E-10");
 	assertEqual("+Normal", classify(arg));
-	arg = BigDecimal("-0");
+	arg = Decimal("-0");
 	assertEqual("-Zero", classify(arg));
-	arg = BigDecimal("-0.1E-99");
+	arg = Decimal("-0.1E-99");
 	assertEqual("-Subnormal", classify(arg));
-	arg = BigDecimal("NaN");
+	arg = Decimal("NaN");
 	assertEqual("NaN", classify(arg));
-	arg = BigDecimal("sNaN");
+	arg = Decimal("sNaN");
 	assertEqual("sNaN", classify(arg));
 }
 
 unittest {	// copy
-	BigDecimal arg, expect;
-	arg  = BigDecimal("2.1");
-	expect = BigDecimal("2.1");
+	Decimal arg, expect;
+	arg  = Decimal("2.1");
+	expect = Decimal("2.1");
 	assertTrue(compareTotal(copy(arg),expect) == 0);
-	arg  = BigDecimal("-1.00");
-	expect = BigDecimal("-1.00");
+	arg  = Decimal("-1.00");
+	expect = Decimal("-1.00");
 	assertTrue(compareTotal(copy(arg),expect) == 0);
 }
 
 unittest {	// copyAbs
-	BigDecimal arg, expect;
+	Decimal arg, expect;
 	arg  = 2.1;
 	expect = 2.1;
 	assertTrue(compareTotal(copyAbs(arg),expect) == 0);
-	arg  = BigDecimal("-1.00");
-	expect = BigDecimal("1.00");
+	arg  = Decimal("-1.00");
+	expect = Decimal("1.00");
 	assertTrue(compareTotal(copyAbs(arg),expect) == 0);
 }
 
 unittest {	// copyNegate
-	BigDecimal arg	= "101.5";
-	BigDecimal expect = "-101.5";
+	Decimal arg	= "101.5";
+	Decimal expect = "-101.5";
 	assertTrue(compareTotal(copyNegate(arg),expect) == 0);
 }
 
 unittest {	// copySign
-	BigDecimal arg1, arg2, expect;
+	Decimal arg1, arg2, expect;
 	arg1 = 1.50; arg2 = 7.33; expect = 1.50;
 	assertTrue(compareTotal(copySign(arg1, arg2),expect) == 0);
 	arg2 = -7.33;
@@ -1819,36 +1819,36 @@ unittest {	// copySign
 }
 
 unittest {	// logb
-	BigDecimal arg, expect, actual;
-	arg = BigDecimal("250");
-	expect = BigDecimal("2");
+	Decimal arg, expect, actual;
+	arg = Decimal("250");
+	expect = Decimal("2");
 	actual = logb(arg);
 	assertEqual(expect, actual);
 }
 
 unittest {	// scaleb
-	BigDecimal expect, actual;
-	auto arg1 = BigDecimal("7.50");
-	auto arg2 = BigDecimal("-2");
-	expect = BigDecimal("0.0750");
+	Decimal expect, actual;
+	auto arg1 = Decimal("7.50");
+	auto arg2 = Decimal("-2");
+	expect = Decimal("0.0750");
 	actual = scaleb(arg1, arg2);
 	assertEqual(expect, actual);
 }
 
 unittest {	// reduce
-	BigDecimal arg;
+	Decimal arg;
 	string expect, actual;
-	arg = BigDecimal("1.200");
+	arg = Decimal("1.200");
 	expect = "1.2";
 	actual = reduce(arg).toString;
 	assertEqual(expect, actual);
 }
 
 unittest {	// abs
-	BigDecimal arg;
-	BigDecimal expect, actual;
-	arg = BigDecimal("-Inf");
-	expect = BigDecimal("Inf");
+	Decimal arg;
+	Decimal expect, actual;
+	arg = Decimal("-Inf");
+	expect = Decimal("Inf");
 	actual = abs(arg, decimal.context.testContext);
 	assertEqual(expect, actual);
 	arg = 101.5;
@@ -1861,20 +1861,20 @@ unittest {	// abs
 }
 
 unittest {	// sgn
-	BigDecimal arg;
+	Decimal arg;
 	arg = -123;
 	assertEqual(-1, sgn(arg));
 	arg = 2345;
 	assertEqual( 1, sgn(arg));
-	arg = BigDecimal("0.0000");
+	arg = Decimal("0.0000");
 	assertEqual( 0, sgn(arg));
-	arg = BigDecimal.infinity(true);
+	arg = Decimal.infinity(true);
 	assertEqual(-1, sgn(arg));
 }
 
 unittest {	// plus
-	BigDecimal zero = BigDecimal.zero;
-	BigDecimal arg, expect, actual;
+	Decimal zero = Decimal.zero;
+	Decimal arg, expect, actual;
 	arg = 1.3;
 	expect = add(zero, arg, testContext);
 	actual = plus(arg, testContext);
@@ -1886,8 +1886,8 @@ unittest {	// plus
 }
 
 unittest {	// minus
-	BigDecimal zero = BigDecimal(0);
-	BigDecimal arg, expect, actual;
+	Decimal zero = Decimal(0);
+	Decimal arg, expect, actual;
 	arg = 1.3;
 	expect = sub(zero, arg, testContext);
 	actual = minus(arg, testContext);
@@ -1899,19 +1899,19 @@ unittest {	// minus
 }
 
 unittest {	// nextPlus
-	BigDecimal arg, expect, actual;
+	Decimal arg, expect, actual;
 	arg = 1;
-	expect = BigDecimal("1.00000001");
+	expect = Decimal("1.00000001");
 	actual = nextPlus(arg, testContext);
 	assertEqual(expect, actual);
 	arg = 10;
-	expect = BigDecimal("10.0000001");
+	expect = Decimal("10.0000001");
 	actual = nextPlus(arg, testContext);
 	assertEqual(expect, actual);
 }
 
 unittest {	// nextMinus
-	BigDecimal arg, expect, actual;
+	Decimal arg, expect, actual;
 	arg = 1;
 	expect = 0.999999999;
 	actual = nextMinus(arg, testContext);
@@ -1923,7 +1923,7 @@ unittest {	// nextMinus
 }
 
 unittest {	// nextToward
-	BigDecimal arg1, arg2, expect, actual;
+	Decimal arg1, arg2, expect, actual;
 	arg1 = 1;
 	arg2 = 2;
 	expect = 1.00000001;
@@ -1937,22 +1937,22 @@ unittest {	// nextToward
 }
 
 unittest {	// compare
-	BigDecimal arg1, arg2;
-	arg1 = BigDecimal(2.1);
-	arg2 = BigDecimal("3");
+	Decimal arg1, arg2;
+	arg1 = Decimal(2.1);
+	arg2 = Decimal("3");
 	assertEqual(-1, compare(arg1, arg2, testContext));
 	arg1 = 2.1;
-	arg2 = BigDecimal(2.1);
+	arg2 = Decimal(2.1);
 	assertEqual(0, compare(arg1, arg2, testContext));
 }
 
 unittest {	// equals
-	BigDecimal arg1, arg2;
+	Decimal arg1, arg2;
 	arg1 = 123.4567;
 	arg2 = 123.4568;
-	assertTrue(!equals!BigDecimal(arg1, arg2, BigDecimal.context));
+	assertTrue(!equals!Decimal(arg1, arg2, Decimal.context));
 	arg2 = 123.4567;
-	assertTrue(equals!BigDecimal(arg1, arg2, BigDecimal.context));
+	assertTrue(equals!Decimal(arg1, arg2, Decimal.context));
 }
 
 unittest {
@@ -1961,24 +1961,24 @@ unittest {
 }
 
 unittest {	// compareTotal
-	BigDecimal arg1, arg2;
+	Decimal arg1, arg2;
 	int result;
-	arg1 = BigDecimal("12.30");
-	arg2 = BigDecimal("12.3");
+	arg1 = Decimal("12.30");
+	arg2 = Decimal("12.3");
 	result = compareTotal(arg1, arg2);
 	assertTrue(result == -1);
-	arg1 = BigDecimal("12.30");
-	arg2 = BigDecimal("12.30");
+	arg1 = Decimal("12.30");
+	arg2 = Decimal("12.30");
 	result = compareTotal(arg1, arg2);
 	assertTrue(result == 0);
-	arg1 = BigDecimal("12.3");
-	arg2 = BigDecimal("12.300");
+	arg1 = Decimal("12.3");
+	arg2 = Decimal("12.300");
 	result = compareTotal(arg1, arg2);
 	assertTrue(result == 1);
 }
 
 unittest {	// sameQuantum
-	BigDecimal arg1, arg2;
+	Decimal arg1, arg2;
 	arg1 = 2.17;
 	arg2 = 0.001;
 	assertTrue(!sameQuantum(arg1, arg2));
@@ -1989,7 +1989,7 @@ unittest {	// sameQuantum
 }
 
 unittest {	// max
-	BigDecimal arg1, arg2, expect, actual;
+	Decimal arg1, arg2, expect, actual;
 	arg1 = 3; arg2 = 2; expect = 3;
 	actual = max(arg1, arg2, testContext);
 	assertEqual(expect, actual);
@@ -2004,7 +2004,7 @@ unittest {
 }
 
 unittest {	// min
-	BigDecimal arg1, arg2, expect, actual;
+	Decimal arg1, arg2, expect, actual;
 	arg1 = 3; arg2 = 2; expect = 2;
 	actual = min(arg1, arg2, testContext);
 	assertEqual(expect, actual);
@@ -2019,7 +2019,7 @@ unittest {
 }
 
 unittest {	// quantum
-	BigDecimal arg, expect, actual;
+	Decimal arg, expect, actual;
 	arg = 23.14E-12;
 	expect = 1E-14;
 	actual = quantum(arg);
@@ -2028,33 +2028,33 @@ unittest {	// quantum
 
 unittest {	// add
 	// (A)TODO: change inputs to real numbers
-	BigDecimal arg1, arg2, sum;
-	arg1 = BigDecimal("12");
-	arg2 = BigDecimal("7.00");
+	Decimal arg1, arg2, sum;
+	arg1 = Decimal("12");
+	arg2 = Decimal("7.00");
 	sum = add(arg1, arg2, testContext);
 	assertEqual("19.00", sum.toString);
-	arg1 = BigDecimal("1E+2");
-	arg2 = BigDecimal("1E+4");
+	arg1 = Decimal("1E+2");
+	arg2 = Decimal("1E+4");
 	sum = add(arg1, arg2, testContext);
 	assertEqual("1.01E+4", sum.toString);
 }
 
 unittest {	// addLong
-	BigDecimal arg1, sum;
+	Decimal arg1, sum;
 	long arg2;
 	arg2 = 12;
-	arg1 = BigDecimal("7.00");
+	arg1 = Decimal("7.00");
 	sum = addLong(arg1, arg2, testContext);
 	assertEqual("19.00", sum.toString);
-	arg1 = BigDecimal("1E+2");
+	arg1 = Decimal("1E+2");
 	arg2 = 10000;
 	sum = addLong(arg1, arg2, testContext);
 	assertEqual("10100", sum.toString);
 }
 
 unittest {	// mul
-	BigDecimal arg1, arg2, result;
-	arg1 = BigDecimal("1.20");
+	Decimal arg1, arg2, result;
+	arg1 = Decimal("1.20");
 	arg2 = 3;
 	result = mul(arg1, arg2, testContext);
 	assertEqual("3.60", result.toString());
@@ -2064,9 +2064,9 @@ unittest {	// mul
 }
 
 unittest { // mulLong
-	BigDecimal arg1, result;
+	Decimal arg1, result;
 	long arg2;
-	arg1 = BigDecimal("1.20");
+	arg1 = Decimal("1.20");
 	arg2 = 3;
 	result = mulLong(arg1, arg2, testContext);
 	assertEqual("3.60", result.toString());
@@ -2076,7 +2076,7 @@ unittest { // mulLong
 }
 
 unittest {	// fma
-	BigDecimal arg1, arg2, arg3, expect, actual;
+	Decimal arg1, arg2, arg3, expect, actual;
 	arg1 = 3; arg2 = 5; arg3 = 7;
 	expect = 22;
 	actual = (fma(arg1, arg2, arg3, testContext));
@@ -2088,17 +2088,17 @@ unittest {	// fma
 	arg1 = 888565290;
 	arg2 = 1557.96930;
 	arg3 = -86087.7578;
-	expect = BigDecimal(1.38435736E+12);
+	expect = Decimal(1.38435736E+12);
 	actual = (fma(arg1, arg2, arg3, testContext));
 	assertEqual(expect, actual);
 }
 
 unittest {	// div
-	BigDecimal arg1, arg2, actual, expect;
+	Decimal arg1, arg2, actual, expect;
 	arg1 = 1;
 	arg2 = 3;
 	actual = div(arg1, arg2, testContext);
-	expect = BigDecimal(0.333333333);
+	expect = Decimal(0.333333333);
 	assertEqual(expect, actual);
 	assertStringEqual(expect, actual);
 	arg1 = 1;
@@ -2109,7 +2109,7 @@ unittest {	// div
 }
 
 unittest {	// divideInteger
-	BigDecimal arg1, arg2, actual, expect;
+	Decimal arg1, arg2, actual, expect;
 	arg1 = 2;
 	arg2 = 3;
 	actual = divideInteger(arg1, arg2, testContext);
@@ -2126,7 +2126,7 @@ unittest {	// divideInteger
 }
 
 unittest {	// remainder
-	BigDecimal arg1, arg2, actual, expect;
+	Decimal arg1, arg2, actual, expect;
 	arg1 = 2.1;
 	arg2 = 3;
 	actual = rem(arg1, arg2, testContext);
@@ -2145,88 +2145,88 @@ unittest {
 
 unittest {	// quantize
     auto context = testContext;
-	BigDecimal arg1, arg2, actual, expect;
+	Decimal arg1, arg2, actual, expect;
 	string str;
-	arg1 = BigDecimal("2.17");
-	arg2 = BigDecimal("0.001");
-	expect = BigDecimal("2.170");
-	actual = quantize!BigDecimal(arg1, arg2, context);
+	arg1 = Decimal("2.17");
+	arg2 = Decimal("0.001");
+	expect = Decimal("2.170");
+	actual = quantize!Decimal(arg1, arg2, context);
 	assertEqual(expect, actual);
-	arg1 = BigDecimal("2.17");
-	arg2 = BigDecimal("0.01");
-	expect = BigDecimal("2.17");
-	actual = quantize(arg1, arg2, context);
-	assertEqual(expect, actual);
-	arg1 = BigDecimal("2.17");
-	arg2 = BigDecimal("0.1");
-	expect = BigDecimal("2.2");
+	arg1 = Decimal("2.17");
+	arg2 = Decimal("0.01");
+	expect = Decimal("2.17");
 	actual = quantize(arg1, arg2, context);
 	assertEqual(expect, actual);
-	arg1 = BigDecimal("2.17");
-	arg2 = BigDecimal("1e+0");
-	expect = BigDecimal("2");
+	arg1 = Decimal("2.17");
+	arg2 = Decimal("0.1");
+	expect = Decimal("2.2");
 	actual = quantize(arg1, arg2, context);
 	assertEqual(expect, actual);
-	arg1 = BigDecimal("2.17");
-	arg2 = BigDecimal("1e+1");
-	expect = BigDecimal("0E+1");
-	actual = quantize(arg1, arg2, context);
-	assertStringEqual(expect, actual);
-	arg1 = BigDecimal("-Inf");
-	arg2 = BigDecimal("Infinity");
-	expect = BigDecimal("-Infinity");
+	arg1 = Decimal("2.17");
+	arg2 = Decimal("1e+0");
+	expect = Decimal("2");
 	actual = quantize(arg1, arg2, context);
 	assertEqual(expect, actual);
-	arg1 = BigDecimal("2");
-	arg2 = BigDecimal("Infinity");
-	expect = BigDecimal("NaN");
+	arg1 = Decimal("2.17");
+	arg2 = Decimal("1e+1");
+	expect = Decimal("0E+1");
 	actual = quantize(arg1, arg2, context);
 	assertStringEqual(expect, actual);
-	arg1 = BigDecimal("-0.1");
-	arg2 = BigDecimal("1");
-	expect = BigDecimal("-0");
+	arg1 = Decimal("-Inf");
+	arg2 = Decimal("Infinity");
+	expect = Decimal("-Infinity");
+	actual = quantize(arg1, arg2, context);
+	assertEqual(expect, actual);
+	arg1 = Decimal("2");
+	arg2 = Decimal("Infinity");
+	expect = Decimal("NaN");
 	actual = quantize(arg1, arg2, context);
 	assertStringEqual(expect, actual);
-	arg1 = BigDecimal("-0");
-	arg2 = BigDecimal("1e+5");
-	expect = BigDecimal("-0E+5");
+	arg1 = Decimal("-0.1");
+	arg2 = Decimal("1");
+	expect = Decimal("-0");
 	actual = quantize(arg1, arg2, context);
 	assertStringEqual(expect, actual);
-	arg1 = BigDecimal("+35236450.6");
-	arg2 = BigDecimal("1e-2");
-	expect = BigDecimal("NaN");
+	arg1 = Decimal("-0");
+	arg2 = Decimal("1e+5");
+	expect = Decimal("-0E+5");
 	actual = quantize(arg1, arg2, context);
 	assertStringEqual(expect, actual);
-	arg1 = BigDecimal("-35236450.6");
-	arg2 = BigDecimal("1e-2");
-	expect = BigDecimal("NaN");
+	arg1 = Decimal("+35236450.6");
+	arg2 = Decimal("1e-2");
+	expect = Decimal("NaN");
 	actual = quantize(arg1, arg2, context);
 	assertStringEqual(expect, actual);
-	arg1 = BigDecimal("217");
-	arg2 = BigDecimal("1e-1");
-	expect = BigDecimal( "217.0");
+	arg1 = Decimal("-35236450.6");
+	arg2 = Decimal("1e-2");
+	expect = Decimal("NaN");
 	actual = quantize(arg1, arg2, context);
 	assertStringEqual(expect, actual);
-	arg1 = BigDecimal("217");
-	arg2 = BigDecimal("1e+0");
-	expect = BigDecimal("217");
+	arg1 = Decimal("217");
+	arg2 = Decimal("1e-1");
+	expect = Decimal( "217.0");
 	actual = quantize(arg1, arg2, context);
 	assertStringEqual(expect, actual);
-	arg1 = BigDecimal("217");
-	arg2 = BigDecimal("1e+1");
-	expect = BigDecimal("2.2E+2");
+	arg1 = Decimal("217");
+	arg2 = Decimal("1e+0");
+	expect = Decimal("217");
 	actual = quantize(arg1, arg2, context);
 	assertStringEqual(expect, actual);
-	arg1 = BigDecimal("217");
-	arg2 = BigDecimal("1e+2");
-	expect = BigDecimal("2E+2");
+	arg1 = Decimal("217");
+	arg2 = Decimal("1e+1");
+	expect = Decimal("2.2E+2");
+	actual = quantize(arg1, arg2, context);
+	assertStringEqual(expect, actual);
+	arg1 = Decimal("217");
+	arg2 = Decimal("1e+2");
+	expect = Decimal("2E+2");
 	actual = quantize(arg1, arg2, context);
 	assertStringEqual(expect, actual);
 	assertEqual(expect, actual);
 }
 
 unittest { // roundToIntegralExact
-	BigDecimal arg, expect, actual;
+	Decimal arg, expect, actual;
 	arg = 2.1;
 	expect = 2;
 	actual = roundToIntegralExact(arg, testContext);
@@ -2244,18 +2244,18 @@ unittest {
 }
 
 unittest {	// setInvalidFlag
-	BigDecimal arg, expect, actual;
+	Decimal arg, expect, actual;
 	// (A)TODO: Can't actually test payloads at this point.
-	arg = BigDecimal("sNaN123");
-	expect = BigDecimal("NaN123");
-	actual = abs!BigDecimal(arg, testContext);
+	arg = Decimal("sNaN123");
+	expect = Decimal("NaN123");
+	actual = abs!Decimal(arg, testContext);
 	assertTrue(actual.isQuiet);
 	assertTrue(contextFlags.getFlag(INVALID_OPERATION));
 //	  assertTrue(actual.toAbstract == expect.toAbstract);
 }
 
 unittest { // alignOps
-	BigDecimal arg1, arg2;
+	Decimal arg1, arg2;
 	arg1 = 1.3E35;
 	arg2 = -17.4E29;
 	alignOps(arg1, arg2);

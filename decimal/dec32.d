@@ -317,8 +317,8 @@ public:
 		signed = sign;
 	}
 
-	/// Creates a Dec32 from a BigDecimal
-	public this(const BigDecimal num) {
+	/// Creates a Dec32 from a Decimal
+	public this(const Decimal num) {
 
 		// check for special values
 		if (num.isInfinite) {
@@ -340,7 +340,7 @@ public:
 
 		// must be finite
 		// copy and round to this context
-		BigDecimal big = plus!BigDecimal(num, context);
+		Decimal big = plus!Decimal(num, context);
 
 		// check that it's still finite after rounding
 		if (big.isFinite) {
@@ -372,7 +372,7 @@ public:
 	 * Creates a Dec32 from a string.
 	 */
 	public this(const string str) {
-		BigDecimal big = BigDecimal(str);
+		Decimal big = Decimal(str);
 		this(big);
 	}
 
@@ -812,22 +812,22 @@ public:
 //--------------------------------
 
 	/**
-	 * Converts a Dec32 to a BigDecimal
+	 * Converts a Dec32 to a Decimal
 	 */
-	const BigDecimal toBigDecimal() {
+	const Decimal toBigDecimal() {
 		if (isFinite) {
-			return BigDecimal(sign, BigInt(coefficient), exponent);
+			return Decimal(sign, BigInt(coefficient), exponent);
 		}
 		if (isInfinite) {
-			return BigDecimal.infinity(sign);
+			return Decimal.infinity(sign);
 		}
 		// number is a NaN
-		BigDecimal dec;
+		Decimal dec;
 		if (isQuiet) {
-			dec = BigDecimal.nan;
+			dec = Decimal.nan;
 		}
 		if (isSignaling) {
-			dec = BigDecimal.snan(sign);
+			dec = Decimal.snan(sign);
 		}
 		if (payload) {
 			dec.payload(payload);
@@ -1371,8 +1371,8 @@ unittest {	// this(bool, ulong, int)
 	assertTrue(num.toString == "0E+2");
 }
 
-unittest {	// this(BigDecimal)
-	BigDecimal dec = 0;
+unittest {	// this(Decimal)
+	Decimal dec = 0;
 	Dec32 num = dec;
 	assertTrue(dec.toString == num.toString);
 	dec = 1;
@@ -1484,8 +1484,8 @@ unittest {	// isIntegral
 
 unittest {	// toBigDecimal
 	Dec32 num = Dec32("12345E+17");
-	BigDecimal expected = BigDecimal("12345E+17");
-	BigDecimal actual = num.toBigDecimal;
+	Decimal expected = Decimal("12345E+17");
+	Decimal actual = num.toBigDecimal;
 	assertTrue(actual == expected);
 }
 

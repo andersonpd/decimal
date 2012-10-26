@@ -63,7 +63,7 @@ public T round(T)(ref T num,
 		// decrease the precision and round
 		int precision = context.precision - diff;
 		if (num.digits > precision) {
-			auto ctx = BigDecimal.setPrecision(precision);
+			auto ctx = Decimal.setPrecision(precision);
 			roundByMode(num, ctx);
 		}
 		// if the result of rounding a subnormal is zero
@@ -695,7 +695,7 @@ public uint shiftLeft(uint num, const int n, int precision = MAX_INT_DIGITS) {
 /// If n == 0 the number is returned unchanged.
 /// If n < 0 the number is shifted left.
 public BigInt shiftRight(BigInt num, const int n,
-		const int precision = BigDecimal.context.precision) {
+		const int precision = Decimal.context.precision) {
 	if (n > 0) {
 		BigInt fives = n < 27 ? BigInt(FIVES[n]) : BIG_FIVE^^n;
 		num = num >> n;
@@ -937,12 +937,12 @@ unittest {
 
 unittest {
 	// round
-	BigDecimal before = BigDecimal(9999);
-	BigDecimal after = before;
+	Decimal before = Decimal(9999);
+	Decimal after = before;
 	DecimalContext ctx3 = DecimalContext(3, 99, Rounding.HALF_EVEN);
 	after = round(after, ctx3);
 	assertEqual("1.00E+4", after.toString);
-	before = BigDecimal(1234567890);
+	before = Decimal(1234567890);
 	after = before;
 	after = round(after, ctx3);
 	assertEqual(after.toString(), "1.23E+9");
@@ -1007,7 +1007,7 @@ writeln("********* c = ", c);
 unittest {
 	// roundByMode
 	DecimalContext ctxHE = DecimalContext(5, 99, Rounding.HALF_EVEN);
-	BigDecimal num;
+	Decimal num;
 	num = 1000;
 	roundByMode(num, ctxHE);
 	assertTrue(num.coefficient == 1000 && num.exponent == 0 && num.digits == 4);
@@ -1042,18 +1042,18 @@ unittest {	// testFive
 unittest {
 	// getRemainder
 	DecimalContext ctx5 = testContext.setPrecision(5);
-	BigDecimal num, acrem, exnum, exrem;
-	num = BigDecimal(1234567890123456L);
+	Decimal num, acrem, exnum, exrem;
+	num = Decimal(1234567890123456L);
 	acrem = getRemainder(num, ctx5);
-	exnum = BigDecimal("1.2345E+15");
+	exnum = Decimal("1.2345E+15");
 	assertTrue(num == exnum);
 	exrem = 67890123456;
 	assertTrue(acrem == exrem);
 }
 
 unittest {
-	// increment(BigDecimal)
-	BigDecimal num, expect;
+	// increment(Decimal)
+	Decimal num, expect;
 	num = 10;
 	expect = 11;
 	incrementAndRound(num);

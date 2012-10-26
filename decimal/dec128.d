@@ -407,9 +407,9 @@ public:
 	}
 
 	/**
-	 * Creates a Dec128 from a BigDecimal
+	 * Creates a Dec128 from a Decimal
 	 */
-	public this(const BigDecimal num) {
+	public this(const Decimal num) {
 //writefln("num = %s", num);
 
 		// check for special values
@@ -433,7 +433,7 @@ public:
 			return;
 		}
 
-		BigDecimal big = plus!BigDecimal(num, context);
+		Decimal big = plus!Decimal(num, context);
 //writefln("big = %s", big);
 
 		if (big.isFinite) {
@@ -464,7 +464,7 @@ public:
 	}
 
 	unittest {
-		BigDecimal dec = 0;
+		Decimal dec = 0;
 		Dec128 num = dec;
 		assertTrue(dec.toString == num.toString);
 		dec = 1;
@@ -491,7 +491,7 @@ public:
 	 * Creates a Dec128 from a string.
 	 */
 	public this(const string str) {
-		BigDecimal big = BigDecimal(str);
+		Decimal big = Decimal(str);
 //writefln("biggie = %s", big);
 		this(big);
 //writefln("this one = %s", this);
@@ -1114,25 +1114,25 @@ writefln("num.toExact = %s", num.toExact);
 //--------------------------------
 
 	/**
-	 * Converts a Dec128 to a BigDecimal
+	 * Converts a Dec128 to a Decimal
 	 */
-	const BigDecimal toBigDecimal() {
+	const Decimal toBigDecimal() {
 		if (isFinite) {
 			BigInt big = coefficient.toBigInt;
 //writefln("coefficient = %s", coefficient);
 //writefln("big = %s", big);
-			return BigDecimal(sign, big, exponent);
+			return Decimal(sign, big, exponent);
 		}
 		if (isInfinite) {
-			return BigDecimal.infinity(sign);
+			return Decimal.infinity(sign);
 		}
 		// number is a NaN
-		BigDecimal dec;
+		Decimal dec;
 		if (isQuiet) {
-			dec = BigDecimal.nan(sign);
+			dec = Decimal.nan(sign);
 		}
 		if (isSignaling) {
-			dec = BigDecimal.snan(sign);
+			dec = Decimal.snan(sign);
 		}
 		if (payload) {
 			dec.payload(payload);
@@ -1142,8 +1142,8 @@ writefln("num.toExact = %s", num.toExact);
 
 	unittest {
 		Dec128 num = Dec128("12345E+17");
-		BigDecimal expect = BigDecimal("12345E+17");
-		BigDecimal actual = num.toBigDecimal;
+		Decimal expect = Decimal("12345E+17");
+		Decimal actual = num.toBigDecimal;
 		assertTrue(actual == expect);
 	}
 
@@ -1625,7 +1625,7 @@ ref Dec128 opOpAssign(string op, T:Dec128) (T rhs) {
 
 }	// end Dec128 struct
 
-/*// NOTE: this is used only when a BigDecimal is converted to a Decimal128.
+/*// NOTE: this is used only when a Decimal is converted to a Decimal128.
 // The BigInt is guaranteed to be < uint128.max;
 private uint128 toUint(BigInt big) {
 writefln("big = %s", big);

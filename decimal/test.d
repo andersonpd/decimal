@@ -90,8 +90,8 @@ public bool testAddition(T, U = T)(U op1, U op2, U expected)
 
 unittest {
 	write("add..........");
-	testAddition!(BigDecimal, int)(12, 7, 18);
-	testAddition!(BigDecimal, real)(12.0, 7.1, 19.2);
+	testAddition!(Decimal, int)(12, 7, 18);
+	testAddition!(Decimal, real)(12.0, 7.1, 19.2);
 	testAddition!(Dec32, int)(12, 7, 18);
 	testAddition!(Dec32, real)(12.0, 7.1, 19.2);
 	testAddition!(Dec64, int)(12, 7, 18);
@@ -219,7 +219,7 @@ unittest {
 unittest {
 	write("toBigDecimal...");
 	Dec32 small;
-	BigDecimal big;
+	Decimal big;
 	small = 5;
 	big = toBigDecimal!Dec32(small);
 	assertTrue(big.toString == small.toString);
@@ -229,11 +229,11 @@ unittest {
 unittest {
 	write("isDecimal(T)...");
 	assertTrue(isFixedDecimal!Dec32);
-	assertTrue(!isFixedDecimal!BigDecimal);
+	assertTrue(!isFixedDecimal!Decimal);
 	assertTrue(isDecimal!Dec32);
-	assertTrue(isDecimal!BigDecimal);
+	assertTrue(isDecimal!Decimal);
 	assertTrue(!isBigDecimal!Dec32);
-	assertTrue(isBigDecimal!BigDecimal);
+	assertTrue(isBigDecimal!Decimal);
 	writeln("passed");
 }
 
@@ -306,74 +306,74 @@ unittest {
 unittest {
 	write("to-eng-str.....");
 	string str = "1.23E+3";
-	BigDecimal num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	Decimal num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	str = "123E+3";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	str = "12.3E-9";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	str = "-123E-12";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	str = "700E-9";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	str = "70";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	str = "0E-9";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	str = "0.00E-6";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	str = "0.0E-6";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	str = "0.000000";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	/*	  str = "0.00E-3";
-		num = BigDecimal(str);
-		assertTrue(engForm!BigDecimal(num) == str);
+		num = Decimal(str);
+		assertTrue(engForm!Decimal(num) == str);
 		str = "0.0E-3";
-		num = BigDecimal(str);
-		assertTrue(engForm!BigDecimal(num) == str);*/
+		num = Decimal(str);
+		assertTrue(engForm!Decimal(num) == str);*/
 	str = "0.000";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	str = "0.00";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	str = "0.0";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	str = "0";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	str = "0.00E+3";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	str = "0.0E+3";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	str = "0E+3";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	str = "0.00E+6";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	str = "0.0E+6";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	str = "0E+6";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	str = "0.00E+9";
-	num = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(num) == str);
+	num = Decimal(str);
+	assertTrue(engForm!Decimal(num) == str);
 	writeln("passed");
 }
 
@@ -381,85 +381,85 @@ unittest {
 	string title = "toNumber";
 	/*	uint passed = 0;
 		uint failed = 0;
-		BigDecimal f;
+		Decimal f;
 		string str = "0";
-		f = BigDecimal(str);
+		f = Decimal(str);
 		assertEqual(f.toString(), str) ? passed++ : failed++;
 		assertEqual(f.toAbstract(), "[0,0,0]") ? passed++ : failed++;
 		str = "0.00";
-		f = BigDecimal(str);
+		f = Decimal(str);
 		assertEqual(f.toString(), str) ? passed++ : failed++;
 		assertEqual(f.toAbstract(), "[0,0,-2]") ? passed++ : failed++;
 		str = "0.0";
-		f = BigDecimal(str);
+		f = Decimal(str);
 		assertEqual(f.toString(), str) ? passed++ : failed++;
 		assertEqual(f.toAbstract(), "[0,0,-1]") ? passed++ : failed++;
-		f = BigDecimal("0.");
+		f = Decimal("0.");
 		assertEqual(f.toString(), "0") ? passed++ : failed++;
 		assertEqual(f.toAbstract(), "[0,0,0]") ? passed++ : failed++;
-		f = BigDecimal(".0");
+		f = Decimal(".0");
 		assertEqual(f.toString(), "0.0") ? passed++ : failed++;
 		assertEqual(f.toAbstract(), "[0,0,-1]") ? passed++ : failed++;
 		str = "1.0";
-		f = BigDecimal(str);
+		f = Decimal(str);
 		assertEqual(f.toString(), str) ? passed++ : failed++;
 		assertEqual(f.toAbstract(), "[0,10,-1]") ? passed++ : failed++;
 		str = "1.";
-		f = BigDecimal(str);
+		f = Decimal(str);
 		assertEqual(f.toString(), "1") ? passed++ : failed++;
 		assertEqual(f.toAbstract(), "[0,1,0]") ? passed++ : failed++;
 		str = ".1";
-		f = BigDecimal(str);
+		f = Decimal(str);
 		assertEqual(f.toString(), "0.1") ? passed++ : failed++;
 		assertEqual(f.toAbstract(), "[0,1,-1]") ? passed++ : failed++;
-		f = BigDecimal("123");
+		f = Decimal("123");
 		assertEqual(f.toString(), "123") ? passed++ : failed++;
-		f = BigDecimal("-123");
+		f = Decimal("-123");
 		assertEqual(f.toString(), "-123") ? passed++ : failed++;
-		f = BigDecimal("1.23E3");
+		f = Decimal("1.23E3");
 		assertEqual(f.toString(), "1.23E+3") ? passed++ : failed++;
-		f = BigDecimal("1.23E");
+		f = Decimal("1.23E");
 		assertEqual(f.toString(), "NaN") ? passed++ : failed++;
-		f = BigDecimal("1.23E-");
+		f = Decimal("1.23E-");
 		assertEqual(f.toString(), "NaN") ? passed++ : failed++;
-		f = BigDecimal("1.23E+");
+		f = Decimal("1.23E+");
 		assertEqual(f.toString(), "NaN") ? passed++ : failed++;
-		f = BigDecimal("1.23E+3");
+		f = Decimal("1.23E+3");
 		assertEqual(f.toString(), "1.23E+3") ? passed++ : failed++;
-		f = BigDecimal("1.23E3B");
+		f = Decimal("1.23E3B");
 		assertEqual(f.toString(), "NaN") ? passed++ : failed++;
-		f = BigDecimal("12.3E+007");
+		f = Decimal("12.3E+007");
 		assertEqual(f.toString(), "1.23E+8") ? passed++ : failed++;
-		f = BigDecimal("12.3E+70000000000");
+		f = Decimal("12.3E+70000000000");
 		assertEqual(f.toString(), "NaN") ? passed++ : failed++;
-		f = BigDecimal("12.3E+7000000000");
+		f = Decimal("12.3E+7000000000");
 		assertEqual(f.toString(), "NaN") ? passed++ : failed++;
-		f = BigDecimal("12.3E+700000000");
+		f = Decimal("12.3E+700000000");
 		assertEqual(f.toString(), "1.23E+700000001") ? passed++ : failed++;
-		f = BigDecimal("12.3E-700000000");
+		f = Decimal("12.3E-700000000");
 		assertEqual(f.toString(), "1.23E-699999999") ? passed++ : failed++;
 		// (T)TODO: since there will still be adjustments -- maybe limit to 99999999?
-		f = BigDecimal("12.0");
+		f = Decimal("12.0");
 		assertEqual(f.toString(), "12.0") ? passed++ : failed++;
-		f = BigDecimal("12.3");
+		f = Decimal("12.3");
 		assertEqual(f.toString(), "12.3") ? passed++ : failed++;
-		f = BigDecimal("1.23E-3");
+		f = Decimal("1.23E-3");
 		assertEqual(f.toString(), "0.00123") ? passed++ : failed++;
-		f = BigDecimal("0.00123");
+		f = Decimal("0.00123");
 		assertEqual(f.toString(), "0.00123") ? passed++ : failed++;
-		f = BigDecimal("-1.23E-12");
+		f = Decimal("-1.23E-12");
 		assertEqual(f.toString(), "-1.23E-12") ? passed++ : failed++;
-		f = BigDecimal("-0");
+		f = Decimal("-0");
 		assertEqual(f.toString(), "-0") ? passed++ : failed++;
-		f = BigDecimal("inf");
+		f = Decimal("inf");
 		assertEqual(f.toString(), "Infinity") ? passed++ : failed++;
-		f = BigDecimal("NaN");
+		f = Decimal("NaN");
 		assertEqual(f.toString(), "NaN") ? passed++ : failed++;
-		f = BigDecimal("-NaN");
+		f = Decimal("-NaN");
 		assertEqual(f.toString(), "-NaN") ? passed++ : failed++;
-		f = BigDecimal("sNaN");
+		f = Decimal("sNaN");
 		assertEqual(f.toString(), "sNaN") ? passed++ : failed++;
-		f = BigDecimal("Fred");
+		f = Decimal("Fred");
 		assertEqual(f.toString(), "NaN") ? passed++ : failed++;
 		writefln("unittest %s: passed %d; failed %d", title, passed, failed);*/
 }
@@ -492,38 +492,38 @@ unittest {
 unittest {
 	write("radix........");
 	assertEqual!int(10, Dec32.radix);
-	assertNotEqual!int(16, BigDecimal.radix);
+	assertNotEqual!int(16, Decimal.radix);
 	writeln("passed");
 }
 
 unittest {
 	write("class........");
-	BigDecimal num;
-	num = BigDecimal("Infinity");
+	Decimal num;
+	num = Decimal("Infinity");
 	assertEqual(classify(num), "+Infinity");
-	num = BigDecimal("1E-10");
+	num = Decimal("1E-10");
 	assertEqual(classify(num), "+Normal");
-	num = BigDecimal("2.50");
+	num = Decimal("2.50");
 	assertEqual(classify(num), "+Normal");
-	num = BigDecimal("0.1E-99");
+	num = Decimal("0.1E-99");
 	assertEqual(classify(num), "+Subnormal");
-	num = BigDecimal("0");
+	num = Decimal("0");
 	assertEqual(classify(num), "+Zero");
-	num = BigDecimal("-0");
+	num = Decimal("-0");
 	assertEqual(classify(num), "-Zero");
-	num = BigDecimal("-0.1E-99");
+	num = Decimal("-0.1E-99");
 	assertEqual(classify(num), "-Subnormal");
-	num = BigDecimal("-1E-10");
+	num = Decimal("-1E-10");
 	assertEqual(classify(num), "-Normal");
-	num = BigDecimal("-2.50");
+	num = Decimal("-2.50");
 	assertEqual(classify(num), "-Normal");
-	num = BigDecimal("-Infinity");
+	num = Decimal("-Infinity");
 	assertEqual(classify(num), "-Infinity");
-	num = BigDecimal("NaN");
+	num = Decimal("NaN");
 	assertEqual(classify(num), "NaN");
-	num = BigDecimal("-NaN");
+	num = Decimal("-NaN");
 	assertEqual(classify(num), "NaN");
-	num = BigDecimal("sNaN");
+	num = Decimal("sNaN");
 	assertEqual(classify(num), "sNaN");
 	writeln("passed");
 }
@@ -532,31 +532,31 @@ unittest {
 // This is probably true of other unit tests as well
 unittest {
 	write("copy.........");
-	BigDecimal num;
-	BigDecimal expd;
+	Decimal num;
+	Decimal expd;
 	num  = 2.1;
 	expd = 2.1;
 	assertTrue(copy(num) == expd);
-	num  = BigDecimal("-1.00");
-	expd = BigDecimal("-1.00");
+	num  = Decimal("-1.00");
+	expd = Decimal("-1.00");
 	assertTrue(copy(num) == expd);
 	writeln("passed");
 
 	num  = 2.1;
 	expd = 2.1;
 	write("copy-abs.....");
-	assertTrue(copyAbs!BigDecimal(num) == expd);
-	num  = BigDecimal("-1.00");
-	expd = BigDecimal("1.00");
-	assertTrue(copyAbs!BigDecimal(num) == expd);
+	assertTrue(copyAbs!Decimal(num) == expd);
+	num  = Decimal("-1.00");
+	expd = Decimal("1.00");
+	assertTrue(copyAbs!Decimal(num) == expd);
 	writeln("passed");
 
 	num  = 101.5;
 	expd = -101.5;
 	write("copy-negate..");
-	assertTrue(copyNegate!BigDecimal(num) == expd);
-	BigDecimal num1;
-	BigDecimal num2;
+	assertTrue(copyNegate!Decimal(num) == expd);
+	Decimal num1;
+	Decimal num2;
 	num1 = 1.50;
 	num2 = 7.33;
 	expd = 1.50;
@@ -582,12 +582,12 @@ unittest {
 unittest {
 	write("quantize.....");
 	auto ctx = testContext;
-	BigDecimal op1, op2;
-	BigDecimal result, expd;
+	Decimal op1, op2;
+	Decimal result, expd;
 	string str;
 	op1 = 2.17;
 	op2 = 0.001;
-	expd = BigDecimal("2.170");
+	expd = Decimal("2.170");
 	result = quantize(op1, op2, testContext);
 	assertEqual(expd, result);
 	op1 = 2.17;
@@ -601,63 +601,63 @@ unittest {
 	result = quantize(op1, op2, testContext);
 	assertEqual(expd, result);
 	op1 = 2.17;
-	op2 = BigDecimal("1E+0");
+	op2 = Decimal("1E+0");
 	expd = 2;
 	result = quantize(op1, op2, testContext);
 	assertEqual(expd, result);
 	op1 = 2.17;
-	op2 = BigDecimal("1E+1");
-	expd = BigDecimal("0E+1");
+	op2 = Decimal("1E+1");
+	expd = Decimal("0E+1");
 	result = quantize(op1, op2, testContext);
 	assertTrue(result.toString() == expd.toString());
-	op1 = BigDecimal("-Inf");
-	op2 = BigDecimal("Infinity");
-	expd = BigDecimal("-Infinity");
+	op1 = Decimal("-Inf");
+	op2 = Decimal("Infinity");
+	expd = Decimal("-Infinity");
 	result = quantize(op1, op2, testContext);
 	assertEqual(expd, result);
 	op1 = 2;
-	op2 = BigDecimal("Infinity");
-	expd = BigDecimal("NaN");
+	op2 = Decimal("Infinity");
+	expd = Decimal("NaN");
 	result = quantize(op1, op2, testContext);
 	assertTrue(result.toString() == expd.toString());
 	op1 = -0.1;
 	op2 = 1;
-	expd = BigDecimal("-0");
+	expd = Decimal("-0");
 	result = quantize(op1, op2, testContext);
 	assertTrue(result.toString() == expd.toString());
-	op1 = BigDecimal("-0");
-	op2 = BigDecimal("1E+5");
-	expd = BigDecimal("-0E+5");
+	op1 = Decimal("-0");
+	op2 = Decimal("1E+5");
+	expd = Decimal("-0E+5");
 	result = quantize(op1, op2, testContext);
 	assertTrue(result.toString() == expd.toString());
-	op1 = BigDecimal("+35236450.6");
-	op2 = BigDecimal("1E-2");
-	expd = BigDecimal("NaN");
+	op1 = Decimal("+35236450.6");
+	op2 = Decimal("1E-2");
+	expd = Decimal("NaN");
 	result = quantize(op1, op2, testContext);
 	assertTrue(result.toString() == expd.toString());
-	op1 = BigDecimal("-35236450.6");
-	op2 = BigDecimal("1E-2");
-	expd = BigDecimal("NaN");
+	op1 = Decimal("-35236450.6");
+	op2 = Decimal("1E-2");
+	expd = Decimal("NaN");
 	result = quantize(op1, op2, testContext);
 	assertTrue(result.toString() == expd.toString());
-	op1 = BigDecimal("217");
-	op2 = BigDecimal("1E-1");
-	expd = BigDecimal("217.0");
+	op1 = Decimal("217");
+	op2 = Decimal("1E-1");
+	expd = Decimal("217.0");
 	result = quantize(op1, op2, testContext);
 	assertTrue(result.toString() == expd.toString());
-	op1 = BigDecimal("217");
-	op2 = BigDecimal("1E+0");
-	expd = BigDecimal("217");
+	op1 = Decimal("217");
+	op2 = Decimal("1E+0");
+	expd = Decimal("217");
 	result = quantize(op1, op2, testContext);
 	assertTrue(result.toString() == expd.toString());
-	op1 = BigDecimal("217");
-	op2 = BigDecimal("1E+1");
-	expd = BigDecimal("2.2E+2");
+	op1 = Decimal("217");
+	op2 = Decimal("1E+1");
+	expd = Decimal("2.2E+2");
 	result = quantize(op1, op2, testContext);
 	assertTrue(result.toString() == expd.toString());
-	op1 = BigDecimal("217");
-	op2 = BigDecimal("1E+2");
-	expd = BigDecimal("2E+2");
+	op1 = Decimal("217");
+	op2 = Decimal("1E+2");
+	expd = Decimal("2E+2");
 	result = quantize(op1, op2, testContext);
 	assertTrue(result.toString() == expd.toString());
 	assertEqual(expd, result);
@@ -666,67 +666,67 @@ unittest {
 
 unittest {
 	write("logb.........");
-	BigDecimal num;
-	BigDecimal expect;
-	num = BigDecimal("250");
-	expect = BigDecimal("2");
+	Decimal num;
+	Decimal expect;
+	num = Decimal("250");
+	expect = Decimal("2");
 	assertTrue(logb(num) == expect);
-	num = BigDecimal("2.50");
-	expect = BigDecimal("0");
+	num = Decimal("2.50");
+	expect = Decimal("0");
 	assertTrue(logb(num) == expect);
-	num = BigDecimal("0.03");
-	expect = BigDecimal("-2");
+	num = Decimal("0.03");
+	expect = Decimal("-2");
 	assertTrue(logb(num) == expect);
-	num = BigDecimal("0");
-	expect = BigDecimal("-Infinity");
+	num = Decimal("0");
+	expect = Decimal("-Infinity");
 	assertTrue(logb(num) == expect);
 	writeln("passed");
 }
 
 unittest {
 	write("scaleb.......");
-	BigDecimal op1, op2, expd;
-	op1 = BigDecimal("7.50");
-	op2 = BigDecimal("-2");
-	expd = BigDecimal("0.0750");
+	Decimal op1, op2, expd;
+	op1 = Decimal("7.50");
+	op2 = Decimal("-2");
+	expd = Decimal("0.0750");
 	assertTrue(scaleb(op1, op2) == expd);
-	op1 = BigDecimal("7.50");
-	op2 = BigDecimal("0");
-	expd = BigDecimal("7.50");
+	op1 = Decimal("7.50");
+	op2 = Decimal("0");
+	expd = Decimal("7.50");
 	assertTrue(scaleb(op1, op2) == expd);
-	op1 = BigDecimal("7.50");
-	op2 = BigDecimal("3");
-	expd = BigDecimal("7.50E+3");
+	op1 = Decimal("7.50");
+	op2 = Decimal("3");
+	expd = Decimal("7.50E+3");
 	assertTrue(scaleb(op1, op2) == expd);
-	op1 = BigDecimal("-Infinity");
-	op2 = BigDecimal("4.5");
-	expd = BigDecimal("-Infinity");
+	op1 = Decimal("-Infinity");
+	op2 = Decimal("4.5");
+	expd = Decimal("-Infinity");
 	assertTrue(scaleb(op1, op2) == expd);
 	writeln("passed");
 }
 
 unittest {
 	write("reduce.......");
-	BigDecimal num;
-	BigDecimal red;
+	Decimal num;
+	Decimal red;
 	string str;
-	num = BigDecimal("2.1");
+	num = Decimal("2.1");
 	str = "2.1";
 	red = reduce(num);
 	assertEqual(str, red.toString());
-	num = BigDecimal("-2.0");
+	num = Decimal("-2.0");
 	str = "-2";
 	red = reduce(num);
 	assertEqual(str, red.toString());
-	num = BigDecimal("1.200");
+	num = Decimal("1.200");
 	str = "1.2";
 	red = reduce(num);
 	assertEqual(str, red.toString());
-	num = BigDecimal("-120");
+	num = Decimal("-120");
 	str = "-1.2E+2";
 	red = reduce(num);
 	assertEqual(str, red.toString());
-	num = BigDecimal("120.00");
+	num = Decimal("120.00");
 	str = "1.2E+2";
 	red = reduce(num);
 	assertEqual(str, red.toString());
@@ -746,28 +746,28 @@ unittest {
 	// (T)TODO: add rounding tests
 	writeln("-------------------");
 	write("abs..........");
-	BigDecimal num;
-	BigDecimal expd;
-	num = BigDecimal("sNaN");
+	Decimal num;
+	Decimal expd;
+	num = Decimal("sNaN");
 	assertTrue(abs(num, testContext).isQuiet);	// converted to quiet Nan per spec.
 	assertTrue(contextFlags.getFlag(INVALID_OPERATION));
-	num = BigDecimal("NaN");
+	num = Decimal("NaN");
 	assertTrue(abs(num, testContext).isQuiet);
 	assertTrue(contextFlags.getFlag(INVALID_OPERATION));
-	num = BigDecimal("Inf");
-	expd = BigDecimal("Inf");
+	num = Decimal("Inf");
+	expd = Decimal("Inf");
 	assertTrue(abs(num, testContext) == expd);
-	num = BigDecimal("-Inf");
-	expd = BigDecimal("Inf");
+	num = Decimal("-Inf");
+	expd = Decimal("Inf");
 	assertTrue(abs(num, testContext) == expd);
-	num = BigDecimal("0");
-	expd = BigDecimal("0");
+	num = Decimal("0");
+	expd = Decimal("0");
 	assertTrue(abs(num, testContext) == expd);
-	num = BigDecimal("-0");
-	expd = BigDecimal("0");
+	num = Decimal("-0");
+	expd = Decimal("0");
 	assertTrue(abs(num, testContext) == expd);
-	num = BigDecimal("2.1");
-	expd = BigDecimal("2.1");
+	num = Decimal("2.1");
+	expd = Decimal("2.1");
 	assertTrue(abs(num, testContext) == expd);
 	num = -100;
 	expd = 100;
@@ -783,9 +783,9 @@ unittest {
 unittest {
 	write("plus.........");
 	// NOTE: result should equal 0 + this or 0 - this
-	BigDecimal zero = BigDecimal(0);
-	BigDecimal num;
-	BigDecimal expd;
+	Decimal zero = Decimal(0);
+	Decimal num;
+	Decimal expd;
 	num = 1.3;
 	expd = zero + num;
 	assertTrue(+num == expd);
@@ -799,9 +799,9 @@ unittest {
 unittest {
 	write("minus........");
 	// NOTE: result should equal 0 + this or 0 - this
-	BigDecimal zero = BigDecimal(0);
-	BigDecimal num;
-	BigDecimal expd;
+	Decimal zero = Decimal(0);
+	Decimal num;
+	Decimal expd;
 	num = 1.3;
 	expd = zero - num;
 	assertTrue(-num == expd);
@@ -815,32 +815,32 @@ unittest {
 unittest {
 	write("next-plus....");
 	DecimalContext ctx999 = testContext.setMaxExponent(999);
-	BigDecimal num, expect;
+	Decimal num, expect;
 	num = 1;
-	expect = BigDecimal("1.00000001");
+	expect = Decimal("1.00000001");
 	assertTrue(nextPlus(num, ctx999) == expect);
 	num = 10;
-	expect = BigDecimal("10.0000001");
+	expect = Decimal("10.0000001");
 	assertTrue(nextPlus(num, ctx999) == expect);
 	num = 1E5;
-	expect = BigDecimal("100000.001");
+	expect = Decimal("100000.001");
 	assertTrue(nextPlus(num, ctx999) == expect);
 	num = 1E8;
-	expect = BigDecimal("100000001");
+	expect = Decimal("100000001");
 	assertTrue(nextPlus(num, ctx999) == expect);
 	// num digits exceeds precision...
-	num = BigDecimal("1234567891");
-	expect = BigDecimal("1.23456790E9");
+	num = Decimal("1234567891");
+	expect = Decimal("1.23456790E9");
 	assertTrue(nextPlus(num, ctx999) == expect);
 	// result < tiny
-	num = BigDecimal("-1E-1007");
-	expect = BigDecimal("-0E-1007");
+	num = Decimal("-1E-1007");
+	expect = Decimal("-0E-1007");
 	assertTrue(nextPlus(num, ctx999) == expect);
-	num = BigDecimal("-1.00000003");
-	expect = BigDecimal("-1.00000002");
+	num = Decimal("-1.00000003");
+	expect = Decimal("-1.00000002");
 	assertTrue(nextPlus(num, ctx999) == expect);
-	num = BigDecimal("-Infinity");
-	expect = BigDecimal("-9.99999999E+999");
+	num = Decimal("-Infinity");
+	expect = Decimal("-9.99999999E+999");
 	assertTrue(nextPlus(num, ctx999) == expect);
 	writeln("passed");
 }
@@ -848,60 +848,60 @@ unittest {
 unittest {
 	write("next-minus...");
 	DecimalContext ctx999 = testContext.setMaxExponent(999);
-	BigDecimal num;
-	BigDecimal expect;
+	Decimal num;
+	Decimal expect;
 	num = 1;
-	expect = BigDecimal("0.999999999");
+	expect = Decimal("0.999999999");
 	assertTrue(nextMinus(num, ctx999) == expect);
-	num = BigDecimal("1E-1007");
-	expect = BigDecimal("0E-1007");
+	num = Decimal("1E-1007");
+	expect = Decimal("0E-1007");
 	assertTrue(nextMinus(num, ctx999) == expect);
-	num = BigDecimal("-1.00000003");
-	expect = BigDecimal("-1.00000004");
+	num = Decimal("-1.00000003");
+	expect = Decimal("-1.00000004");
 	assertTrue(nextMinus(num, ctx999) == expect);
-	/*	  num = BigDecimal("Infinity");
-		expect = BigDecimal("9.99999999E+999");
+	/*	  num = Decimal("Infinity");
+		expect = Decimal("9.99999999E+999");
 		assertTrue(nextMinus(num, ctx999) == expect);*/
 	writeln("passed");
 }
 
 unittest {
 	write("next-toward..");
-	BigDecimal op1, op2, expect;
+	Decimal op1, op2, expect;
 	op1 = 1;
 	op2 = 2;
-	expect = BigDecimal("1.00000001");
+	expect = Decimal("1.00000001");
 	assertTrue(nextToward(op1, op2, testContext) == expect);
-	op1 = BigDecimal("-1E-1007");
+	op1 = Decimal("-1E-1007");
 	op2 = 1;
-	expect = BigDecimal("-0E-1007");
+	expect = Decimal("-0E-1007");
 	assertTrue(nextToward(op1, op2, testContext) == expect);
-	op1 = BigDecimal("-1.00000003");
+	op1 = Decimal("-1.00000003");
 	op2 = 0;
-	expect = BigDecimal("-1.00000002");
+	expect = Decimal("-1.00000002");
 	assertTrue(nextToward(op1, op2, testContext) == expect);
 	op1 = 1;
 	op2 = 0;
-	expect = BigDecimal("0.999999999");
+	expect = Decimal("0.999999999");
 	assertTrue(nextToward(op1, op2, testContext) == expect);
-	op1 = BigDecimal("1E-1007");
+	op1 = Decimal("1E-1007");
 	op2 = -100;
-	expect = BigDecimal("0E-1007");
+	expect = Decimal("0E-1007");
 	assertTrue(nextToward(op1, op2, testContext) == expect);
-	op1 = BigDecimal("-1.00000003");
+	op1 = Decimal("-1.00000003");
 	op2 = -10;
-	expect = BigDecimal("-1.00000004");
+	expect = Decimal("-1.00000004");
 	assertTrue(nextToward(op1, op2, testContext) == expect);
-	op1 = BigDecimal("0.00");
-	op2 = BigDecimal("-0.0000");
-	expect = BigDecimal("-0.00");
+	op1 = Decimal("0.00");
+	op2 = Decimal("-0.0000");
+	expect = Decimal("-0.00");
 	assertTrue(nextToward(op1, op2, testContext) == expect);
 	writeln("passed");
 }
 
 unittest {
 	write("same-quantum.");
-	BigDecimal op1, op2;
+	Decimal op1, op2;
 	op1 = 2.17;
 	op2 = 0.001;
 	assertTrue(!sameQuantum(op1, op2));
@@ -911,18 +911,18 @@ unittest {
 	assertTrue(!sameQuantum(op1, op2));
 	op2 = 1;
 	assertTrue(!sameQuantum(op1, op2));
-	op1 = BigDecimal("Inf");
-	op2 = BigDecimal("Inf");
+	op1 = Decimal("Inf");
+	op2 = Decimal("Inf");
 	assertTrue(sameQuantum(op1, op2));
-	op1 = BigDecimal("NaN");
-	op2 = BigDecimal("NaN");
+	op1 = Decimal("NaN");
+	op2 = Decimal("NaN");
 	assertTrue(sameQuantum(op1, op2));
 	writeln("passed");
 }
 
 unittest {
 	write("compare......");
-	BigDecimal op1, op2;
+	Decimal op1, op2;
 	int result;
 	op1 = 2.1;
 	op2 = 3;
@@ -932,8 +932,8 @@ unittest {
 	op2 = 2.1;
 	result = compare(op1, op2, testContext);
 	assertTrue(result == 0);
-	op1 = BigDecimal("2.1");
-	op2 = BigDecimal("2.10");
+	op1 = Decimal("2.1");
+	op2 = Decimal("2.10");
 	result = compare(op1, op2, testContext);
 	assertTrue(result == 0);
 	op1 = 3;
@@ -957,12 +957,12 @@ unittest {
 	result = compare(op1, op2, testContext);
 	assertTrue(result == -1);
 	op1 = 3;
-	op2 = BigDecimal.max;
+	op2 = Decimal.max;
 	result = compare(op1, op2, testContext);
 	assertTrue(result == -1);
 	op1 = -3;
-	op2 = copyNegate!BigDecimal(BigDecimal.max);
-	result = compare!BigDecimal(op1, op2, testContext);
+	op2 = copyNegate!Decimal(Decimal.max);
+	result = compare!Decimal(op1, op2, testContext);
 	assertTrue(result == 1);
 	writeln("passed");
 }
@@ -970,18 +970,18 @@ unittest {
 // (T)TODO: change these to true opEquals calls.
 unittest {
 	write("equals.......");
-	BigDecimal op1, op2;
-	op1 = BigDecimal("NaN");
-	op2 = BigDecimal("NaN");
+	Decimal op1, op2;
+	op1 = Decimal("NaN");
+	op2 = Decimal("NaN");
 	assertTrue(op1 != op2);
-	op1 = BigDecimal("inf");
-	op2 = BigDecimal("inf");
+	op1 = Decimal("inf");
+	op2 = Decimal("inf");
 	assertTrue(op1 == op2);
-	op2 = BigDecimal("-inf");
+	op2 = Decimal("-inf");
 	assertTrue(op1 != op2);
-	op1 = BigDecimal("-inf");
+	op1 = Decimal("-inf");
 	assertTrue(op1 == op2);
-	op2 = BigDecimal("NaN");
+	op2 = Decimal("NaN");
 	assertTrue(op1 != op2);
 	op1 = 0;
 	assertTrue(op1 != op2);
@@ -997,8 +997,8 @@ unittest {
 
 unittest {
 	write("comp-total..");
-	BigDecimal op1;
-	BigDecimal op2;
+	Decimal op1;
+	Decimal op2;
 	int result;
 	op1 = 12.73;
 	op2 = 127.9;
@@ -1008,20 +1008,20 @@ unittest {
 	op2 = 12;
 	result = compareTotal(op1, op2);
 	assertTrue(result == -1);
-	op1 = BigDecimal("12.30");
-	op2 = BigDecimal("12.3");
+	op1 = Decimal("12.30");
+	op2 = Decimal("12.3");
 	result = compareTotal(op1, op2);
 	assertTrue(result == -1);
-	op1 = BigDecimal("12.30");
-	op2 = BigDecimal("12.30");
+	op1 = Decimal("12.30");
+	op2 = Decimal("12.30");
 	result = compareTotal(op1, op2);
 	assertTrue(result == 0);
-	op1 = BigDecimal("12.3");
-	op2 = BigDecimal("12.300");
+	op1 = Decimal("12.3");
+	op2 = Decimal("12.300");
 	result = compareTotal(op1, op2);
 	assertTrue(result == 1);
-	op1 = BigDecimal("12.3");
-	op2 = BigDecimal("NaN");
+	op1 = Decimal("12.3");
+	op2 = Decimal("NaN");
 	result = compareTotal(op1, op2);
 	assertTrue(result == -1);
 	writeln("passed");
@@ -1034,18 +1034,18 @@ unittest {
 
 unittest {
 	write("max..........");
-	BigDecimal op1, op2;
+	Decimal op1, op2;
 	op1 = 3;
 	op2 = 2;
 	assertTrue(max(op1, op2, testContext) == op1);
 	op1 = -10;
 	op2 = 3;
 	assertTrue(max(op1, op2, testContext) == op2);
-	op1 = BigDecimal("1.0");
+	op1 = Decimal("1.0");
 	op2 = 1;
 	assertTrue(max(op1, op2, testContext) == op2);
 	op1 = 7;
-	op2 = BigDecimal("NaN");
+	op2 = Decimal("NaN");
 	assertTrue(max(op1, op2, testContext) == op1);
 	writeln("passed");
 }
@@ -1057,18 +1057,18 @@ unittest {
 
 unittest {
 	write("min..........");
-	BigDecimal op1, op2;
+	Decimal op1, op2;
 	op1 = 3;
 	op2 = 2;
 	assertTrue(min(op1, op2, testContext) == op2);
 	op1 = -10;
 	op2 = 3;
 	assertTrue(min(op1, op2, testContext) == op1);
-	op1 = BigDecimal("1.0");
+	op1 = Decimal("1.0");
 	op2 = 1;
 	assertTrue(min(op1, op2, testContext) == op1);
 	op1 = 7;
-	op2 = BigDecimal("NaN");
+	op2 = Decimal("NaN");
 	assertTrue(min(op1, op2, testContext) == op1);
 	writeln("passed");
 }
@@ -1080,9 +1080,9 @@ unittest {
 
 unittest {
 	write("shift........");
-/*	BigDecimal num = 34;
+/*	Decimal num = 34;
 	int digits = 8;
-	BigDecimal act = shift(num, digits, testContext);
+	Decimal act = shift(num, digits, testContext);
 	num = 12;
 	digits = 9;
 	act = shift(num, digits, testContext);
@@ -1098,9 +1098,9 @@ unittest {
 
 unittest {
 	write("rotate.......");
-/*	BigDecimal num = 34;
+/*	Decimal num = 34;
 	int digits = 8;
-	BigDecimal act = rotate(num, digits);
+	Decimal act = rotate(num, digits);
 	writeln("act = ", act);
 	num = 12;
 	digits = 9;
@@ -1123,40 +1123,40 @@ unittest {
 // and to check the NaN, Inf combinations better.
 unittest {
 	write("add..........");
-	testAddition!(BigDecimal, int)(12, 7, 18);
-	BigDecimal op1 = BigDecimal("12");
-	BigDecimal op2 = BigDecimal("7.00");
-	BigDecimal sum = add(op1, op2, testContext);
+	testAddition!(Decimal, int)(12, 7, 18);
+	Decimal op1 = Decimal("12");
+	Decimal op2 = Decimal("7.00");
+	Decimal sum = add(op1, op2, testContext);
 	assertTrue(sum.toString() == "19.00");
-	op1 = BigDecimal("1E+2");
-	op2 = BigDecimal("1E+4");
+	op1 = Decimal("1E+2");
+	op2 = Decimal("1E+4");
 	sum = add(op1, op2, testContext);
 	assertTrue(sum.toString() == "1.01E+4");
-	op1 = BigDecimal("1.3");
-	op2 = BigDecimal("1.07");
+	op1 = Decimal("1.3");
+	op2 = Decimal("1.07");
 	sum = sub(op1, op2, testContext);
 	assertTrue(sum.toString() == "0.23");
-	op2 = BigDecimal("1.30");
+	op2 = Decimal("1.30");
 	sum = sub(op1, op2, testContext);
 	assertTrue(sum.toString() == "0.00");
-	op2 = BigDecimal("2.07");
+	op2 = Decimal("2.07");
 	sum = sub(op1, op2, testContext);
 	assertTrue(sum.toString() == "-0.77");
-	op1 = BigDecimal("Inf");
+	op1 = Decimal("Inf");
 	op2 = 1;
 	sum = add(op1, op2, testContext);
 	assertTrue(sum.toString() == "Infinity");
-	op1 = BigDecimal("NaN");
+	op1 = Decimal("NaN");
 	op2 = 1;
 	sum = add(op1, op2, testContext);
 	assertTrue(sum.isQuiet);
-	op2 = BigDecimal("Infinity");
+	op2 = Decimal("Infinity");
 	sum = add(op1, op2, testContext);
 	assertTrue(sum.isQuiet);
 	op1 = 1;
 	sum = sub(op1, op2, testContext);
 	assertTrue(sum.toString() == "-Infinity");
-	op1 = BigDecimal("-0");
+	op1 = Decimal("-0");
 	op2 = 0;
 	sum = sub(op1, op2, testContext);
 	assertTrue(sum.toString() == "-0");
@@ -1171,28 +1171,28 @@ unittest {
 unittest {
 	// (T)TODO: change these to mul(op1, op2) tests.
 	write("multiply.....");
-	BigDecimal op1, op2, result;
-	op1 = BigDecimal("1.20");
+	Decimal op1, op2, result;
+	op1 = Decimal("1.20");
 	op2 = 3;
 	result = op1 * op2;
 	assertTrue(result.toString() == "3.60");
 	op1 = 7;
 	result = op1 * op2;
 	assertTrue(result.toString() == "21");
-	op1 = BigDecimal("0.9");
-	op2 = BigDecimal("0.8");
+	op1 = Decimal("0.9");
+	op2 = Decimal("0.8");
 	result = op1 * op2;
 	assertTrue(result.toString() == "0.72");
-	op1 = BigDecimal("0.9");
-	op2 = BigDecimal("-0.0");
+	op1 = Decimal("0.9");
+	op2 = Decimal("-0.0");
 	result = op1 * op2;
 	assertTrue(result.toString() == "-0.00");
-	op1 = BigDecimal(654321);
-	op2 = BigDecimal(654321);
+	op1 = Decimal(654321);
+	op2 = Decimal(654321);
 	result = op1 * op2;
 	assertTrue(result.toString() == "4.28135971E+11");
 	op1 = -1;
-	op2 = BigDecimal("Infinity");
+	op2 = Decimal("Infinity");
 	result = op1 * op2;
 	assertTrue(result.toString() == "-Infinity");
 	op1 = -1;
@@ -1204,39 +1204,39 @@ unittest {
 
 unittest {
 	write("fma..........");
-	BigDecimal op1, op2, op3, result;
+	Decimal op1, op2, op3, result;
 	op1 = 3;
 	op2 = 5;
 	op3 = 7;
 	result = (fma(op1, op2, op3, testContext));
-	assertTrue(result == BigDecimal(22));
+	assertTrue(result == Decimal(22));
 	op1 = 3;
 	op2 = -5;
 	op3 = 7;
 	result = (fma(op1, op2, op3, testContext));
-	assertTrue(result == BigDecimal(-8));
-	op1 = BigDecimal("888565290");
-	op2 = BigDecimal("1557.96930");
-	op3 = BigDecimal("-86087.7578");
+	assertTrue(result == Decimal(-8));
+	op1 = Decimal("888565290");
+	op2 = Decimal("1557.96930");
+	op3 = Decimal("-86087.7578");
 	result = (fma(op1, op2, op3, testContext));
-	assertTrue(result == BigDecimal("1.38435736E+12"));
+	assertTrue(result == Decimal("1.38435736E+12"));
 	writeln("passed");
 }
 
 unittest {
 	write("divide.......");
-	BigDecimal op1, op2;
-	BigDecimal expd;
+	Decimal op1, op2;
+	Decimal expd;
 	op1 = 1;
 	op2 = 3;
-	BigDecimal quotient = div(op1, op2, testContext);
-	expd = BigDecimal("0.333333333");
+	Decimal quotient = div(op1, op2, testContext);
+	expd = Decimal("0.333333333");
 	assertTrue(quotient == expd);
 	assertTrue(quotient.toString() == expd.toString());
 	op1 = 2;
 	op2 = 3;
 	quotient = div(op1, op2, testContext);
-	expd = BigDecimal("0.666666667");
+	expd = Decimal("0.666666667");
 	assertTrue(quotient == expd);
 	op1 = 5;
 	op2 = 2;
@@ -1250,15 +1250,15 @@ unittest {
 	quotient = div(op1, op2, testContext);
 	assertTrue(quotient == expd);
 	assertTrue(quotient.toString() == expd.toString());
-	op1 = BigDecimal("8.00");
+	op1 = Decimal("8.00");
 	op2 = 2;
-	expd = BigDecimal("4.00");
+	expd = Decimal("4.00");
 	quotient = div(op1, op2, testContext);
 	assertTrue(quotient == expd);
 	assertTrue(quotient.toString() == expd.toString());
-	op1 = BigDecimal("2.400");
-	op2 = BigDecimal("2.0");
-	expd = BigDecimal("1.20");
+	op1 = Decimal("2.400");
+	op2 = Decimal("2.0");
+	expd = Decimal("1.20");
 	quotient = div(op1, op2, testContext);
 	assertTrue(quotient == expd);
 	assertTrue(quotient.toString() == expd.toString());
@@ -1285,7 +1285,7 @@ unittest {
 
 unittest {
 	write("div-int......");
-	BigDecimal op1, op2, actual, expect;
+	Decimal op1, op2, actual, expect;
 	op1 = 2;
 	op2 = 3;
 	actual = divideInteger(op1, op2, testContext);
@@ -1304,7 +1304,7 @@ unittest {
 
 unittest {
 	write("remainder....");
-	BigDecimal op1, op2, actual, expect;
+	Decimal op1, op2, actual, expect;
 	op1 = 2.1;
 	op2 = 3;
 	actual = rem(op1, op2, testContext);
@@ -1343,7 +1343,7 @@ unittest {
 
 unittest {
 	write("rnd-int-ex...");
-	BigDecimal num, expect, actual;
+	Decimal num, expect, actual;
 	num = 2.1;
 	expect = 2;
 	actual = roundToIntegralExact(num, testContext);
@@ -1352,10 +1352,10 @@ unittest {
 	expect = 100;
 	assertTrue(roundToIntegralExact(num, testContext) == expect);
 	assertTrue(roundToIntegralExact(num, testContext).toString() == expect.toString());
-	num = BigDecimal("100.0");
+	num = Decimal("100.0");
 	assertTrue(roundToIntegralExact(num, testContext) == expect);
 	assertTrue(roundToIntegralExact(num, testContext).toString() == expect.toString());
-	num = BigDecimal("101.5");
+	num = Decimal("101.5");
 	expect = 102;
 	assertTrue(roundToIntegralExact(num, testContext) == expect);
 	assertTrue(roundToIntegralExact(num, testContext).toString() == expect.toString());
@@ -1363,16 +1363,16 @@ unittest {
 	expect = -102;
 	assertTrue(roundToIntegralExact(num, testContext) == expect);
 	assertTrue(roundToIntegralExact(num, testContext).toString() == expect.toString());
-	num = BigDecimal("10E+5");
-	expect = BigDecimal("1.0E+6");
+	num = Decimal("10E+5");
+	expect = Decimal("1.0E+6");
 	assertTrue(roundToIntegralExact(num, testContext) == expect);
 	assertTrue(roundToIntegralExact(num, testContext).toString() == expect.toString());
 	num = 7.89E+77;
 	expect = 7.89E+77;
 	assertTrue(roundToIntegralExact(num, testContext) == expect);
 	assertTrue(roundToIntegralExact(num, testContext).toString() == expect.toString());
-	num = BigDecimal("-Inf");
-	expect = BigDecimal("-Infinity");
+	num = Decimal("-Inf");
+	expect = Decimal("-Infinity");
 	assertTrue(roundToIntegralExact(num, testContext) == expect);
 	assertTrue(roundToIntegralExact(num, testContext).toString() == expect.toString());
 	writeln("passed");
@@ -1390,28 +1390,28 @@ unittest {
 
 unittest {
 	write("invalid......");
-	BigDecimal num, expect, actual;
+	Decimal num, expect, actual;
 
 	// (T)TODO: FIXTHIS: Can't actually test payloads at this point.
-	num = BigDecimal("sNaN123");
-	expect = BigDecimal("NaN123");
-	actual = abs!BigDecimal(num, testContext);
+	num = Decimal("sNaN123");
+	expect = Decimal("NaN123");
+	actual = abs!Decimal(num, testContext);
 	assertTrue(actual.isQuiet);
 	assertTrue(contextFlags.getFlag(INVALID_OPERATION));
 //	  assertTrue(actual.toAbstract == expect.toAbstract);
-	num = BigDecimal("NaN123");
+	num = Decimal("NaN123");
 	actual = abs(num, testContext);
 	assertTrue(actual.isQuiet);
 	assertTrue(contextFlags.getFlag(INVALID_OPERATION));
 //	  assertTrue(actual.toAbstract == expect.toAbstract);
 
-	num = BigDecimal("sNaN123");
-	expect = BigDecimal("NaN123");
+	num = Decimal("sNaN123");
+	expect = Decimal("NaN123");
 	actual = -num;
 	assertTrue(actual.isQuiet);
 	assertTrue(contextFlags.getFlag(INVALID_OPERATION));
 //	  assertTrue(actual.toAbstract == expect.toAbstract);
-	num = BigDecimal("NaN123");
+	num = Decimal("NaN123");
 	actual = -num;
 	assertTrue(actual.isQuiet);
 	assertTrue(contextFlags.getFlag(INVALID_OPERATION));
@@ -1462,81 +1462,81 @@ unittest {
 
 unittest {
 	writeln("---------------------");
-	writeln("BigDecimal....testing");
+	writeln("Decimal....testing");
 	writeln("---------------------");
 }
 
 unittest {
 	write("this().......");
-	BigDecimal num;
+	Decimal num;
 	string str;
-	num = BigDecimal(1, 12334, -5);
+	num = Decimal(1, 12334, -5);
 	str = "-0.12334";
 	assertTrue(num.toString == str);
-	num = BigDecimal(-23456, 10);
+	num = Decimal(-23456, 10);
 	str = "-2.3456E+14";
 	assertTrue(num.toString == str);
-	num = BigDecimal(234568901234);
+	num = Decimal(234568901234);
 	str = "234568901234";
 	assertTrue(num.toString == str);
-	num = BigDecimal("123.457E+29");
+	num = Decimal("123.457E+29");
 	str = "1.23457E+31";
 	assertTrue(num.toString == str);
 	num = std.math.E;
 	str = "2.71828183";
 	assertTrue(num.toString == str);
 	num = std.math.LOG2;
-	BigDecimal copy = BigDecimal(num);
-	assertTrue(compareTotal!BigDecimal(num, copy) == 0);
-	num = BigDecimal(SV.INF, true);
+	Decimal copy = Decimal(num);
+	assertTrue(compareTotal!Decimal(num, copy) == 0);
+	num = Decimal(SV.INF, true);
 	assertTrue(num.toSciString == "-Infinity");
 	assertTrue(num.toAbstract() == "[1,inf]");
-	num = BigDecimal(true, BigInt(7254), 94);
+	num = Decimal(true, BigInt(7254), 94);
 	assertTrue(num.toString == "-7.254E+97");
-	num = BigDecimal(BigInt(7254), 94);
+	num = Decimal(BigInt(7254), 94);
 	assertTrue(num.toString == "7.254E+97");
-	num = BigDecimal(BigInt(-7254));
+	num = Decimal(BigInt(-7254));
 	assertTrue(num.toString == "-7254");
-	num = BigDecimal(1234L, 567);
+	num = Decimal(1234L, 567);
 	assertTrue(num.toString() == "1.234E+570");
-	num = BigDecimal(1234, 567);
+	num = Decimal(1234, 567);
 	assertTrue(num.toString() == "1.234E+570");
-	num = BigDecimal(1234L);
+	num = Decimal(1234L);
 	assertTrue(num.toString() == "1234");
-	num = BigDecimal(123400L);
+	num = Decimal(123400L);
 	assertTrue(num.toString() == "123400");
-	num = BigDecimal(1234L);
+	num = Decimal(1234L);
 	assertTrue(num.toString() == "1234");
 	writeln("passed");
 }
 
 unittest {
 	write("dup..........");
-	BigDecimal num = BigDecimal(std.math.PI);
-	BigDecimal copy = num.dup;
+	Decimal num = Decimal(std.math.PI);
+	Decimal copy = num.dup;
 	assertTrue(num == copy);
 	writeln("passed");
 }
 
 unittest {
 	write("toString.....");
-	BigDecimal f = BigDecimal(1234L, 567);
-	f = BigDecimal(1234, 567);
+	Decimal f = Decimal(1234L, 567);
+	f = Decimal(1234, 567);
 	assertTrue(f.toString() == "1.234E+570");
-	f = BigDecimal(1234L);
+	f = Decimal(1234L);
 	assertTrue(f.toString() == "1234");
-	f = BigDecimal(123400L);
+	f = Decimal(123400L);
 	assertTrue(f.toString() == "123400");
-	f = BigDecimal(1234L);
+	f = Decimal(1234L);
 	assertTrue(f.toString() == "1234");
 	writeln("passed");
 }
 
 unittest {
 	write("opAssign.....");
-	BigDecimal num;
+	Decimal num;
 	string str;
-	num = BigDecimal(1, 245, 8);
+	num = Decimal(1, 245, 8);
 	str = "-2.45E+10";
 	assertTrue(num.toString == str);
 	num = long.max;
@@ -1553,15 +1553,15 @@ unittest {
 
 unittest {
 	write("toAbstract...");
-	BigDecimal num;
+	Decimal num;
 	string str;
-	num = BigDecimal("-inf");
+	num = Decimal("-inf");
 	str = "[1,inf]";
 	assertTrue(num.toAbstract == str);
-	num = BigDecimal("nan");
+	num = Decimal("nan");
 	str = "[0,qNaN]";
 	assertTrue(num.toAbstract == str);
-	num = BigDecimal("snan1234");
+	num = Decimal("snan1234");
 	str = "[0,sNaN1234]";
 	assertTrue(num.toAbstract == str);
 	writeln("passed");
@@ -1569,9 +1569,9 @@ unittest {
 
 unittest {
 	write("toString.....");
-	BigDecimal num;
+	Decimal num;
 	string str;
-	num = BigDecimal(200000, 71);
+	num = Decimal(200000, 71);
 	str = "2.00000E+76";
 	assertTrue(num.toString == str);
 	writeln("passed");
@@ -1579,186 +1579,186 @@ unittest {
 
 unittest {
 	write("canonical....");
-	BigDecimal num = BigDecimal("2.50");
+	Decimal num = Decimal("2.50");
 	assertTrue(num.isCanonical);
-	BigDecimal copy = num.canonical;
+	Decimal copy = num.canonical;
 	assertTrue(compareTotal(num, copy) == 0);
 	writeln("passed");
 }
 
 unittest {
 	write("spcl values..");
-	BigDecimal num;
-	num = BigDecimal.NAN;
+	Decimal num;
+	num = Decimal.NAN;
 	assertTrue(num.toString == "NaN");
-	num = BigDecimal.SNAN;
+	num = Decimal.SNAN;
 	assertTrue(num.toString == "sNaN");
-//	writeln("BigDecimal(SV.QNAN).toAbstract = ", BigDecimal.NAN.toAbstract);
-	num = BigDecimal.NEG_ZERO;
+//	writeln("Decimal(SV.QNAN).toAbstract = ", Decimal.NAN.toAbstract);
+	num = Decimal.NEG_ZERO;
 	assertTrue(num.toString == "-0");
 	writeln("passed");
 }
 
 unittest {
 	write("toExact......");
-	BigDecimal num;
+	Decimal num;
 	assertTrue(num.toExact == "+NaN");
 	num = +9999999E+90;
 	assertTrue(num.toExact == "+9999999E+90");
 	num = 1;
 	assertTrue(num.toExact == "+1E+00");
-	num = BigDecimal.infinity(true);
+	num = Decimal.infinity(true);
 	assertTrue(num.toExact == "-Infinity");
 	writeln("passed");
 }
 
 unittest {
 	write("canonical....");
-	BigDecimal num = BigDecimal("2.50");
+	Decimal num = Decimal("2.50");
 	assertTrue(num.isCanonical);
 	writeln("passed");
 }
 
 unittest {
 	write("isZero.......");
-	BigDecimal num;
-	num = BigDecimal("0");
+	Decimal num;
+	num = Decimal("0");
 	assertTrue(num.isZero);
-	num = BigDecimal("2.50");
+	num = Decimal("2.50");
 	assertTrue(!num.isZero);
-	num = BigDecimal("-0E+2");
+	num = Decimal("-0E+2");
 	assertTrue(num.isZero);
 	writeln("passed");
 }
 
 unittest {
 	write("isNaN........");
-	BigDecimal num;
-	num = BigDecimal("2.50");
+	Decimal num;
+	num = Decimal("2.50");
 	assertTrue(!num.isNaN);
-	num = BigDecimal("NaN");
+	num = Decimal("NaN");
 	assertTrue(num.isNaN);
-	num = BigDecimal("-sNaN");
+	num = Decimal("-sNaN");
 	assertTrue(num.isNaN);
 	writeln("passed");
 }
 
 unittest {
 	write("isSignaling..");
-	BigDecimal num;
-	num = BigDecimal("2.50");
+	Decimal num;
+	num = Decimal("2.50");
 	assertTrue(!num.isSignaling);
-	num = BigDecimal("NaN");
+	num = Decimal("NaN");
 	assertTrue(!num.isSignaling);
-	num = BigDecimal("sNaN");
+	num = Decimal("sNaN");
 	assertTrue(num.isSignaling);
 	writeln("passed");
 }
 
 unittest {
 	write("isQuiet......");
-	BigDecimal num;
-	num = BigDecimal("2.50");
+	Decimal num;
+	num = Decimal("2.50");
 	assertTrue(!num.isQuiet);
-	num = BigDecimal("NaN");
+	num = Decimal("NaN");
 	assertTrue(num.isQuiet);
-	num = BigDecimal("sNaN");
+	num = Decimal("sNaN");
 	assertTrue(!num.isQuiet);
 	writeln("passed");
 }
 
 unittest {
 	write("isInfinite...");
-	BigDecimal num;
-	num = BigDecimal("2.50");
+	Decimal num;
+	num = Decimal("2.50");
 	assertTrue(!num.isInfinite);
-	num = BigDecimal("-Inf");
+	num = Decimal("-Inf");
 	assertTrue(num.isInfinite);
-	num = BigDecimal("NaN");
+	num = Decimal("NaN");
 	assertTrue(!num.isInfinite);
 	writeln("passed");
 }
 
 unittest {
 	write("isFinite.....");
-	BigDecimal num;
-	num = BigDecimal("2.50");
+	Decimal num;
+	num = Decimal("2.50");
 	assertTrue(num.isFinite);
-	num = BigDecimal("-0.3");
+	num = Decimal("-0.3");
 	assertTrue(num.isFinite);
 	num = 0;
 	assertTrue(num.isFinite);
-	num = BigDecimal("Inf");
+	num = Decimal("Inf");
 	assertTrue(!num.isFinite);
-	num = BigDecimal("-Inf");
+	num = Decimal("-Inf");
 	assertTrue(!num.isFinite);
-	num = BigDecimal("NaN");
+	num = Decimal("NaN");
 	assertTrue(!num.isFinite);
 	writeln("passed");
 }
 
 unittest {
 	write("isSigned.....");
-	BigDecimal num;
-	num = BigDecimal("2.50");
+	Decimal num;
+	num = Decimal("2.50");
 	assertTrue(!num.isSigned);
-	num = BigDecimal("-12");
+	num = Decimal("-12");
 	assertTrue(num.isSigned);
-	num = BigDecimal("-0");
+	num = Decimal("-0");
 	assertTrue(num.isSigned);
 	writeln("passed");
 }
 
 unittest {
 	write("isNegative...");
-	BigDecimal num;
-	num = BigDecimal("2.50");
+	Decimal num;
+	num = Decimal("2.50");
 	assertTrue(!num.isNegative);
-	num = BigDecimal("-12");
+	num = Decimal("-12");
 	assertTrue(num.isNegative);
-	num = BigDecimal("-0");
+	num = Decimal("-0");
 	assertTrue(num.isNegative);
 	writeln("passed");
 }
 
 unittest {
 	write("isSubnormal..");
-	BigDecimal num;
-	num = BigDecimal("2.50");
+	Decimal num;
+	num = Decimal("2.50");
 	assertTrue(!num.isSubnormal);
-	num = BigDecimal("0.1E-99");
+	num = Decimal("0.1E-99");
 	assertTrue(num.isSubnormal);
-	num = BigDecimal("0.00");
+	num = Decimal("0.00");
 	assertTrue(!num.isSubnormal);
-	num = BigDecimal("-Inf");
+	num = Decimal("-Inf");
 	assertTrue(!num.isSubnormal);
-	num = BigDecimal("NaN");
+	num = Decimal("NaN");
 	assertTrue(!num.isSubnormal);
 	writeln("passed");
 }
 
 unittest {
 	write("isNormal.....");
-	BigDecimal num;
-	num = BigDecimal("2.50");
+	Decimal num;
+	num = Decimal("2.50");
 	assertTrue(num.isNormal);
-	num = BigDecimal("0.1E-99");
+	num = Decimal("0.1E-99");
 	assertTrue(!num.isNormal);
-	num = BigDecimal("0.00");
+	num = Decimal("0.00");
 	assertTrue(!num.isNormal);
-	num = BigDecimal("-Inf");
+	num = Decimal("-Inf");
 	assertTrue(!num.isNormal);
-	num = BigDecimal("NaN");
+	num = Decimal("NaN");
 	assertTrue(!num.isNormal);
 	writeln("passed");
 }
 
 unittest {
 	write("isSpecial....");
-	BigDecimal num;
-	num = BigDecimal.infinity(true);
+	Decimal num;
+	num = Decimal.infinity(true);
 	assertTrue(num.isSpecial);
-	num = BigDecimal.snan(1234);
+	num = Decimal.snan(1234);
 	assertTrue(num.isSpecial);
 	num = 12378.34;
 	assertTrue(!num.isSpecial);
@@ -1767,7 +1767,7 @@ unittest {
 
 unittest {
 	write("isIntegral...");
-	BigDecimal num;
+	Decimal num;
 	num = 12345;
 	assertTrue(num.isIntegral);
 	num = BigInt("123456098420234978023480");
@@ -1783,38 +1783,38 @@ unittest {
 
 unittest {
 	write("components...");
-	BigDecimal big = -123.45E12;
+	Decimal big = -123.45E12;
 	assertTrue(big.exponent == 10);
 	assertTrue(big.coefficient == 12345);
 	assertTrue(big.sign);
 	big.coefficient = 23456;
 	big.exponent = 12;
 	big.sign = false;
-	assertTrue(big == BigDecimal(234.56E14));
-	big = BigDecimal.nan;
+	assertTrue(big == Decimal(234.56E14));
+	big = Decimal.nan;
 	assertTrue(big.payload == 0);
-	big = BigDecimal.snan(1250);
+	big = Decimal.snan(1250);
 	assertTrue(big.payload == 1250);
 	writeln("passed");
 }
 
 unittest {
 	write("sgn..........");
-	BigDecimal big;
+	Decimal big;
 	big = -123;
 	assertTrue(sgn(big) == -1);
 	big = 2345;
 	assertTrue(sgn(big) == 1);
-	big = BigDecimal("0.0000");
+	big = Decimal("0.0000");
 	assertTrue(sgn(big) == 0);
-	big = BigDecimal.infinity(true);
+	big = Decimal.infinity(true);
 	assertTrue(sgn(big) == -1);
 	writeln("passed");
 }
 
 unittest {
 	write("opCmp........");
-	BigDecimal num1, num2;
+	Decimal num1, num2;
 	num1 = 105;
 	num2 = 10.543;
 	assertTrue(num1 > num2);
@@ -1827,7 +1827,7 @@ unittest {
 
 unittest {
 	write("opEquals.....");
-	BigDecimal num1, num2;
+	Decimal num1, num2;
 	num1 = 105;
 	num2 = 10.543;
 	assertTrue(num1 != num2);
@@ -1838,7 +1838,7 @@ unittest {
 
 unittest {
 	write("opUnary......");
-	BigDecimal num, actual, expect;
+	Decimal num, actual, expect;
 	num = 134;
 	expect = num;
 	actual = +num;
@@ -1856,7 +1856,7 @@ unittest {
 // (T)TODO:   actual = --num; // fails!
 	actual = num--;
 	assertTrue(actual == expect);
-	num = BigDecimal(9999999, 90);
+	num = Decimal(9999999, 90);
 	expect = num;
 	actual = num++;
 	assertTrue(actual == expect);
@@ -1869,7 +1869,7 @@ unittest {
 
 unittest {
 	write("opBinary.....");
-	BigDecimal op1, op2, actual, expect;
+	Decimal op1, op2, actual, expect;
 	op1 = 4;
 	op2 = 8;
 	actual = op1 + op2;
@@ -1901,7 +1901,7 @@ unittest {
 
 unittest {
 	write("opOpAssign...");
-	BigDecimal op1, op2, actual, expect;
+	Decimal op1, op2, actual, expect;
 	op1 = 23.56;
 	op2 = -2.07;
 	op1 += op2;
@@ -1917,23 +1917,23 @@ unittest {
 
 unittest {
 	write("next.........");
-	BigDecimal big, expect;
+	Decimal big, expect;
 	big = 123.45;
-	assertTrue(big.nextUp == BigDecimal(123.450001));
+	assertTrue(big.nextUp == Decimal(123.450001));
 	big = 123.45;
-	assertTrue(big.nextDown == BigDecimal(123.449999));
+	assertTrue(big.nextDown == Decimal(123.449999));
 	big = 123.45;
 	expect = big.nextUp;
-	assertTrue(big.nextAfter(BigDecimal(123.46)) == expect);
+	assertTrue(big.nextAfter(Decimal(123.46)) == expect);
 	big = 123.45;
 	expect = big.nextDown;
-	assertTrue(big.nextAfter(BigDecimal(123.44)) == expect);
+	assertTrue(big.nextAfter(Decimal(123.44)) == expect);
 	writeln("passed");
 }
 
 unittest {
 	writeln("---------------------");
-	writeln("BigDecimal...finished");
+	writeln("Decimal...finished");
 	writeln("---------------------");
 }
 
@@ -1954,8 +1954,8 @@ unittest {
 
 unittest {
 	write("round........");
-	BigDecimal before = BigDecimal(9999);
-	BigDecimal after = before;
+	Decimal before = Decimal(9999);
+	Decimal after = before;
 	DecimalContext ctx3 = testContext.setPrecision(3);
 	DecimalContext ctx4 = testContext.setPrecision(4);
 	DecimalContext ctx5 = testContext.setPrecision(5);
@@ -1964,7 +1964,7 @@ unittest {
 	DecimalContext ctx8 = testContext.setPrecision(8);
 	after = round(after, ctx3);
 	assertEqual("1.00E+4", after.toString());
-	before = BigDecimal(1234567890);
+	before = Decimal(1234567890);
 	after = before;
 	after = round(after, ctx3);
 	assertTrue(after.toString() == "1.23E+9");
@@ -2251,7 +2251,7 @@ unittest {
 //	  DecimalContext context;
 	context.precision = 5;
 	context.rounding = Rounding.HALF_EVEN;
-	BigDecimal num;
+	Decimal num;
 	num = 1000;
 	roundByMode(num, context);
 	assertTrue(num.mant == 1000 && num.expo == 0 && num.digits == 4);
@@ -2279,10 +2279,10 @@ unittest {
 	write("getRemainder...");
 	pushContext(context);
 	context.precision = 5;
-	BigDecimal num, acrem, exnum, exrem;
-	num = BigDecimal(1234567890123456L);
+	Decimal num, acrem, exnum, exrem;
+	num = Decimal(1234567890123456L);
 	acrem = getRemainder(num, context);
-	exnum = BigDecimal("1.2345E+15");
+	exnum = Decimal("1.2345E+15");
 	assertTrue(num == exnum);
 	exrem = 67890123456;
 	assertTrue(acrem == exrem);
@@ -2292,8 +2292,8 @@ unittest {
 
 /*unittest {
 	write("increment......");
-	BigDecimal num;
-	BigDecimal expd;
+	Decimal num;
+	Decimal expd;
 	num = 10;
 	expd = 11;
 	increment(num);
@@ -2432,27 +2432,27 @@ unittest {
 // should there be?
 /*unittest {
 	writeln("this(big)....");
-	BigDecimal num = BigDecimal(0);
+	Decimal num = Decimal(0);
 	Dec32 dec = Dec32(num);
 	writeln("num = ", num);
 	writeln("dec = ", dec);
 
-	num = BigDecimal(1);
+	num = Decimal(1);
 	dec = Dec32(num);
 	writeln("num = ", num);
 	writeln("dec = ", dec);
 
-	num = BigDecimal(-1);
+	num = Decimal(-1);
 	dec = Dec32(num);
 	writeln("num = ", num);
 	writeln("dec = ", dec);
 
-	num = BigDecimal(-16000);
+	num = Decimal(-16000);
 	dec = Dec32(num);
 	writeln("num = ", num);
 	writeln("dec = ", dec);
 
-	num = BigDecimal(uint.max);
+	num = Decimal(uint.max);
 	dec = Dec32(num);
 	writeln("num = ", num);
 	writeln("dec = ", dec);
@@ -2460,8 +2460,8 @@ unittest {
 }*/
 
 unittest {
-	write("this(BigDecimal)..");
-	BigDecimal dec = 0;
+	write("this(Decimal)..");
+	Decimal dec = 0;
 	Dec32 num = dec;
 	assertTrue(dec.toString == num.toString);
 	dec = 1;
@@ -2672,8 +2672,8 @@ unittest {
 unittest {
 	write("toBigDecimal......");
 	Dec32 num = Dec32("12345E+17");
-	BigDecimal expected = BigDecimal("12345E+17");
-	BigDecimal actual = num.toBigDecimal;
+	Decimal expected = Decimal("12345E+17");
+	Decimal actual = num.toBigDecimal;
 	assertTrue(actual == expected);
 	writeln("passed");
 }

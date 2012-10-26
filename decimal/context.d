@@ -127,7 +127,7 @@ public struct DecimalContext {
 	}
 
 	// (X)TODO: is there a way to make this const w/in a context?
-	// (X)TODO: This is only used by BigDecimal -- maybe should move it there?
+	// (X)TODO: This is only used by Decimal -- maybe should move it there?
 	// (X)TODO: The mantissa is 10^^(precision - 1), so probably don't need
 	//			to implement as a string.
 	// Returns the maximum representable normal value in the current context.

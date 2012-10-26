@@ -69,12 +69,12 @@ BigInt toBigInt(const uint128 arg) {
 /// Returns true if T is a decimal type.
 public template isDecimal(T) {
 	enum bool isDecimal =
-		is(T: Dec32) || is(T: Dec64) || is(T: Dec128) || is(T: BigDecimal);
+		is(T: Dec32) || is(T: Dec64) || is(T: Dec128) || is(T: Decimal);
 }
 
 /// Returns true if T is an arbitrary-precision decimal type.
 public template isBigDecimal(T) {
-	enum bool isBigDecimal = is(T: BigDecimal);
+	enum bool isBigDecimal = is(T: Decimal);
 }
 
 /// Returns true if T is a fixed-precision decimal type.
@@ -109,9 +109,9 @@ public T toDecimal(T, U)(const U num) if (isDecimal!T && isFixedDecimal!U) {
 }
 
 /// Converts a decimal number to a big decimal
-public BigDecimal toBigDecimal(T)(const T num) if (isDecimal!T) {
+public Decimal toBigDecimal(T)(const T num) if (isDecimal!T) {
 //writefln("toBigDecimal(num) = %s", num);
-	static if (is(typeof(num) == BigDecimal)) {
+	static if (is(typeof(num) == Decimal)) {
 //writefln("num.dup = %s", num.dup);
 		return num.dup;
 	}
@@ -121,17 +121,17 @@ public BigDecimal toBigDecimal(T)(const T num) if (isDecimal!T) {
 		int  expo = num.exponent;
 //writefln("mant = %s", mant);
 //writefln("expo = %s", expo);
-//writefln("BigDecimal(sign, mant, expo) = %s", BigDecimal(sign, mant, expo));
+//writefln("Decimal(sign, mant, expo) = %s", Decimal(sign, mant, expo));
 //writeln("*****");
-		return BigDecimal(sign, mant, expo);
+		return Decimal(sign, mant, expo);
 	} else if (num.isInfinite) {
-		return BigDecimal.infinity(sign);
+		return Decimal.infinity(sign);
 	} else if (num.isSignaling) {
-		return BigDecimal.snan(num.payload);
+		return Decimal.snan(num.payload);
 	} else if (num.isQuiet) {
-		return BigDecimal.nan(num.payload);
+		return Decimal.nan(num.payload);
 	}
-	return BigDecimal.nan;
+	return Decimal.nan;
 }
 
 /// Converts a decimal number to a string
@@ -527,12 +527,12 @@ void writeTo(T)(const T num, scope void delegate(const(char)[]) sink,
 
 };  // end writeTo
 
-/// Converts a string into a BigDecimal. This departs from the specification
+/// Converts a string into a Decimal. This departs from the specification
 /// in that the coefficient string may contain underscores.
 // TODO: what about .nnn and nnn. ?
-public BigDecimal toNumber(const string inStr) {
-	BigDecimal num;
-	BigDecimal NAN = BigDecimal.nan;
+public Decimal toNumber(const string inStr) {
+	Decimal num;
+	Decimal NAN = Decimal.nan;
 	bool sign = false;
 	// strip, copy, tolower
 	char[] str = strip(inStr).dup;
@@ -546,7 +546,7 @@ public BigDecimal toNumber(const string inStr) {
 	}
 	// check for NaN
 	if (startsWith(str, "nan")) {
-		num = BigDecimal.nan(sign);
+		num = Decimal.nan(sign);
 		// check for payload
 		if (str.length > 3) {
 			return setPayload(num, str, 3);
@@ -555,7 +555,7 @@ public BigDecimal toNumber(const string inStr) {
 	}
 	// check for sNaN
 	if (startsWith(str, "snan")) {
-		num = BigDecimal.snan(sign);
+		num = Decimal.snan(sign);
 		// check for payload
 		if (str.length > 4) {
 			return setPayload(num, str, 4);
@@ -564,11 +564,11 @@ public BigDecimal toNumber(const string inStr) {
 	}
 	// check for infinity
 	if (str == "inf" || str == "infinity") {
-		num = BigDecimal.infinity(sign);
+		num = Decimal.infinity(sign);
 		return num;
 	};
 	// at this point, num must be finite
-	num = BigDecimal.zero(sign);
+	num = Decimal.zero(sign);
 	// check for exponent
 	int pos = indexOf(str, 'e');
 	if (pos > 0) {
@@ -669,7 +669,7 @@ public BigDecimal toNumber(const string inStr) {
 	return num;
 }
 
-private BigDecimal setPayload(BigDecimal num, char[] str, int len) {
+private Decimal setPayload(Decimal num, char[] str, int len) {
 	// if no payload, return
 	if (str.length == len) {
 			return num;
@@ -762,17 +762,17 @@ unittest {
 
 unittest {
 	write("toDecimal...");
-	BigDecimal big;
+	Decimal big;
 	Dec32 expect, actual;
-	big = BigDecimal(12345E-8);
+	big = Decimal(12345E-8);
 	expect = Dec32(12345E-8);
-	actual = toDecimal!(Dec32,BigDecimal)(big);
+	actual = toDecimal!(Dec32,Decimal)(big);
 	assertEqual(expect, actual);
 	assertEqual(typeid(typeof(expect)), typeid(typeof(actual)));
 	Dec64 rexpect, ractual;
-	big = BigDecimal(12345E-8);
+	big = Decimal(12345E-8);
 	rexpect = Dec64(12345E-8);
-	ractual = toDecimal!(Dec64,BigDecimal)(big);
+	ractual = toDecimal!(Dec64,Decimal)(big);
 	assertEqual(rexpect, ractual);
 	assertEqual(typeid(typeof(rexpect)), typeid(typeof(ractual)));
 	Dec64 d64 = Dec64(12345E-8);
@@ -785,7 +785,7 @@ unittest {
 
 unittest {	// toBigDecimal
 	Dec32 small;
-	BigDecimal big;
+	Decimal big;
 	small = 5;
 	big = toBigDecimal!Dec32(small);
 	assertTrue(big.toString == small.toString);
@@ -793,11 +793,11 @@ unittest {	// toBigDecimal
 
 unittest {	// isXxxDecimal
 	assertTrue(isFixedDecimal!Dec32);
-	assertTrue(!isFixedDecimal!BigDecimal);
+	assertTrue(!isFixedDecimal!Decimal);
 	assertTrue(isDecimal!Dec32);
-	assertTrue(isDecimal!BigDecimal);
+	assertTrue(isDecimal!Decimal);
 	assertTrue(!isBigDecimal!Dec32);
-	assertTrue(isBigDecimal!BigDecimal);
+	assertTrue(isBigDecimal!Decimal);
 }
 
 unittest {
@@ -812,9 +812,9 @@ unittest {
 
 unittest {
 	write("toSpecialString...");
-	BigDecimal num;
+	Decimal num;
 	string expect, actual;
-	num = BigDecimal("inf");
+	num = Decimal("inf");
 	actual = toSpecialString(num);
 	expect = "Infinity";
 	assertEqual(expect, actual);
@@ -893,17 +893,17 @@ unittest {	// sciForm
 	assertTrue(sciForm!Dec32(num) == "Infinity");
 	assertTrue(num.toAbstract() == "[0,inf]");
 	string str = "1.23E+3";
-	BigDecimal dec = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(dec) == str);
+	Decimal dec = Decimal(str);
+	assertTrue(engForm!Decimal(dec) == str);
 	str = "123E+3";
-	dec = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(dec) == str);
+	dec = Decimal(str);
+	assertTrue(engForm!Decimal(dec) == str);
 	str = "12.3E-9";
-	dec = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(dec) == str);
+	dec = Decimal(str);
+	assertTrue(engForm!Decimal(dec) == str);
 	str = "-123E-12";
-	dec = BigDecimal(str);
-	assertTrue(engForm!BigDecimal(dec) == str);
+	dec = Decimal(str);
+	assertTrue(engForm!Decimal(dec) == str);
 }
 
 unittest {
@@ -951,29 +951,29 @@ unittest {
 }
 
 unittest {	// toNumber
-	BigDecimal big;
+	Decimal big;
 	string expect, actual;
-	big = BigDecimal("1.0");
+	big = Decimal("1.0");
 	expect = "1.0";
 	actual = big.toString();
 	assertEqual(expect, actual);
-	big = BigDecimal(".1");
+	big = Decimal(".1");
 	expect = "0.1";
 	actual = big.toString();
 	assertEqual(expect, actual);
-	big = BigDecimal("-123");
+	big = Decimal("-123");
 	expect = "-123";
 	actual = big.toString();
 	assertEqual(expect, actual);
-	big = BigDecimal("1.23E3");
+	big = Decimal("1.23E3");
 	expect = "1.23E+3";
 	actual = big.toString();
 	assertEqual(expect, actual);
-	big = BigDecimal("1.23E-3");
+	big = Decimal("1.23E-3");
 	expect = "0.00123";
 	actual = big.toString();
 	assertEqual(expect, actual);
-	big = BigDecimal("1.2_3E3");
+	big = Decimal("1.2_3E3");
 	expect = "1.23E+3";
 	actual = big.toString();
 	assertEqual(expect, actual);

@@ -509,9 +509,9 @@ writeln("test.toHexString = ", test.toHexString);
 	}
 
 	/**
-	 * Creates a Dec64 from a BigDecimal
+	 * Creates a Dec64 from a Decimal
 	 */
-	public this(const BigDecimal num) {
+	public this(const Decimal num) {
 
 		// check for special values
 		if (num.isInfinite) {
@@ -531,7 +531,7 @@ writeln("test.toHexString = ", test.toHexString);
 			return;
 		}
 
-		BigDecimal big = plus!BigDecimal(num, context);
+		Decimal big = plus!Decimal(num, context);
 
 		if (big.isFinite) {
 			this = zero;
@@ -559,7 +559,7 @@ writeln("test.toHexString = ", test.toHexString);
 	}
 
 	unittest {
-		BigDecimal dec = 0;
+		Decimal dec = 0;
 		Dec64 num = dec;
 		assertTrue(dec.toString == num.toString);
 		dec = 1;
@@ -584,7 +584,7 @@ writeln("test.toHexString = ", test.toHexString);
 	 * Creates a Dec64 from a string.
 	 */
 	public this(const string str) {
-		BigDecimal big = BigDecimal(str);
+		Decimal big = Decimal(str);
 		this(big);
 	}
 
@@ -1204,22 +1204,22 @@ public:
 //--------------------------------
 
 	/**
-	 * Converts a Dec64 to a BigDecimal
+	 * Converts a Dec64 to a Decimal
 	 */
-	const BigDecimal toBigDecimal() {
+	const Decimal toBigDecimal() {
 		if (isFinite) {
-			return BigDecimal(sign, BigInt(coefficient), exponent);
+			return Decimal(sign, BigInt(coefficient), exponent);
 		}
 		if (isInfinite) {
-			return BigDecimal.infinity(sign);
+			return Decimal.infinity(sign);
 		}
 		// number is a NaN
-		BigDecimal dec;
+		Decimal dec;
 		if (isQuiet) {
-			dec = BigDecimal.nan(sign);
+			dec = Decimal.nan(sign);
 		}
 		if (isSignaling) {
-			dec = BigDecimal.snan(sign);
+			dec = Decimal.snan(sign);
 		}
 		if (payload) {
 			dec.payload(payload);
@@ -1229,8 +1229,8 @@ public:
 
 	unittest {
 		Dec64 num = Dec64("12345E+17");
-		BigDecimal expected = BigDecimal("12345E+17");
-		BigDecimal actual = num.toBigDecimal;
+		Decimal expected = Decimal("12345E+17");
+		Decimal actual = num.toBigDecimal;
 		assertTrue(actual == expected);
 	}
 
