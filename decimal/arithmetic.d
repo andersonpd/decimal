@@ -1372,7 +1372,7 @@ public T roundToIntegralValue(T)(const T arg,
 /// Reduces operand to the specified (ideal) exponent.
 /// All trailing zeros are removed.
 /// (Used to return the "ideal" value following division. p. 28-29)
-private T reduceToIdeal(T)(const T arg, int ideal,
+/*private T reduceToIdeal(T)(const T arg, int ideal,
 		const DecimalContext context = T.context) if (isDecimal!T) {
 //writefln("arg in = %s", arg);
 	T result = T.nan;
@@ -1397,7 +1397,7 @@ private T reduceToIdeal(T)(const T arg, int ideal,
 	result.digits = numDigits(result.coefficient);
 //writefln("arg out = %s", result);
 	return result;
-}
+}*/
 
 /// Aligns the two operands by raising the smaller exponent
 /// to the value of the larger exponent, and adjusting the
@@ -1950,9 +1950,9 @@ unittest {	// equals
 	BigDecimal arg1, arg2;
 	arg1 = 123.4567;
 	arg2 = 123.4568;
-	assertTrue(!equals!BigDecimal(arg1, arg2, bigContext));
+	assertTrue(!equals!BigDecimal(arg1, arg2, BigDecimal.context));
 	arg2 = 123.4567;
-	assertTrue(equals!BigDecimal(arg1, arg2, bigContext));
+	assertTrue(equals!BigDecimal(arg1, arg2, BigDecimal.context));
 }
 
 unittest {

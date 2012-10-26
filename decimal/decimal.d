@@ -35,9 +35,14 @@ import decimal.test;
 import decimal.integer;
 
 alias BigDecimal.context bigContext;
+alias BigDecimal.pushContext pushContext;
+alias BigDecimal.popContext popContext;
 
 // special values for NaN, Inf, etc.
 private static enum SV {NONE, INF, QNAN, SNAN};
+
+//public static DecimalContext context =
+//	DecimalContext(9, 99, Rounding.HALF_EVEN);
 
 ///
 /// A struct representing an arbitrary-precision floating-point number.
@@ -51,6 +56,8 @@ struct BigDecimal {
 
 	public static DecimalContext context =
 		DecimalContext(9, 99, Rounding.HALF_EVEN);
+
+	private static ContextStack contextStack;
 
 	private SV sval = SV.QNAN;		// special values: default value is quiet NaN
 	private bool signed = false;	// true if the value is negative, false otherwise.
@@ -488,6 +495,29 @@ const string toString() {
 		return context.maxExpo;
 	}
 
+	static DecimalContext pushContext(const DecimalContext context) {
+		contextStack.push(BigDecimal.context);
+		BigDecimal.context = context;
+		return context;
+	}
+
+	static DecimalContext pushContext() {
+		return pushContext(BigDecimal.context);
+	}
+
+	static DecimalContext pushContext(uint precision) {
+		DecimalContext context = BigDecimal.context;
+		context.precision = precision;
+		return pushContext(context);
+	}
+
+	static DecimalContext popContext() {
+//writefln("BigDecimal.context.precision = %s", BigDecimal.context.precision);
+		BigDecimal.context = contextStack.pop();
+//writefln("BigDecimal.context.precision = %s", BigDecimal.context.precision);
+		return BigDecimal.context;
+	}
+
 	/// Returns the radix (10)
 	immutable int radix = 10;
 
@@ -736,17 +766,51 @@ const string toString() {
 		return DecimalContext(precision, context.maxExpo, context.rounding);
 	}
 
-	/// Returns a copy of the context with a new exponent limit.
+/*	/// Returns a copy of the context with a new exponent limit.
 	public static DecimalContext setMaxExponent(const int maxExpo) {
 		return DecimalContext(context.precision, maxExpo, context.rounding);
 	}
 	/// Returns a copy of the context with a new rounding mode.
 	public static DecimalContext setRounding(const Rounding rounding) {
 		return DecimalContext(context.precision, context.maxExpo, rounding);
-	}
+	}*/
 
 }	 // end struct BigDecimal
 
+// context
+private struct ContextStack {
+	private:
+		DecimalContext[] stack = []; // = [ context ];
+		uint capacity = 0;
+		uint count = 0;
+
+	public void push(DecimalContext context) {
+		if (capacity == 0) {
+			capacity = 4;
+			stack.length = capacity;
+		}
+		count++;
+		if (count >= capacity) {
+			capacity *= 2;
+			stack.length = capacity;
+		}
+		stack[count-1] = context;
+	}
+
+	public DecimalContext pop() {
+		if (count == 0) {
+			// throw? push();
+		}
+		if (count == 1) {
+			return stack[0];
+		}
+		else {
+			count--;
+			return stack[count-1];
+		}
+	}
+
+} // end struct ContextStack
 
 // (B)TODO: is it possible to use stringOf to improve the test asserts?
 

@@ -32,16 +32,40 @@ unittest {
 /**
  * Returns the value of e to the specified precision.
  */
-BigDecimal e(uint precision = bigContext.precision, uint guardDigits = 0) {
-	BigDecimal result;
-	return result;
+BigDecimal e(const uint precision) {
+	pushContext(precision);
+	BigDecimal value = e();
+	popContext();
+	return value;
+}
+
+/**
+ * Returns the value of e to the current precision.
+ */
+BigDecimal e() {
+	BigDecimal x = 1;
+	int n = 1;
+	BigDecimal fact = 1;
+	BigDecimal sum = 1;
+	BigDecimal term = 1;
+//writefln("BigDecimal.epsilon = %s", BigDecimal.epsilon);
+	while (term > BigDecimal.epsilon) {
+		sum += term;
+		n++;
+		fact = fact * n;
+		term = x/fact;
+	}
+	return sum;
 }
 
 unittest {
 	write("e..............");
+writeln();
+	for (int i = 10; i < 15; i++) {
+		writefln("e(%d) = %s", i, e(i));
+	}
 	writeln("test missing");
 }
-
 
 BigDecimal sqr(const BigDecimal x) {
 	return x * x;
@@ -52,48 +76,44 @@ unittest {
 	writeln("test missing");
 }
 
+// Returns the value of pi to the specified precision.
+BigDecimal pi(uint precision) {
+	pushContext(precision); // plus two guard digits?
+	BigDecimal value = pi();
+	popContext();
+	return value;
+}
+
 /**
- * Returns the value of pi to the specified precision.
+ * Returns the value of pi to the current precision.
  * TODO: AGM version -- use less expensive?
  * TODO: pre-computed string;
  */
-BigDecimal pi(uint precision = bigContext.precision, uint guardDigits = 0) {
-	uint savedPrecision = bigContext.precision;
-//writefln("bigContext.precision = %s", bigContext.precision);
-	bigContext.precision = precision + guardDigits;	// add 2 guard digits
-//writefln("bigContext.precision = %s", bigContext.precision);
-//	bigContext.precision = precision;
+BigDecimal pi() {
 	const BigDecimal ONE = BigDecimal(1L);
 	const BigDecimal TWO = BigDecimal(2L);
-	BigDecimal epsilon = ONE / std.math.pow(10L, precision);
-	BigDecimal a = ONE.dup;
-	BigDecimal b = ONE/sqrt(TWO, precision);
+	BigDecimal a = 1; //ONE.dup;
+	BigDecimal b = a/sqrt(TWO);
 	BigDecimal t = BigDecimal("0.25");
-	BigDecimal x = ONE.dup;
+	BigDecimal x = 1; //ONE.dup;
 	int i = 0;
-	while ((a - b) > epsilon && i < 10) {
-		BigDecimal y = a;        // save the value of a
-		a = (a + b)/TWO;    // arithmetic mean
-		b = sqrt(b*y, precision);        // geometric mean
-		t -= x*(a*a - b*b);    // weighted sum of the difference of the means
+	while (a != b) {
+		BigDecimal y = a;    // save the value of a
+		a = (a + b)/TWO;     // arithmetic mean
+		b = sqrt(b*y);       // geometric mean
+		t -= x*(a*a - b*b);  // weighted sum of the difference of the means
 		x = x * 2;
 		i++;
 	}
 	BigDecimal result = a*a/t;
-	bigContext.precision = precision - guardDigits;	// round off the guard digits
-//writefln("bigContext.precision = %s", bigContext.precision);
-	round(result, bigContext);
-	bigContext.precision = savedPrecision;
-//writefln("bigContext.precision = %s", bigContext.precision);
 	return result;
 }
 
 unittest {
 	write("pi.............");
-writefln("pi = %s", pi);
-	BigDecimal num = pi(15);
 writeln;
-writefln("num = %s", num);
+writefln("pi     = %s", pi);
+writefln("pi(25) = %s", pi(25));
 	writeln("test missing");
 }
 
@@ -118,22 +138,24 @@ writefln("odd(3) = %s", odd(3));
 	writeln("test missing");
 }
 
+BigDecimal sqrt(const BigDecimal arg, uint precision) {
+	pushContext(precision);
+	BigDecimal value = sqrt(arg);
+	popContext();
+	return value;
+}
+
 /**
  * Returns the square root of the argument to the specified precision.
  * Uses Newton's method. The starting value should be close to the result
  * to speed convergence and to avoid unstable operation.
  * TODO: better to compute (1/sqrt(arg)) * arg?
  */
-BigDecimal sqrt(const BigDecimal arg,
-		uint precision = bigContext.precision, uint guardDigits = 0) {
+BigDecimal sqrt(const BigDecimal arg) {
 	// check for negative numbers.
 	if (arg.isNegative) {
 		return BigDecimal.nan;
 	}
-//writefln("bigContext.precision = %s", bigContext.precision);
-	uint savedPrecision = bigContext.precision;
-	bigContext.precision = precision;
-//writefln("bigContext.precision = %s", bigContext.precision);
 	const BigDecimal HALF = BigDecimal(0.5);
 	const BigDecimal ONE = BigDecimal(1);
 	BigDecimal x = HALF*(arg + ONE);
@@ -164,6 +186,7 @@ BigDecimal sqrt(const BigDecimal arg,
 			x = BigDecimal(2, -n);
 		}
 	}
+//	BigDecimal x = BigDecimal(std.math.sqrt(arg));
 	BigDecimal xp;
 	int i = 0;
 	while(i < 100) {
@@ -172,10 +195,6 @@ BigDecimal sqrt(const BigDecimal arg,
 		if (x == xp) break;
 		i++;
 	}
-//writefln("bigContext.precision = %s", bigContext.precision);
-	round(xp, bigContext);
-	bigContext.precision = savedPrecision;
-//writefln("bigContext.precision = %s", bigContext.precision);
 	return xp;
 }
 
@@ -192,12 +211,19 @@ writefln("sqrt(2, 29) = %s", sqrt(BigDecimal(2), 29));
 //
 //--------------------------------
 
+BigDecimal exp(const BigDecimal arg, const uint precision) {
+	pushContext(precision);
+	BigDecimal value = exp(arg);
+	popContext();
+	return value;
+}
+
 /**
  * BigDecimal version of std.math function.
  * Required by General Decimal Arithmetic Specification
  *
  */
-BigDecimal exp(const BigDecimal arg, uint precision = bigContext.precision, uint guardDigits = 0) {
+BigDecimal exp(const BigDecimal arg) {
 	BigDecimal x2 = arg*arg;
 	const BigDecimal ONE = BigDecimal(1);
 	BigDecimal f = ONE.dup;
@@ -364,9 +390,19 @@ unittest {
  * BigDecimal version of std.math function.
  *
  */
-BigDecimal sin(BigDecimal arg) {
-	BigDecimal result;
-	return result;
+BigDecimal sin(const BigDecimal arg) {
+	BigDecimal sum = 0;
+	return sum;
+}
+/**
+ * BigDecimal version of std.math function.
+ *
+ */
+BigDecimal sin(const BigDecimal arg, uint precision) {
+	pushContext(precision);
+	BigDecimal value = sin(arg);
+	popContext();
+	return value;
 }
 
 unittest {

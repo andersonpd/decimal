@@ -235,7 +235,6 @@ private void incrementAndRound(T)(ref T num) if (isDecimal!T) {
 /// Returns -1, 0, or 1 if the remainder is less than, equal to, or more than
 /// half of the least significant digit of the shortened coefficient.
 /// Exactly half is a five followed by zero or more zero digits.
-// TODO: calls firstDigit and then numDigits: combine these calls.
 public int testFive(const ulong n) {
 	int digits = numDigits(n);
 	int first = cast(int)(n / TENS[digits-1]);
@@ -289,7 +288,7 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
 	case Rounding.DOWN:
 		break;
 	case Rounding.HALF_UP:
-		if (firstDigit(remainder, digits) >= 5) {
+		if (firstDigit(remainder) >= 5) {
 			increment(mant, digits);
 		}
 		break;
@@ -319,7 +318,7 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
 		}
 		break;
 	case Rounding.HALF_DOWN:
-		if (firstDigit(remainder, digits) > 5) {
+		if (firstDigit(remainder) > 5) {
 			increment(mant, digits);
 		}
 		break;
@@ -564,14 +563,14 @@ writefln("QUINT128 = %s", QUINT128);
 
 /// Returns the number of digits in the argument,
 /// where the argument is an unsigned long integer.
-public int numDigits(const ulong n, const int maxValue = 19) {
+public int numDigits(const ulong n) {
     // special cases:
 	if (n == 0) return 0;
 	if (n < 10) return 1;
-	if (n >= TENS[maxValue - 1]) return maxValue;
+	if (n >= TENS[18]) return 19;
     // use a binary search to count the digits
-	int min = 1;
-	int max = maxValue - 1;
+	int min = 2;  // TODO: 2?
+	int max = 18;
 	while (min <= max) {
 		int mid = (min + max)/2;
 		if (n < TENS[mid]) {
@@ -606,10 +605,10 @@ public int firstDigit(const uint128 arg) {
 }
 
 /// Returns the first digit of the argument.
-public int firstDigit(const ulong n, int maxValue = 19) {
+public int firstDigit(const ulong n) { //, int maxValue = 19) {
 	if (n == 0) return 0;
 	if (n < 10) return cast(int) n;
-	int d = numDigits(n, maxValue);
+	int d = numDigits(n); //, maxValue);
 	return cast(int)(n/TENS[d-1]);
 }
 
@@ -817,7 +816,7 @@ public uint lastDigit(const long num) {
 }
 
 /// Returns the number of trailing zeros in the argument.
-public int trailingZeros(const BigInt arg, const int maxValue) {
+public int trailingZeros(const BigInt arg, const int digits) {
 	BigInt n = mutable(arg);
 	// shortcuts for frequent values
 	if (n == 0) return 0;
@@ -825,7 +824,7 @@ public int trailingZeros(const BigInt arg, const int maxValue) {
 	if (n % 100) return 1;
 	// find by binary search
 	int min = 3;
-	int max = maxValue - 1;
+	int max =  digits - 1;
 	while (min <= max) {
 		int mid = (min + max)/2;
 		if (n % tens(mid) != 0) {
@@ -839,14 +838,14 @@ public int trailingZeros(const BigInt arg, const int maxValue) {
 }
 
 /// Returns the number of trailing zeros in the argument.
-public int trailingZeros(const ulong n, const int maxValue = 19) {
+public int trailingZeros(const ulong n) {
 	// shortcuts for frequent values
 	if (n == 0) return 0;
 	if (n % 10) return 0;
 	if (n % 100) return 1;
 	// find by binary search
 	int min = 3;
-	int max = maxValue - 1;
+	int max = 18;
 	while (min <= max) {
 		int mid = (min + max)/2;
 		if (n % TENS[mid]) {
@@ -859,17 +858,17 @@ public int trailingZeros(const ulong n, const int maxValue = 19) {
 	return max;
 }
 
-/// Trims trailing zeros from the argument and returns the number of zeros trimmed.
-public int trimZeros(ref ulong n, const int maxValue = 19) {
+/// Trims any trailing zeros and returns the number of zeros trimmed.
+public int trimZeros(ref ulong n, const int dummy) {
 	int zeros = trailingZeros(n);
 	if (zeros == 0) return 0;
 	n /= TENS[zeros];
 	return zeros;
 }
 
-/// Trims trailing zeros from the argument and returns the number of zeros trimmed.
-public int trimZeros(ref BigInt n, const int maxValue ) {
-	int zeros = trailingZeros(cast(const)n, maxValue);
+/// Trims any trailing zerosand returns the number of zeros trimmed.
+public int trimZeros(ref BigInt n, const int digits) {
+	int zeros = trailingZeros(n, digits);
 	if (zeros == 0) return 0;
 	n /= tens(zeros);
 	return zeros;
