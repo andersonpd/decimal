@@ -63,7 +63,7 @@ Decimal e() {
 unittest {
 	write("e..............");
 writeln();
-	for (int i = 10; i < 15; i++) {
+	for (int i = 10; i < 25; i++) {
 		writefln("e(%d) = %s", i, e(i));
 	}
 	writeln("test missing");
@@ -392,10 +392,23 @@ unittest {
  * Decimal version of std.math function.
  *
  */
-Decimal sin(const Decimal arg) {
+Decimal sin(const Decimal x) {
 	Decimal sum = 0;
+	int n = 1;
+	Decimal powx = x.dup;
+	Decimal sqrx = x * x;
+	Decimal fact = 1;
+	Decimal term = powx/fact;
+	while (term.abs > Decimal.epsilon) {
+		sum += term;
+		n += 2;
+		powx = -powx * sqrx;
+		fact = fact * (n*(n-1));
+		term = powx/fact;
+	}
 	return sum;
 }
+
 /**
  * Decimal version of std.math function.
  *
@@ -409,6 +422,10 @@ Decimal sin(const Decimal arg, uint precision) {
 
 unittest {
 	write("sin..........");
+	// sin(1.0) = 0.84147098480789650665250232163029899962256306079837
+	writeln;
+	writefln("sin(1.0) = %s", sin(Decimal("1.0")));
+
 	writeln("..failed");
 }
 
@@ -416,13 +433,38 @@ unittest {
  * Decimal version of std.math function.
  *
  */
-Decimal cos(Decimal arg) {
-	Decimal result;
-	return result;
+Decimal cos(const Decimal x) {
+	Decimal sum = 0;
+	int n = 0;
+	Decimal powx = 1;
+	Decimal sqrx = x * x;
+	Decimal fact = 1;
+	Decimal term = powx/fact;
+	while (term.abs > Decimal.epsilon) {
+		sum += term;
+		n += 2;
+		powx = -powx * sqrx;
+		fact = fact * (n*(n-1));
+		term = powx/fact;
+	}
+	return sum;
+}
+/**
+ * Decimal version of std.math function.
+ *
+ */
+Decimal cos(const Decimal x, uint precision) {
+	pushContext(precision);
+	Decimal value = cos(x);
+	popContext();
+	return value;
 }
 
 unittest {
 	write("cos..........");
+	// cos(1.0) = 0.54030230586813971740093660744297660373231042061792
+	writeln;
+	writefln("cos(1.0) = %s", cos(Decimal("1.0")));
 	writeln("..failed");
 }
 

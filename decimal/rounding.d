@@ -259,14 +259,8 @@ public int testFive(const uint128 arg) {
 /// Returns -1, 1, or 0 if the remainder is less than, more than,
 /// or exactly half the least significant digit of the shortened coefficient.
 /// Exactly half is a five followed by zero or more zero digits.
-// TODO: calls firstDigit and then numDigits: combine these calls.
 public int testFive(const BigInt arg) {
-	BigInt big = mutable(arg);
-	int first = firstDigit(arg);
-	if (first < 5) return -1;
-	if (first > 5) return +1;
-	int zeros = (big % tens(numDigits(big)-1)).toInt;
-	return (zeros != 0) ? 1 : 0;
+	return testFive(bigToLong(arg));
 }
 
 /// Converts an integer to a decimal (coefficient and exponent) form.
@@ -527,16 +521,8 @@ public const ulong MAX_DECIMAL_LONG = 10UL^^MAX_LONG_DIGITS - 1;
 public int numDigits(const BigInt arg) {
     // special cases
 	if (arg == 0) return 0;
-    BigInt big = mutable(arg);
-    if (big < BIG_TEN) return 1;
-    // otherwise reduce until number fits into a long integer...
 	int count = 0;
-	while (big > QUINTILLION) {
-		big /= QUINTILLION;
-		count += 18;
-	}
-	/// ...and delegate result to long integer version
-	long n = big.toLong;
+	long n = bigToLong(arg, count);
 	return count + numDigits(n);
 }
 
@@ -583,14 +569,27 @@ public int numDigits(const ulong n) {
 	return min;
 }
 
-/// Returns the first digit of the argument.
-public int firstDigit(const BigInt arg) {
+public ulong bigToLong(const BigInt arg) {
 	BigInt big = mutable(arg);
 	while (big > QUINTILLION) {
 		big /= QUINTILLION;
 	}
-	long n = big.toLong();
-	return firstDigit(n);
+	return big.toLong;
+}
+
+public ulong bigToLong(const BigInt arg, out int count) {
+	count = 0;
+	BigInt big = mutable(arg);
+	while (big > QUINTILLION) {
+		big /= QUINTILLION;
+		count += 18;
+	}
+	return big.toLong;
+}
+
+/// Returns the first digit of the argument.
+public int firstDigit(const BigInt arg) {
+	return firstDigit(bigToLong(arg));
 }
 
 /// Returns the first digit of the argument.
@@ -1036,7 +1035,7 @@ unittest {	// testFive
 	assertEqual( 1, testFive(5001));
 	assertEqual( 0, testFive(BigInt("5000000000000000000000")));
 	assertEqual(-1, testFive(BigInt("4999999999999999999999")));
-	assertEqual( 1, testFive(BigInt("5000000000000000000001")));
+	assertEqual( 1, testFive(BigInt("50000000000000000000000000000000000000000000000001")));
 }
 
 unittest {
