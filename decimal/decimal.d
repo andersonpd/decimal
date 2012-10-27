@@ -80,6 +80,7 @@ private:
 	immutable BigInt BIG_ONE  = cast(immutable)BigInt(1);
 	immutable BigInt BIG_TWO  = cast(immutable)BigInt(2);
 
+	immutable Decimal ONE = Decimal(1);
 //	static Decimal DONE = Decimal(BIG_ONE);
 //	static immutable Decimal TWO  = cast(immutable)Decimal(2);
 //	static immutable Decimal FIVE = cast(immutable)Decimal(5);

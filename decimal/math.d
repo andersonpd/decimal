@@ -18,6 +18,7 @@ import decimal.arithmetic;
 import decimal.context;
 import decimal.decimal;
 import decimal.rounding;
+import decimal.test: assertEqual;
 
 unittest {
 	writeln("---------------------");
@@ -28,6 +29,8 @@ unittest {
 //--------------------------------
 // CONSTANTS
 //--------------------------------
+
+/*const Decimal ONE = Decimal(1);*/
 
 /**
  * Returns the value of e to the specified precision.
@@ -94,10 +97,10 @@ Decimal pi(uint precision) {
 Decimal pi() {
 	const Decimal ONE = Decimal(1L);
 	const Decimal TWO = Decimal(2L);
-	Decimal a = 1; //ONE.dup;
+	Decimal a = ONE.dup;
 	Decimal b = a/sqrt(TWO);
 	Decimal t = Decimal("0.25");
-	Decimal x = 1; //ONE.dup;
+	Decimal x = ONE.dup;
 	int i = 0;
 	while (a != b) {
 		Decimal y = a;    // save the value of a
@@ -147,12 +150,12 @@ Decimal sqrt(const Decimal arg, uint precision) {
 	return value;
 }
 
-/**
- * Returns the square root of the argument to the specified precision.
- * Uses Newton's method. The starting value should be close to the result
- * to speed convergence and to avoid unstable operation.
- * TODO: better to compute (1/sqrt(arg)) * arg?
- */
+
+/// Returns the square root of the argument to the specified precision.
+/// Uses Newton's method. The starting value should be close to the result
+/// to speed convergence and to avoid unstable operation.
+/// TODO: better to compute (1/sqrt(arg)) * arg?
+/// TODO: the precision can be adjusted as the computation proceeds
 Decimal sqrt(const Decimal arg) {
 	// check for negative numbers.
 	if (arg.isNegative) {
@@ -188,7 +191,7 @@ Decimal sqrt(const Decimal arg) {
 			x = Decimal(2, -n);
 		}
 	}
-//	Decimal x = Decimal(std.math.sqrt(arg));
+//	TODO: estimate with Decimal x = Decimal(std.math.sqrt(arg));?
 	Decimal xp;
 	int i = 0;
 	while(i < 100) {
@@ -205,6 +208,36 @@ unittest {
 writeln;
 writefln("sqrt(2, 29) = %s", sqrt(Decimal(2), 29));
 	writeln("test missing");
+}
+
+public Decimal hypot(const Decimal x, const Decimal y)
+{
+	// check for finite, non-zero operands
+	if (x.isNaN) return Decimal.nan;
+	if (x.isInfinite || y.isInfinite) return Decimal.infinity();
+    if (x.isZero) return y.dup;
+	if (y.isZero) return x.dup;
+
+    const Decimal ONE = Decimal(1);
+	Decimal a = copyAbs(x);
+    Decimal b = copyAbs(y);
+	if (a < b) {
+		Decimal t = a;
+		a = b;
+		b = t;
+	}
+    b /= a;
+    return a * sqrt(ONE + (b * b));
+}
+
+unittest {
+	write("hypot...");
+	Decimal x = 3;
+	Decimal y = 4;
+	Decimal expect = 5;
+	Decimal actual = hypot(x,y);
+	assertEqual(expect, actual);
+	writeln("test passed");
 }
 
 //--------------------------------
