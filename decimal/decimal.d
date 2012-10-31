@@ -23,13 +23,12 @@ import std.conv;
 import std.array: replicate;
 import std.ascii: isDigit;
 import std.exception: assumeUnique;
-import std.math: PI, LOG2;
 import std.stdio: write, writeln;
 import std.stdio: writefln;
 import std.string;
 
 import decimal.context;
-import decimal.rounding;
+//import decimal.rounding;
 import decimal.arithmetic;
 //import decimal.test;
 import decimal.integer;
@@ -170,7 +169,7 @@ public:
 	this(const BigInt coefficient, const int exponent = 0) {
 		BigInt big = mutable(coefficient);
 		// TODO: why not add sgn to decimal?
-		bool sign = decimal.rounding.sgn(big) < 0;
+		bool sign = decimal.context.sgn(big) < 0;
 		this(sign, big, exponent);
 	};
 
@@ -262,7 +261,7 @@ public:
 		num = std.math.E;
 		str = "2.71828183";
 		assert(str == num.toString);
-		num = std.math.LOG2;
+		num = std.math.std.math.LOG2;
 		Decimal copy = Decimal(num);
 		assert(compareTotal!Decimal(num, copy) == 0);
 	}
@@ -358,33 +357,30 @@ public:
 // string representations
 //--------------------------------
 
-	///
 	/// Converts a number to an abstract string representation.
-	///
 	public const string toAbstract() {
 		return decimal.conv.toAbstract!Decimal(this);
 	}
 
-	///
+	/// Converts a number to an abstract string representation.
+	const string toExact() {
+		return decimal.conv.toExact!Decimal(this);
+	}
+
 	/// Converts a Decimal to a "scientific" string representation.
-	///
 	const string toSciString() {
 		return decimal.conv.sciForm!Decimal(this);
-	};
+	}
 
-	///
 	/// Converts a Decimal to an "engineering" string representation.
-	///
 	const string toEngString() {
-   	return decimal.conv.engForm!Decimal(this);
-	};
+   		return decimal.conv.engForm!Decimal(this);
+	}
 
-	///
 	/// Converts a number to its string representation.
-	///
 	const string toString() {
 		return decimal.conv.sciForm!Decimal(this);
-	};
+	}
 
 //--------------------------------
 // member properties
@@ -435,11 +431,6 @@ public:
 		}
 		return 0;
 	}
-
-	const string toExact() {
-		return decimal.conv.toExact!Decimal(this);
-	}
-
 
 	/// Returns the adjusted exponent of this number
 	@property const int adjustedExponent() {
@@ -511,7 +502,7 @@ public:
 
 	/// Returns the number of binary digits in this context.
 	static int mant_dig(const DecimalContext context = this.context) {
-		return cast(int)(context.precision/LOG2);
+		return cast(int)(context.precision/std.math.LOG2);
 	}
 
 	static int min_exp(const DecimalContext context = this.context) {

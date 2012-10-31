@@ -26,7 +26,7 @@ import decimal.dec32;
 import decimal.dec64;
 import decimal.dec128;
 import decimal.decimal;
-import decimal.rounding;
+//import decimal.rounding;
 
 bool assertEqual2(T, U = T)(U actual, U expected,
 		string file = __FILE__, int line = __LINE__ ) if (isDecimal(T))
@@ -1590,7 +1590,7 @@ unittest {
 }
 
 unittest {
-	write("spcl values..");
+	write("special......");
 	Decimal num;
 	num = Decimal.NAN;
 	assertTrue(num.toString == "NaN");
@@ -1612,13 +1612,6 @@ unittest {
 	assertTrue(num.toExact == "+1E+00");
 	num = Decimal.infinity(true);
 	assertTrue(num.toExact == "-Infinity");
-	writeln("passed");
-}
-
-unittest {
-	write("canonical....");
-	Decimal num = Decimal("2.50");
-	assertTrue(num.isCanonical);
 	writeln("passed");
 }
 

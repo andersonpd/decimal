@@ -17,8 +17,7 @@ module decimal.math;
 import decimal.arithmetic;
 import decimal.context;
 import decimal.decimal;
-import decimal.rounding;
-import decimal.test: assertEqual;
+//import decimal.rounding;
 
 unittest {
 	writeln("---------------------");
@@ -274,7 +273,7 @@ unittest {
 	Decimal y = 4;
 	Decimal expect = 5;
 	Decimal actual = hypot(x,y);
-	assertEqual(expect, actual);*/
+	decimal.test.assertEqual(expect, actual);*/
 	writeln("test passed");
 }
 

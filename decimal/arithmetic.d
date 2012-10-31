@@ -25,8 +25,7 @@ module decimal.arithmetic;
 import decimal.context;
 import decimal.conv : isDecimal, isFixedDecimal, toBigDecimal;
 import decimal.decimal;
-import decimal.rounding;
-import decimal.test;
+//import decimal.rounding;
 
 import std.array: insertInPlace;
 import std.ascii: isDigit;
@@ -807,7 +806,7 @@ unittest {
 	actual = shl!Decimal(big, 2);
 writefln("expect = %s", expect.toAbstract);
 writefln("actual = %s", actual.toAbstract);
-	assertEqual!Decimal(expect, actual);
+	assert(expect == actual);
 	writeln("test missing");
 }
 
@@ -1830,52 +1829,52 @@ unittest {
 unittest {	// classify
 	Decimal arg;
 	arg = Decimal("Inf");
-	assertEqual("+Infinity", classify(arg));
+	assert("+Infinity" == classify(arg));
 	arg = Decimal("1E-10");
-	assertEqual("+Normal", classify(arg));
+	assert("+Normal" == classify(arg));
 	arg = Decimal("-0");
-	assertEqual("-Zero", classify(arg));
+	assert("-Zero" == classify(arg));
 	arg = Decimal("-0.1E-99");
-	assertEqual("-Subnormal", classify(arg));
+	assert("-Subnormal" == classify(arg));
 	arg = Decimal("NaN");
-	assertEqual("NaN", classify(arg));
+	assert("NaN" == classify(arg));
 	arg = Decimal("sNaN");
-	assertEqual("sNaN", classify(arg));
+	assert("sNaN" == classify(arg));
 }
 
 unittest {	// copy
 	Decimal arg, expect;
 	arg  = Decimal("2.1");
 	expect = Decimal("2.1");
-	assertTrue(compareTotal(copy(arg),expect) == 0);
+	assert(compareTotal(copy(arg),expect) == 0);
 	arg  = Decimal("-1.00");
 	expect = Decimal("-1.00");
-	assertTrue(compareTotal(copy(arg),expect) == 0);
+	assert(compareTotal(copy(arg),expect) == 0);
 }
 
 unittest {	// copyAbs
 	Decimal arg, expect;
 	arg  = 2.1;
 	expect = 2.1;
-	assertTrue(compareTotal(copyAbs(arg),expect) == 0);
+	assert(compareTotal(copyAbs(arg),expect) == 0);
 	arg  = Decimal("-1.00");
 	expect = Decimal("1.00");
-	assertTrue(compareTotal(copyAbs(arg),expect) == 0);
+	assert(compareTotal(copyAbs(arg),expect) == 0);
 }
 
 unittest {	// copyNegate
 	Decimal arg	= "101.5";
 	Decimal expect = "-101.5";
-	assertTrue(compareTotal(copyNegate(arg),expect) == 0);
+	assert(compareTotal(copyNegate(arg),expect) == 0);
 }
 
 unittest {	// copySign
 	Decimal arg1, arg2, expect;
 	arg1 = 1.50; arg2 = 7.33; expect = 1.50;
-	assertTrue(compareTotal(copySign(arg1, arg2),expect) == 0);
+	assert(compareTotal(copySign(arg1, arg2),expect) == 0);
 	arg2 = -7.33;
 	expect = -1.50;
-	assertTrue(compareTotal(copySign(arg1, arg2),expect) == 0);
+	assert(compareTotal(copySign(arg1, arg2),expect) == 0);
 }
 
 unittest {	// logb
@@ -1883,7 +1882,7 @@ unittest {	// logb
 	arg = Decimal("250");
 	expect = Decimal("2");
 	actual = logb(arg);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 }
 
 unittest {	// scaleb
@@ -1892,7 +1891,7 @@ unittest {	// scaleb
 	auto arg2 = Decimal("-2");
 	expect = Decimal("0.0750");
 	actual = scaleb(arg1, arg2);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 }
 
 unittest {	// reduce
@@ -1901,7 +1900,7 @@ unittest {	// reduce
 	arg = Decimal("1.200");
 	expect = "1.2";
 	actual = reduce(arg).toString;
-	assertEqual(expect, actual);
+	assert(expect == actual);
 }
 
 unittest {	// abs
@@ -1910,26 +1909,26 @@ unittest {	// abs
 	arg = Decimal("-Inf");
 	expect = Decimal("Inf");
 	actual = abs(arg, decimal.context.testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg = 101.5;
 	expect = 101.5;
 	actual = abs(arg, testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg = -101.5;
 	actual = abs(arg, testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 }
 
 unittest {	// sgn
 	Decimal arg;
 	arg = -123;
-	assertEqual(-1, sgn(arg));
+	assert(-1 == sgn(arg));
 	arg = 2345;
-	assertEqual( 1, sgn(arg));
+	assert( 1 == sgn(arg));
 	arg = Decimal("0.0000");
-	assertEqual( 0, sgn(arg));
+	assert( 0 == sgn(arg));
 	arg = Decimal.infinity(true);
-	assertEqual(-1, sgn(arg));
+	assert(-1 == sgn(arg));
 }
 
 unittest {	// plus
@@ -1938,11 +1937,11 @@ unittest {	// plus
 	arg = 1.3;
 	expect = add(zero, arg, testContext);
 	actual = plus(arg, testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg = -1.3;
 	expect = add(zero, arg, testContext);
 	actual = plus(arg, testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 }
 
 unittest {	// minus
@@ -1951,11 +1950,11 @@ unittest {	// minus
 	arg = 1.3;
 	expect = sub(zero, arg, testContext);
 	actual = minus(arg, testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg = -1.3;
 	expect = sub(zero, arg, testContext);
 	actual = minus(arg, testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 }
 
 unittest {	// nextPlus
@@ -1963,11 +1962,11 @@ unittest {	// nextPlus
 	arg = 1;
 	expect = Decimal("1.00000001");
 	actual = nextPlus(arg, testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg = 10;
 	expect = Decimal("10.0000001");
 	actual = nextPlus(arg, testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 }
 
 unittest {	// nextMinus
@@ -1975,11 +1974,11 @@ unittest {	// nextMinus
 	arg = 1;
 	expect = 0.999999999;
 	actual = nextMinus(arg, testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg = -1.00000003;
 	expect = -1.00000004;
 	actual = nextMinus(arg, testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 }
 
 unittest {	// nextToward
@@ -1988,31 +1987,31 @@ unittest {	// nextToward
 	arg2 = 2;
 	expect = 1.00000001;
 	actual = nextToward(arg1, arg2, testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg1 = -1.00000003;
 	arg2 = 0;
 	expect = -1.00000002;
 	actual = nextToward(arg1, arg2, testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 }
 
 unittest {	// compare
 	Decimal arg1, arg2;
 	arg1 = Decimal(2.1);
 	arg2 = Decimal("3");
-	assertEqual(-1, compare(arg1, arg2, testContext));
+	assert(compare(arg1, arg2, testContext) == -1);
 	arg1 = 2.1;
 	arg2 = Decimal(2.1);
-	assertEqual(0, compare(arg1, arg2, testContext));
+	assert(compare(arg1, arg2, testContext) == 0);
 }
 
 unittest {	// equals
 	Decimal arg1, arg2;
 	arg1 = 123.4567;
 	arg2 = 123.4568;
-	assertTrue(!equals!Decimal(arg1, arg2, Decimal.context));
+	assert(!equals!Decimal(arg1, arg2, Decimal.context));
 	arg2 = 123.4567;
-	assertTrue(equals!Decimal(arg1, arg2, Decimal.context));
+	assert(equals!Decimal(arg1, arg2, Decimal.context));
 }
 
 unittest {
@@ -2026,36 +2025,36 @@ unittest {	// compareTotal
 	arg1 = Decimal("12.30");
 	arg2 = Decimal("12.3");
 	result = compareTotal(arg1, arg2);
-	assertTrue(result == -1);
+	assert(result == -1);
 	arg1 = Decimal("12.30");
 	arg2 = Decimal("12.30");
 	result = compareTotal(arg1, arg2);
-	assertTrue(result == 0);
+	assert(result == 0);
 	arg1 = Decimal("12.3");
 	arg2 = Decimal("12.300");
 	result = compareTotal(arg1, arg2);
-	assertTrue(result == 1);
+	assert(result == 1);
 }
 
 unittest {	// sameQuantum
 	Decimal arg1, arg2;
 	arg1 = 2.17;
 	arg2 = 0.001;
-	assertTrue(!sameQuantum(arg1, arg2));
+	assert(!sameQuantum(arg1, arg2));
 	arg2 = 0.01;
-	assertTrue(sameQuantum(arg1, arg2));
+	assert(sameQuantum(arg1, arg2));
 	arg2 = 0.1;
-	assertTrue(!sameQuantum(arg1, arg2));
+	assert(!sameQuantum(arg1, arg2));
 }
 
 unittest {	// max
 	Decimal arg1, arg2, expect, actual;
 	arg1 = 3; arg2 = 2; expect = 3;
 	actual = max(arg1, arg2, testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg1 = -10; arg2 = 3; expect = 3;
 	actual = max(arg1, arg2, testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 }
 
 unittest {
@@ -2067,10 +2066,10 @@ unittest {	// min
 	Decimal arg1, arg2, expect, actual;
 	arg1 = 3; arg2 = 2; expect = 2;
 	actual = min(arg1, arg2, testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg1 = -10; arg2 = 3; expect = -10;
 	actual = min(arg1, arg2, testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 }
 
 unittest {
@@ -2083,7 +2082,7 @@ unittest {	// quantum
 	arg = 23.14E-12;
 	expect = 1E-14;
 	actual = quantum(arg);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 }
 
 unittest {	// add
@@ -2092,11 +2091,11 @@ unittest {	// add
 	arg1 = Decimal("12");
 	arg2 = Decimal("7.00");
 	sum = add(arg1, arg2, testContext);
-	assertEqual("19.00", sum.toString);
+	assert("19.00" == sum.toString);
 	arg1 = Decimal("1E+2");
 	arg2 = Decimal("1E+4");
 	sum = add(arg1, arg2, testContext);
-	assertEqual("1.01E+4", sum.toString);
+	assert("1.01E+4" == sum.toString);
 }
 
 unittest {	// addLong
@@ -2105,11 +2104,11 @@ unittest {	// addLong
 	arg2 = 12;
 	arg1 = Decimal("7.00");
 	sum = addLong(arg1, arg2, testContext);
-	assertEqual("19.00", sum.toString);
+	assert("19.00" == sum.toString);
 	arg1 = Decimal("1E+2");
 	arg2 = 10000;
 	sum = addLong(arg1, arg2, testContext);
-	assertEqual("10100", sum.toString);
+	assert("10100" == sum.toString);
 }
 
 unittest {	// mul
@@ -2117,10 +2116,10 @@ unittest {	// mul
 	arg1 = Decimal("1.20");
 	arg2 = 3;
 	result = mul(arg1, arg2, testContext);
-	assertEqual("3.60", result.toString());
+	assert("3.60" == result.toString());
 	arg1 = 7;
 	result = mul(arg1, arg2, testContext);
-	assertEqual("21", result.toString());
+	assert("21" == result.toString());
 }
 
 unittest { // mulLong
@@ -2129,10 +2128,10 @@ unittest { // mulLong
 	arg1 = Decimal("1.20");
 	arg2 = 3;
 	result = mulLong(arg1, arg2, testContext);
-	assertEqual("3.60", result.toString());
+	assert("3.60" == result.toString());
 	arg1 = -7000;
 	result = mulLong(arg1, arg2, testContext);
-	assertEqual("-21000", result.toString());
+	assert("-21000" == result.toString());
 }
 
 unittest {	// fma
@@ -2140,17 +2139,17 @@ unittest {	// fma
 	arg1 = 3; arg2 = 5; arg3 = 7;
 	expect = 22;
 	actual = (fma(arg1, arg2, arg3, testContext));
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg1 = 3; arg2 = -5; arg3 = 7;
 	expect = -8;
 	actual = (fma(arg1, arg2, arg3, testContext));
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg1 = 888565290;
 	arg2 = 1557.96930;
 	arg3 = -86087.7578;
 	expect = Decimal(1.38435736E+12);
 	actual = (fma(arg1, arg2, arg3, testContext));
-	assertEqual(expect, actual);
+	assert(expect == actual);
 }
 
 unittest {	// div
@@ -2159,13 +2158,13 @@ unittest {	// div
 	arg2 = 3;
 	actual = div(arg1, arg2, testContext);
 	expect = Decimal(0.333333333);
-	assertEqual(expect, actual);
-	assertStringEqual(expect, actual);
+	assert(expect == actual);
+	assert(expect.toString == actual.toString);
 	arg1 = 1;
 	arg2 = 10;
 	expect = 0.1;
 	actual = div(arg1, arg2, testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 }
 
 unittest {	// divideInteger
@@ -2174,15 +2173,15 @@ unittest {	// divideInteger
 	arg2 = 3;
 	actual = divideInteger(arg1, arg2, testContext);
 	expect = 0;
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg1 = 10;
 	actual = divideInteger(arg1, arg2, testContext);
 	expect = 3;
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg1 = 1;
 	arg2 = 0.3;
 	actual = divideInteger(arg1, arg2, testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 }
 
 unittest {	// remainder
@@ -2191,11 +2190,11 @@ unittest {	// remainder
 	arg2 = 3;
 	actual = rem(arg1, arg2, testContext);
 	expect = 2.1;
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg1 = 10;
 	actual = rem(arg1, arg2, testContext);
 	expect = 1;
-	assertEqual(expect, actual);
+	assert(expect == actual);
 }
 
 unittest {
@@ -2211,78 +2210,78 @@ unittest {	// quantize
 	arg2 = Decimal("0.001");
 	expect = Decimal("2.170");
 	actual = quantize!Decimal(arg1, arg2, context);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg1 = Decimal("2.17");
 	arg2 = Decimal("0.01");
 	expect = Decimal("2.17");
 	actual = quantize(arg1, arg2, context);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg1 = Decimal("2.17");
 	arg2 = Decimal("0.1");
 	expect = Decimal("2.2");
 	actual = quantize(arg1, arg2, context);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg1 = Decimal("2.17");
 	arg2 = Decimal("1e+0");
 	expect = Decimal("2");
 	actual = quantize(arg1, arg2, context);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg1 = Decimal("2.17");
 	arg2 = Decimal("1e+1");
 	expect = Decimal("0E+1");
 	actual = quantize(arg1, arg2, context);
-	assertStringEqual(expect, actual);
+	assert(expect.toString, actual.toString);
 	arg1 = Decimal("-Inf");
 	arg2 = Decimal("Infinity");
 	expect = Decimal("-Infinity");
 	actual = quantize(arg1, arg2, context);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg1 = Decimal("2");
 	arg2 = Decimal("Infinity");
 	expect = Decimal("NaN");
 	actual = quantize(arg1, arg2, context);
-	assertStringEqual(expect, actual);
+	assert(expect.toString, actual.toString);
 	arg1 = Decimal("-0.1");
 	arg2 = Decimal("1");
 	expect = Decimal("-0");
 	actual = quantize(arg1, arg2, context);
-	assertStringEqual(expect, actual);
+	assert(expect.toString, actual.toString);
 	arg1 = Decimal("-0");
 	arg2 = Decimal("1e+5");
 	expect = Decimal("-0E+5");
 	actual = quantize(arg1, arg2, context);
-	assertStringEqual(expect, actual);
+	assert(expect.toString, actual.toString);
 	arg1 = Decimal("+35236450.6");
 	arg2 = Decimal("1e-2");
 	expect = Decimal("NaN");
 	actual = quantize(arg1, arg2, context);
-	assertStringEqual(expect, actual);
+	assert(expect.toString, actual.toString);
 	arg1 = Decimal("-35236450.6");
 	arg2 = Decimal("1e-2");
 	expect = Decimal("NaN");
 	actual = quantize(arg1, arg2, context);
-	assertStringEqual(expect, actual);
+	assert(expect.toString, actual.toString);
 	arg1 = Decimal("217");
 	arg2 = Decimal("1e-1");
 	expect = Decimal( "217.0");
 	actual = quantize(arg1, arg2, context);
-	assertStringEqual(expect, actual);
+	assert(expect.toString, actual.toString);
 	arg1 = Decimal("217");
 	arg2 = Decimal("1e+0");
 	expect = Decimal("217");
 	actual = quantize(arg1, arg2, context);
-	assertStringEqual(expect, actual);
+	assert(expect.toString, actual.toString);
 	arg1 = Decimal("217");
 	arg2 = Decimal("1e+1");
 	expect = Decimal("2.2E+2");
 	actual = quantize(arg1, arg2, context);
-	assertStringEqual(expect, actual);
+	assert(expect.toString, actual.toString);
 	arg1 = Decimal("217");
 	arg2 = Decimal("1e+2");
 	expect = Decimal("2E+2");
 	actual = quantize(arg1, arg2, context);
-	assertStringEqual(expect, actual);
-	assertEqual(expect, actual);
+	assert(expect.toString, actual.toString);
+	assert(expect == actual);
 }
 
 unittest { // roundToIntegralExact
@@ -2290,12 +2289,12 @@ unittest { // roundToIntegralExact
 	arg = 2.1;
 	expect = 2;
 	actual = roundToIntegralExact(arg, testContext);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	arg = 100;
 	expect = 100;
 	actual = roundToIntegralExact(arg, testContext);
-	assertEqual(expect, actual);
-	assertStringEqual(expect, actual);
+	assert(expect == actual);
+	assert(expect.toString, actual.toString);
 }
 
 unittest {
@@ -2309,9 +2308,9 @@ unittest {	// setInvalidFlag
 	arg = Decimal("sNaN123");
 	expect = Decimal("NaN123");
 	actual = abs!Decimal(arg, testContext);
-	assertTrue(actual.isQuiet);
-	assertTrue(contextFlags.getFlag(INVALID_OPERATION));
-//	  assertTrue(actual.toAbstract == expect.toAbstract);
+	assert(actual.isQuiet);
+	assert(contextFlags.getFlag(INVALID_OPERATION));
+//	  assert(actual.toAbstract == expect.toAbstract);
 }
 
 unittest { // alignOps
@@ -2319,8 +2318,8 @@ unittest { // alignOps
 	arg1 = 1.3E35;
 	arg2 = -17.4E29;
 	alignOps(arg1, arg2);
-	assertTrue(arg1.coefficient == 13000000);
-	assertTrue(arg2.exponent == 28);
+	assert(arg1.coefficient == 13000000);
+	assert(arg2.exponent == 28);
 }
 
 unittest {

@@ -23,7 +23,7 @@ import decimal.arithmetic: compare, copyNegate, equals;
 import decimal.context;
 import decimal.conv;
 import decimal.decimal;
-import decimal.test;
+//import decimal.test;
 
 private const uint128 TEN128 = uint128(10);
 private const uint128 THOU128 = TEN128^^3;
@@ -259,8 +259,30 @@ public int testFive(const uint128 arg) {
 /// Returns -1, 1, or 0 if the remainder is less than, more than,
 /// or exactly half the least significant digit of the shortened coefficient.
 /// Exactly half is a five followed by zero or more zero digits.
+// TODO: calls firstDigit and then numDigits: combine these calls.
 public int testFive(const BigInt arg) {
+	int first = firstDigit(arg);
+	if (first < 5) return -1;
+	if (first > 5) return +1;
+	BigInt big = mutable(arg);
+	BigInt zeros = big % BIG_TEN^^(numDigits(arg)-1);
+	return (zeros != 0) ? 1 : 0;
+}
+
+/// Returns -1, 1, or 0 if the remainder is less than, more than,
+/// or exactly half the least significant digit of the shortened coefficient.
+/// Exactly half is a five followed by zero or more zero digits.
+/*public int testFive(const BigInt arg) {
 	return testFive(bigToLong(arg));
+}*/
+
+unittest {	// testFive
+	assert( 0 == testFive(5000));
+	assert(-1 == testFive(4999));
+	assert( 1 == testFive(5001));
+	assert( 0 == testFive(BigInt("5000000000000000000000")));
+	assert(-1 == testFive(BigInt("4999999999999999999999")));
+	assert( 1 == testFive(BigInt("50000000000000000000000000000000000000000000000001")));
 }
 
 /// Converts an integer to a decimal (coefficient and exponent) form.
@@ -476,8 +498,7 @@ private void increment(T)(ref T num, ref uint digits) {
 //-----------------------------
 
 // BigInt has problems with const and immutable; these should be const values.
-// Best I can do is to make them private.
-// (R)TODO: properties with getters & no setters?
+// the best I can do is to make them private.
 private BigInt BIG_ZERO = BigInt(0);
 private BigInt BIG_ONE  = BigInt(1);
 private BigInt BIG_FIVE = BigInt(5);
@@ -528,13 +549,13 @@ public int numDigits(const BigInt arg) {
 
 /// Returns the number of digits in the argument.
 public int numDigits(const uint128 arg) {
-//writefln("arg = %s", arg);
     // special cases
 	if (arg == 0) return 0;
     if (arg < 10) return 1;
     // otherwise reduce until number fits into a long integer...
 	int count = 0;
 	uint128 num = arg;
+	// TODO: why is this commented out?
 /*	if (num > QUINT128) {
 		num /= QUINT128;
 writefln("QUINT128 = %s", QUINT128);
@@ -555,7 +576,7 @@ public int numDigits(const ulong n) {
 	if (n < 10) return 1;
 	if (n >= TENS[18]) return 19;
     // use a binary search to count the digits
-	int min = 2;  // TODO: 2?
+	int min = 2;
 	int max = 18;
 	while (min <= max) {
 		int mid = (min + max)/2;
@@ -936,67 +957,67 @@ unittest {
 	Decimal after = before;
 	DecimalContext ctx3 = DecimalContext(3, 99, Rounding.HALF_EVEN);
 	after = round(after, ctx3);
-	assertEqual("1.00E+4", after.toString);
+	assert("1.00E+4" == after.toString);
 	before = Decimal(1234567890);
 	after = before;
 	after = round(after, ctx3);
-	assertEqual(after.toString(), "1.23E+9");
+	assert(after.toString == "1.23E+9");
 	after = before;
 	DecimalContext ctx4 = DecimalContext(4, 99, Rounding.HALF_EVEN);
 	after = round(after, ctx4);;
-	assertEqual(after.toString(), "1.235E+9");
+	assert(after.toString == "1.235E+9");
 	after = before;
 	DecimalContext ctx5 = DecimalContext(5, 99, Rounding.HALF_EVEN);
 	after = round(after, ctx5);;
-	assertEqual(after.toString(), "1.2346E+9");
+	assert(after.toString == "1.2346E+9");
 	after = before;
 	DecimalContext ctx6 = DecimalContext(6, 99, Rounding.HALF_EVEN);
 	after = round(after, ctx6);;
-	assertEqual(after.toString(), "1.23457E+9");
+	assert(after.toString == "1.23457E+9");
 	after = before;
 	DecimalContext ctx7 = DecimalContext(7, 99, Rounding.HALF_EVEN);
 	after = round(after, ctx7);;
-	assertEqual(after.toString(), "1.234568E+9");
+	assert(after.toString == "1.234568E+9");
 	after = before;
 	DecimalContext ctx8 = DecimalContext(8, 99, Rounding.HALF_EVEN);
 	after = round(after, ctx8);;
-	assertEqual(after.toString(), "1.2345679E+9");
+	assert(after.toString == "1.2345679E+9");
 	before = 1235;
 	after = before;
 	after = round(after, ctx3);;
-	assertEqual("[0,124,1]", after.toAbstract());
+	assert("[0,124,1]" == after.toAbstract());
 	before = 12359;
 	after = before;
 	after = round(after, ctx3);;
-	assertEqual("[0,124,2]", after.toAbstract());
+	assert("[0,124,2]" == after.toAbstract());
 	before = 1245;
 	after = before;
 	after = round(after, ctx3);
-	assertEqual("[0,124,1]", after.toAbstract());
+	assert("[0,124,1]" == after.toAbstract());
 	before = 12459;
 	after = before;
 	after = round(after, ctx3);;
-	assertTrue(after.toAbstract() == "[0,125,2]");
+	assert(after.toAbstract() == "[0,125,2]");
 	Dec32 a = Dec32(0.1);
 writeln("********** a = ", a);
 	Dec32 b = Dec32.min * Dec32(8888888);
 writeln("********** b = ", b);
-	assertEqual("[0,8888888,-101]", b.toAbstract);
+	assert("[0,8888888,-101]" == b.toAbstract);
 	Dec32 c = a * b;
 writeln("********* c = ", c);
-	assertEqual("[0,888889,-101]",c.toAbstract);
+	assert("[0,888889,-101]" == c.toAbstract);
 	Dec32 d = a * c;
-	assertEqual("[0,88889,-101]", d.toAbstract);
+	assert("[0,88889,-101]" == d.toAbstract);
 	Dec32 e = a * d;
-	assertEqual("[0,8889,-101]", e.toAbstract);
+	assert("[0,8889,-101]" == e.toAbstract);
 	Dec32 f = a * e;
-	assertEqual("[0,889,-101]", f.toAbstract);
+	assert("[0,889,-101]" == f.toAbstract);
 	Dec32 g = a * f;
-	assertEqual("[0,89,-101]", g.toAbstract);
+	assert("[0,89,-101]" == g.toAbstract);
 	Dec32 h = a * g;
-	assertEqual("[0,9,-101]", h.toAbstract);
+	assert("[0,9,-101]" == h.toAbstract);
 	Dec32 i = a * h;
-	assertEqual("[0,0,-101]", i.toAbstract);
+	assert("[0,0,-101]" == i.toAbstract);
 }
 
 unittest {
@@ -1005,33 +1026,24 @@ unittest {
 	Decimal num;
 	num = 1000;
 	roundByMode(num, ctxHE);
-	assertTrue(num.coefficient == 1000 && num.exponent == 0 && num.digits == 4);
+	assert(num.coefficient == 1000 && num.exponent == 0 && num.digits == 4);
 	num = 1000000;
 	roundByMode(num, ctxHE);
-	assertTrue(num.coefficient == 10000 && num.exponent == 2 && num.digits == 5);
+	assert(num.coefficient == 10000 && num.exponent == 2 && num.digits == 5);
 	num = 99999;
 	roundByMode(num, ctxHE);
-	assertTrue(num.coefficient == 99999 && num.exponent == 0 && num.digits == 5);
+	assert(num.coefficient == 99999 && num.exponent == 0 && num.digits == 5);
 	num = 1234550;
 	roundByMode(num, ctxHE);
-	assertTrue(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
+	assert(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
 	DecimalContext ctxDN = ctxHE.setRounding(Rounding.DOWN);
 	num = 1234550;
 	roundByMode(num, ctxDN);
-	assertTrue(num.coefficient == 12345 && num.exponent == 2 && num.digits == 5);
+	assert(num.coefficient == 12345 && num.exponent == 2 && num.digits == 5);
 	DecimalContext ctxUP = ctxHE.setRounding(Rounding.UP);
 	num = 1234550;
 	roundByMode(num, ctxUP);
-	assertTrue(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
-}
-
-unittest {	// testFive
-	assertEqual( 0, testFive(5000));
-	assertEqual(-1, testFive(4999));
-	assertEqual( 1, testFive(5001));
-	assertEqual( 0, testFive(BigInt("5000000000000000000000")));
-	assertEqual(-1, testFive(BigInt("4999999999999999999999")));
-	assertEqual( 1, testFive(BigInt("50000000000000000000000000000000000000000000000001")));
+	assert(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
 }
 
 unittest {
@@ -1041,9 +1053,9 @@ unittest {
 	num = Decimal(1234567890123456L);
 	acrem = getRemainder(num, ctx5);
 	exnum = Decimal("1.2345E+15");
-	assertTrue(num == exnum);
+	assert(num == exnum);
 	exrem = 67890123456;
-	assertTrue(acrem == exrem);
+	assert(acrem == exrem);
 }
 
 unittest {
@@ -1052,15 +1064,15 @@ unittest {
 	num = 10;
 	expect = 11;
 	incrementAndRound(num);
-	assertTrue(num == expect);
+	assert(num == expect);
 	num = 19;
 	expect = 20;
 	incrementAndRound(num);
-	assertTrue(num == expect);
+	assert(num == expect);
 	num = 999;
 	expect = 1000;
 	incrementAndRound(num);
-	assertTrue(num == expect);
+	assert(num == expect);
 }
 
 unittest {
@@ -1071,20 +1083,20 @@ unittest {
 	expect = 11;
 	digits = numDigits(num);
 	increment(num, digits);
-	assertTrue(num == expect);
-	assertTrue(digits == 2);
+	assert(num == expect);
+	assert(digits == 2);
 	num = 19;
 	expect = 20;
 	digits = numDigits(num);
 	increment(num, digits);
-	assertTrue(num == expect);
-	assertTrue(digits == 2);
+	assert(num == expect);
+	assert(digits == 2);
 	num = 999;
 	expect = 1000;
 	digits = numDigits(num);
 	increment(num, digits);
-	assertTrue(num == expect);
-	assertTrue(digits == 4);
+	assert(num == expect);
+	assert(digits == 4);
 }
 
 unittest {
@@ -1096,27 +1108,27 @@ unittest {
 	num = 1000;
 	digits = numDigits(num);
 	expo = setExponent(false, num, digits, ctx);
-	assertTrue(num == 1000 && expo == 0 && digits == 4);
+	assert(num == 1000 && expo == 0 && digits == 4);
 	num = 1000000;
 	digits = numDigits(num);
 	expo = setExponent(false, num, digits, ctx);
-	assertTrue(num == 10000 && expo == 2 && digits == 5);
+	assert(num == 10000 && expo == 2 && digits == 5);
 	num = 99999;
 	digits = numDigits(num);
 	expo = setExponent(false, num, digits, ctx);
-	assertTrue(num == 99999 && expo == 0 && digits == 5);
+	assert(num == 99999 && expo == 0 && digits == 5);
 }
 
 unittest {
 	// numDigits(BigInt)
 	BigInt big = BigInt("12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678905");
-	assertEqual(101, numDigits(big));
+	assert(101 == numDigits(big));
 }
 
 unittest {
 	// firstDigit(BigInt)
 	BigInt big = BigInt("82345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678905");
-	assertEqual(8, firstDigit(big));
+	assert(8 == firstDigit(big));
 }
 
 unittest {
@@ -1125,87 +1137,87 @@ unittest {
 	int n;
 	m = 12345;
 	n = 2;
-	assertTrue(shiftLeft(m, n, 100) == 1234500);
+	assert(shiftLeft(m, n, 100) == 1234500);
 	m = 1234567890;
 	n = 7;
-	assertTrue(shiftLeft(m, n, 100) == BigInt(12345678900000000));
+	assert(shiftLeft(m, n, 100) == BigInt(12345678900000000));
 	m = 12;
 	n = 2;
-	assertTrue(shiftLeft(m, n, 100) == 1200);
+	assert(shiftLeft(m, n, 100) == 1200);
 	m = 12;
 	n = 4;
-	assertTrue(shiftLeft(m, n, 100) == 120000);
+	assert(shiftLeft(m, n, 100) == 120000);
 	uint k;
 	k = 12345;
 	n = 2;
-	assertEqual!uint(1234500, cast(uint)shiftLeft(k, n, 9));
+	assert(1234500 == cast(uint)shiftLeft(k, n, 9));
 	k = 1234567890;
 	n = 7;
-	assertEqual!uint(900000000, cast(uint)shiftLeft(k, n, 9));
+	assert(900000000 == cast(uint)shiftLeft(k, n, 9));
 	k = 12;
 	n = 2;
-	assertEqual!uint(1200, cast(uint)shiftLeft(k, n, 9));
+	assert(1200 == cast(uint)shiftLeft(k, n, 9));
 	k = 12;
 	n = 4;
-	assertEqual!uint(120000, cast(uint)shiftLeft(k, n, 9));
+	assert(120000 == cast(uint)shiftLeft(k, n, 9));
 }
 
 unittest {
 	// lastDigit(ulong)
 	long n;
 	n = 7;
-	assertTrue(lastDigit(n) == 7);
+	assert(lastDigit(n) == 7);
 	n = -13;
-	assertTrue(lastDigit(n) == 3);
+	assert(lastDigit(n) == 3);
 	n = 999;
-	assertTrue(lastDigit(n) == 9);
+	assert(lastDigit(n) == 9);
 	n = -9999;
-	assertTrue(lastDigit(n) == 9);
+	assert(lastDigit(n) == 9);
 	n = 25987;
-	assertTrue(lastDigit(n) == 7);
+	assert(lastDigit(n) == 7);
 	n = -5008615;
-	assertTrue(lastDigit(n) == 5);
+	assert(lastDigit(n) == 5);
 	n = 3234567893;
-	assertTrue(lastDigit(n) == 3);
+	assert(lastDigit(n) == 3);
 	n = -10000000000;
-	assertTrue(lastDigit(n) == 0);
+	assert(lastDigit(n) == 0);
 	n = 823456789012348;
-	assertTrue(lastDigit(n) == 8);
+	assert(lastDigit(n) == 8);
 	n = 4234567890123456;
-	assertTrue(lastDigit(n) == 6);
+	assert(lastDigit(n) == 6);
 	n = 623456789012345674;
-	assertTrue(lastDigit(n) == 4);
+	assert(lastDigit(n) == 4);
 	n = long.max;
-	assertTrue(lastDigit(n) == 7);
+	assert(lastDigit(n) == 7);
 }
 
 unittest {
 	// lastDigit(BigInt)
 	BigInt n;
 	n = 7;
-	assertTrue(lastDigit(n) == 7);
+	assert(lastDigit(n) == 7);
 	n = -13;
-	assertTrue(lastDigit(n) == 3);
+	assert(lastDigit(n) == 3);
 	n = 999;
-	assertTrue(lastDigit(n) == 9);
+	assert(lastDigit(n) == 9);
 	n = -9999;
-	assertTrue(lastDigit(n) == 9);
+	assert(lastDigit(n) == 9);
 	n = 25987;
-	assertTrue(lastDigit(n) == 7);
+	assert(lastDigit(n) == 7);
 	n = -5008615;
-	assertTrue(lastDigit(n) == 5);
+	assert(lastDigit(n) == 5);
 	n = 3234567893;
-	assertTrue(lastDigit(n) == 3);
+	assert(lastDigit(n) == 3);
 	n = -10000000000;
-	assertTrue(lastDigit(n) == 0);
+	assert(lastDigit(n) == 0);
 	n = 823456789012348;
-	assertTrue(lastDigit(n) == 8);
+	assert(lastDigit(n) == 8);
 	n = 4234567890123456;
-	assertTrue(lastDigit(n) == 6);
+	assert(lastDigit(n) == 6);
 	n = 623456789012345674;
-	assertTrue(lastDigit(n) == 4);
+	assert(lastDigit(n) == 4);
 	n = long.max;
-	assertTrue(lastDigit(n) == 7);
+	assert(lastDigit(n) == 7);
 }
 
 unittest {
@@ -1214,16 +1226,16 @@ unittest {
 	int n;
 	m = 12345;
 	n = 2;
-	assertTrue(shiftLeft(m,n) == 1234500);
+	assert(shiftLeft(m,n) == 1234500);
 	m = 1234567890;
 	n = 7;
-	assertTrue(shiftLeft(m,n) == 12345678900000000);
+	assert(shiftLeft(m,n) == 12345678900000000);
 	m = 12;
 	n = 2;
-	assertTrue(shiftLeft(m,n) == 1200);
+	assert(shiftLeft(m,n) == 1200);
 	m = 12;
 	n = 4;
-	assertTrue(shiftLeft(m,n) == 120000);
+	assert(shiftLeft(m,n) == 120000);
 }
 
 unittest {
@@ -1233,51 +1245,51 @@ unittest {
 	int expect, actual;
 	expect = 7;
 	actual = firstDigit(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 13;
 	expect = 1;
 	actual = firstDigit(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 999;
 	expect = 9;
 	actual = firstDigit(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 9999;
 	expect = 9;
 	actual = firstDigit(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 25987;
 	expect = 2;
 	actual = firstDigit(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 5008617;
 	expect = 5;
 	actual = firstDigit(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 3234567890;
 	expect = 3;
 	actual = firstDigit(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 10000000000;
 	expect = 1;
 	actual = firstDigit(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 823456789012345;
 	expect = 8;
 	actual = firstDigit(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 4234567890123456;
 	expect = 4;
 	actual = firstDigit(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 623456789012345678;
 	expect = 6;
 	actual = firstDigit(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = long.max;
 	expect = 9;
 	actual = firstDigit(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 }
 
 unittest {
@@ -1286,51 +1298,51 @@ unittest {
 	n = 7;
 	int expect = 1;
 	int actual = numDigits(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 13;
 	expect = 2;
 	actual = numDigits(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 999;
 	expect = 3;
 	actual = numDigits(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 9999;
 	expect = 4;
 	actual = numDigits(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 25987;
 	expect = 5;
 	actual = numDigits(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 2008617;
 	expect = 7;
 	actual = numDigits(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 1234567890;
 	expect = 10;
 	actual = numDigits(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 10000000000;
 	expect = 11;
 	actual = numDigits(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 123456789012345;
 	expect = 15;
 	actual = numDigits(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 1234567890123456;
 	expect = 16;
 	actual = numDigits(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = 123456789012345678;
 	expect = 18;
 	actual = numDigits(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 	n = long.max;
 	expect = 19;
 	actual = numDigits(n);
-	assertEqual(expect, actual);
+	assert(expect == actual);
 }
 
 unittest {
@@ -1342,54 +1354,54 @@ unittest {
 	precision = 5;
 	acrem = clipRemainder(num, digits, precision);
 	exnum = 12345L;
-	assertTrue(num == exnum);
+	assert(num == exnum);
 	exrem = 67890123456L;
-	assertTrue(acrem == exrem);
+	assert(acrem == exrem);
 
 	num = 12345768901234567L;
 	digits = 17;
 	precision = 5;
 	acrem = clipRemainder(num, digits, precision);
 	exnum = 12345L;
-	assertTrue(num == exnum);
+	assert(num == exnum);
 	exrem = 768901234567L;
-	assertTrue(acrem == exrem);
+	assert(acrem == exrem);
 
 	num = 123456789012345678L;
 	digits = 18;
 	precision = 5;
 	acrem = clipRemainder(num, digits, precision);
 	exnum = 12345L;
-	assertTrue(num == exnum);
+	assert(num == exnum);
 	exrem = 6789012345678L;
-	assertTrue(acrem == exrem);
+	assert(acrem == exrem);
 
 	num = 1234567890123456789L;
 	digits = 19;
 	precision = 5;
 	acrem = clipRemainder(num, digits, precision);
 	exnum = 12345L;
-	assertTrue(num == exnum);
+	assert(num == exnum);
 	exrem = 67890123456789L;
-	assertTrue(acrem == exrem);
+	assert(acrem == exrem);
 
 	num = 1234567890123456789L;
 	digits = 19;
 	precision = 4;
 	acrem = clipRemainder(num, digits, precision);
 	exnum = 1234L;
-	assertTrue(num == exnum);
+	assert(num == exnum);
 	exrem = 567890123456789L;
-	assertTrue(acrem == exrem);
+	assert(acrem == exrem);
 
 	num = 9223372036854775807L;
 	digits = 19;
 	precision = 1;
 	acrem = clipRemainder(num, digits, precision);
 	exnum = 9L;
-	assertTrue(num == exnum);
+	assert(num == exnum);
 	exrem = 223372036854775807L;
-	assertTrue(acrem == exrem);
+	assert(acrem == exrem);
 
 }
 
