@@ -14,18 +14,14 @@
 
 module decimal.dec64;
 
-import std.array: insertInPlace;
 import std.bigint;
 import std.bitmanip;
 import std.conv;
-import std.stdio: writefln;
 import std.string;
 
 import decimal.arithmetic;
 import decimal.context;
 import decimal.decimal;
-//import decimal.rounding;
-import decimal.test;
 
 unittest {
 	writeln("===================");

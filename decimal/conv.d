@@ -14,14 +14,14 @@
 
 module decimal.conv;
 
-import std.array: insertInPlace;
+import std.array: insertInPlace, replicate;
+import std.ascii: isDigit;
 import std.bigint;
 import std.string;
 import std.format;
 import decimal.integer;
 
 import decimal.context;
-//import decimal.rounding: round;
 import decimal.dec32;
 import decimal.dec64;
 import decimal.dec128;

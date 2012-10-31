@@ -14,9 +14,7 @@
 
 module decimal.dec128;
 
-import std.array: insertInPlace;
 import std.bigint;
-//import std.bitmanip;
 import std.conv;
 import std.string;
 
@@ -25,8 +23,6 @@ import decimal.context;
 import decimal.decimal;
 import decimal.dec32;
 import decimal.dec64;
-//import decimal.rounding;
-import decimal.test;
 import decimal.integer;
 
 unittest {
@@ -1447,7 +1443,7 @@ writefln("a == d = %s", a == d);
 		assert(expect == actual);
 		rhs = 3.1415E+3;
 		actual = rhs.toString;
-		assertNotEqual(expect, actual);
+		assert(expect != actual);
 	}
 
 //--------------------------------

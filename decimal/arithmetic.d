@@ -22,15 +22,12 @@
 
 module decimal.arithmetic;
 
-import decimal.context;
-import decimal.conv : isDecimal, isFixedDecimal, toBigDecimal;
-import decimal.decimal;
-//import decimal.rounding;
-
-import std.array: insertInPlace;
-import std.ascii: isDigit;
 import std.bigint;
 import std.string;
+
+import decimal.context;
+import decimal.conv: isDecimal, isFixedDecimal, toBigDecimal;
+import decimal.decimal;
 
 //--------------------------------
 // classification functions

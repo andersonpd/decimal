@@ -17,12 +17,11 @@ module decimal.math;
 import decimal.arithmetic;
 import decimal.context;
 import decimal.decimal;
-//import decimal.rounding;
 
 unittest {
-	writeln("---------------------");
-	writeln("math..........testing");
-	writeln("---------------------");
+	writeln("===================");
+	writeln("math........testing");
+	writeln("===================");
 }
 
 //--------------------------------
@@ -786,9 +785,9 @@ unittest {
 }
 
 unittest {
-	writeln("---------------------");
-	writeln("math.........finished");
-	writeln("---------------------");
+	writeln("===================");
+	writeln("math.......finished");
+	writeln("===================");
 	writeln();
 }
 

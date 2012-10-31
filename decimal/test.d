@@ -18,7 +18,6 @@ import std.bigint;
 import std.path: baseName;
 import std.stdio;
 
-
 import decimal.arithmetic;
 import decimal.context;
 import decimal.conv;
@@ -26,7 +25,6 @@ import decimal.dec32;
 import decimal.dec64;
 import decimal.dec128;
 import decimal.decimal;
-//import decimal.rounding;
 
 bool assertEqual2(T, U = T)(U actual, U expected,
 		string file = __FILE__, int line = __LINE__ ) if (isDecimal(T))

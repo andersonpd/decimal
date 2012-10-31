@@ -14,17 +14,12 @@
 
 module decimal.context;
 
-import std.array: replicate;
-import std.string: format;
-import std.array: insertInPlace;
-import std.ascii: isDigit;
 import std.bigint;
-import decimal.integer;
 
 import decimal.arithmetic: compare, copyNegate, equals;
-//import decimal.context;
 import decimal.conv;
 import decimal.decimal;
+import decimal.integer;
 
 unittest {
 	import std.stdio;
@@ -139,8 +134,8 @@ public struct DecimalContext {
 	//			to implement as a string.
 	// Returns the maximum representable normal value in the current context.
 	const string maxString() {
-		string cstr = "9." ~ replicate("9", precision - 1)
-					~ "E" ~ format("%d", maxExpo);
+		string cstr = "9." ~ std.array.replicate("9", precision - 1)
+					~ "E" ~ std.string.format("%d", maxExpo);
 		return cstr;
 	}
 };

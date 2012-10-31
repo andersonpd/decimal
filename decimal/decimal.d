@@ -20,17 +20,12 @@ module decimal.decimal;
 
 import std.bigint;
 import std.conv;
-import std.array: replicate;
-import std.ascii: isDigit;
-import std.exception: assumeUnique;
 import std.stdio: write, writeln;
 import std.stdio: writefln;
 import std.string;
 
 import decimal.context;
-//import decimal.rounding;
 import decimal.arithmetic;
-//import decimal.test;
 import decimal.integer;
 
 alias Decimal.context bigContext;
