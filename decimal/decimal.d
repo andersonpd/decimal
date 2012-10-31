@@ -31,12 +31,18 @@ import std.string;
 import decimal.context;
 import decimal.rounding;
 import decimal.arithmetic;
-import decimal.test;
+//import decimal.test;
 import decimal.integer;
 
 alias Decimal.context bigContext;
 alias Decimal.pushContext pushContext;
 alias Decimal.popContext popContext;
+
+unittest {
+	writeln("===================");
+	writeln("decimal.......begin");
+	writeln("===================");
+}
 
 // special values for NaN, Inf, etc.
 private static enum SV {NONE, INF, QNAN, SNAN};
@@ -86,15 +92,16 @@ private:
 //	static immutable Decimal FIVE = cast(immutable)Decimal(5);
 //	static immutable Decimal TEN  = cast(immutable)Decimal(10);
 
-unittest {
+unittest {	// special value constants
 	Decimal num;
 	num = NAN;
-	assertTrue(num.toString == "NaN");
+	assert(num.toString == "NaN");
 	num = SNAN;
-	assertTrue(num.toString == "sNaN");
-//	writeln("Decimal(SV.QNAN).toAbstract = ", NAN.toAbstract);
+	assert(num.toString == "sNaN");
 	num = NEG_ZERO;
-	assertEqual("-0", num.toString);
+	assert(num.toString == "-0");
+	num = INFINITY;
+	assert(num.toString == "Infinity");
 }
 
 public:
@@ -111,24 +118,31 @@ public:
 		this.sval = sv;
 	}
 
-	unittest {
+	unittest {	// special value construction
 		Decimal num = Decimal(SV.INF, true);
-		assertTrue(num.toSciString == "-Infinity");
-		assertTrue(num.toAbstract() == "[1,inf]");
+		assert(num.toString == "-Infinity");
+		assert(num.toAbstract() == "[1,inf]");
 	}
 
 	/// Creates a Decimal from a boolean value.
+	/// false == 0, true == 1
 	public this(const bool value)
 	{
 		this = zero;
-        if (value) {
-        	coefficient = 1;
-        }
+        if (value) coefficient = 1;
 	}
 
-	/// Constructs a number from a sign, a BigInt coefficient and
-	/// an optional(?) integer exponent.
-	/// The sign of the number is the value of the sign parameter,
+	unittest {	// boolean construction
+		Decimal num = Decimal(false);
+		assert(num.toString == "0");
+		num = Decimal(true);
+		assert(num.toString == "1");
+	}
+
+
+	/// Constructs a number from a boolean sign, a BigInt coefficient and
+	/// an optional integer exponent.
+	/// The sign of the number is the value of the sign parameter
 	/// regardless of the sign of the coefficient.
 	/// The intial precision of the number is deduced from the number of decimal
 	/// digits in the coefficient.
@@ -143,10 +157,10 @@ public:
 		this.digits = numDigits(this.mant);
 	}
 
-	unittest {
+	unittest {	// bool, BigInt, int construction
 		Decimal num;
 		num = Decimal(true, BigInt(7254), 94);
-		assertTrue(num.toString == "-7.254E+97");
+		assert(num.toString == "-7.254E+97");
 	}
 
 	/// Constructs a Decimal from a BigInt coefficient and an
@@ -155,19 +169,18 @@ public:
 	/// of digits in the coefficient.
 	this(const BigInt coefficient, const int exponent = 0) {
 		BigInt big = mutable(coefficient);
+		// TODO: why not add sgn to decimal?
 		bool sign = decimal.rounding.sgn(big) < 0;
 		this(sign, big, exponent);
 	};
 
-	unittest {
+	unittest {	// BigInt, int construction
 		Decimal num;
 		num = Decimal(BigInt(7254), 94);
-		assertTrue(num.toString == "7.254E+97");
+		assert(num.toString == "7.254E+97");
 		num = Decimal(BigInt(-7254));
-		assertTrue(num.toString == "-7254");
+		assert(num.toString == "-7254");
 	}
-
-	// long constructors:
 
 	/// Constructs a number from a sign, a long integer coefficient and
 	/// an integer exponent.
@@ -181,46 +194,83 @@ public:
 		this(BigInt(coefficient), exponent);
 	}
 
-	/// Constructs a number from an long coefficient
-	/// and an optional integer exponent.
+	/// Constructs a number from an long value
 	this(const long coefficient) {
 		this(BigInt(coefficient), 0);
+	}
+
+	unittest {	// long value construction
+		Decimal num;
+		num = Decimal(7254, 94);
+		assert(num.toString == "7.254E+97");
+		num = Decimal(-7254L);
+		assert(num.toString == "-7254");
 	}
 
 	// uint128 constructors:
 
 	/// Constructs a number from a sign, a uint128 integer coefficient and
-	/// an integer exponent.
-	this(const bool sign, const uint128 coefficient, const int exponent) {
+	/// an optional integer exponent.
+	this(const bool sign, const uint128 coefficient, const int exponent = 0) {
 		this(sign, coefficient.toBigInt(), exponent);
 	}
 
 	/// Constructs a number from an uint128 coefficient
 	/// and an optional integer exponent.
-	this(const uint128 coefficient, const int exponent) {
+	this(const uint128 coefficient, const int exponent = 0) {
 		this(coefficient.toBigInt(), exponent);
 	}
 
-	/// Constructs a number from an uint128 coefficient
-	/// and an optional integer exponent.
-	this(const uint128 coefficient) {
-		this(coefficient.toBigInt(), 0);
+	unittest {	// uint128 value construction
+		Decimal num;
+		num = Decimal(uint128(7254), 94);
+		assert(num.toString == "7.254E+97");
+		num = Decimal(uint128(7254L));
+		assert(num.toString == "7254");
 	}
 
-	// string constructors:
 
-// (B)TODO: this(str): add tests for just over/under int.max, int.min
-	// construct from string representation
+	// TODO: this(str): add tests for just over/under int.max, int.min
+	// Constructs a decimal number from a string representation
 	this(const string str) {
 		this = decimal.conv.toNumber(str);
 	};
 
+	unittest {	// string construction
+		Decimal num;
+		num = Decimal("7254E94");
+		assert(num.toString == "7.254E+97");
+		num = Decimal("7254.005");
+		assert(num.toString == "7254.005");
+	}
 
-	// floating point constructors:
+	unittest {	// ctor(string)
+		Decimal num;
+		string str;
+		num = Decimal(1, 12334, -5);
+		str = "-0.12334";
+		assert(num.toString == str);
+		num = Decimal(-23456, 10);
+		str = "-2.3456E+14";
+		assert(num.toString == str);
+		num = Decimal(234568901234);
+		str = "234568901234";
+		assert(num.toString == str);
+		num = Decimal("123.457E+29");
+		str = "1.23457E+31";
+		assert(num.toString == str);
+		num = std.math.E;
+		str = "2.71828183";
+		assert(str == num.toString);
+		num = std.math.LOG2;
+		Decimal copy = Decimal(num);
+		assert(compareTotal!Decimal(num, copy) == 0);
+	}
 
-	///
-	/// Constructs a number from a real value.
-	///
+
+
+	// TODO: convert real to decimal w/o going to a string.
+	/// Constructs a decimal number from a real value.
 	this(const real r) {
 		string str = format("%.*G", cast(int)context.precision, r);
 //writefln("r = %s", r);
@@ -228,6 +278,8 @@ public:
 		this(str);
 //writefln("this = %s", this);
 	}
+
+    // TODO: add unittest for real value construction
 
 	// copy constructor
 	this(const Decimal that) {
@@ -243,11 +295,17 @@ public:
 		return Decimal(this);
 	}
 
+	unittest {
+		Decimal num = Decimal(std.math.PI);
+		Decimal copy = num.dup;
+		assert(num == copy);
+	}
+
 //--------------------------------
 // assignment
 //--------------------------------
 
-	/// Assigns a Decimal (makes a copy)
+	/// Assigns a Decimal number (makes a copy)
 	void opAssign(T:Decimal)(const T that) {
 		this.signed = that.signed;
 		this.sval	= that.sval;
@@ -256,12 +314,12 @@ public:
 		this.mant	= cast(BigInt) that.mant;
 	}
 
-	///    Assigns a floating point value.
+	///    Assigns a BigInt value.
 	void opAssign(T:BigInt)(const T that) {
 		this = Decimal(that);
 	}
 
-	///    Assigns a floating point value.
+	///    Assigns a long point value.
 	void opAssign(T:long)(const T that) {
 		this = Decimal(that);
 	}
@@ -271,10 +329,30 @@ public:
 		this = Decimal(that);
 	}
 
+	///    Assigns a decimal value.
 	void opAssign(T)(const T that) if (isDecimal!T) {
 		this = decimal.conv.toBigDecimal!T(that);
 	}
 
+	unittest {	// opAssign
+		Decimal num;
+		string str;
+		num = Decimal(1, 245, 8);
+		str = "-2.45E+10";
+		assert(num.toString == str);
+		num = long.max;
+		str = "9223372036854775807";
+		assert(num.toString == str);
+		num = real.max;
+		str = "1.1897315E+4932";
+		assert(str == num.toString);
+		num = decimal.dec32.Dec32.max;
+		str = "9.999999E+96";
+		assert(num.toString == str);
+		num = BigInt("123456098420234978023480");
+		str = "123456098420234978023480";
+		assert(num.toString == str);
+	}
 
 //--------------------------------
 // string representations
@@ -287,28 +365,26 @@ public:
 		return decimal.conv.toAbstract!Decimal(this);
 	}
 
-// READY: toSciString.
-///
-/// Converts a Decimal to a string representation.
-///
-const string toSciString() {
-	return decimal.conv.sciForm!Decimal(this);
-};
+	///
+	/// Converts a Decimal to a "scientific" string representation.
+	///
+	const string toSciString() {
+		return decimal.conv.sciForm!Decimal(this);
+	};
 
-// READY: toEngString.
-///
-/// Converts a Decimal to an engineering string representation.
-///
-const string toEngString() {
-   return decimal.conv.engForm!Decimal(this);
-};
+	///
+	/// Converts a Decimal to an "engineering" string representation.
+	///
+	const string toEngString() {
+   	return decimal.conv.engForm!Decimal(this);
+	};
 
-///
-/// Converts a number to its string representation.
-///
-const string toString() {
-	return decimal.conv.sciForm!Decimal(this);
-};
+	///
+	/// Converts a number to its string representation.
+	///
+	const string toString() {
+		return decimal.conv.sciForm!Decimal(this);
+	};
 
 //--------------------------------
 // member properties
@@ -513,9 +589,7 @@ const string toString() {
 	}
 
 	static DecimalContext popContext() {
-//writefln("Decimal.context.precision = %s", Decimal.context.precision);
 		Decimal.context = contextStack.pop();
-//writefln("Decimal.context.precision = %s", Decimal.context.precision);
 		return Decimal.context;
 	}
 
@@ -536,28 +610,57 @@ const string toString() {
 		return this.dup;
 	}
 
+	unittest {	// isCanonical
+		Decimal num = Decimal("2.50");
+		assert(num.isCanonical);
+		Decimal copy = num.canonical;
+		assert(compareTotal(num, copy) == 0);
+	}
 
 	/// Returns true if this number is + or - zero.
 	const bool isZero() {
 		return isFinite && coefficient == 0;
 	}
 
+	unittest {
+		Decimal num;
+		num = Decimal("0");
+		assert(num.isZero);
+		num = Decimal("2.50");
+		assert(!num.isZero);
+		num = Decimal("-0E+2");
+		assert(num.isZero);
+	}
 
 	/// Returns true if this number is a quiet or signaling NaN.
 	const bool isNaN() {
 		return this.sval == SV.QNAN || this.sval == SV.SNAN;
 	}
 
-
 	/// Returns true if this number is a signaling NaN.
 	const bool isSignaling() {
 		return this.sval == SV.SNAN;
 	}
 
-
 	/// Returns true if this number is a quiet NaN.
 	const bool isQuiet() {
 		return this.sval == SV.QNAN;
+	}
+
+	unittest {
+		Decimal num;
+		num = Decimal("2.50");
+		assert(!num.isNaN);
+		assert(!num.isQuiet);
+		assert(!num.isSignaling);
+		num = Decimal("NaN");
+		assert(num.isNaN);
+		assert(num.isQuiet);
+		assert(!num.isSignaling);
+		num = Decimal("-sNaN");
+		assert(num.isNaN);
+		assert(!num.isQuiet);
+		assert(num.isSignaling);
 	}
 
 	/// Returns true if this number is + or - infinity.
@@ -572,12 +675,38 @@ const string toString() {
 			&& sval != SV.SNAN;
 	}
 
+	unittest {
+		Decimal num;
+		num = Decimal("2.50");
+		assert(!num.isInfinite);
+		assert(num.isFinite);
+		num = Decimal("-0.3");
+		assert(num.isFinite);
+		num = 0;
+		assert(num.isFinite);
+		num = Decimal("-Inf");
+		assert(num.isInfinite);
+		assert(!num.isFinite);
+		num = Decimal("NaN");
+		assert(!num.isInfinite);
+		assert(!num.isFinite);
+	}
 
 	/// Returns true if this number is a NaN or infinity.
 	const bool isSpecial() {
 		return sval == SV.INF
 			|| sval == SV.QNAN
 			|| sval == SV.SNAN;
+	}
+
+	unittest {
+		Decimal num;
+		num = Decimal.infinity(true);
+		assert(num.isSpecial);
+		num = Decimal.snan(1234);
+		assert(num.isSpecial);
+		num = 12378.34;
+		assert(!num.isSpecial);
 	}
 
 	/// Returns true if this number is negative. (Includes -0)
@@ -588,6 +717,19 @@ const string toString() {
 	/// Returns true if this number is negative. (Includes -0)
 	const bool isNegative() {
 		return this.signed;
+	}
+
+	unittest {
+		Decimal num;
+		num = Decimal("2.50");
+		assert(!num.isSigned);
+		assert(!num.isNegative);
+		num = Decimal("-12");
+		assert(num.isSigned);
+		assert(num.isNegative);
+		num = Decimal("-0");
+		assert(num.isSigned);
+		assert(num.isNegative);
 	}
 
 	/// Returns true if this number is subnormal.
@@ -604,13 +746,44 @@ const string toString() {
 		return false;
 	}
 
-
+	unittest {
+		Decimal num;
+		num = Decimal("2.50");
+		assert(num.isNormal);
+		assert(!num.isSubnormal);
+		num = Decimal("0.1E-99");
+		assert(!num.isNormal);
+		assert(num.isSubnormal);
+		num = Decimal("0.00");
+		assert(!num.isSubnormal);
+		assert(!num.isNormal);
+		num = Decimal("-Inf");
+		assert(!num.isNormal);
+		assert(!num.isSubnormal);
+		num = Decimal("NaN");
+		assert(!num.isSubnormal);
+		assert(!num.isNormal);
+	}
 	/// Returns true if this number is integral;
 	/// that is, if its fractional part is zero.
 	 const bool isIntegral() {
-	 	// (B)TODO: need to take trailing zeros into account
+	 	// TODO: need to take trailing zeros into account
 		return expo >= 0;
 	 }
+
+	unittest {	// isIntegral
+		Decimal num;
+		num = 12345;
+		assert(num.isIntegral);
+		num = BigInt("123456098420234978023480");
+		assert(num.isIntegral);
+		num = 1.5;
+		assert(!num.isIntegral);
+		num = 1.5E+1;
+		assert(num.isIntegral);
+		num = 0;
+		assert(num.isIntegral);
+	}
 
 	/// Returns true if this number represents a logical true value.
 	/// Any number other than zero or NaN returns true.
@@ -626,11 +799,37 @@ const string toString() {
 		return isNaN || (isFinite && coefficient == 0);
 	}
 
+unittest {
+	write("isTrue...");
+	writeln("test missing");
+}
+
+unittest {
+	write("isFalse...");
+	writeln("test missing");
+}
 
 	const bool isZeroCoefficient() {
 		return !isSpecial && coefficient == 0;
 	}
 
+	unittest {	// isZeroCoefficient
+		Decimal num;
+		num = 0;
+		assert(num.isZeroCoefficient);
+		num = BigInt("-0");
+		assert(num.isZeroCoefficient);
+		num = Decimal("0E+4");
+		assert(num.isZeroCoefficient);
+		num = 12345;
+		assert(!num.isZeroCoefficient);
+		num = 1.5;
+		assert(!num.isZeroCoefficient);
+		num = Decimal.NAN;
+		assert(!num.isZeroCoefficient);
+		num = Decimal.INFINITY;
+		assert(!num.isZeroCoefficient);
+	}
 
 //--------------------------------
 // comparison
@@ -651,6 +850,19 @@ const string toString() {
 	/// A number is not even equal to itself (this != this) if it is a NaN.
 	const bool opEquals (ref const Decimal that) {
 		return equals!Decimal(this, that, context);
+	}
+
+	unittest {	// comparison
+		Decimal num1, num2;
+		num1 = 105;
+		num2 = 10.543;
+		assert(num1 != num2);
+		assert(num1 > num2);
+		assert(num2 < num1);
+		num1 = 10.543;
+		assert(num1 >= num2);
+		assert(num2 <= num1);
+		assert(num1 == num2);
 	}
 
 //--------------------------------
@@ -674,6 +886,38 @@ const string toString() {
 		else static if (op == "--") {
 			return sub!Decimal(this, Decimal(1), context);
 		}
+	}
+
+	unittest {	// opUnary
+		Decimal num, actual, expect;
+		num = 134;
+		expect = num;
+		actual = +num;
+		assert(expect == actual);
+		num = 134.02;
+		expect = -134.02;
+		actual = -num;
+		assert(expect == actual);
+		num = 134;
+		expect = 135;
+		actual = ++num;
+		assert(expect == actual);
+		num = 1.00E8;
+		expect = num - 1;
+		actual = --num;
+		assert(expect == actual);
+		num = 1.00E8;
+		expect = num;
+		actual = num--;
+		assert(expect == actual);
+		num = Decimal(9999999, 90);
+		expect = num;
+		actual = num++;
+		assert(expect == actual);
+		num = 12.35;
+		expect = 11.35;
+		actual = --num;
+		assert(expect == actual);
 	}
 
 //--------------------------------
@@ -721,6 +965,49 @@ const string toString() {
 		return opBinary!(op,Decimal)(Decimal(arg));
 	}
 
+	/// Returns the result of performing the specified
+	/// binary operation on this number and the argument.
+	// TODO: separate out the long arithmetic
+/*	const Decimal opBinary(string op, T)(const long arg) if (isPromotable!T)	{
+		return opBinary!(op,Decimal)(Decimal(arg));
+	}*/
+
+	unittest {
+		Decimal num = Decimal(591.3);
+		Decimal result = num * 5;
+		assert(result == Decimal(2956.5));
+	}
+
+	unittest {
+		write("isPromotable...");
+		writeln("test missing");
+	}
+
+	unittest {	// opBinary
+		Decimal op1, op2, actual, expect;
+		op1 = 4;
+		op2 = 8;
+		actual = op1 + op2;
+		expect = 12;
+		assert(expect == actual);
+		actual = op1 - op2;
+		expect = -4;
+		assert(expect == actual);
+		actual = op1 * op2;
+		expect = 32;
+		assert(expect == actual);
+		op1 = 5;
+		op2 = 2;
+		actual = op1 / op2;
+		expect = 2.5;
+		assert(expect == actual);
+		op1 = 10;
+		op2 = 3;
+		actual = op1 % op2;
+		expect = 1;
+		assert(expect == actual);
+	}
+
 //-----------------------------
 // operator assignment
 //-----------------------------
@@ -730,6 +1017,20 @@ const string toString() {
 	ref Decimal opOpAssign(string op) (Decimal arg) {
 		this = opBinary!op(arg);
 		return this;
+	}
+
+	unittest {	// opOpAssign
+		Decimal op1, op2, actual, expect;
+		op1 = 23.56;
+		op2 = -2.07;
+		op1 += op2;
+		expect = 21.49;
+		actual = op1;
+		assert(expect == actual);
+		op1 *= op2;
+		expect = -44.4843;
+		actual = op1;
+		assert(expect == actual);
 	}
 
 //-----------------------------
@@ -753,6 +1054,20 @@ const string toString() {
 	/// direction toward the argument.
 	const Decimal nextAfter(const Decimal arg) {
 		return nextToward!Decimal(this, arg, context);
+	}
+
+	unittest {
+		Decimal big, expect;
+		big = 123.45;
+		assert(big.nextUp == Decimal(123.450001));
+		big = 123.45;
+		assert(big.nextDown == Decimal(123.449999));
+		big = 123.45;
+		expect = big.nextUp;
+		assert(big.nextAfter(Decimal(123.46)) == expect);
+		big = 123.45;
+		expect = big.nextDown;
+		assert(big.nextAfter(Decimal(123.44)) == expect);
 	}
 
 	// (B)TODO: move this outside the struct
@@ -820,394 +1135,31 @@ private struct ContextStack {
 //-----------------------------
 
 unittest {
-	writeln("===================");
-	writeln("decimal.......begin");
-	writeln("===================");
-}
-
-unittest {	// ctor(string)
-	Decimal num;
-	string str;
-	num = Decimal(1, 12334, -5);
-	str = "-0.12334";
-	assertTrue(num.toString == str);
-	num = Decimal(-23456, 10);
-	str = "-2.3456E+14";
-	assertTrue(num.toString == str);
-	num = Decimal(234568901234);
-	str = "234568901234";
-	assertTrue(num.toString == str);
-	num = Decimal("123.457E+29");
-	str = "1.23457E+31";
-	assertTrue(num.toString == str);
-	num = std.math.E;
-	str = "2.71828183";
-	assertEqual!string(str, num.toString);
-	num = std.math.LOG2;
-	Decimal copy = Decimal(num);
-	assertTrue(compareTotal!Decimal(num, copy) == 0);
-}
-
-unittest {
-	Decimal num = Decimal(std.math.PI);
-	Decimal copy = num.dup;
-	assertTrue(num == copy);
-}
-
-unittest {	// opAssign
-	import decimal.dec32;
-
-	Decimal num;
-	string str;
-	num = Decimal(1, 245, 8);
-	str = "-2.45E+10";
-	assertTrue(num.toString == str);
-	num = long.max;
-	str = "9223372036854775807";
-	assertTrue(num.toString == str);
-	num = real.max;
-	str = "1.1897315E+4932";
-	assertEqual!string(str, num.toString);
-	num = Dec32.max;
-	str = "9.999999E+96";
-	assertTrue(num.toString == str);
-	num = BigInt("123456098420234978023480");
-	str = "123456098420234978023480";
-	assertTrue(num.toString == str);
-}
-unittest {	// toAbstract
-	Decimal num;
-	string str;
-	num = Decimal("-inf");
-	str = "[1,inf]";
-	assertTrue(num.toAbstract == str);
-	num = Decimal("nan");
-	str = "[0,qNaN]";
-	assertTrue(num.toAbstract == str);
-	num = Decimal("snan1234");
-	str = "[0,sNaN1234]";
-	assertTrue(num.toAbstract == str);
-}
-
-unittest {
 	Decimal num;
 	string str;
 	num = Decimal(200000, 71);
 	str = "2.00000E+76";
-	assertTrue(num.toString == str);
+	assert(num.toString == str);
 }
 
 unittest {
 	Decimal big = -123.45E12;
-	assertEqual!int(10, big.exponent);
-	assertEqual!BigInt(BigInt(12345), big.coefficient);
-//		assertTrue(big.coefficient == 12345);
-	assertTrue(big.sign);
+	assert(big.exponent = 10);
+	assert(BigInt(12345) == big.coefficient);
+//		assert(big.coefficient == 12345);
+	assert(big.sign);
 	big.coefficient = 23456;
 	big.exponent = 12;
 	big.sign = false;
-	assertEqual!Decimal(Decimal(234.56E14),big);
+	assert(Decimal(234.56E14) == big);
 	big = Decimal.nan;
-	assertTrue(big.payload == 0);
+	assert(big.payload == 0);
 	big = Decimal.snan(1250);
-	assertTrue(big.payload == 1250);
-}
-
-unittest {
-	Decimal num;
-	assertTrue(num.toExact == "+NaN");
-	num = +9999999E+90;
-	assertEqual!string("+9999999E+90", num.toExact);
-	num = 1;
-	assertTrue(num.toExact == "+1E+00");
-	num = Decimal.infinity(true);
-	assertTrue(num.toExact == "-Infinity");
-}
-unittest {
-	Decimal num = Decimal("2.50");
-	assertTrue(num.isCanonical);
-	Decimal copy = num.canonical;
-	assertTrue(compareTotal(num, copy) == 0);
-}
-
-unittest {
-	Decimal num;
-	num = Decimal("0");
-	assertTrue(num.isZero);
-	num = Decimal("2.50");
-	assertTrue(!num.isZero);
-	num = Decimal("-0E+2");
-	assertTrue(num.isZero);
-}
-unittest {
-	Decimal num;
-	num = Decimal("2.50");
-	assertTrue(!num.isNaN);
-	num = Decimal("NaN");
-	assertTrue(num.isNaN);
-	num = Decimal("-sNaN");
-	assertTrue(num.isNaN);
-}
-unittest {
-	Decimal num;
-	num = Decimal("2.50");
-	assertTrue(!num.isSignaling);
-	num = Decimal("NaN");
-	assertTrue(!num.isSignaling);
-	num = Decimal("sNaN");
-	assertTrue(num.isSignaling);
-}
-unittest {
-	Decimal num;
-	num = Decimal("2.50");
-	assertTrue(!num.isQuiet);
-	num = Decimal("NaN");
-	assertTrue(num.isQuiet);
-	num = Decimal("sNaN");
-	assertTrue(!num.isQuiet);
-}
-
-unittest {
-	Decimal num;
-	num = Decimal("2.50");
-	assertTrue(!num.isInfinite);
-	num = Decimal("-Inf");
-	assertTrue(num.isInfinite);
-	num = Decimal("NaN");
-	assertTrue(!num.isInfinite);
-}
-
-unittest {
-	Decimal num;
-	num = Decimal("2.50");
-	assertTrue(num.isFinite);
-	num = Decimal("-0.3");
-	assertTrue(num.isFinite);
-	num = 0;
-	assertTrue(num.isFinite);
-	num = Decimal("Inf");
-	assertTrue(!num.isFinite);
-	num = Decimal("-Inf");
-	assertTrue(!num.isFinite);
-	num = Decimal("NaN");
-	assertTrue(!num.isFinite);
-}
-
-unittest {
-	Decimal num;
-	num = Decimal.infinity(true);
-	assertTrue(num.isSpecial);
-	num = Decimal.snan(1234);
-	assertTrue(num.isSpecial);
-	num = 12378.34;
-	assertTrue(!num.isSpecial);
-}
-
-unittest {
-	Decimal num;
-	num = Decimal("2.50");
-	assertTrue(!num.isSigned);
-	num = Decimal("-12");
-	assertTrue(num.isSigned);
-	num = Decimal("-0");
-	assertTrue(num.isSigned);
-}
-
-unittest {
-	Decimal num;
-	num = Decimal("2.50");
-	assertTrue(!num.isNegative);
-	num = Decimal("-12");
-	assertTrue(num.isNegative);
-	num = Decimal("-0");
-	assertTrue(num.isNegative);
-}
-
-unittest {
-	Decimal num;
-	num = Decimal("2.50");
-	assertTrue(!num.isSubnormal);
-	num = Decimal("0.1E-99");
-	assertTrue(num.isSubnormal);
-	num = Decimal("0.00");
-	assertTrue(!num.isSubnormal);
-	num = Decimal("-Inf");
-	assertTrue(!num.isSubnormal);
-	num = Decimal("NaN");
-	assertTrue(!num.isSubnormal);
-}
-unittest {
-	Decimal num;
-	num = Decimal("2.50");
-	assertTrue(num.isNormal);
-	num = Decimal("0.1E-99");
-	assertTrue(!num.isNormal);
-	num = Decimal("0.00");
-	assertTrue(!num.isNormal);
-	num = Decimal("-Inf");
-	assertTrue(!num.isNormal);
-	num = Decimal("NaN");
-	assertTrue(!num.isNormal);
-}
-
-unittest {	// isIntegral
-	Decimal num;
-	num = 12345;
-	assertTrue(num.isIntegral);
-	num = BigInt("123456098420234978023480");
-	assertTrue(num.isIntegral);
-	num = 1.5;
-	assertTrue(!num.isIntegral);
-	num = 1.5E+1;
-	assertTrue(num.isIntegral);
-	num = 0;
-	assertTrue(num.isIntegral);
-}
-
-unittest {
-	write("isTrue...");
-	writeln("test missing");
-}
-
-unittest {
-	write("isFalse...");
-	writeln("test missing");
-}
-
-unittest {	// isZeroCoefficient
-	Decimal num;
-	num = 0;
-	assertTrue(num.isZeroCoefficient);
-	num = BigInt("-0");
-	assertTrue(num.isZeroCoefficient);
-	num = Decimal("0E+4");
-	assertTrue(num.isZeroCoefficient);
-	num = 12345;
-	assertFalse(num.isZeroCoefficient);
-	num = 1.5;
-	assertFalse(num.isZeroCoefficient);
-	num = Decimal.NAN;
-	assertFalse(num.isZeroCoefficient);
-	num = Decimal.INFINITY;
-	assertFalse(num.isZeroCoefficient);
-}
-
-unittest {	// opCmp
-	Decimal num1, num2;
-	num1 = 105;
-	num2 = 10.543;
-	assertTrue(num1 > num2);
-	assertTrue(num2 < num1);
-	num1 = 10.543;
-	assertTrue(num1 >= num2);
-	assertTrue(num2 <= num1);
-}
-unittest {	// opEquals
-	Decimal num1, num2;
-	num1 = 105;
-	num2 = 10.543;
-	assertTrue(num1 != num2);
-	num1 = 10.543;
-	assertTrue(num1 == num2);
-}
-unittest {	// opUnary
-	Decimal num, actual, expect;
-	num = 134;
-	expect = num;
-	actual = +num;
-	assertEqual!Decimal(expect, actual);
-	num = 134.02;
-	expect = -134.02;
-	actual = -num;
-	assertEqual!Decimal(expect, actual);
-	num = 134;
-	expect = 135;
-	actual = ++num;
-	assertEqual!Decimal(expect, actual);
-	num = 1.00E8;
-	expect = num - 1;
-	actual = --num;
-	assertEqual!Decimal(expect, actual);
-	num = 1.00E8;
-	expect = num;
-	actual = num--;
-	assertEqual!Decimal(expect, actual);
-	num = Decimal(9999999, 90);
-	expect = num;
-	actual = num++;
-	assertEqual!Decimal(expect, actual);
-	num = 12.35;
-	expect = 11.35;
-	actual = --num;
-	assertEqual!Decimal(expect, actual);
-}
-
-unittest {
-	Decimal num = Decimal(591.3);
-	Decimal result = num * 5;
-	assertTrue(result == Decimal(2956.5));
-}
-
-unittest {
-	write("isPromotable...");
-	writeln("test missing");
-}
-
-unittest {	// opBinary
-	Decimal op1, op2, actual, expect;
-	op1 = 4;
-	op2 = 8;
-	actual = op1 + op2;
-	expect = 12;
-	assertEqual!Decimal(expect, actual);
-	actual = op1 - op2;
-	expect = -4;
-	assertEqual!Decimal(expect, actual);
-	actual = op1 * op2;
-	expect = 32;
-	assertEqual!Decimal(expect, actual);
-	op1 = 5;
-	op2 = 2;
-	actual = op1 / op2;
-	expect = 2.5;
-	assertEqual!Decimal(expect, actual);
-	op1 = 10;
-	op2 = 3;
-	actual = op1 % op2;
-	expect = 1;
-	assertEqual!Decimal(expect, actual);
-}
-
-unittest {	// opOpAssign
-	Decimal op1, op2, actual, expect;
-	op1 = 23.56;
-	op2 = -2.07;
-	op1 += op2;
-	expect = 21.49;
-	actual = op1;
-	assertEqual!Decimal(expect, actual);
-	op1 *= op2;
-	expect = -44.4843;
-	actual = op1;
-	assertEqual!Decimal(expect, actual);
-}
-
-unittest {
-	Decimal big, expect;
-	big = 123.45;
-	assertTrue(big.nextUp == Decimal(123.450001));
-	big = 123.45;
-	assertTrue(big.nextDown == Decimal(123.449999));
-	big = 123.45;
-	expect = big.nextUp;
-	assertTrue(big.nextAfter(Decimal(123.46)) == expect);
-	big = 123.45;
-	expect = big.nextDown;
-	assertTrue(big.nextAfter(Decimal(123.44)) == expect);
+	assert(big.payload == 1250);
 }
 
 /*unittest {	// pow10
-	assertTrue(pow10(3) == 1000);
+	assert(pow10(3) == 1000);
 }*/
 
 unittest {

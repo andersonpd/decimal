@@ -347,19 +347,26 @@ public T nextToward(T)(const T arg1, const T arg2,
 public int compare(T)(const T arg1, const T arg2,
 		const DecimalContext context = T.context,
 		bool roundResult = true) if (isDecimal!T) {
-
+//writeln("compare 1");
 	// any operation with a signaling NaN is invalid.
 	// if both are signaling, return as if arg1 > arg2.
 	if (arg1.isSignaling || arg2.isSignaling) {
 		contextFlags.setFlags(INVALID_OPERATION);
 		return arg1.isSignaling ? 1 : -1;
 	}
+//writeln("compare 2");
 
 	// NaN returns > any number, including NaN
 	// if both are NaN, return as if arg1 > arg2.
 	if (arg1.isNaN || arg2.isNaN) {
 		return arg1.isNaN ? 1 : -1;
 	}
+//writeln("compare 3");
+
+//	// if either is infinite...
+//	if (arg1.isInfinite || arg2.isInfinite) {
+//		return (arg1.isInfinite && arg2.isInfinite && arg1.isSigned == arg2.isSigned);
+//	}
 
 	// if signs differ, just compare the signs
 	if (arg1.sign != arg2.sign) {
@@ -369,6 +376,7 @@ public int compare(T)(const T arg1, const T arg2,
 		}
 		return arg1.sign ? -1 : 1;
 	}
+//writeln("compare 4");
 
 	// otherwise, compare the numbers numerically
 	int diff = (arg1.exponent + arg1.digits) - (arg2.exponent + arg2.digits);
@@ -380,9 +388,11 @@ public int compare(T)(const T arg1, const T arg2,
 		if (diff > 0) return -1;
 		if (diff < 0) return 1;
 	}
+//writeln("compare 5");
 
 	// when all else fails, subtract
 	T result = sub!T(arg1, arg2, context, roundResult);
+//writefln("result = %s", result);
 
 	// test the coefficient
 	// result.isZero may not be true if the result hasn't been rounded
@@ -408,29 +418,35 @@ public bool equals(T)(const T arg1, const T arg2,
 //writefln("arg1 = %s", arg1);
 //writefln("arg2 = %s", arg2);
 	// any operation with a signaling NaN is invalid.
+//writeln("equals 1");
 	if (arg1.isSignaling || arg2.isSignaling) {
 		contextFlags.setFlags(INVALID_OPERATION);
 		return false;
 	}
+//writeln("equals 2");
 
 	// if either is NaN...
 	// NaN is never equal to any number, not even another NaN
 	if (arg1.isNaN || arg2.isNaN) return false;
 
+//writeln("equals 3");
 	// if either is infinite...
 	if (arg1.isInfinite || arg2.isInfinite) {
 		return (arg1.isInfinite && arg2.isInfinite && arg1.isSigned == arg2.isSigned);
 	}
 
+//writeln("equals 4");
 	// if either is zero...
 	if (arg1.isZero || arg2.isZero) {
 		return (arg1.isZero && arg2.isZero);
 	}
 
+//writeln("equals 5");
 	// if their signs differ...
 	if (arg1.sign != arg2.sign) {
 		return false;
 	}
+//writeln("equals 6");
 
 //writefln("arg1.coefficient = %s", arg1.coefficient);
 //writefln("arg1.digits = %s", arg1.digits);
@@ -443,6 +459,7 @@ public bool equals(T)(const T arg1, const T arg2,
 	if (diff != 0) {
 		return false;
 	}
+//writeln("equals 7");
 
 	// if they have the same representation, they are equal
 	auto op1c = arg1.coefficient;
@@ -453,6 +470,7 @@ public bool equals(T)(const T arg1, const T arg2,
 	if (arg1.exponent == arg2.exponent && op1c == op2c) { //arg1.coefficient == arg2.coefficient) {
 		return true;
 	}
+//writeln("equals 8");
 
 	// otherwise they are equal if they represent the same value
 	T result = sub!T(arg1, arg2, context, roundResult);
@@ -752,7 +770,50 @@ public const (T) quantum(T)(const T arg) if (isDecimal!T) {
 	}
 
 //--------------------------------
-// shift and rotate
+// binary shift
+//--------------------------------
+
+public T shl(T)(const T arg, const int n,
+		const DecimalContext context = T.context) if (isDecimal!T) {
+
+	T result = T.nan;
+	if (invalidOperand!T(arg, result)) {
+		return result;
+	}
+	result = arg;
+	result.coefficient = result.coefficient << n;
+	result.digits = result.digits + 1;
+	return round(result, context);
+}
+
+public T shr(T)(const T arg, const int n,
+		const DecimalContext context = T.context) if (isDecimal!T) {
+
+	T result = T.nan;
+	if (invalidOperand!T(arg, result)) {
+		return result;
+	}
+	result = arg;
+	result.coefficient = result.coefficient >> n;
+	result.digits = result.digits - 1;
+	return round(result, context);
+}
+
+unittest {
+	write("shr, shl...");
+	Decimal big, expect, actual;
+	big = Decimal(4);
+	expect = Decimal(16);
+	actual = shl!Decimal(big, 2);
+writefln("expect = %s", expect.toAbstract);
+writefln("actual = %s", actual.toAbstract);
+	assertEqual!Decimal(expect, actual);
+	writeln("test missing");
+}
+
+
+//--------------------------------
+// decimal shift and rotate
 //--------------------------------
 
 /// Shifts the first operand by the specified number of decimal digits.
@@ -1150,7 +1211,6 @@ public T mulLong(T)(const T arg1, long arg2,
 	}
 	return result;
 }
-
 
 /// Multiplies the first two operands and adds the third operand to the result.
 /// The result of the multiplication is not rounded prior to the addition.

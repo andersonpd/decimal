@@ -86,25 +86,23 @@ public enum : ubyte {
 /// General Decimal Arithmetic Specification, p. 13-14.
 public struct DecimalContext {
 
-	/// Maximum length of the coefficient in (decimal) digits.
+	/// Maximum length of the coefficient in decimal digits.
 	public uint precision;
 	/// Maximum value of the adjusted exponent.
 	public int maxExpo;
-	/// Smallest normalized exponent.
-	public int minExpo;
-	/// Smallest non-normalized exponent.
-	public int tinyExpo;
 	/// Rounding mode.
 	public Rounding rounding;
 
-	/// Constructs a context with the specified parameters.
-	public this(const uint precision, const int maxExpo,
-			const Rounding rounding) {
-		this.precision = precision;
-		this.maxExpo = maxExpo;
-		this.minExpo = 1 - maxExpo;
-		this.tinyExpo = minExpo - precision + 1;
-		this.rounding = rounding;
+	/// Smallest normalized exponent.
+	@property
+	public const int minExpo() {
+		return 1 - maxExpo;
+	}
+
+	/// Smallest non-normalized exponent.
+	@property
+	public const int tinyExpo() {
+		return 2 - maxExpo - precision;
 	}
 
 /*	@property

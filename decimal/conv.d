@@ -47,7 +47,7 @@ T to(T: string)(const long n) {
 	return format("%d", n);
 }
 
-/// to!string(USizedInt!Z).
+/// to!string(uint128).
 T to(T: string)(const uint128 n) {
 	return n.toString();
 }
@@ -56,11 +56,11 @@ T to(T: string)(const uint128 n) {
 //  uint128 conversions
 //--------------------------------
 
-BigInt toBigInt(const uint128 arg) {
+/*BigInt toBigInt(const uint128 arg) {
 	BigInt big = BigInt(0);
 	big = BigInt(arg.toString);
 	return big;
-}
+}*/
 
 //--------------------------------
 //  decimal tests
@@ -110,19 +110,13 @@ public T toDecimal(T, U)(const U num) if (isDecimal!T && isFixedDecimal!U) {
 
 /// Converts a decimal number to a big decimal
 public Decimal toBigDecimal(T)(const T num) if (isDecimal!T) {
-//writefln("toBigDecimal(num) = %s", num);
 	static if (is(typeof(num) == Decimal)) {
-//writefln("num.dup = %s", num.dup);
 		return num.dup;
 	}
 	bool sign = num.sign;
 	if (num.isFinite) {
 		auto mant = num.coefficient;
 		int  expo = num.exponent;
-//writefln("mant = %s", mant);
-//writefln("expo = %s", expo);
-//writefln("Decimal(sign, mant, expo) = %s", Decimal(sign, mant, expo));
-//writeln("*****");
 		return Decimal(sign, mant, expo);
 	} else if (num.isInfinite) {
 		return Decimal.infinity(sign);
@@ -380,10 +374,6 @@ unittest {
 	writeln("passed");
 }
 
-//public string toString(T)(const T num, string fmt) {
-//	return "surprise!";
-//}
-
 private void writeTo(T)(const T num, scope void delegate(const(char)[]) sink,
 	const char formatChar, const int precision) if (isDecimal!T) {
 
@@ -462,15 +452,6 @@ private string setWidth(const string str, int width,
 	}
 	return rightJustify!string(str, width, fillChar);
 }
-
-/*
-        auto f = FormatSpec!char(formatString);
-        f.writeUpToNextSpec(sink);
-        toString(sink, f);
-
-void toString(scope void delegate(const(char)[]) sink, string fmt) {
-	auto spec = FormatSpec(fmt);
-}*/
 
 private void sink(const(char)[] str) {
     auto app = std.array.appender!(string)();
@@ -979,14 +960,33 @@ unittest {	// toNumber
 	assertEqual(expect, actual);
 }
 
-unittest {
+unittest {	// toAbstract
 	write("toAbstract...");
-	writeln("test missing");
+	Decimal num;
+	string str;
+	num = Decimal("-inf");
+	str = "[1,inf]";
+	assert(num.toAbstract == str);
+	num = Decimal("nan");
+	str = "[0,qNaN]";
+	assert(num.toAbstract == str);
+	num = Decimal("snan1234");
+	str = "[0,sNaN1234]";
+	assert(num.toAbstract == str);
+	writeln("passed");
 }
 
 unittest {
 	write("toExact...");
-	writeln("test missing");
+	Decimal num;
+	assertTrue(num.toExact == "+NaN");
+	num = +9999999E+90;
+	assertEqual!string("+9999999E+90", num.toExact);
+	num = 1;
+	assertTrue(num.toExact == "+1E+00");
+	num = Decimal.infinity(true);
+	assertTrue(num.toExact == "-Infinity");
+	writeln("passed");
 }
 
 unittest {

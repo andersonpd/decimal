@@ -45,6 +45,9 @@ bool assertEqual(T)(T expected, T actual,
 	if (expected == actual) {
 		return true;
 	}
+writefln("expected = %s", expected);
+writefln("actual = %s", actual);
+writefln("T = %s", typeid(T));
 	writeln("failed at ", baseName(file), "(", line, "):",
 	        " expected \"", expected, "\"",
 	        " but found \"", actual, "\".");
@@ -1462,51 +1465,51 @@ unittest {
 
 unittest {
 	writeln("---------------------");
-	writeln("Decimal....testing");
+	writeln("Decimal.......testing");
 	writeln("---------------------");
 }
 
 unittest {
 	write("this().......");
-	Decimal num;
-	string str;
-	num = Decimal(1, 12334, -5);
-	str = "-0.12334";
-	assertTrue(num.toString == str);
-	num = Decimal(-23456, 10);
-	str = "-2.3456E+14";
-	assertTrue(num.toString == str);
-	num = Decimal(234568901234);
-	str = "234568901234";
-	assertTrue(num.toString == str);
-	num = Decimal("123.457E+29");
-	str = "1.23457E+31";
-	assertTrue(num.toString == str);
-	num = std.math.E;
-	str = "2.71828183";
-	assertTrue(num.toString == str);
-	num = std.math.LOG2;
-	Decimal copy = Decimal(num);
-	assertTrue(compareTotal!Decimal(num, copy) == 0);
-	num = Decimal(SV.INF, true);
-	assertTrue(num.toSciString == "-Infinity");
-	assertTrue(num.toAbstract() == "[1,inf]");
-	num = Decimal(true, BigInt(7254), 94);
-	assertTrue(num.toString == "-7.254E+97");
-	num = Decimal(BigInt(7254), 94);
-	assertTrue(num.toString == "7.254E+97");
-	num = Decimal(BigInt(-7254));
-	assertTrue(num.toString == "-7254");
-	num = Decimal(1234L, 567);
-	assertTrue(num.toString() == "1.234E+570");
-	num = Decimal(1234, 567);
-	assertTrue(num.toString() == "1.234E+570");
-	num = Decimal(1234L);
-	assertTrue(num.toString() == "1234");
-	num = Decimal(123400L);
-	assertTrue(num.toString() == "123400");
-	num = Decimal(1234L);
-	assertTrue(num.toString() == "1234");
+	Decimal actual;
+	string expect;
+	actual = Decimal(1, 12334, -5);
+	expect = "-0.12334";
+	assertEqual(expect, actual.toString);
+	actual = Decimal(-23456, 10);
+	expect = "-2.3456E+14";
+	assertEqual(expect, actual.toString);
+	actual = Decimal(234568901234);
+	expect = "234568901234";
+	assertEqual(expect, actual.toString);
+	actual = Decimal("123.457E+29");
+	expect = "1.23457E+31";
+	assertEqual(expect, actual.toString);
+	actual = std.math.E;
+	expect = "2.71828183";
+	assertEqual(expect, actual.toString);
+	actual = std.math.LOG2;
+	Decimal copy = Decimal(actual);
+	assertTrue(compareTotal!Decimal(actual, copy) == 0);
+	actual = Decimal(SV.INF, true);
+	assertTrue(actual.toSciString == "-Infinity");
+	assertTrue(actual.toAbstract() == "[1,inf]");
+	actual = Decimal(true, BigInt(7254), 94);
+	assertTrue(actual.toString == "-7.254E+97");
+	actual = Decimal(BigInt(7254), 94);
+	assertTrue(actual.toString == "7.254E+97");
+	actual = Decimal(BigInt(-7254));
+	assertTrue(actual.toString == "-7254");
+	actual = Decimal(1234L, 567);
+	assertTrue(actual.toString() == "1.234E+570");
+	actual = Decimal(1234, 567);
+	assertTrue(actual.toString() == "1.234E+570");
+	actual = Decimal(1234L);
+	assertTrue(actual.toString() == "1234");
+	actual = Decimal(123400L);
+	assertTrue(actual.toString() == "123400");
+	actual = Decimal(1234L);
+	assertTrue(actual.toString() == "1234");
 	writeln("passed");
 }
 
@@ -1514,7 +1517,7 @@ unittest {
 	write("dup..........");
 	Decimal num = Decimal(std.math.PI);
 	Decimal copy = num.dup;
-	assertTrue(num == copy);
+	assertEqual(num, copy);
 	writeln("passed");
 }
 

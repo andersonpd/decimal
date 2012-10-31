@@ -191,18 +191,7 @@ public struct UInt(int Z) {
 		return str.idup;
 	}
 
-	unittest // toString
-	{
-		uint128 a;
-		a = uint128([11UL]);
-		assert(a.toString == "11");
-		a = uint128(1234567890123);
-		assert(a.toString == "1234567890123");
-		a = uint128(0x4872EACF123346FF);
-		assert(a.toString == "5220493093160306431");
-	}
-
-	/// Converts to a string.
+	/// Converts to a hexadecimal string.
 	public const string toHexString() {
 		char[] str;
 		int length = numDigits(digits);
@@ -215,9 +204,16 @@ public struct UInt(int Z) {
 		return "0x" ~ str.idup;
 	}
 
-	/// Converts to an integer.
-	public const uint toInt() {
-		return cast(uint)digits[0];
+	unittest // toString
+	{
+		uint128 a;
+		a = uint128([11UL]);
+		assert(a.toString == "11");
+		a = uint128(1234567890123);
+		assert(a.toString == "1234567890123");
+		a = uint128(0x4872EACF123346FF);
+		assert(a.toString == "5220493093160306431");
+		assert(uint128(156).toHexString == "0x_0000009C");
 	}
 
 	// reads left-to-right, i.e., getInt(0) returns the highest order value
@@ -238,9 +234,24 @@ public struct UInt(int Z) {
 		digits[N-2 - index] = low(value);
 	}
 
+unittest {
+	write("get/set long values...");
+	writeln("test missing");
+}
+
+	/// Converts to an integer.
+	public const uint toInt() {
+		return cast(uint)digits[0];
+	}
+
 	/// Converts to a long integer.
 	public const ulong toLong() {
 		return getLong(1);
+	}
+
+	unittest {	// conversion
+		assert(uint128(8754).toInt == 8754);
+		assert(uint128(9100).toLong == 9100L);
 	}
 
 	/// Converts to a big integer.
@@ -265,11 +276,10 @@ public struct UInt(int Z) {
 		}
 	}
 
-	unittest {	// conversion
-		assert(uint128(156).toHexString == "0x_0000009C");
-		assert(uint128(8754).toInt == 8754);
-		assert(uint128(9100).toLong == 9100L);
-	}
+unittest {
+	write("to/from BigInt...");
+	writeln("test missing");
+}
 
 //--------------------------------
 // comparison
@@ -453,7 +463,7 @@ public struct UInt(int Z) {
 		assert(op1 >> op2 == 2525);
 		op1 = 4; op2 = uint128([0u,1u]);
 		assert(op1 + op2 == 0x100000004);
-
+writefln("opBinary = %s", "??");
 	}
 
 	public const UInt!Z add(const UInt!Z x, const UInt!Z y) {
@@ -481,19 +491,6 @@ public struct UInt(int Z) {
 	public const UInt!Z mod(const UInt!Z x, const UInt!Z y) {
 		return UInt!Z(modDigits(x.digits, y.digits));
 	}
-
-/*
-const
- Dividend = 7;
- Divisor = 3;
-var
- Result, Remainder : word;
-
-DivMod(Dividend, Divisor, Result, Remainder)
-
-//Result = 2
-//Remainder = 1
-*/
 
 	public const UInt!Z pow(const UInt!Z x, const UInt!Z y) {
 		return UInt!Z(powDigits(x.digits, y.toInt));
@@ -555,12 +552,33 @@ DivMod(Dividend, Divisor, Result, Remainder)
 	}
 
 	// TODO: bit manipulation
-	public const setBit(int n, bool value) {
-	};
+	public void setBit(int n, bool value = true) {
+		const UInt!Z ONE = UInt!Z(1);
+		if (value) {
+			this |= shl(ONE, n);
+		}
+		else {
+			this &= shl(ONE, n).complement;
+		}
+	}
 
 	public const bool testBit(int n) {
-		return false;
+		const UInt!Z ONE = UInt!Z(1);
+		UInt!Z value = this & shl(ONE,n);
+//	 throw(new Exception("Why is this three times??"));
+		return !value.isZero;
 	}
+
+unittest {
+	write("bit manipulation...");
+	uint128 test = uint128(0);
+writefln("test = %s", test);
+	assert(!test.testBit(5));
+	test.setBit(5);
+writefln("test = %s", test);
+	assert(test.testBit(5));
+	writeln("passed");
+}
 
 	public const setBits(int n, int count, uint value) {
 	};
@@ -598,6 +616,15 @@ private ulong pack(uint hi, uint lo) {
 	public UInt!Z abs(Z)(const UInt!Z arg) {
 		return arg.dup;
 	}
+
+	public Uint!Z divmod(z)(const UInt!Z x, const UInt!Z y, out UInt!z mod) {
+		return divmodDigits(x.digits, y.digits, mod.digits);
+	}
+
+unittest {
+	write("divmod...");
+	writeln("test missing");
+}
 
 //================================
 // array operations

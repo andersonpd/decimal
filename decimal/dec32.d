@@ -1696,10 +1696,9 @@ unittest {
 	assertEqual(num, sqrt(num));
 	num = 2.0;
 	assertEqual(Dec32(std.math.sqrt(2.0)), sqrt(num));
-//	num = PI;
 	assertEqual!Dec32(Dec32.SQRT_PI, sqrt(Dec32.PI));
-	num = 2.0;
-	assertEqual(Dec32(std.math.sqrt(2.0)), sqrt(num));
+	num = 2174;
+	assertEqual(Dec32(std.math.sqrt(2174.0)), sqrt(num));
 	writeln("test missing");
 }
 
