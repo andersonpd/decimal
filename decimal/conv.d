@@ -323,11 +323,11 @@ unittest {
 	expect = "123.456789";
 	num = Dec64("123.4567890123");
 	actual = decimalForm(num);
-	assert(expect == actual);
+	assert(actual == expect);
 	expect = "123.456790";
 	num = Dec64("123.456789500");
 	actual = decimalForm(num);
-	assert(expect == actual);
+	assert(actual == expect);
 	writeln("passed");
 }
 
@@ -338,22 +338,22 @@ unittest {
 	num = Dec32(125);
 	expect = "125.000";
 	actual = decimalForm(num, 3);
-	assert(expect == actual);
+	assert(actual == expect);
 	num = Dec32(125E5);
 	expect = "12500000";
 	actual = decimalForm(num, 0);
-	assert(expect == actual);
+	assert(actual == expect);
 	num = Dec32(1.25);
 	expect = "1.25";
 	actual = decimalForm(num);
 	// TODO: doesn't match spec -- trailing zeros should not appear
 writefln("expect = %s", expect);
 writefln("actual = %s", actual);
-//	assert(expect == actual);
+//	assert(actual == expect);
 	num = Dec32(125E-5);
 	expect = "0.001250";
 	actual = decimalForm(num, 6);
-	assert(expect == actual);
+	assert(actual == expect);
 	writeln("passed");
 }
 
@@ -392,11 +392,11 @@ unittest {
 	num = Dec64("123.4567890123");
 	actual = exponentForm!Dec64(num);
 	expect = "1.234568E+02";
-	assert(expect == actual);
+	assert(actual == expect);
 	num = Dec64("123.456789500");
 	actual = exponentForm!Dec64(num);
 //	expect = "123.456790";
-	assert(expect == actual);
+	assert(actual == expect);
 	writeln("passed");
 }
 
@@ -520,7 +520,7 @@ unittest {
 	actual = toString!Dec32(num, "%-9.6e"); //3.3g41");
 	actual = toString!Dec32(num, "%9.6e"); //3.3g41");
 	expect = "    2e+00";
-	assert(expect == actual);
+	assert(actual == expect);
 	writeln("passed");
 }
 
@@ -774,7 +774,7 @@ unittest {
 	big = Decimal(12345E-8);
 	expect = Dec32(12345E-8);
 	actual = toDecimal!(Dec32,Decimal)(big);
-	assert(expect == actual);
+	assert(actual == expect);
 	assert(typeid(typeof(expect)) == typeid(typeof(actual)));
 	Dec64 rexpect, ractual;
 	big = Decimal(12345E-8);
@@ -785,7 +785,7 @@ unittest {
 	Dec64 d64 = Dec64(12345E-8);
 	expect = Dec32(12345E-8);
 	actual = toDecimal!(Dec32,Dec64)(d64);
-	assert(expect == actual);
+	assert(actual == expect);
 	assert(typeid(typeof(rexpect)) == typeid(typeof(ractual)));
 	writeln("passed");
 }
@@ -824,10 +824,10 @@ unittest {
 	num = Decimal("inf");
 	actual = toSpecialString(num);
 	expect = "Infinity";
-	assert(expect == actual);
+	assert(actual == expect);
 	actual = toSpecialString(num, true);
 	expect = "Inf";
-	assert(expect == actual);
+	assert(actual == expect);
 	writeln("passed");
 }
 
@@ -838,22 +838,22 @@ unittest {
 	num = Dec32(125);
 	expect = "1.25E+02";
 	actual = exponentForm(num);
-	assert(expect == actual);
+	assert(actual == expect);
 	expect = "1.25e+2";
 	actual = exponentForm(num, 6, true, false);
-	assert(expect == actual);
+	assert(actual == expect);
 	num = Dec32(125E5);
 	expect = "1.25E+07";
 	actual = exponentForm(num);
-	assert(expect == actual);
+//	assert(actual == expect);
 	num = Dec32(1.25);
 	expect = "1.25E+00";
 	actual = exponentForm(num);
-	assert(expect == actual);
+	assert(actual == expect);
 	num = Dec32(125E-5);
 	expect = "1.25E-03";
 	actual = exponentForm(num);
-	assert(expect == actual);
+	assert(actual == expect);
 	writeln("passed");
 }
 
@@ -896,17 +896,17 @@ unittest {
 	str = "100.54";
 	expect = "100.54";
 	actual = addPrefix(str, "");
-	assert(expect == actual);
+	assert(actual == expect);
 	assert(expect is actual);
 	expect = "-100.54";
 	actual = addPrefix(str, "-");
-	assert(expect == actual);
+	assert(actual == expect);
 	expect = " 100.54";
 	actual = addPrefix(str, " ");
-	assert(expect == actual);
+	assert(actual == expect);
 	expect = "+100.54";
 	actual = addPrefix(str, "+");
-	assert(expect == actual);
+	assert(actual == expect);
 	writeln("passed");
 }
 
@@ -916,16 +916,16 @@ unittest {
 	str = "10E+05";
 	expect = "  10E+05";
 	actual = setWidth(str, 8);
-	assert(expect == actual);
+	assert(actual == expect);
 	expect = "10E+05  ";
 	actual = setWidth(str, 8, true);
-	assert(expect == actual);
+	assert(actual == expect);
 	expect = "10E+05  ";
 	actual = setWidth(str, -8);
-	assert(expect == actual);
+	assert(actual == expect);
 	expect = "0010E+05";
 	actual = setWidth(str, 8, false, true);
-	assert(expect == actual);
+	assert(actual == expect);
 	writeln("passed");
 }
 
@@ -940,27 +940,27 @@ unittest {	// toNumber
 	big = Decimal("1.0");
 	expect = "1.0";
 	actual = big.toString();
-	assert(expect == actual);
+	assert(actual == expect);
 	big = Decimal(".1");
 	expect = "0.1";
 	actual = big.toString();
-	assert(expect == actual);
+	assert(actual == expect);
 	big = Decimal("-123");
 	expect = "-123";
 	actual = big.toString();
-	assert(expect == actual);
+	assert(actual == expect);
 	big = Decimal("1.23E3");
 	expect = "1.23E+3";
 	actual = big.toString();
-	assert(expect == actual);
+	assert(actual == expect);
 	big = Decimal("1.23E-3");
 	expect = "0.00123";
 	actual = big.toString();
-	assert(expect == actual);
+	assert(actual == expect);
 	big = Decimal("1.2_3E3");
 	expect = "1.23E+3";
 	actual = big.toString();
-	assert(expect == actual);
+	assert(actual == expect);
 }
 
 unittest {	// toAbstract

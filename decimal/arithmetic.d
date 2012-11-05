@@ -12,13 +12,13 @@
  *	http://www.boost.org/LICENSE_1_0.txt)
 **/
 
-// (A)TODO: ensure context flags are being set and cleared properly.
+// TODO: ensure context flags are being set and cleared properly.
 
-// (A)TODO: opEquals unit test should include numerically equal testing.
+// TODO: opEquals unit test should include numerically equal testing.
 
-// (A)TODO: write some test cases for flag setting. test the add/sub/mul/div functions
+// TODO: write some test cases for flag setting. test the add/sub/mul/div functions
 
-// (A)TODO: to/from real or double (float) values needs definition and implementation.
+// TODO: to/from real or double (float) values needs definition and implementation.
 
 module decimal.arithmetic;
 
@@ -28,6 +28,12 @@ import std.string;
 import decimal.context;
 import decimal.conv: isDecimal, isFixedDecimal, toBigDecimal;
 import decimal.decimal;
+
+unittest {
+	writeln("===================");
+	writeln("arithmetic....begin");
+	writeln("===================");
+}
 
 //--------------------------------
 // classification functions
@@ -47,6 +53,22 @@ import decimal.decimal;
 		if (arg.isInfinite)  { return arg.sign ? "-Infinity" : "+Infinity"; }
 		if (arg.isSignaling) { return "sNaN"; }
 		return "NaN";
+	}
+
+	unittest {	// classify
+		Decimal arg;
+		arg = Decimal("Inf");
+		assert(classify(arg) == "+Infinity");
+		arg = Decimal("1E-10");
+		assert(classify(arg) == "+Normal");
+		arg = Decimal("-0");
+		assert(classify(arg) == "-Zero");
+		arg = Decimal("-0.1E-99");
+		assert(classify(arg) == "-Subnormal");
+		arg = Decimal("NaN");
+		assert(classify(arg) == "NaN");
+		arg = Decimal("sNaN");
+		assert(classify(arg) == "sNaN");
 	}
 
 //--------------------------------
@@ -87,6 +109,34 @@ public T copySign(T)(const T arg1, const T arg2) if (isDecimal!T) {
 	return copy;
 }
 
+unittest {	// copy
+	Decimal arg, expect;
+	arg  = Decimal("2.1");
+	expect = Decimal("2.1");
+	assert(compareTotal(copy(arg),expect) == 0);
+	arg  = Decimal("-1.00");
+	expect = Decimal("-1.00");
+	assert(compareTotal(copy(arg),expect) == 0);
+	// copyAbs
+	arg  = 2.1;
+	expect = 2.1;
+	assert(compareTotal(copyAbs(arg),expect) == 0);
+	arg  = Decimal("-1.00");
+	expect = Decimal("1.00");
+	assert(compareTotal(copyAbs(arg),expect) == 0);
+	// copyNegate
+	arg	= Decimal("101.5");
+	expect = Decimal("-101.5");
+	assert(compareTotal(copyNegate(arg),expect) == 0);
+	// copySign
+	Decimal arg1, arg2;
+	arg1 = 1.50; arg2 = 7.33; expect = 1.50;
+	assert(compareTotal(copySign(arg1, arg2),expect) == 0);
+	arg2 = -7.33;
+	expect = -1.50;
+	assert(compareTotal(copySign(arg1, arg2),expect) == 0);
+}
+
 /// Returns "the integer which is the exponent of the magnitude
 /// of the most significant digit of the operand.
 /// (As though the operand were truncated to a single digit
@@ -111,6 +161,14 @@ public T logb(T)(const T arg) {
 	}
 	int expo = arg.digits + arg.exponent - 1;
 	return T(cast(long)expo);
+}
+
+unittest {	// logb
+	Decimal arg, expect, actual;
+	arg = 250;
+	expect = 2;
+	actual = logb(arg);
+	assert(actual == expect);
 }
 
 /// If the first operand is infinite then that operand is returned,
@@ -142,6 +200,15 @@ public T scaleb(T)(const T arg1, const T arg2) if (isDecimal!T) {
 	// the exponent? Don't want that in construction but maybe do here.
 	result.exponent = result.exponent + scale;
 	return result;
+}
+
+unittest {	// scaleb
+	Decimal expect, actual;
+	auto arg1 = Decimal("7.50");
+	auto arg2 = Decimal("-2");
+	expect = Decimal("0.0750");
+	actual = scaleb(arg1, arg2);
+	assert(actual == expect);
 }
 
 //--------------------------------
@@ -182,6 +249,16 @@ public T normalize(T)(const T arg,
 	return reduce!T(arg, context);
 }
 
+unittest {	// reduce
+	Decimal arg;
+	Decimal expect, actual;
+	arg = Decimal("1.200");
+	expect = Decimal("1.2");
+	actual = reduce(arg);
+	assert(arg.toString != expect.toString);
+	assert(actual.toString == expect.toString);
+}
+
 /// Returns the absolute value of the argument.
 /// This operation rounds the result and may set flags.
 /// The result is equivalent to plus(arg) for positive numbers
@@ -200,6 +277,22 @@ public T abs(T)(const T arg,
 	return round!T(result, context);
 }
 
+unittest {	// abs
+	Decimal arg;
+	Decimal expect, actual;
+	arg = Decimal("-Inf");
+	expect = Decimal("Inf");
+	actual = abs(arg, testContext);
+	assert(actual == expect);
+	arg = 101.5;
+	expect = 101.5;
+	actual = abs(arg, testContext);
+	assert(actual == expect);
+	arg = -101.5;
+	actual = abs(arg, testContext);
+	assert(actual == expect);
+}
+
 /// Returns the sign of the argument: -1, 0, -1.
 /// If the argument is (signed or unsigned) zero, 0 is returned.
 /// If the argument is negative, -1 is returned.
@@ -208,6 +301,18 @@ public T abs(T)(const T arg,
 public int sgn(T)(const T arg) if (isDecimal!T) {
 	if (arg.isZero) return 0;
 	return arg.isNegative ? -1 : 1;
+}
+
+unittest {	// sgn
+	Decimal arg;
+	arg = -123;
+	assert(sgn(arg) == -1);
+	arg = 2345;
+	assert(sgn(arg) == 1);
+	arg = Decimal("0.0000");
+	assert(sgn(arg) == 0);
+	arg = Decimal.infinity(true);
+	assert(sgn(arg) == -1);
 }
 
 /// Returns a copy of the argument with same sign as the argument.
@@ -240,6 +345,28 @@ public T minus(T)(const T arg,
 	}
 	result = copyNegate!T(arg);
 	return round(result, context);
+}
+
+unittest {	// plus
+	Decimal zero = Decimal.zero;
+	Decimal arg, expect, actual;
+	arg = 1.3;
+	expect = add(zero, arg, testContext);
+	actual = plus(arg, testContext);
+	assert(actual == expect);
+	arg = -1.3;
+	expect = add(zero, arg, testContext);
+	actual = plus(arg, testContext);
+	assert(actual == expect);
+	// minus
+	arg = 1.3;
+	expect = sub(zero, arg, testContext);
+	actual = minus(arg, testContext);
+	assert(actual == expect);
+	arg = -1.3;
+	expect = sub(zero, arg, testContext);
+	actual = minus(arg, testContext);
+	assert(actual == expect);
 }
 
 //-----------------------------------
@@ -329,6 +456,39 @@ public T nextToward(T)(const T arg1, const T arg2,
 	if (comp > 0) return nextMinus!T(arg1, context);
 	result = copySign!T(arg1, arg2);
 	return round(result, context);
+}
+
+unittest {	// nextPlus
+	Decimal arg, expect, actual;
+	arg = 1;
+	expect = Decimal("1.00000001");
+	actual = nextPlus(arg, testContext);
+	assert(actual == expect);
+	arg = 10;
+	expect = Decimal("10.0000001");
+	actual = nextPlus(arg, testContext);
+	assert(actual == expect);
+	// nextMinus
+	arg = 1;
+	expect = 0.999999999;
+	actual = nextMinus(arg, testContext);
+	assert(actual == expect);
+	arg = -1.00000003;
+	expect = -1.00000004;
+	actual = nextMinus(arg, testContext);
+	assert(actual == expect);
+	// nextToward
+	Decimal arg1, arg2;
+	arg1 = 1;
+	arg2 = 2;
+	expect = 1.00000001;
+	actual = nextToward(arg1, arg2, testContext);
+	assert(actual == expect);
+	arg1 = -1.00000003;
+	arg2 = 0;
+	expect = -1.00000002;
+	actual = nextToward(arg1, arg2, testContext);
+	assert(actual == expect);
 }
 
 //--------------------------------
@@ -442,6 +602,7 @@ public bool equals(T)(const T arg1, const T arg2,
 	if (arg1.sign != arg2.sign) {
 		return false;
 	}
+
 //writeln("equals 6");
 
 //writefln("arg1.coefficient = %s", arg1.coefficient);
@@ -471,6 +632,22 @@ public bool equals(T)(const T arg1, const T arg2,
 	// otherwise they are equal if they represent the same value
 	T result = sub!T(arg1, arg2, context, roundResult);
 	return result.coefficient == 0;
+}
+
+unittest {	// compare
+	Decimal arg1, arg2;
+	arg1 = Decimal(2.1);
+	arg2 = Decimal(3);
+	assert(compare(arg1, arg2, testContext) == -1);
+	arg1 = 2.1;
+	arg2 = Decimal(2.1);
+	assert(compare(arg1, arg2, testContext) == 0);
+	// equals
+	arg1 = 123.4567;
+	arg2 = 123.4568;
+	assert(!equals!Decimal(arg1, arg2, Decimal.context));
+	arg2 = 123.4567;
+	assert(equals!Decimal(arg1, arg2, Decimal.context));
 }
 
 /// Compares the numeric values of two numbers. CompareSignal is identical to
@@ -503,18 +680,24 @@ public int compareSignal(T) (const T arg1, const T arg2,
 /// Flags: NONE.
 public int compareTotal(T)(const T arg1, const T arg2) if (isDecimal!T) {
 
+	// quick equality check
+	static if (isFixedDecimal!T) {
+		if (arg1.bits == arg2.bits) return 0;
+	}
+	else {
+		if (arg1.isFinite && arg2.isFinite
+			&& arg1.sign == arg2.sign
+			&& arg1.exponent == arg2.exponent
+			&& arg1.coefficient == arg2.coefficient)
+		return 0;
+	}
+
 	int ret1 =	1;
 	int ret2 = -1;
 
 	// if signs differ...
 	if (arg1.sign != arg2.sign) {
 		return !arg1.sign ? ret1 : ret2;
-	}
-
-	// TODO: Move this back into the fixed modules
-	// quick bitwise comparison
-	static if (isFixedDecimal!T) {
-		if (arg1.bits == arg2.bits) return 0;
 	}
 
 	// if both numbers are signed swap the return values
@@ -571,7 +754,6 @@ public int compareTotal(T)(const T arg1, const T arg2) if (isDecimal!T) {
 		return (result > 0) ? ret1 : ret2;
 	}
 
-	// is this test really a shortcut? have to get size (digits)!
 	// if the (finite) numbers have different magnitudes...
 	int diff = (arg1.exponent + arg1.digits) - (arg2.exponent + arg2.digits);
 	if (diff > 0) return ret1;
@@ -610,6 +792,28 @@ int compareTotalMagnitude(T)(const T arg1, const T arg2) if (isDecimal!T) {
 	return compareTotal(copyAbs!T(arg1), copyAbs!T(arg2));
 }
 
+unittest {
+	write("compareSignal...");
+	writeln("test missing");
+}
+
+unittest {	// compareTotal
+	Decimal arg1, arg2;
+	int result;
+	arg1 = Decimal("12.30");
+	arg2 = Decimal("12.3");
+	result = compareTotal(arg1, arg2);
+	assert(result == -1);
+	arg1 = Decimal("12.30");
+	arg2 = Decimal("12.30");
+	result = compareTotal(arg1, arg2);
+	assert(result == 0);
+	arg1 = Decimal("12.3");
+	arg2 = Decimal("12.300");
+	result = compareTotal(arg1, arg2);
+	assert(result == 1);
+}
+
 /// Returns true if the numbers have the same exponent.
 /// If either operand is NaN or Infinity, returns true if and only if
 /// both operands are NaN or Infinity, respectively.
@@ -623,6 +827,17 @@ public bool sameQuantum(T)(const T arg1, const T arg2) if (isDecimal!T) {
 		return arg1.isInfinite && arg2.isInfinite;
 	}
 	return arg1.exponent == arg2.exponent;
+}
+
+unittest {	// sameQuantum
+	Decimal arg1, arg2;
+	arg1 = 2.17;
+	arg2 = 0.001;
+	assert(!sameQuantum(arg1, arg2));
+	arg2 = 0.01;
+	assert(sameQuantum(arg1, arg2));
+	arg2 = 0.1;
+	assert(!sameQuantum(arg1, arg2));
 }
 
 /// Returns the maximum of the two operands (or NaN).
@@ -644,6 +859,10 @@ const(T) max(T)(const T arg1, const T arg2,
 	if (arg1.isNaN && arg2.isNaN || arg1.isSignaling || arg2.isSignaling) {
 		contextFlags.setFlags(INVALID_OPERATION);
 		return T.nan;
+	}
+	// if both are infinite, return the one with a positive sign
+	if (arg1.isInfinite && arg2.isInfinite) {
+		return !arg1.isNegative ? arg1 : arg2;
 	}
 
 	// result will be a finite number or infinity
@@ -673,7 +892,7 @@ const(T) max(T)(const T arg1, const T arg2,
 			if (arg1.exponent < arg2.exponent) result = arg2;
 		}
 		else {
-			// else they are negative; return the one with smaller exponent.
+			// they are negative; return the one with smaller exponent.
 			if (arg1.exponent > arg2.exponent) result = arg2;
 		}
 	}
@@ -690,6 +909,20 @@ const(T) maxMagnitude(T)(const T arg1, const T arg2,
 	return max(copyAbs!T(arg1), copyAbs!T(arg2), context);
 }
 
+unittest {	// max
+	Decimal arg1, arg2, expect, actual;
+	arg1 = 3; arg2 = 2; expect = 3;
+	actual = max(arg1, arg2, testContext);
+	assert(actual == expect);
+	arg1 = -10; arg2 = 3; expect = 3;
+	actual = max(arg1, arg2, testContext);
+	assert(actual == expect);
+}
+
+unittest {
+	write("maxMagnitude...");
+	writeln("test missing");
+}
 
 /// Returns the minimum of the two operands (or NaN).
 /// If either is a signaling NaN, or both are quiet NaNs, a NaN is returned.
@@ -710,7 +943,10 @@ const(T) min(T)(const T arg1, const T arg2,
 		contextFlags.setFlags(INVALID_OPERATION);
 		return T.nan;
 	}
-
+	// if both are infinite, return the one with a negative sign
+	if (arg1.isInfinite && arg2.isInfinite) {
+		return arg1.isNegative ? arg1 : arg2;
+	}
 	// result will be a finite number or infinity
 	// use arg1 as default value
 	T result = arg1.dup;
@@ -719,13 +955,12 @@ const(T) min(T)(const T arg1, const T arg2,
 	if (arg1.isQuiet || arg2.isQuiet) {
 		if (arg1.isQuiet) result = arg2;
 	}
-
-	// if the signs differ, return the signed operand
-	if (arg1.sign != arg2.sign) {
+    // if the signs differ, return the signed operand
+	else if (arg1.sign != arg2.sign) {
 		if (!arg1.sign) result = arg2;
 	}
+	// if not numerically equal, return the lesser
 	else {
-		// if not numerically equal, return the smaller
 		int comp = compare!T(arg1, arg2, context);
 		if (comp != 0) {
 			if (comp > 0) result = arg2;
@@ -756,24 +991,47 @@ const(T) minMagnitude(T)(const T arg1, const T arg2,
 	return min(copyAbs!T(arg1), copyAbs!T(arg2), context);
 }
 
+unittest {	// min
+	Decimal arg1, arg2, expect, actual;
+	arg1 = 3; arg2 = 2; expect = 2;
+	actual = min(arg1, arg2, testContext);
+	assert(actual == expect);
+	arg1 = -10; arg2 = 3; expect = -10;
+	actual = min(arg1, arg2, testContext);
+	assert(actual == expect);
+}
+
+unittest {
+	write("minMagnitude...");
+	writeln("test missing");
+}
+
 // TODO: need to check for overflow?
 /// Returns a number with a coefficient of 1 and
 /// the same exponent as the argument.
 /// Not required by the specification.
 /// Flags: NONE.
 public const (T) quantum(T)(const T arg) if (isDecimal!T) {
-		return T(1, arg.exponent);
-	}
+	return T(1, arg.exponent);
+}
+
+unittest {	// quantum
+	Decimal arg, expect, actual;
+	arg = 23.14E-12;
+	expect = 1E-14;
+	actual = quantum(arg);
+	assert(actual == expect);
+}
 
 //--------------------------------
 // binary shift
 //--------------------------------
 
-public T shl(T)(const T arg, const int n,
-		const DecimalContext context = T.context) if (isDecimal!T) {
+public Decimal shl(const Decimal arg, const int n,
+		const DecimalContext context = Decimal.context) {
 
-	T result = T.nan;
-	if (invalidOperand!T(arg, result)) {
+	Decimal result = Decimal.nan;
+	if (invalidOperand!Decimal(arg, result)) {
 		return result;
 	}
 	result = arg;
@@ -782,11 +1040,11 @@ public T shl(T)(const T arg, const int n,
 	return round(result, context);
 }
 
-public T shr(T)(const T arg, const int n,
-		const DecimalContext context = T.context) if (isDecimal!T) {
+public Decimal shr(const Decimal arg, const int n,
+		const DecimalContext context = Decimal.context) {
 
-	T result = T.nan;
-	if (invalidOperand!T(arg, result)) {
+	Decimal result = Decimal.nan;
+	if (invalidOperand!Decimal(arg, result)) {
 		return result;
 	}
 	result = arg;
@@ -795,18 +1053,13 @@ public T shr(T)(const T arg, const int n,
 	return round(result, context);
 }
 
-unittest {
-	write("shr, shl...");
+unittest {	// shr, shl.
 	Decimal big, expect, actual;
 	big = Decimal(4);
 	expect = Decimal(16);
-	actual = shl!Decimal(big, 2);
-writefln("expect = %s", expect.toAbstract);
-writefln("actual = %s", actual.toAbstract);
-	assert(expect == actual);
-	writeln("test missing");
+	actual = shl(big, 2);
+	assert(actual == expect);
 }
-
 
 //--------------------------------
 // decimal shift and rotate
@@ -894,6 +1147,11 @@ public T rotate(T)(const T arg, const int n,
 //	return n < 0 ? decRotR!T(// (L)TODO: And then a miracle happens....
 
 	return result;
+}
+
+unittest {
+	write("shift, rotate...");
+	writeln("test missing");
 }
 
 //------------------------------------------
@@ -1077,6 +1335,32 @@ public T addLong(T)(const T arg1, const long arg2,
 	return result;
 }	 // end add(arg1, arg2)
 
+unittest {	// add
+	// (A)TODO: change inputs to real numbers
+	Decimal arg1, arg2, sum;
+	arg1 = Decimal("12");
+	arg2 = Decimal("7.00");
+	sum = add(arg1, arg2, testContext);
+	assert("19.00" == sum.toString);
+	arg1 = Decimal("1E+2");
+	arg2 = Decimal("1E+4");
+	sum = add(arg1, arg2, testContext);
+	assert("1.01E+4" == sum.toString);
+}
+
+unittest {	// addLong
+	Decimal arg1, sum;
+	long arg2;
+	arg2 = 12;
+	arg1 = Decimal("7.00");
+	sum = addLong(arg1, arg2, testContext);
+	assert("19.00" == sum.toString);
+	arg1 = Decimal("1E+2");
+	arg2 = 10000;
+	sum = addLong(arg1, arg2, testContext);
+	assert("10100" == sum.toString);
+}
+
 /// Subtracts the second operand from the first operand.
 /// The result may be rounded and context flags may be set.
 /// Implements the 'subtract' function in the specification. (p. 26)
@@ -1208,6 +1492,29 @@ public T mulLong(T)(const T arg1, long arg2,
 	return result;
 }
 
+unittest {	// mul
+	Decimal arg1, arg2, result;
+	arg1 = Decimal("1.20");
+	arg2 = 3;
+	result = mul(arg1, arg2, testContext);
+	assert("3.60" == result.toString());
+	arg1 = 7;
+	result = mul(arg1, arg2, testContext);
+	assert("21" == result.toString());
+}
+
+unittest { // mulLong
+	Decimal arg1, result;
+	long arg2;
+	arg1 = Decimal("1.20");
+	arg2 = 3;
+	result = mulLong(arg1, arg2, testContext);
+	assert("3.60" == result.toString());
+	arg1 = -7000;
+	result = mulLong(arg1, arg2, testContext);
+	assert("-21000" == result.toString());
+}
+
 /// Multiplies the first two operands and adds the third operand to the result.
 /// The result of the multiplication is not rounded prior to the addition.
 /// The result may be rounded and context flags may be set.
@@ -1220,6 +1527,24 @@ public T fma(T)(const T arg1, const T arg2, const T arg3,
 	return add!T(product, arg3, context);
 }
 
+unittest {	// fma
+	Decimal arg1, arg2, arg3, expect, actual;
+	arg1 = 3; arg2 = 5; arg3 = 7;
+	expect = 22;
+	actual = (fma(arg1, arg2, arg3, testContext));
+	assert(actual == expect);
+	arg1 = 3; arg2 = -5; arg3 = 7;
+	expect = -8;
+	actual = (fma(arg1, arg2, arg3, testContext));
+	assert(actual == expect);
+	arg1 = 888565290;
+	arg2 = 1557.96930;
+	arg3 = -86087.7578;
+	expect = Decimal(1.38435736E+12);
+	actual = (fma(arg1, arg2, arg3, testContext));
+	assert(actual == expect);
+}
+
 /// Divides the first operand by the second operand and returns their quotient.
 /// Division by zero sets a flag and returns infinity.
 /// Result may be rounded and context flags may be set.
@@ -1228,14 +1553,16 @@ public T div(T)(const T arg1, const T arg2,
 		const DecimalContext context = T.context,
 		bool roundResult = true) if (isDecimal!T) {
 
-	// check for NaN and divide by zero
-	T result = T.nan;
+	// check for NaN and division by zero
+	T result;
 	if (invalidDivision!T(arg1, arg2, result)) {
 		return result;
 	}
+	// convert arguments to Decimal
 	Decimal dividend = toBigDecimal!T(arg1);
 	Decimal divisor	= toBigDecimal!T(arg2);
 	Decimal quotient = Decimal.zero;
+
 	int diff = dividend.exponent - divisor.exponent;
 	if (diff > 0) {
 		dividend.coefficient = shiftLeft(dividend.coefficient, diff);
@@ -1254,12 +1581,102 @@ public T div(T)(const T arg1, const T arg2,
 	quotient.digits = numDigits(quotient.coefficient);
 	if (roundResult) {
 		round(quotient, context);
-//		/// TODO why is this flag being checked?
-		if (!contextFlags.getFlag(INEXACT)) {
-			quotient = reduce(quotient, context);
-		}
+		quotient = reduceToIdeal!Decimal(quotient, diff, context);
 	}
 	return T(quotient);
+}
+
+/**
+ * Reduces operand to simplest form. All trailing zeros are removed.
+ * Reduces operand to specified exponent.
+ */
+ // TODO: has non-standard flag setting
+// NOTE: flags only
+private T reduceToIdeal(T)(const T num, int ideal,
+		DecimalContext context) if (isDecimal!T) {
+
+	T result = num.dup;
+	if (!result.isFinite()) {
+		return result;
+	}
+	int zeros = trailingZeros(result.coefficient, numDigits(result.coefficient));
+
+	int idealshift = ideal - result.exponent;
+	int	canshift = idealshift > zeros ? zeros : idealshift;
+	result.coefficient = shiftRight(result.coefficient, canshift);
+	result.exponent = result.exponent + canshift;
+
+	if (result.coefficient == 0) {
+		result = T.zero;
+		// TODO: needed?
+		result.exponent = 0;
+	}
+	result.digits = numDigits(result.coefficient);
+	return result;
+}
+
+unittest {	// div
+	Decimal arg1, arg2, actual, expect;
+	arg1 = Decimal("1");
+	arg2 = Decimal("3");
+	expect = Decimal("0.333333333");
+	actual = div(arg1, arg2, testContext);
+	assert(actual == expect);
+	assert(expect.toString == actual.toString);
+	arg1 = Decimal("2");
+	arg2 = Decimal("3");
+	expect = Decimal("0.666666667");
+	actual = div(arg1, arg2, testContext);
+	assert(actual == expect);
+	assert(expect.toString == actual.toString);
+	arg1 = Decimal("5");
+	arg2 = Decimal("2");
+	expect = Decimal("2.5");
+	actual = div(arg1, arg2, testContext);
+	assert(actual == expect);
+	assert(expect.toString == actual.toString);
+	arg1 = Decimal("1");
+	arg2 = Decimal("10");
+	expect = Decimal("0.1");
+	actual = div(arg1, arg2, testContext);
+	assert(actual == expect);
+	assert(expect.toString == actual.toString);
+	arg1 = Decimal("12");
+	arg2 = Decimal("12");
+	expect = Decimal("1");
+	actual = div(arg1, arg2, testContext);
+	assert(actual == expect);
+	assert(expect.toString == actual.toString);
+	arg1 = Decimal("8.00");
+	arg2 = Decimal("2");
+	expect = Decimal("4.00");
+	actual = div(arg1, arg2, testContext);
+	assert(actual == expect);
+	assert(expect.toString == actual.toString);
+	arg1 = Decimal("2.400");
+	arg2 = Decimal("2.0");
+	expect = Decimal("1.20");
+	actual = div(arg1, arg2, testContext);
+	assert(actual == expect);
+	assert(expect.toString == actual.toString);
+	arg1 = Decimal("1000");
+	arg2 = Decimal("100");
+	expect = Decimal("10");
+	actual = div(arg1, arg2, testContext);
+	assert(actual == expect);
+	assert(expect.toString == actual.toString);
+	arg1 = Decimal("1000");
+	arg2 = Decimal("1");
+	expect = Decimal("1000");
+	actual = div(arg1, arg2, testContext);
+	assert(actual == expect);
+	assert(expect.toString == actual.toString);
+	arg1 = Decimal("2.40E+6");
+	arg2 = Decimal("2");
+	expect = Decimal("1.20E+6");
+	actual = div(arg1, arg2, testContext);
+	assert(actual == expect);
+	assert(expect.toString == actual.toString);
 }
 
 // TODO: Does this implement the actual spec operation?
@@ -1301,13 +1718,31 @@ public T divideInteger(T)(const T arg1, const T arg2,
 	return T(quotient);
 }
 
+unittest {	// divideInteger
+	Decimal arg1, arg2, actual, expect;
+	arg1 = 2;
+	arg2 = 3;
+	actual = divideInteger(arg1, arg2, testContext);
+	expect = 0;
+	assert(actual == expect);
+	arg1 = 10;
+	actual = divideInteger(arg1, arg2, testContext);
+	expect = 3;
+	assert(actual == expect);
+	arg1 = 1;
+	arg2 = 0.3;
+	actual = divideInteger(arg1, arg2, testContext);
+	expect = 3;
+	assert(actual == expect);
+}
+
 /// Divides the first operand by the second and returns the
 /// fractional remainder.
 /// Division by zero sets a flag and returns infinity.
 /// The sign of the remainder is the same as that of the first operand.
 /// The result may be rounded and context flags may be set.
 /// Implements the 'remainder' function in the specification. (p. 37-38)
-public T rem(T)(const T arg1, const T arg2,
+public T remainder(T)(const T arg1, const T arg2,
 		const DecimalContext context = T.context) if (isDecimal!T) {
 	T quotient;
 	if (invalidDivision!T(arg1, arg2, quotient)) {
@@ -1316,6 +1751,40 @@ public T rem(T)(const T arg1, const T arg2,
 	quotient = divideInteger!T(arg1, arg2, context);
 	T remainder = arg1 - mul!T(arg2, quotient, context, false);
 	return remainder;
+}
+
+unittest {	// remainder
+	Decimal arg1, arg2, actual, expect;
+	arg1 = Decimal("2.1");
+	arg2 = Decimal("3");
+	actual = remainder(arg1, arg2, testContext);
+	expect = Decimal("2.1");
+	assert(actual == expect);
+	arg1 = Decimal("10");
+	arg2 = Decimal("3");
+	actual = remainder(arg1, arg2, testContext);
+	expect = Decimal("1");
+	assert(actual == expect);
+	arg1 = Decimal("-10");
+	arg2 = Decimal("3");
+	actual = remainder(arg1, arg2, testContext);
+	expect = Decimal("-1");
+	assert(actual == expect);
+	arg1 = Decimal("10.2");
+	arg2 = Decimal("1");
+	actual = remainder(arg1, arg2, testContext);
+	expect = Decimal("0.2");
+	assert(actual == expect);
+	arg1 = Decimal("10");
+	arg2 = Decimal("0.3");
+	actual = remainder(arg1, arg2, testContext);
+	expect = Decimal("0.1");
+	assert(actual == expect);
+	arg1 = Decimal("3.6");
+	arg2 = Decimal("1.3");
+	actual = remainder(arg1, arg2, testContext);
+	expect = Decimal("1.0");
+	assert(actual == expect);
 }
 
 // (A)TODO: should not be identical to remainder.
@@ -1331,12 +1800,47 @@ public T remainderNear(T)(const T dividend, const T divisor,
 	if (invalidDivision!T(dividend, divisor, quotient)) {
 		return quotient;
 	}
-	quotient = divideInteger(dividend, divisor, context);
+	quotient = dividend/divisor;
+	quotient = roundToIntegralExact(quotient);
 	T remainder = dividend - mul!T(divisor, quotient, context, false);
 	return remainder;
 }
 
-// (A)TODO: add 'remquo' function. (Uses remainder-near(?))
+unittest {
+	Decimal arg1, arg2, actual, expect;
+	arg1 = Decimal("2.1");
+	arg2 = Decimal("3");
+	actual = remainderNear(arg1, arg2, testContext);
+	expect = Decimal("-0.9");
+	assert(actual == expect);
+	arg1 = Decimal("10");
+	arg2 = Decimal("3");
+	actual = remainderNear(arg1, arg2, testContext);
+	expect = Decimal("1");
+	assert(actual == expect);
+	arg1 = Decimal("-10");
+	arg2 = Decimal("3");
+	actual = remainderNear(arg1, arg2, testContext);
+	expect = Decimal("-1");
+	assert(actual == expect);
+	arg1 = Decimal("10.2");
+	arg2 = Decimal("1");
+	actual = remainderNear(arg1, arg2, testContext);
+	expect = Decimal("0.2");
+	assert(actual == expect);
+	arg1 = Decimal("10");
+	arg2 = Decimal("0.3");
+	actual = remainderNear(arg1, arg2, testContext);
+	expect = Decimal("0.1");
+	assert(actual == expect);
+	arg1 = Decimal("3.6");
+	arg2 = Decimal("1.3");
+	actual = remainderNear(arg1, arg2, testContext);
+	expect = Decimal("-0.3");
+	assert(actual == expect);
+}
+
+// TODO: add 'remquo' function. (Uses remainder-near(?))
 
 //--------------------------------
 // rounding routines
@@ -1369,7 +1873,7 @@ public T quantize(T)(const T arg1, const T arg2,
 		return result;
 	}
 
-	// (A)TODO: this shift can cause integer overflow for fixed size decimals
+	// TODO: this shift can cause integer overflow for fixed size decimals
 	if (diff > 0) {
 		result.coefficient = shiftLeft(result.coefficient, diff, context.precision);
 		result.digits = result.digits + diff;
@@ -1391,814 +1895,6 @@ public T quantize(T)(const T arg1, const T arg2,
 	}
 }
 
-// (A)TODO: Not clear what this does.
-/// Returns a value as if this were the quantize function using
-/// the given operand as the left-hand-operand.
-/// The result is and context flags may be set.
-/// Implements the 'round-to-integral-exact' function
-/// in the specification. (p. 39)
-public T roundToIntegralExact(T)(const T arg,
-		const DecimalContext context = T.context) if (isDecimal!T) {
-	if (arg.isSignaling) return setInvalidFlag!T();
-	if (arg.isSpecial) return arg.dup;
-	if (arg.exponent >= 0) return arg.dup;
-	const T ONE = T(1L);
-	T result = quantize!T(arg, ONE, context.setPrecision(arg.digits));
-	return result;
-}
-
-// (A)TODO: need to re-implement this so no flags are set.
-/// The result may be rounded and context flags may be set.
-/// Implements the 'round-to-integral-value' function
-/// in the specification. (p. 39)
-public T roundToIntegralValue(T)(const T arg,
-		const DecimalContext context = T.context) if (isDecimal!T) {
-	if (arg.isSignaling) return setInvalidFlag!T();
-	if (arg.isQuiet) return arg.dup;
-	if (arg.isSpecial) return arg.dup;
-	if (arg.exponent >= 0) return arg.dup;
-	const T ONE = T(1L);
-	T result = quantize!T(arg, ONE, context.setPrecision(arg.digits));
-	return result;
-}
-
-// (A)TODO: Need to check for subnormal and inexact(?). Or is this done by caller?
-// (A)TODO: has non-standard flag setting
-// TODO: Try to combine reduce, reduceToIdeal and quantize.
-/// Reduces operand to the specified (ideal) exponent.
-/// All trailing zeros are removed.
-/// (Used to return the "ideal" value following division. p. 28-29)
-/*private T reduceToIdeal(T)(const T arg, int ideal,
-		const DecimalContext context = T.context) if (isDecimal!T) {
-//writefln("arg in = %s", arg);
-	T result = T.nan;
-	if (invalidOperand!T(arg, result)) {
-		return result;
-	}
-	result = arg;
-	if (!result.isFinite()) {
-		return result;
-	}
-	BigInt temp = result.coefficient % 10;
-	while (result.coefficient != 0 && temp == 0 && result.exponent < ideal) {
-		result.exponent = result.exponent + 1;
-		result.coefficient = result.coefficient / 10;
-		temp = result.coefficient % 10;
-	}
-	if (result.coefficient == 0) {
-		result = T.zero;
-		// (A)TODO: needed?
-		result.exponent = 0;
-	}
-	result.digits = numDigits(result.coefficient);
-//writefln("arg out = %s", result);
-	return result;
-}*/
-
-/// Aligns the two operands by raising the smaller exponent
-/// to the value of the larger exponent, and adjusting the
-/// coefficient so the value remains the same.
-/// No flags are set and the result is not rounded.
-private void alignOps(ref Decimal arg1, ref Decimal arg2)//,
-//		const DecimalContext context = T.context) {
-	{
-	int diff = arg1.exponent - arg2.exponent;
-	if (diff > 0) {
-		arg1.coefficient = shiftLeft(arg1.coefficient, diff); //, context.precision);
-		arg1.exponent = arg2.exponent;
-	}
-	else if (diff < 0) {
-		arg2.coefficient = shiftLeft(arg2.coefficient, -diff); //., context.precision);
-		arg2.exponent = arg1.exponent;
-	}
-}
-
-//--------------------------------
-// logical operations
-//--------------------------------
-
-/// Returns true if the argument is a valid logical string.
-/// All characters in a valid logical string must be either '1' or '0'.
-private bool isLogicalString(const string str) {
-	foreach(char ch; str) {
-		if (ch != '0' && ch != '1') return false;
-	}
-	return true;
-}
-
-/// Returns true if the argument is a valid logical decimal number.
-/// The sign and exponent must both be zero, and all (decimal) digits
-/// in the coefficient must be either '1' or '0'.
-public bool isLogical(T)(const T arg) if (isDecimal!T) {
-	if (arg.sign != 0 || arg.exponent != 0) return false;
-	string str = decimal.conv.to!string(arg.coefficient);
-	return isLogicalString(str);
-}
-
-/// Returns true and outputs a valid logical string if the argument is
-/// a valid logical decimal number.
-/// The sign and exponent must both be zero, and all (decimal) digits
-/// in the coefficient must be either '1' or '0'.
-private bool isLogicalOperand(T)(const T arg, out string str) if (isDecimal!T) {
-	if (arg.sign != 0 || arg.exponent != 0) return false;
-	str = decimal.conv.to!string(arg.coefficient);
-	return isLogicalString(str);
-}
-
-	unittest {	// logical string/number tests
-		import decimal.dec32;
-		assert(isLogicalString("010101010101"));
-		assert(isLogical(Dec32("1010101")));
-		string str;
-		assert(isLogicalOperand(Dec32("1010101"), str));
-		assert(str == "1010101");
-	}
-
-//--------------------------------
-// unary logical operations
-//--------------------------------
-
-/// Inverts and returns a decimal logical number.
-/// Implements the 'invert' function in the specification. (p. 44)
-public T invert(T)(T arg) if (isDecimal!T) {
-	string str;
-	if (!isLogicalOperand(arg, str)) {
-		contextFlags.setFlags(INVALID_OPERATION);
-		return T.nan;
-	}
-	return T(invert(str));
-}
-
-/// Inverts and returns a logical string.
-/// Each each '1' is changed to a '0', and vice versa.
-private T invert(T: string)(T arg) {
-	char[] result = new char[arg.length];
-	for(int i = 0; i < arg.length; i++) {
-		if (arg[i] == '0') {
-			result[i] = '1';
-		} else {
-			result[i] = '0';
-		}
-	}
-	return result.idup;
-}
-
-	unittest {	// inverse
-		import decimal.dec64;
-		assert(invert(Dec64(101001)) == 10110);
-		assert(invert(Dec64(1)) == 0);
-		assert(invert(Dec64(0)) == 1);
-	}
-
-//--------------------------------
-// binary logical operations
-//--------------------------------
-
-/// called by opBinary.
-private T opLogical(string op, T)(const T arg1, const T arg2,
-		const DecimalContext context = T.context) if(isDecimal!T) {
-	int precision = T.context.precision;
-	string str1;
-	if (!isLogicalOperand(arg1, str1)) {
-		return setInvalidFlag!T;
-	}
-	string str2;
-	if (!isLogicalOperand(arg2, str2)) {
-		return setInvalidFlag!T;
-	}
-	static if (op == "and") {
-		string str = and(str1, str2);
-	}
-	static if (op == "or") {
-		string str = or(str1, str2);
-	}
-	static if (op == "xor") {
-		string str = xor(str1, str2);
-	}
-	return T(str);
-}
-
-//----------------------
-
-/// Performs a logical 'and' of the arguments and returns the result
-/// Implements the 'and' function in the specification. (p. 41)
-public T and(T)(const T arg1, const T arg2,
-		const DecimalContext context = T.context) if (isDecimal!T) {
-	return opLogical!("and", T)(arg1, arg2, context);
-}
-
-/// Performs a logical 'and' of the (string) arguments and returns the result
-T and(T: string)(const T arg1, const T arg2) {
-	string str1, str2;
-	int length, diff;
-	if (arg1.length > arg2.length) {
-		length = arg2.length;
-		diff = arg1.length - arg2.length;
-		str2 = arg1;
-		str1 = rightJustify(arg2, arg1.length, '0');
-	}
-	else if (arg1.length < arg2.length) {
-		length = arg1.length;
-		diff = arg2.length - arg1.length;
-		str1 = rightJustify(arg1, arg2.length, '0');
-		str2 = arg2;
-	} else {
-		length = arg1.length;
-		diff = 0;
-		str1 = arg1;
-		str2 = arg2;
-	}
-	char[] result = new char[length];
-	for(int i = 0; i < length; i++) {
-		if (str1[i + diff] == '1' && str2[i + diff] == '1') {
-			result[i] = '1';
-		} else {
-			result[i] = '0';
-		}
-	}
-	return result.idup;
-}
-
-//----------------------
-
-/// Performs a logical 'or' of the arguments and returns the result
-/// Implements the 'or' function in the specification. (p. 47)
-public T or(T)(const T arg1, const T arg2,
-		const DecimalContext context = T.context) if (isDecimal!T) {
-	return opLogical!("or", T)(arg1, arg2, context);
-}
-
-/// Performs a logical 'or' of the (string) arguments and returns the result
-T or(T: string)(const T arg1, const T arg2) {
-	string str1, str2;
-	int length;
-	if (arg1.length > arg2.length) {
-		length = arg1.length;
-		str1 = arg1;
-		str2 = rightJustify(arg2, arg1.length, '0');
-	}
-	if (arg1.length < arg2.length) {
-		length = arg2.length;
-		str1 = rightJustify(arg1, arg2.length, '0');
-		str2 = arg2;
-	} else {
-		length = arg1.length;
-		str1 = arg1;
-		str2 = arg2;
-	}
-	char[] result = new char[length];
-	for(int i = 0; i < length; i++) {
-		if (str1[i] == '1' || str2[i] == '1') {
-			result[i] = '1';
-		} else {
-			result[i] = '0';
-		}
-	}
-	return result.idup;
-}
-
-//----------------------
-
-	/// Performs a logical 'xor' of the arguments and returns the result
-	/// Implements the 'xor' function in the specification. (p. 49)
-	public T xor(T)(const T arg1, const T arg2,
-			const DecimalContext context = T.context) if (isDecimal!T) {
-		return opLogical!("xor", T)(arg1, arg2, context);
-	}
-
-	/// Performs a logical 'xor' of the (string) arguments
-	/// and returns the result.
-	T xor(T: string)(const T arg1, const T arg2) {
-		string str1, str2;
-		int length;
-		if (arg1.length > arg2.length) {
-			length = arg1.length;
-			str1 = arg1;
-			str2 = rightJustify(arg2, arg1.length, '0');
-		}
-		if (arg1.length < arg2.length) {
-			length = arg2.length;
-			str1 = rightJustify(arg1, arg2.length, '0');
-			str2 = arg2;
-		} else {
-			length = arg1.length;
-			str1 = arg1;
-			str2 = arg2;
-		}
-		char[] result = new char[length];
-		for(int i = 0; i < length; i++) {
-			if (str1[i] != str2[i]) {
-				result[i] = '1';
-			} else {
-				result[i] = '0';
-			}
-		}
-		return result.idup;
-	}
-
-	unittest { // binary logical ops
-		Decimal op1, op2;
-		op1 = 10010101;
-		op2 = 11100100;
-		assert((op1 & op2) == Decimal(10000100));
-		assert((op1 | op2) == Decimal(11110101));
-		assert((op1 ^ op2) == Decimal( 1110001));
-		op1 =   100101;
-		op2 = 11100100;
-		assert((op1 & op2) == Decimal(  100100));
-		assert((op1 | op2) == Decimal(11100101));
-		assert((op1 ^ op2) == Decimal(11000001));
-	}
-
-//--------------------------------
-// validity functions
-//--------------------------------
-
-/// Sets the invalid-operation flag and returns a quiet NaN.
-private T setInvalidFlag(T)(ushort payload = 0) if (isDecimal!T) {
-	contextFlags.setFlags(INVALID_OPERATION);
-	T result = T.nan;
-	if (payload != 0) {
-		result.payload = payload;
-	}
-	return result;
-}
-
-/// Returns true and sets the invalid-operation flag if either operand
-/// is a NaN.
-/// "The result of any arithmetic operation which has an operand
-/// which is a NaN (a quiet NaN or a signaling NaN) is [s,qNaN]
-/// or [s,qNaN,d]. The sign and any diagnostic information is copied
-/// from the first operand which is a signaling NaN, or if neither is
-/// signaling then from the first operand which is a NaN."
-/// -- General Decimal Arithmetic Specification, p. 24
-private bool invalidBinaryOp(T)(const T arg1, const T arg2, T result)
-		if (isDecimal!T) {
-	// if either operand is a quiet NaN...
-	if (arg1.isQuiet || arg2.isQuiet) {
-		// flag the invalid operation
-		contextFlags.setFlags(INVALID_OPERATION);
-		// set the result to the first qNaN operand
-		result = arg1.isQuiet ? arg1 : arg2;
-		return true;
-	}
-	// ...if either operand is a signaling NaN...
-	if (arg1.isSignaling || arg2.isSignaling) {
-		// flag the invalid operation
-		contextFlags.setFlags(INVALID_OPERATION);
-		// set the result to the first sNaN operand
-		result = arg1.isSignaling ? T.nan(arg1.payload) : T.nan(arg2.payload);
-		return true;
-	}
-	// ...otherwise, no flags are set and result is unchanged
-	return false;
-}
-
-/// Returns true and sets the invalid-operation flag if the operand
-/// is a NaN.
-/// "The result of any arithmetic operation which has an operand
-/// which is a NaN (a quiet NaN or a signaling NaN) is [s,qNaN]
-/// or [s,qNaN,d]. The sign and any diagnostic information is copied
-/// from the first operand which is a signaling NaN, or if neither is
-/// signaling then from the first operand which is a NaN."
-/// -- General Decimal Arithmetic Specification, p. 24
-private bool invalidOperand(T)(const T arg, ref T result) if (isDecimal!T) {
-	// if the operand is a signaling NaN...
-	if (arg.isSignaling) {
-		// flag the invalid operation
-		contextFlags.setFlags(INVALID_OPERATION);
-		// retain payload; convert to qNaN
-		result = T.nan(arg.payload);
-		return true;
-	}
-	// ...else if the operand is a quiet NaN...
-	if (arg.isQuiet) {
-		// flag the invalid operation
-		contextFlags.setFlags(INVALID_OPERATION);
-		// set the result to the qNaN operand
-		result = arg;
-		return true;
-	}
-	// ...otherwise, no flags are set and result is unchanged
-	return false;
-}
-
-/// Checks for invalid operands and division by zero.
-/// If found, the function sets the quotient to NaN or infinity, respectively,
-/// and returns true after setting the context flags.
-/// Also checks for zero dividend and calculates the result as needed.
-/// This is a helper function implementing checks for division by zero
-/// and invalid operation in the specification. (p. 51-52)
-private bool invalidDivision(T)(const T dividend, const T divisor,
-		ref T quotient) if (isDecimal!T) {
-
-	if (invalidBinaryOp!T(dividend, divisor, quotient)) {
-		return true;
-	}
-	if (divisor.isZero()) {
-		if (dividend.isZero()) {
-			quotient = setInvalidFlag!T();
-		}
-		else {
-			contextFlags.setFlags(DIVISION_BY_ZERO);
-			quotient = T.infinity;
-			quotient.sign = dividend.sign ^ divisor.sign;
-		}
-		return true;
-	}
-	if (dividend.isZero()) {
-		quotient = T.zero;
-		return true;
-	}
-	return false;
-}
-
-//--------------------------------
-// unit tests
-//--------------------------------
-
-unittest {
-	writeln("===================");
-	writeln("arithmetic....begin");
-	writeln("===================");
-}
-
-unittest {	// classify
-	Decimal arg;
-	arg = Decimal("Inf");
-	assert("+Infinity" == classify(arg));
-	arg = Decimal("1E-10");
-	assert("+Normal" == classify(arg));
-	arg = Decimal("-0");
-	assert("-Zero" == classify(arg));
-	arg = Decimal("-0.1E-99");
-	assert("-Subnormal" == classify(arg));
-	arg = Decimal("NaN");
-	assert("NaN" == classify(arg));
-	arg = Decimal("sNaN");
-	assert("sNaN" == classify(arg));
-}
-
-unittest {	// copy
-	Decimal arg, expect;
-	arg  = Decimal("2.1");
-	expect = Decimal("2.1");
-	assert(compareTotal(copy(arg),expect) == 0);
-	arg  = Decimal("-1.00");
-	expect = Decimal("-1.00");
-	assert(compareTotal(copy(arg),expect) == 0);
-}
-
-unittest {	// copyAbs
-	Decimal arg, expect;
-	arg  = 2.1;
-	expect = 2.1;
-	assert(compareTotal(copyAbs(arg),expect) == 0);
-	arg  = Decimal("-1.00");
-	expect = Decimal("1.00");
-	assert(compareTotal(copyAbs(arg),expect) == 0);
-}
-
-unittest {	// copyNegate
-	Decimal arg	= "101.5";
-	Decimal expect = "-101.5";
-	assert(compareTotal(copyNegate(arg),expect) == 0);
-}
-
-unittest {	// copySign
-	Decimal arg1, arg2, expect;
-	arg1 = 1.50; arg2 = 7.33; expect = 1.50;
-	assert(compareTotal(copySign(arg1, arg2),expect) == 0);
-	arg2 = -7.33;
-	expect = -1.50;
-	assert(compareTotal(copySign(arg1, arg2),expect) == 0);
-}
-
-unittest {	// logb
-	Decimal arg, expect, actual;
-	arg = Decimal("250");
-	expect = Decimal("2");
-	actual = logb(arg);
-	assert(expect == actual);
-}
-
-unittest {	// scaleb
-	Decimal expect, actual;
-	auto arg1 = Decimal("7.50");
-	auto arg2 = Decimal("-2");
-	expect = Decimal("0.0750");
-	actual = scaleb(arg1, arg2);
-	assert(expect == actual);
-}
-
-unittest {	// reduce
-	Decimal arg;
-	string expect, actual;
-	arg = Decimal("1.200");
-	expect = "1.2";
-	actual = reduce(arg).toString;
-	assert(expect == actual);
-}
-
-unittest {	// abs
-	Decimal arg;
-	Decimal expect, actual;
-	arg = Decimal("-Inf");
-	expect = Decimal("Inf");
-	actual = abs(arg, decimal.context.testContext);
-	assert(expect == actual);
-	arg = 101.5;
-	expect = 101.5;
-	actual = abs(arg, testContext);
-	assert(expect == actual);
-	arg = -101.5;
-	actual = abs(arg, testContext);
-	assert(expect == actual);
-}
-
-unittest {	// sgn
-	Decimal arg;
-	arg = -123;
-	assert(-1 == sgn(arg));
-	arg = 2345;
-	assert( 1 == sgn(arg));
-	arg = Decimal("0.0000");
-	assert( 0 == sgn(arg));
-	arg = Decimal.infinity(true);
-	assert(-1 == sgn(arg));
-}
-
-unittest {	// plus
-	Decimal zero = Decimal.zero;
-	Decimal arg, expect, actual;
-	arg = 1.3;
-	expect = add(zero, arg, testContext);
-	actual = plus(arg, testContext);
-	assert(expect == actual);
-	arg = -1.3;
-	expect = add(zero, arg, testContext);
-	actual = plus(arg, testContext);
-	assert(expect == actual);
-}
-
-unittest {	// minus
-	Decimal zero = Decimal(0);
-	Decimal arg, expect, actual;
-	arg = 1.3;
-	expect = sub(zero, arg, testContext);
-	actual = minus(arg, testContext);
-	assert(expect == actual);
-	arg = -1.3;
-	expect = sub(zero, arg, testContext);
-	actual = minus(arg, testContext);
-	assert(expect == actual);
-}
-
-unittest {	// nextPlus
-	Decimal arg, expect, actual;
-	arg = 1;
-	expect = Decimal("1.00000001");
-	actual = nextPlus(arg, testContext);
-	assert(expect == actual);
-	arg = 10;
-	expect = Decimal("10.0000001");
-	actual = nextPlus(arg, testContext);
-	assert(expect == actual);
-}
-
-unittest {	// nextMinus
-	Decimal arg, expect, actual;
-	arg = 1;
-	expect = 0.999999999;
-	actual = nextMinus(arg, testContext);
-	assert(expect == actual);
-	arg = -1.00000003;
-	expect = -1.00000004;
-	actual = nextMinus(arg, testContext);
-	assert(expect == actual);
-}
-
-unittest {	// nextToward
-	Decimal arg1, arg2, expect, actual;
-	arg1 = 1;
-	arg2 = 2;
-	expect = 1.00000001;
-	actual = nextToward(arg1, arg2, testContext);
-	assert(expect == actual);
-	arg1 = -1.00000003;
-	arg2 = 0;
-	expect = -1.00000002;
-	actual = nextToward(arg1, arg2, testContext);
-	assert(expect == actual);
-}
-
-unittest {	// compare
-	Decimal arg1, arg2;
-	arg1 = Decimal(2.1);
-	arg2 = Decimal("3");
-	assert(compare(arg1, arg2, testContext) == -1);
-	arg1 = 2.1;
-	arg2 = Decimal(2.1);
-	assert(compare(arg1, arg2, testContext) == 0);
-}
-
-unittest {	// equals
-	Decimal arg1, arg2;
-	arg1 = 123.4567;
-	arg2 = 123.4568;
-	assert(!equals!Decimal(arg1, arg2, Decimal.context));
-	arg2 = 123.4567;
-	assert(equals!Decimal(arg1, arg2, Decimal.context));
-}
-
-unittest {
-	write("compareSignal...");
-	writeln("test missing");
-}
-
-unittest {	// compareTotal
-	Decimal arg1, arg2;
-	int result;
-	arg1 = Decimal("12.30");
-	arg2 = Decimal("12.3");
-	result = compareTotal(arg1, arg2);
-	assert(result == -1);
-	arg1 = Decimal("12.30");
-	arg2 = Decimal("12.30");
-	result = compareTotal(arg1, arg2);
-	assert(result == 0);
-	arg1 = Decimal("12.3");
-	arg2 = Decimal("12.300");
-	result = compareTotal(arg1, arg2);
-	assert(result == 1);
-}
-
-unittest {	// sameQuantum
-	Decimal arg1, arg2;
-	arg1 = 2.17;
-	arg2 = 0.001;
-	assert(!sameQuantum(arg1, arg2));
-	arg2 = 0.01;
-	assert(sameQuantum(arg1, arg2));
-	arg2 = 0.1;
-	assert(!sameQuantum(arg1, arg2));
-}
-
-unittest {	// max
-	Decimal arg1, arg2, expect, actual;
-	arg1 = 3; arg2 = 2; expect = 3;
-	actual = max(arg1, arg2, testContext);
-	assert(expect == actual);
-	arg1 = -10; arg2 = 3; expect = 3;
-	actual = max(arg1, arg2, testContext);
-	assert(expect == actual);
-}
-
-unittest {
-	write("maxMagnitude...");
-	writeln("test missing");
-}
-
-unittest {	// min
-	Decimal arg1, arg2, expect, actual;
-	arg1 = 3; arg2 = 2; expect = 2;
-	actual = min(arg1, arg2, testContext);
-	assert(expect == actual);
-	arg1 = -10; arg2 = 3; expect = -10;
-	actual = min(arg1, arg2, testContext);
-	assert(expect == actual);
-}
-
-unittest {
-	write("minMagnitude...");
-	writeln("test missing");
-}
-
-unittest {	// quantum
-	Decimal arg, expect, actual;
-	arg = 23.14E-12;
-	expect = 1E-14;
-	actual = quantum(arg);
-	assert(expect == actual);
-}
-
-unittest {	// add
-	// (A)TODO: change inputs to real numbers
-	Decimal arg1, arg2, sum;
-	arg1 = Decimal("12");
-	arg2 = Decimal("7.00");
-	sum = add(arg1, arg2, testContext);
-	assert("19.00" == sum.toString);
-	arg1 = Decimal("1E+2");
-	arg2 = Decimal("1E+4");
-	sum = add(arg1, arg2, testContext);
-	assert("1.01E+4" == sum.toString);
-}
-
-unittest {	// addLong
-	Decimal arg1, sum;
-	long arg2;
-	arg2 = 12;
-	arg1 = Decimal("7.00");
-	sum = addLong(arg1, arg2, testContext);
-	assert("19.00" == sum.toString);
-	arg1 = Decimal("1E+2");
-	arg2 = 10000;
-	sum = addLong(arg1, arg2, testContext);
-	assert("10100" == sum.toString);
-}
-
-unittest {	// mul
-	Decimal arg1, arg2, result;
-	arg1 = Decimal("1.20");
-	arg2 = 3;
-	result = mul(arg1, arg2, testContext);
-	assert("3.60" == result.toString());
-	arg1 = 7;
-	result = mul(arg1, arg2, testContext);
-	assert("21" == result.toString());
-}
-
-unittest { // mulLong
-	Decimal arg1, result;
-	long arg2;
-	arg1 = Decimal("1.20");
-	arg2 = 3;
-	result = mulLong(arg1, arg2, testContext);
-	assert("3.60" == result.toString());
-	arg1 = -7000;
-	result = mulLong(arg1, arg2, testContext);
-	assert("-21000" == result.toString());
-}
-
-unittest {	// fma
-	Decimal arg1, arg2, arg3, expect, actual;
-	arg1 = 3; arg2 = 5; arg3 = 7;
-	expect = 22;
-	actual = (fma(arg1, arg2, arg3, testContext));
-	assert(expect == actual);
-	arg1 = 3; arg2 = -5; arg3 = 7;
-	expect = -8;
-	actual = (fma(arg1, arg2, arg3, testContext));
-	assert(expect == actual);
-	arg1 = 888565290;
-	arg2 = 1557.96930;
-	arg3 = -86087.7578;
-	expect = Decimal(1.38435736E+12);
-	actual = (fma(arg1, arg2, arg3, testContext));
-	assert(expect == actual);
-}
-
-unittest {	// div
-	Decimal arg1, arg2, actual, expect;
-	arg1 = 1;
-	arg2 = 3;
-	actual = div(arg1, arg2, testContext);
-	expect = Decimal(0.333333333);
-	assert(expect == actual);
-	assert(expect.toString == actual.toString);
-	arg1 = 1;
-	arg2 = 10;
-	expect = 0.1;
-	actual = div(arg1, arg2, testContext);
-	assert(expect == actual);
-}
-
-unittest {	// divideInteger
-	Decimal arg1, arg2, actual, expect;
-	arg1 = 2;
-	arg2 = 3;
-	actual = divideInteger(arg1, arg2, testContext);
-	expect = 0;
-	assert(expect == actual);
-	arg1 = 10;
-	actual = divideInteger(arg1, arg2, testContext);
-	expect = 3;
-	assert(expect == actual);
-	arg1 = 1;
-	arg2 = 0.3;
-	actual = divideInteger(arg1, arg2, testContext);
-	assert(expect == actual);
-}
-
-unittest {	// remainder
-	Decimal arg1, arg2, actual, expect;
-	arg1 = 2.1;
-	arg2 = 3;
-	actual = rem(arg1, arg2, testContext);
-	expect = 2.1;
-	assert(expect == actual);
-	arg1 = 10;
-	actual = rem(arg1, arg2, testContext);
-	expect = 1;
-	assert(expect == actual);
-}
-
-unittest {
-	write("remainderNear...");
-	writeln("test missing");
-}
-
 unittest {	// quantize
     auto context = testContext;
 	Decimal arg1, arg2, actual, expect;
@@ -2207,22 +1903,22 @@ unittest {	// quantize
 	arg2 = Decimal("0.001");
 	expect = Decimal("2.170");
 	actual = quantize!Decimal(arg1, arg2, context);
-	assert(expect == actual);
+	assert(actual == expect);
 	arg1 = Decimal("2.17");
 	arg2 = Decimal("0.01");
 	expect = Decimal("2.17");
 	actual = quantize(arg1, arg2, context);
-	assert(expect == actual);
+	assert(actual == expect);
 	arg1 = Decimal("2.17");
 	arg2 = Decimal("0.1");
 	expect = Decimal("2.2");
 	actual = quantize(arg1, arg2, context);
-	assert(expect == actual);
+	assert(actual == expect);
 	arg1 = Decimal("2.17");
 	arg2 = Decimal("1e+0");
 	expect = Decimal("2");
 	actual = quantize(arg1, arg2, context);
-	assert(expect == actual);
+	assert(actual == expect);
 	arg1 = Decimal("2.17");
 	arg2 = Decimal("1e+1");
 	expect = Decimal("0E+1");
@@ -2232,7 +1928,7 @@ unittest {	// quantize
 	arg2 = Decimal("Infinity");
 	expect = Decimal("-Infinity");
 	actual = quantize(arg1, arg2, context);
-	assert(expect == actual);
+	assert(actual == expect);
 	arg1 = Decimal("2");
 	arg2 = Decimal("Infinity");
 	expect = Decimal("NaN");
@@ -2278,7 +1974,24 @@ unittest {	// quantize
 	expect = Decimal("2E+2");
 	actual = quantize(arg1, arg2, context);
 	assert(expect.toString, actual.toString);
-	assert(expect == actual);
+	assert(actual == expect);
+}
+
+/// Returns the nearest integer value to the argument.
+/// Context flags may be set.
+/// Implements the 'round-to-integral-exact' function
+/// in the specification. (p. 39)
+public T roundToIntegralExact(T)(const T arg,
+		const DecimalContext context = T.context) if (isDecimal!T) {
+	T result = arg.dup;
+	if (result.isSignaling) return setInvalidFlag!T();
+	if (result.isSpecial) return result;
+	if (result.exponent >= 0) return result;
+
+	DecimalContext temp = context;
+	temp.precision = result.digits + result.exponent;
+	result = round(result, temp);
+	return result;
 }
 
 unittest { // roundToIntegralExact
@@ -2286,37 +1999,358 @@ unittest { // roundToIntegralExact
 	arg = 2.1;
 	expect = 2;
 	actual = roundToIntegralExact(arg, testContext);
-	assert(expect == actual);
+	assert(actual == expect);
+	arg = 0.7;
+	expect = 1;
+	actual = roundToIntegralExact(arg, testContext);
+	assert(actual == expect);
 	arg = 100;
 	expect = 100;
 	actual = roundToIntegralExact(arg, testContext);
-	assert(expect == actual);
-	assert(expect.toString, actual.toString);
+	assert(actual == expect);
+	arg = 101.5;
+	expect = 102;
+	actual = roundToIntegralExact(arg, testContext);
+	assert(actual == expect);
+	arg = -101.5;
+	expect = -102;
+	actual = roundToIntegralExact(arg, testContext);
+	assert(actual == expect);
+	arg = Decimal("10E+5");
+	expect = Decimal("1.0E+6");
+	actual = roundToIntegralExact(arg, testContext);
+	assert(actual == expect);
+	arg = Decimal("7.89E+77");
+	expect = Decimal("7.89E+77");
+	actual = roundToIntegralExact(arg, testContext);
+	assert(actual == expect);
+	arg = Decimal("-Inf");
+	expect = Decimal("-Infinity");
+	actual = roundToIntegralExact(arg, testContext);
+	assert(actual == expect);
 }
 
-unittest {
-	write("reduceToIdeal...");
-	writeln("test missing");
+// TODO: need to re-implement this so no flags are set.
+/// The result may be rounded and context flags may be set.
+/// Implements the 'round-to-integral-value' function
+/// in the specification. (p. 39)
+public T roundToIntegralValue(T)(const T arg,
+		const DecimalContext context = T.context) if (isDecimal!T) {
+	T result = arg.dup;
+	if (result.isSignaling) return setInvalidFlag!T();
+	if (result.isSpecial) return result;
+	if (result.exponent >= 0) return result;
+
+	DecimalContext temp = context;
+	temp.precision = result.digits + result.exponent;
+	result = round(result, temp, false);
+	return result;
+}
+
+/// Aligns the two operands by raising the smaller exponent
+/// to the value of the larger exponent, and adjusting the
+/// coefficient so the value remains the same.
+/// No flags are set and the result is not rounded.
+private void alignOps(ref Decimal arg1, ref Decimal arg2) {
+	int diff = arg1.exponent - arg2.exponent;
+	if (diff > 0) {
+		arg1.coefficient = shiftLeft(arg1.coefficient, diff);
+		arg1.exponent = arg2.exponent;
+	}
+	else if (diff < 0) {
+		arg2.coefficient = shiftLeft(arg2.coefficient, -diff);
+		arg2.exponent = arg1.exponent;
+	}
+}
+
+unittest { // alignOps
+	Decimal arg1, arg2;
+	arg1 = Decimal("1.3E35");
+	arg2 = Decimal("-17.4E29");
+	alignOps(arg1, arg2);
+	assert(arg1.coefficient == 13000000);
+	assert(arg2.exponent == 28);
+}
+
+//--------------------------------
+// logical operations
+//--------------------------------
+
+/// Returns true if the argument is a valid logical string.
+/// All characters in a valid logical string must be either '1' or '0'.
+private bool isLogicalString(const string str) {
+	foreach(char ch; str) {
+		if (ch != '0' && ch != '1') return false;
+	}
+	return true;
+}
+
+/// Returns true if the argument is a valid logical decimal number.
+/// The sign and exponent must both be zero, and all decimal digits
+/// in the coefficient must be either '1' or '0'.
+public bool isLogical(T)(const T arg) if (isDecimal!T) {
+	if (arg.sign != 0 || arg.exponent != 0) return false;
+	string str = decimal.conv.to!string(arg.coefficient);
+	return isLogicalString(str);
+}
+
+/// Returns true and outputs a valid logical string if the argument is
+/// a valid logical decimal number.
+/// The sign and exponent must both be zero, and all decimal digits
+/// in the coefficient must be either '1' or '0'.
+private bool isLogicalOperand(T)(const T arg, out string str) if (isDecimal!T) {
+	if (arg.sign != 0 || arg.exponent != 0) return false;
+	str = decimal.conv.to!string(arg.coefficient);
+	return isLogicalString(str);
+}
+
+unittest {	// logical string/number tests
+	import decimal.dec32;
+	assert(isLogicalString("010101010101"));
+	assert(isLogical(Dec32("1010101")));
+	string str;
+	assert(isLogicalOperand(Dec32("1010101"), str));
+	assert(str == "1010101");
+}
+
+//--------------------------------
+// unary logical operations
+//--------------------------------
+
+/// Inverts and returns a decimal logical number.
+/// Implements the 'invert' function in the specification. (p. 44)
+public T invert(T)(T arg) if (isDecimal!T) {
+	string str;
+	if (!isLogicalOperand(arg, str)) {
+		contextFlags.setFlags(INVALID_OPERATION);
+		return T.nan;
+	}
+	return T(invert(str));
+}
+
+/// Inverts and returns a logical string.
+/// Each '1' is changed to a '0', and vice versa.
+private T invert(T: string)(T arg) {
+	char[] result = new char[arg.length];
+	for(int i = 0; i < arg.length; i++) {
+		result[i] = arg[i] == '0' ? '1' : '0';
+	}
+	return result.idup;
+}
+
+unittest {	// inverse
+	import decimal.dec64;
+	assert(invert(Dec64(101001)) == 10110);
+	assert(invert(Dec64(1)) == 0);
+	assert(invert(Dec64(0)) == 1);
+}
+
+//--------------------------------
+// binary logical operations
+//--------------------------------
+
+/// called by opBinary.
+private T opLogical(string op, T)(const T arg1, const T arg2,
+		const DecimalContext context = T.context) if(isDecimal!T) {
+	int precision = T.context.precision;
+	string str1;
+	if (!isLogicalOperand(arg1, str1)) {
+		return setInvalidFlag!T;
+	}
+	string str2;
+	if (!isLogicalOperand(arg2, str2)) {
+		return setInvalidFlag!T;
+	}
+	static if (op == "and") {
+		string str = and(str1, str2);
+	}
+	static if (op == "or") {
+		string str = or(str1, str2);
+	}
+	static if (op == "xor") {
+		string str = xor(str1, str2);
+	}
+	return T(str);
+}
+
+/// Performs a logical 'and' of the arguments and returns the result
+/// Implements the 'and' function in the specification. (p. 41)
+public T and(T)(const T arg1, const T arg2,
+		const DecimalContext context = T.context) if (isDecimal!T) {
+	return opLogical!("and", T)(arg1, arg2, context);
+}
+
+/// Performs a logical 'and' of the (string) arguments and returns the result
+T and(T: string)(const T arg1, const T arg2) {
+	string str1, str2;
+	int length, diff;
+	if (arg1.length > arg2.length) {
+		length = arg2.length;
+		diff = arg1.length - arg2.length;
+		str2 = arg1;
+		str1 = rightJustify(arg2, arg1.length, '0');
+	}
+	else if (arg1.length < arg2.length) {
+		length = arg1.length;
+		diff = arg2.length - arg1.length;
+		str1 = rightJustify(arg1, arg2.length, '0');
+		str2 = arg2;
+	} else {
+		length = arg1.length;
+		diff = 0;
+		str1 = arg1;
+		str2 = arg2;
+	}
+	char[] result = new char[length];
+	for(int i = 0; i < length; i++) {
+		if (str1[i + diff] == '1' && str2[i + diff] == '1') {
+			result[i] = '1';
+		} else {
+			result[i] = '0';
+		}
+	}
+	return result.idup;
+}
+
+/// Performs a logical 'or' of the arguments and returns the result
+/// Implements the 'or' function in the specification. (p. 47)
+public T or(T)(const T arg1, const T arg2,
+		const DecimalContext context = T.context) if (isDecimal!T) {
+	return opLogical!("or", T)(arg1, arg2, context);
+}
+
+/// Performs a logical 'or' of the (string) arguments and returns the result
+T or(T: string)(const T arg1, const T arg2) {
+	string str1, str2;
+	int length;
+	if (arg1.length > arg2.length) {
+		length = arg1.length;
+		str1 = arg1;
+		str2 = rightJustify(arg2, arg1.length, '0');
+	}
+	if (arg1.length < arg2.length) {
+		length = arg2.length;
+		str1 = rightJustify(arg1, arg2.length, '0');
+		str2 = arg2;
+	} else {
+		length = arg1.length;
+		str1 = arg1;
+		str2 = arg2;
+	}
+	char[] result = new char[length];
+	for(int i = 0; i < length; i++) {
+		if (str1[i] == '1' || str2[i] == '1') {
+			result[i] = '1';
+		} else {
+			result[i] = '0';
+		}
+	}
+	return result.idup;
+}
+
+/// Performs a logical 'xor' of the arguments and returns the result
+/// Implements the 'xor' function in the specification. (p. 49)
+public T xor(T)(const T arg1, const T arg2,
+		const DecimalContext context = T.context) if (isDecimal!T) {
+	return opLogical!("xor", T)(arg1, arg2, context);
+}
+
+/// Performs a logical 'xor' of the (string) arguments
+/// and returns the result.
+T xor(T: string)(const T arg1, const T arg2) {
+	string str1, str2;
+	int length;
+	if (arg1.length > arg2.length) {
+		length = arg1.length;
+		str1 = arg1;
+		str2 = rightJustify(arg2, arg1.length, '0');
+	}
+	if (arg1.length < arg2.length) {
+		length = arg2.length;
+		str1 = rightJustify(arg1, arg2.length, '0');
+		str2 = arg2;
+	} else {
+		length = arg1.length;
+		str1 = arg1;
+		str2 = arg2;
+	}
+	char[] result = new char[length];
+	for(int i = 0; i < length; i++) {
+		if (str1[i] != str2[i]) {
+			result[i] = '1';
+		} else {
+			result[i] = '0';
+		}
+	}
+	return result.idup;
+}
+
+unittest { // binary logical ops
+	Decimal op1, op2;
+	op1 = 10010101;
+	op2 = 11100100;
+	assert((op1 & op2) == Decimal(10000100));
+	assert((op1 | op2) == Decimal(11110101));
+	assert((op1 ^ op2) == Decimal( 1110001));
+	op1 =   100101;
+	op2 = 11100100;
+	assert((op1 & op2) == Decimal(  100100));
+	assert((op1 | op2) == Decimal(11100101));
+	assert((op1 ^ op2) == Decimal(11000001));
+}
+
+//--------------------------------
+// validity functions
+//--------------------------------
+
+/// Sets the invalid-operation flag and returns a quiet NaN.
+private T setInvalidFlag(T)(ushort payload = 0) if (isDecimal!T) {
+	contextFlags.setFlags(INVALID_OPERATION);
+	T result = T.nan;
+	if (payload != 0) {
+		result.payload = payload;
+	}
+	return result;
 }
 
 unittest {	// setInvalidFlag
 	Decimal arg, expect, actual;
-	// (A)TODO: Can't actually test payloads at this point.
+	// TODO: Can't actually test payloads at this point.
 	arg = Decimal("sNaN123");
 	expect = Decimal("NaN123");
 	actual = abs!Decimal(arg, testContext);
 	assert(actual.isQuiet);
 	assert(contextFlags.getFlag(INVALID_OPERATION));
-//	  assert(actual.toAbstract == expect.toAbstract);
+	assert(actual.toAbstract == expect.toAbstract);
 }
 
-unittest { // alignOps
-	Decimal arg1, arg2;
-	arg1 = 1.3E35;
-	arg2 = -17.4E29;
-	alignOps(arg1, arg2);
-	assert(arg1.coefficient == 13000000);
-	assert(arg2.exponent == 28);
+/// Returns true and sets the invalid-operation flag if the operand
+/// is a NaN.
+/// "The result of any arithmetic operation which has an operand
+/// which is a NaN (a quiet NaN or a signaling NaN) is [s,qNaN]
+/// or [s,qNaN,d]. The sign and any diagnostic information is copied
+/// from the first operand which is a signaling NaN, or if neither is
+/// signaling then from the first operand which is a NaN."
+/// -- General Decimal Arithmetic Specification, p. 24
+private bool invalidOperand(T)(const T arg, ref T result) if (isDecimal!T) {
+	// if the operand is a signaling NaN...
+	if (arg.isSignaling) {
+		// flag the invalid operation
+		contextFlags.setFlags(INVALID_OPERATION);
+		// retain payload; convert to qNaN
+		result = T.nan(arg.payload);
+		return true;
+	}
+	// ...else if the operand is a quiet NaN...
+	if (arg.isQuiet) {
+		// flag the invalid operation
+		contextFlags.setFlags(INVALID_OPERATION);
+		// set the result to the qNaN operand
+		result = arg;
+		return true;
+	}
+	// ...otherwise, no flags are set and result is unchanged
+	return false;
 }
 
 unittest {
@@ -2324,9 +2358,69 @@ unittest {
 	writeln("test missing");
 }
 
+/// Returns true and sets the invalid-operation flag if either operand
+/// is a NaN.
+/// "The result of any arithmetic operation which has an operand
+/// which is a NaN (a quiet NaN or a signaling NaN) is [s,qNaN]
+/// or [s,qNaN,d]. The sign and any diagnostic information is copied
+/// from the first operand which is a signaling NaN, or if neither is
+/// signaling then from the first operand which is a NaN."
+/// -- General Decimal Arithmetic Specification, p. 24
+private bool invalidBinaryOp(T)(const T arg1, const T arg2, T result)
+		if (isDecimal!T) {
+	// if either operand is a quiet NaN...
+	if (arg1.isQuiet || arg2.isQuiet) {
+		// flag the invalid operation
+		contextFlags.setFlags(INVALID_OPERATION);
+		// set the result to the first qNaN operand
+		result = arg1.isQuiet ? arg1 : arg2;
+		return true;
+	}
+	// ...if either operand is a signaling NaN...
+	if (arg1.isSignaling || arg2.isSignaling) {
+		// flag the invalid operation
+		contextFlags.setFlags(INVALID_OPERATION);
+		// set the result to the first sNaN operand
+		result = arg1.isSignaling ? T.nan(arg1.payload) : T.nan(arg2.payload);
+		return true;
+	}
+	// ...otherwise, no flags are set and result is unchanged
+	return false;
+}
+
 unittest {
 	write("invalidOperand...");
 	writeln("test missing");
+}
+
+/// Checks for invalid operands and division by zero.
+/// If found, the function sets the quotient to NaN or infinity, respectively,
+/// and returns true after setting the context flags.
+/// Also checks for zero dividend and calculates the result as needed.
+/// This is a helper function implementing checks for division by zero
+/// and invalid operation in the specification. (p. 51-52)
+private bool invalidDivision(T)(const T dividend, const T divisor,
+		ref T quotient) if (isDecimal!T) {
+
+	if (invalidBinaryOp!T(dividend, divisor, quotient)) {
+		return true;
+	}
+	if (divisor.isZero()) {
+		if (dividend.isZero()) {
+			quotient = setInvalidFlag!T();
+		}
+		else {
+			contextFlags.setFlags(DIVISION_BY_ZERO);
+			quotient = T.infinity;
+			quotient.sign = dividend.sign ^ divisor.sign;
+		}
+		return true;
+	}
+	if (dividend.isZero()) {
+		quotient = T.zero;
+		return true;
+	}
+	return false;
 }
 
 unittest {

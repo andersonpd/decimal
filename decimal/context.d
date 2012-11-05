@@ -351,7 +351,8 @@ private const uint128 FIVE128 = uint128(5);
 /// the context parameter.
 /// Flags: SUBNORMAL, CLAMPED, OVERFLOW, INEXACT, ROUNDED.
 public T round(T)(ref T num,
-		const DecimalContext context = T.context) if (isDecimal!T) {
+		const DecimalContext context = T.context,
+		const bool setFlags = true) if (isDecimal!T) {
 
 	// special values aren't rounded
 	if (!num.isFinite) return num;
@@ -371,7 +372,7 @@ public T round(T)(ref T num,
 
 	// handle subnormal numbers
 	if (num.isSubnormal(context)) {
-		contextFlags.setFlags(SUBNORMAL);
+		if (setFlags) contextFlags.setFlags(SUBNORMAL);
 		int diff = context.minExpo - num.adjustedExponent;
 		// decrease the precision and round
 		int precision = context.precision - diff;
@@ -383,7 +384,7 @@ public T round(T)(ref T num,
 		// the clamped flag is set. (Spec. p. 51)
 		if (num.isZero) {
 			num.exponent = context.tinyExpo;
-			contextFlags.setFlags(CLAMPED);
+			if (setFlags) contextFlags.setFlags(CLAMPED);
 		}
 		return num;
 	}
@@ -508,26 +509,20 @@ private T getRemainder(T) (ref T num,
 		return remainder;
 	}
 	contextFlags.setFlags(ROUNDED);
-	// the precision can be zero when rounding subnormal numbers
-	if (context.precision == 0) {
-		num = T.zero(num.sign);
-	} else {
-		auto divisor = T.pow10(diff);
-		auto dividend = num.coefficient;
-		auto quotient = dividend/divisor;
-		auto mant = dividend - quotient*divisor;
-		if (mant != 0) {
-			remainder.zero;
-			remainder.digits = diff;
-			remainder.exponent = num.exponent;
-			remainder.coefficient = mant;
-			contextFlags.setFlags(INEXACT);
-		}
-		num.coefficient = quotient;
-		num.digits = context.precision;
-		num.exponent = num.exponent + diff;
+	auto divisor = T.pow10(diff);
+	auto dividend = num.coefficient;
+	auto quotient = dividend/divisor;
+	auto mant = dividend - quotient*divisor;
+	if (mant != 0) {
+		remainder.zero;
+		remainder.digits = diff;
+		remainder.exponent = num.exponent;
+		remainder.coefficient = mant;
+		contextFlags.setFlags(INEXACT);
 	}
-
+	num.coefficient = quotient;
+	num.digits = context.precision;
+	num.exponent = num.exponent + diff;
 	return remainder;
 }
 
@@ -535,9 +530,14 @@ private T getRemainder(T) (ref T num,
 /// the coefficient is adjusted by clipping the last digit (it will be zero)
 /// and incrementing the exponent.
 private void incrementAndRound(T)(ref T num) if (isDecimal!T) {
-	int digits = num.digits;
+
 	num.coefficient = num.coefficient + 1;
-	if (lastDigit(num.coefficient) == 0) {
+	int digits = num.digits;
+	// if num was zero
+	if (digits == 0) {
+		num.digits = 1;
+	}
+	else if (lastDigit(num.coefficient) == 0) {
 		if (num.coefficient / T.pow10(digits) > 0) {
 			num.coefficient = num.coefficient / 10;
 			num.exponent = num.exponent + 1;
@@ -1195,7 +1195,7 @@ public int trimZeros(ref ulong n, const int dummy) {
 	return zeros;
 }
 
-/// Trims any trailing zerosand returns the number of zeros trimmed.
+/// Trims any trailing zeros and returns the number of zeros trimmed.
 public int trimZeros(ref BigInt n, const int digits) {
 	int zeros = trailingZeros(n, digits);
 	if (zeros == 0) return 0;
@@ -1205,7 +1205,7 @@ public int trimZeros(ref BigInt n, const int digits) {
 
 /// Returns a BigInt value of ten raised to the specified power.
 public BigInt tens(const int n) {
-	if (n <= 19) return BigInt(TENS[n]);
+	if (n < 19) return BigInt(TENS[n]);
 	BigInt num = 1;
 	return shiftLeft(num, n);
 }
@@ -1257,12 +1257,6 @@ public int sgn(const BigInt num) {
 
 import decimal.dec32;
 import decimal.dec64;
-
-unittest {
-	writeln("===================");
-	writeln("rounding......begin");
-	writeln("===================");
-}
 
 unittest {
 	// round
@@ -1330,7 +1324,7 @@ writeln("********* c = ", c);
 	Dec32 h = a * g;
 	assert("[0,9,-101]" == h.toAbstract);
 	Dec32 i = a * h;
-	assert("[0,0,-101]" == i.toAbstract);
+	assert("[0,1,-101]" == i.toAbstract);
 }
 
 unittest {
@@ -1558,51 +1552,51 @@ unittest {
 	int expect, actual;
 	expect = 7;
 	actual = firstDigit(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 13;
 	expect = 1;
 	actual = firstDigit(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 999;
 	expect = 9;
 	actual = firstDigit(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 9999;
 	expect = 9;
 	actual = firstDigit(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 25987;
 	expect = 2;
 	actual = firstDigit(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 5008617;
 	expect = 5;
 	actual = firstDigit(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 3234567890;
 	expect = 3;
 	actual = firstDigit(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 10000000000;
 	expect = 1;
 	actual = firstDigit(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 823456789012345;
 	expect = 8;
 	actual = firstDigit(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 4234567890123456;
 	expect = 4;
 	actual = firstDigit(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 623456789012345678;
 	expect = 6;
 	actual = firstDigit(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = long.max;
 	expect = 9;
 	actual = firstDigit(n);
-	assert(expect == actual);
+	assert(actual == expect);
 }
 
 unittest {
@@ -1611,51 +1605,51 @@ unittest {
 	n = 7;
 	int expect = 1;
 	int actual = numDigits(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 13;
 	expect = 2;
 	actual = numDigits(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 999;
 	expect = 3;
 	actual = numDigits(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 9999;
 	expect = 4;
 	actual = numDigits(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 25987;
 	expect = 5;
 	actual = numDigits(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 2008617;
 	expect = 7;
 	actual = numDigits(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 1234567890;
 	expect = 10;
 	actual = numDigits(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 10000000000;
 	expect = 11;
 	actual = numDigits(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 123456789012345;
 	expect = 15;
 	actual = numDigits(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 1234567890123456;
 	expect = 16;
 	actual = numDigits(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = 123456789012345678;
 	expect = 18;
 	actual = numDigits(n);
-	assert(expect == actual);
+	assert(actual == expect);
 	n = long.max;
 	expect = 19;
 	actual = numDigits(n);
-	assert(expect == actual);
+	assert(actual == expect);
 }
 
 unittest {

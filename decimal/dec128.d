@@ -527,11 +527,11 @@ public:
 //string str = f;
 		Dec128 actual = Dec128(f);
 		Dec128 expect = Dec128("12344999802830847.999");
-		assert(expect == actual);
+		assert(actual == expect);
 		real r = 1.2345E+16;
 		actual = Dec128(r);
 		expect = Dec128("1.2345E+16");
-		assert(expect == actual);
+		assert(actual == expect);
 	}
 
 	/**
@@ -603,34 +603,34 @@ public:
 		num = std.math.PI;
 		expect = -19;
 		actual = num.exponent;
-		assert(expect == actual);
+		assert(actual == expect);
 		num = 9.75E9;
 		expect = 0;
 		actual = num.exponent;
-		assert(expect == actual);
+		assert(actual == expect);
 		// explicit
 		num = 8388607;
 		expect = 0;
 		actual = num.exponent;
-		assert(expect == actual);
+		assert(actual == expect);
 		// implicit
 		num = 8388610;
 		expect = 0;
 		actual = num.exponent;
-		assert(expect == actual);
+		assert(actual == expect);
 /*
 		// These should test rounding of long coefficients.
 		num = Dec128("9.999998E23");
 		expect = 17;
 		actual = num.exponent;
-		assert(expect == actual);
+		assert(actual == expect);
 		num = Dec128("9.999999E23");
 writefln("num = %s", num);
 writefln("num.toAbstract = %s", num.toAbstract);
 writefln("num.toExact = %s", num.toExact);
 		expect = 8;
 		actual = num.exponent;
-		assert(expect == actual);*/
+		assert(actual == expect);*/
 	}
 
 	/// Sets the exponent of this number.
@@ -1213,7 +1213,7 @@ writefln("num.toExact = %s", num.toExact);
 		num = Dec128(1.5);
 		expect = 1.5;
 		actual = num.toReal;
-		assert(expect == actual);
+		assert(actual == expect);
 //		writeln("passed");
 	}
 
@@ -1258,7 +1258,7 @@ writefln("num.toExact = %s", num.toExact);
 		string expect, actual;
 		expect = "+NaN";
 		actual = num.toExact;
-		assert(expect == actual);
+		assert(actual == expect);
 //writefln("MAX = %s", MAX);
 		num = Dec128.max;
 //writefln("num = %s", num);
@@ -1267,10 +1267,10 @@ writefln("num.toExact = %s", num.toExact);
 //writefln("num = %s", num);
 		expect = "9.999999999999999999999999999999999E+6144";
 		actual = num.toString;
-		assert(expect == actual);
+		assert(actual == expect);
 		expect = "+9999999999999999999999999999999999E+6111";
 		actual = num.toExact;
-		assert(expect == actual);
+		assert(actual == expect);
 		num = Dec128.min;
 		num = 1;
 		assert(num.toExact == "+1E+00");
@@ -1326,10 +1326,10 @@ writefln("num.toExact = %s", num.toExact);
 		string expect, actual;
 		expect = "0x30400000000000000000000000003039";
 		actual = num.toHexString;
-		assert(expect == actual);
+		assert(actual == expect);
 		expect = "00110000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011000000111001";
 		actual = num.toBinaryString;
-		assert(expect == actual);
+		assert(actual == expect);
 	}
 
 //--------------------------------
@@ -1436,11 +1436,11 @@ writefln("a == d = %s", a == d);
 		rhs = 332089;
 		expect = "332089";
 		actual = rhs.toString;
-		assert(expect == actual);
+		assert(actual == expect);
 		rhs = Dec128("3.1415E+3");
 		expect = "3141.5";
 		actual = rhs.toString;
-		assert(expect == actual);
+		assert(actual == expect);
 		rhs = 3.1415E+3;
 		actual = rhs.toString;
 		assert(expect != actual);
@@ -1487,7 +1487,7 @@ writefln("a == d = %s", a == d);
 		num = Dec128("12.35");
 		expect = Dec128("11.35");
 		actual = --num;
-		assert(expect == actual);
+		assert(actual == expect);
 	}
 
 //--------------------------------
@@ -1506,7 +1506,7 @@ const T opBinary(string op, T:Dec128)(const T rhs)
 		} else static if (op == "/") {
 			return div!Dec128(this, rhs, context);
 		} else static if (op == "%") {
-			return rem!Dec128(this, rhs, context);
+			return remainder!Dec128(this, rhs, context);
 		}
 	}
 
@@ -1516,13 +1516,13 @@ const T opBinary(string op, T:Dec128)(const T rhs)
 		op2 = 8;
 		actual = op1 + op2;
 		expect = 12;
-		assert(expect == actual);
+		assert(actual == expect);
 		actual = op1 - op2;
 		expect = -4;
-		assert(expect == actual);
+		assert(actual == expect);
 		actual = op1 * op2;
 		expect = 32;
-		assert(expect == actual);
+		assert(actual == expect);
 		op1 = 5;
 		op2 = 2;
 		actual = op1 / op2;
@@ -1530,12 +1530,12 @@ const T opBinary(string op, T:Dec128)(const T rhs)
 writefln("expect = %s", expect);
 writefln("actual = %s", actual);
 writefln("actual == expect = %s", actual == expect);
-//		assert(expect == actual);
+//		assert(actual == expect);
 		op1 = 10;
 		op2 = 3;
 		actual = op1 % op2;
 		expect = 1;
-		assert(expect == actual);
+		assert(actual == expect);
 	}
 
 	/**
@@ -1555,7 +1555,7 @@ writefln("actual == expect = %s", actual == expect);
 		num = Dec128("591.3");
 		expect = Dec128("2956.5");
 		actual = num * 5;
-		assert(expect == actual);
+		assert(actual == expect);
 	}
 
 //-----------------------------
@@ -1579,16 +1579,16 @@ ref Dec128 opOpAssign(string op, T:Dec128) (T rhs) {
 		op1 += op2;
 		expect = Dec128("21.49");
 		actual = op1;
-		assert(expect == actual);
+		assert(actual == expect);
 		op1 *= op2;
 		expect = Dec128("-44.4843");
 		actual = op1;
-		assert(expect == actual);
+		assert(actual == expect);
 		op1 = 95;
 		op1 %= 90;
 		actual = op1;
 		expect = 5;
-		assert(expect == actual);
+		assert(actual == expect);
 	}
 
 	/**

@@ -879,31 +879,31 @@ unittest {
 		num = 134;
 		expect = num;
 		actual = +num;
-		assert(expect == actual);
+		assert(actual == expect);
 		num = 134.02;
 		expect = -134.02;
 		actual = -num;
-		assert(expect == actual);
+		assert(actual == expect);
 		num = 134;
 		expect = 135;
 		actual = ++num;
-		assert(expect == actual);
+		assert(actual == expect);
 		num = 1.00E8;
 		expect = num - 1;
 		actual = --num;
-		assert(expect == actual);
+		assert(actual == expect);
 		num = 1.00E8;
 		expect = num;
 		actual = num--;
-		assert(expect == actual);
+		assert(actual == expect);
 		num = Decimal(9999999, 90);
 		expect = num;
 		actual = num++;
-		assert(expect == actual);
+		assert(actual == expect);
 		num = 12.35;
 		expect = 11.35;
 		actual = --num;
-		assert(expect == actual);
+		assert(actual == expect);
 	}
 
 //--------------------------------
@@ -927,7 +927,7 @@ unittest {
 			return div!Decimal(this, arg, context);
 		}
 		else static if (op == "%") {
-			return rem!Decimal(this, arg, context);
+			return remainder!Decimal(this, arg, context);
 		}
 		else static if (op == "&") {
 			return and!Decimal(this, arg, context);
@@ -975,23 +975,23 @@ unittest {
 		op2 = 8;
 		actual = op1 + op2;
 		expect = 12;
-		assert(expect == actual);
+		assert(actual == expect);
 		actual = op1 - op2;
 		expect = -4;
-		assert(expect == actual);
+		assert(actual == expect);
 		actual = op1 * op2;
 		expect = 32;
-		assert(expect == actual);
+		assert(actual == expect);
 		op1 = 5;
 		op2 = 2;
 		actual = op1 / op2;
 		expect = 2.5;
-		assert(expect == actual);
+		assert(actual == expect);
 		op1 = 10;
 		op2 = 3;
 		actual = op1 % op2;
 		expect = 1;
-		assert(expect == actual);
+		assert(actual == expect);
 	}
 
 //-----------------------------
@@ -1012,11 +1012,11 @@ unittest {
 		op1 += op2;
 		expect = 21.49;
 		actual = op1;
-		assert(expect == actual);
+		assert(actual == expect);
 		op1 *= op2;
 		expect = -44.4843;
 		actual = op1;
-		assert(expect == actual);
+		assert(actual == expect);
 	}
 
 //-----------------------------

@@ -43,9 +43,9 @@ bool assertEqual(T)(T expected, T actual,
 	if (expected == actual) {
 		return true;
 	}
-writefln("expected = %s", expected);
-writefln("actual = %s", actual);
-writefln("T = %s", typeid(T));
+//writefln("expected = %s", expected);
+//writefln("actual = %s", actual);
+//writefln("T = %s", typeid(T));
 	writeln("failed at ", baseName(file), "(", line, "):",
 	        " expected \"", expected, "\"",
 	        " but found \"", actual, "\".");
@@ -586,27 +586,27 @@ unittest {
 	Decimal op1, op2;
 	Decimal result, expd;
 	string str;
-	op1 = 2.17;
-	op2 = 0.001;
+	op1 = Decimal("2.17");
+	op2 = Decimal("0.001");
 	expd = Decimal("2.170");
 	result = quantize(op1, op2, testContext);
 	assertEqual(expd, result);
-	op1 = 2.17;
-	op2 = 0.01;
-	expd = 2.17;
+	op1 = Decimal("2.17");
+	op2 = Decimal("0.01");
+	expd = Decimal("2.17");
 	result = quantize(op1, op2, testContext);
 	assertEqual(expd, result);
-	op1 = 2.17;
-	op2 = 0.1;
-	expd = 2.2;
+	op1 = Decimal("2.17");
+	op2 = Decimal("0.1");
+	expd = Decimal("2.2");
 	result = quantize(op1, op2, testContext);
 	assertEqual(expd, result);
-	op1 = 2.17;
+	op1 = Decimal("2.17");
 	op2 = Decimal("1E+0");
-	expd = 2;
+	expd = Decimal("2");
 	result = quantize(op1, op2, testContext);
 	assertEqual(expd, result);
-	op1 = 2.17;
+	op1 = Decimal("2.17");
 	op2 = Decimal("1E+1");
 	expd = Decimal("0E+1");
 	result = quantize(op1, op2, testContext);
@@ -903,7 +903,7 @@ unittest {
 unittest {
 	write("same-quantum.");
 	Decimal op1, op2;
-	op1 = 2.17;
+	op1 = Decimal("2.17");
 	op2 = 0.001;
 	assertTrue(!sameQuantum(op1, op2));
 	op2 = 0.01;
@@ -1308,30 +1308,30 @@ unittest {
 	Decimal op1, op2, actual, expect;
 	op1 = 2.1;
 	op2 = 3;
-	actual = rem(op1, op2, testContext);
+	actual = remainder(op1, op2, testContext);
 	expect = 2.1;
 	assertTrue(actual == expect);
 	op1 = 10;
-	actual = rem(op1, op2, testContext);
+	actual = remainder(op1, op2, testContext);
 	expect = 1;
 	assertTrue(actual == expect);
 	op1 = -10;
-	actual = rem(op1, op2, testContext);
+	actual = remainder(op1, op2, testContext);
 	expect = -1;
 	assertTrue(actual == expect);
 	op1 = 10.2;
 	op2 = 1;
-	actual = rem(op1, op2, testContext);
+	actual = remainder(op1, op2, testContext);
 	expect = 0.2;
 	assertTrue(actual == expect);
 	op1 = 10;
 	op2 = 0.3;
-	actual = rem(op1, op2, testContext);
+	actual = remainder(op1, op2, testContext);
 	expect = 0.1;
 	assertTrue(actual == expect);
 	op1 = 3.6;
 	op2 = 1.3;
-	actual = rem(op1, op2, testContext);
+	actual = remainder(op1, op2, testContext);
 	expect = 1.0;
 	assertTrue(actual == expect);
 	writeln("passed");

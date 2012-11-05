@@ -613,11 +613,11 @@ writeln("test.toHexString = ", test.toHexString);
 		float f = 1.2345E+16f;
 		Dec64 actual = Dec64(f);
 		Dec64 expect = Dec64("1.234499980283085E+16");
-		assert(expect == actual);
+		assert(actual == expect);
 		real r = 1.2345E+16;
 		actual = Dec64(r);
 		expect = Dec64("1.2345E+16");
-		assert(expect == actual);
+		assert(actual == expect);
 	}
 
 	/**
@@ -687,29 +687,29 @@ public:
 		num = std.math.PI;
 		expect = -15;
 		actual = num.exponent;
-		assert(expect == actual);
+		assert(actual == expect);
 		num = 9.75E9;
 		expect = 0;
 		actual = num.exponent;
-		assert(expect == actual);
+		assert(actual == expect);
 		// explicit
 		num = 8388607;
 		expect = 0;
 		actual = num.exponent;
-		assert(expect == actual);
+		assert(actual == expect);
 		// implicit
 		num = 8388610;
 		expect = 0;
 		actual = num.exponent;
-		assert(expect == actual);
+		assert(actual == expect);
 		num = 9.999998E23;
 		expect = 17;
 		actual = num.exponent;
-		assert(expect == actual);
+		assert(actual == expect);
 		num = 9.999999E23;
 		expect = 8;
 		actual = num.exponent;
-		assert(expect == actual);
+		assert(actual == expect);
 	}
 
 	/// Sets the exponent of this number.
@@ -1296,7 +1296,7 @@ public:
 		num = Dec64(1.5);
 		expect = 1.5;
 		actual = num.toReal;
-		assert(expect == actual);
+		assert(actual == expect);
 		writeln("passed");
 	}
 
@@ -1558,7 +1558,7 @@ const int opCmp(T:Dec64)(const T that) {
 		} else static if (op == "/") {
 			return div!Dec64(this, that, context);
 		} else static if (op == "%") {
-			return rem!Dec64(this, that, context);
+			return remainder!Dec64(this, that, context);
 		} else static if (op == "&") {
 			return and!Dec64(this, that, context);
 		} else static if (op == "|") {
@@ -1623,16 +1623,16 @@ const int opCmp(T:Dec64)(const T that) {
 		op1 += op2;
 		expect = 21.49;
 		actual = op1;
-		assert(expect == actual);
+		assert(actual == expect);
 		op1 *= op2;
 		expect = -44.4843;
 		actual = op1;
-		assert(expect == actual);
+		assert(actual == expect);
 		op1 = 95;
 		op1 %= 90;
 		actual = op1;
 		expect = 5;
-		assert(expect == actual);
+		assert(actual == expect);
 	}
 
 	/**
