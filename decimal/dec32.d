@@ -703,7 +703,6 @@ public:
 		return 0;
 	}
 
-	// (32)TODO: need to ensure this won't overflow into other bits.
 	/// Sets the payload of the number.
 	/// If the number is not a NaN (har!) no action is taken and zero
 	/// is returned.
@@ -724,6 +723,12 @@ public:
 		num.payload = 234;
 		assert(num.payload == 234);
 		assert(num.toString == "sNaN234");
+		num.payload = 13234;
+		assert(num.payload == 13234);
+		assert(num.toString == "sNaN13234");
+		num.payload = cast(ushort)218234;
+		assert(num.payload == 21626);
+		assert(num.toString == "sNaN21626");
 		num = 1234567;
 		assert(num.payload == 0);
 	}
@@ -1135,26 +1140,9 @@ public:
 		assert(num.toExact == "-Infinity");
 	}
 
-	// TODO: use conversion module
 	/// Creates an abstract representation of the number.
 	const string toAbstract() {
-		if (this.isFinite) {
-			return format("[%d,%s,%d]", signed ? 1 : 0, coefficient, exponent);
-		}
-		if (this.isInfinite) {
-			return format("[%d,%s]", signed ? 1 : 0, "inf");
-		}
-		if (this.isQuiet) {
-			if (payload) {
-				return format("[%d,%s,%d]", signed ? 1 : 0, "qNaN", payload);
-			}
-			return format("[%d,%s]", signed ? 1 : 0, "qNaN");
-		}
-		// this.isSignaling
-		if (payload) {
-			return format("[%d,%s,%d]", signed ? 1 : 0, "sNaN", payload);
-		}
-		return format("[%d,%s]", signed ? 1 : 0, "sNaN");
+		return decimal.conv.toAbstract!Dec32(this);
 	}
 
 	unittest {	// toAbstract

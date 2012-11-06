@@ -1322,11 +1322,10 @@ public:
 		assert(num.toString == "-1.2345E-41");
 	}
 
-	 // Creates an exact representation of this number.
+	 // Returns a verbose representation of this number.
 	const string toExact() {
 		return decimal.conv.toExact!Dec64(this);
 	}
-
 
 	unittest {
 		Dec64 num;
@@ -1344,27 +1343,9 @@ public:
 		assert(num.toExact == "-Infinity");
 	}
 
-	/**
-	 * Creates an abstract representation of this number.
-	 */
+	/// Returns an abstract representation of this number.
 	const string toAbstract() {
-		if (this.isFinite) {
-			return format("[%d,%s,%d]", signed ? 1 : 0, coefficient, exponent);
-		}
-		if (this.isInfinite) {
-			return format("[%d,%s]", signed ? 1 : 0, "inf");
-		}
-		if (this.isQuiet) {
-			if (payload) {
-				return format("[%d,%s,%d]", signed ? 1 : 0, "qNaN", payload);
-			}
-			return format("[%d,%s]", signed ? 1 : 0, "qNaN");
-		}
-		// this.isSignaling
-		if (payload) {
-			return format("[%d,%s,%d]", signed ? 1 : 0, "sNaN", payload);
-		}
-		return format("[%d,%s]", signed ? 1 : 0, "sNaN");
+		return decimal.conv.toAbstract!Dec64(this);
 	}
 
 	unittest {
@@ -1373,16 +1354,12 @@ public:
 		assert(num.toAbstract == "[1,2567,0]");
 	}
 
-	/**
-	 * Converts this number to a hexadecimal string representation.
-	 */
+	/// Returns a hexadecimal string representation.
 	const string toHexString() {
 		return format("0x%016X", bits);
 	}
 
-	/**
-	 * Converts this number to a binary string representation.
-	 */
+	/// Returns a binary string representation.
 	const string toBinaryString() {
 		return format("%0#64b", bits);
 	}
@@ -1468,7 +1445,6 @@ const int opCmp(T:Dec64)(const T that) {
 // assignment
 //--------------------------------
 
-	// (64)TODO: flags?
 	/// Assigns a Dec64 (copies that to this).
 	void opAssign(T:Dec64)(const T that) {
 		this.intBits = that.intBits;
@@ -1481,8 +1457,7 @@ const int opCmp(T:Dec64)(const T that) {
 		assert(lhs == that);
 	}
 
-	// (64)TODO: flags?
-	///    Assigns a numeric value.
+	/// Assigns a numeric value.
 	void opAssign(T)(const T that) {
 		this = Dec64(that);
 	}
@@ -1616,7 +1591,7 @@ const int opCmp(T:Dec64)(const T that) {
 		return this;
 	}
 
-	unittest {
+	unittest {	// opOpAssign
 		Dec64 op1, op2, actual, expect;
 		op1 = 23.56;
 		op2 = -2.07;
@@ -1635,28 +1610,20 @@ const int opCmp(T:Dec64)(const T that) {
 		assert(actual == expect);
 	}
 
-	/**
-	 * Returns ulong ten raised to the specified power.
-	 */
+	/// Returns ulong ten raised to the specified power.
 	static ulong pow10(const int n) {
 		return TENS[n];
 	}
 
-	unittest {
-		int n;
-		n = 3;
-		assert(pow10(n) == 1000);
+	unittest {	// pow10
+		assert(pow10(3) == 1000);
 	}
 
-	/**
-	 *	Helper function used in arithmetic multiply
-	 */
+	///	Helper function used in arithmetic multiply
 	static BigInt bigmul(const Dec64 arg1, const Dec64 arg2) {
 		BigInt big = BigInt(arg1.coefficient);
 		return big * arg2.coefficient;
 	}
-
-
 
 }	// end Dec64 struct
 
