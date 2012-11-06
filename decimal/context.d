@@ -1049,12 +1049,13 @@ public ulong shiftRight(ulong num, int n,
 	}
 	return num;
 }
+// TODO: test these fctns
 /// Shifts the number right (truncates) the specified number of decimal digits.
 /// If n == 0 the number is returned unchanged.
 /// If n < 0 the number is shifted left.
 public uint shiftRight(uint num, int n,
 		const int precision = MAX_INT_DIGITS) {
-	if (n >precision) return 0;
+	if (n > precision) return 0;
 	if (n > 0) {
 		num /= TENS[n];
 	}
@@ -1306,12 +1307,9 @@ unittest {
 	after = round(after, ctx3);;
 	assert(after.toAbstract() == "[0,125,2]");
 	Dec32 a = Dec32(0.1);
-writeln("********** a = ", a);
 	Dec32 b = Dec32.min * Dec32(8888888);
-writeln("********** b = ", b);
 	assert("[0,8888888,-101]" == b.toAbstract);
 	Dec32 c = a * b;
-writeln("********* c = ", c);
 	assert("[0,888889,-101]" == c.toAbstract);
 	Dec32 d = a * c;
 	assert("[0,88889,-101]" == d.toAbstract);
