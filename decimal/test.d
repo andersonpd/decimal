@@ -1760,18 +1760,18 @@ unittest {
 }
 
 unittest {
-	write("isIntegral...");
+	write("isIntegralValued...");
 	Decimal num;
 	num = 12345;
-	assertTrue(num.isIntegral);
+	assertTrue(num.isIntegralValued);
 	num = BigInt("123456098420234978023480");
-	assertTrue(num.isIntegral);
+	assertTrue(num.isIntegralValued);
 	num = 1.5;
-	assertTrue(!num.isIntegral);
+	assertTrue(!num.isIntegralValued);
 	num = 1.5E+1;
-	assertTrue(num.isIntegral);
+	assertTrue(num.isIntegralValued);
 	num = 0;
-	assertTrue(num.isIntegral);
+	assertTrue(num.isIntegralValued);
 	writeln("passed");
 }
 
@@ -2747,16 +2747,16 @@ unittest {
 }
 
 unittest {
-	write("isIntegral........");
+	write("isIntegralValued........");
 	Dec32 num;
 	num = 22;
-	assertTrue(num.isIntegral);
+	assertTrue(num.isIntegralValued);
 	num = 200E-2;
-	assertTrue(num.isIntegral);
+	assertTrue(num.isIntegralValued);
 	num = 201E-2;
-	assertTrue(!num.isIntegral);
+	assertTrue(!num.isIntegralValued);
 	num = Dec32.INFINITY;
-	assertTrue(!num.isIntegral);
+	assertTrue(!num.isIntegralValued);
 	writeln("passed");
 }
 

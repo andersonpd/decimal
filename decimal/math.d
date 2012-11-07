@@ -28,12 +28,8 @@ unittest {
 // CONSTANTS
 //--------------------------------
 
-/*const Decimal ONE = Decimal(1);*/
-
-/**
- * Returns the value of e to the specified precision.
- */
-Decimal e(const uint precision) {
+/// Returns the value of e to the specified precision.
+public Decimal e(const uint precision) {
 	pushContext(precision+2);
 	Decimal value = e();
 	bigContext.precision -= 2;
@@ -42,10 +38,8 @@ Decimal e(const uint precision) {
 	return value;
 }
 
-/**
- * Returns the value of e to the current precision.
- */
-Decimal e() {
+/// Returns the value of e to the specified precision.
+public Decimal e() {
 	Decimal x = 1;
 	int n = 1;
 	Decimal fact = 1;
@@ -69,7 +63,7 @@ writeln();
 	writeln("test missing");
 }
 
-Decimal sqr(const Decimal x) {
+public Decimal sqr(const Decimal x) {
 	return x * x;
 }
 
@@ -78,8 +72,8 @@ unittest {
 	writeln("test missing");
 }
 
-// Returns the value of pi to the specified precision.
-Decimal pi(uint precision) {
+/// Returns the value of pi to the specified precision.
+public Decimal pi(uint precision) {
 	pushContext(precision); // plus two guard digits?
 	Decimal value = pi();
 	popContext();
@@ -91,7 +85,7 @@ Decimal pi(uint precision) {
  * TODO: AGM version -- use less expensive?
  * TODO: pre-computed string;
  */
-Decimal pi() {
+public Decimal pi() {
 	const Decimal ONE = Decimal(1L);
 	const Decimal TWO = Decimal(2L);
 	Decimal a = ONE.dup;
@@ -113,7 +107,7 @@ Decimal pi() {
 
 string PI_STR = "3.141592653589793238462695";
 
-Decimal spi(uint precision) {
+public Decimal spi(uint precision) {
 	pushContext(precision);
 	string spi = PI_STR[0..precision+2];
 	Decimal dpi = Decimal(spi);
@@ -152,7 +146,7 @@ writefln("odd(3) = %s", odd(3));
 	writeln("test missing");
 }
 
-Decimal sqrt(const Decimal arg, uint precision) {
+public Decimal sqrt(const Decimal arg, uint precision) {
 	pushContext(precision);
 	Decimal value = sqrt(arg);
 	popContext();
@@ -165,7 +159,7 @@ Decimal sqrt(const Decimal arg, uint precision) {
 /// to speed convergence and to avoid unstable operation.
 /// TODO: better to compute (1/sqrt(arg)) * arg?
 /// TODO: the precision can be adjusted as the computation proceeds
-Decimal sqrt(const Decimal x) {
+public Decimal sqrt(const Decimal x) {
 	// check for negative numbers.
 	if (x.isNaN || x.isNegative) return Decimal.nan;
 	if (x.isInfinite) return Decimal.infinity;
@@ -237,7 +231,7 @@ public Decimal reciprocal(const Decimal x) {
 	return Decimal.nan;
 }
 
-Decimal reciprocal(const Decimal x, uint precision) {
+public Decimal reciprocal(const Decimal x, uint precision) {
 	pushContext(precision);
 	Decimal value = reciprocal(x);
 	popContext();
@@ -282,7 +276,7 @@ unittest {
 //
 //--------------------------------
 
-Decimal exp(const Decimal arg, const uint precision) {
+public Decimal exp(const Decimal arg, const uint precision) {
 	pushContext(precision);
 	Decimal value = exp(arg);
 	popContext();
@@ -291,7 +285,7 @@ Decimal exp(const Decimal arg, const uint precision) {
 
 /// Decimal version of std.math function.
 /// Required by General Decimal Arithmetic Specification
-Decimal exp(const Decimal x) {
+public Decimal exp(const Decimal x) {
 	Decimal sqrx = x*x;
 	long n = 1;
 	Decimal fact = 1;
@@ -322,7 +316,7 @@ writefln("exp(1) = %s", exp(one));
  * Decimal version of std.math function.
  * 2^x
  */
-Decimal exp2(Decimal arg) {
+public Decimal exp2(Decimal arg) {
 	Decimal result;
 	return result;
 }
@@ -336,7 +330,7 @@ unittest {
  * Decimal version of std.math function.
  * exp(x) - 1
  */
-Decimal expm1(Decimal arg) {
+public Decimal expm1(Decimal arg) {
 	Decimal result;
 	return result;
 }
@@ -351,7 +345,7 @@ unittest {
  * Required by General Decimal Arithmetic Specification
  *
  */
-Decimal log(const Decimal arg) {
+public Decimal log(const Decimal arg) {
 	Decimal y = (arg - 1)/(arg + 1);
 	Decimal y2 = y*y;
 	Decimal term = y; //ONE;
@@ -379,7 +373,7 @@ writefln("log(exp(one)) = %s", log(exp(one)));
  * log1p (== log(1 + x)).
  * Decimal version of std.math function.
  */
-Decimal log1p(Decimal arg) {
+public Decimal log1p(Decimal arg) {
 	Decimal result;
 	return result;
 }
@@ -394,7 +388,7 @@ unittest {
  * Required by General Decimal Arithmetic Specification
  *
  */
-Decimal log10(Decimal arg) {
+public Decimal log10(Decimal arg) {
 	Decimal result;
 	return result;
 }
@@ -408,7 +402,7 @@ unittest {
  * Decimal version of std.math.log2.
  * Required by General Decimal Arithmetic Specification
  */
-Decimal log2(Decimal arg) {
+public Decimal log2(Decimal arg) {
 	Decimal result;
 	return result;
 }
@@ -422,7 +416,7 @@ unittest {
  * Decimal version of std.math.pow.
  * Required by General Decimal Arithmetic Specification
  */
-Decimal pow(Decimal op1, Decimal op2) {
+public Decimal pow(Decimal op1, Decimal op2) {
 	Decimal result;
 	return result;
 }
@@ -436,7 +430,7 @@ unittest {
  * power.
  * Required by General Decimal Arithmetic Specification
  */
-Decimal power(Decimal op1, Decimal op2) {
+public Decimal power(Decimal op1, Decimal op2) {
 	Decimal result;
 	return result;
 }
@@ -453,7 +447,7 @@ unittest {
 
 
 /// Decimal version of std.math function.
-Decimal sin(const Decimal x) {
+public Decimal sin(const Decimal x) {
 	Decimal sum = 0;
 	int n = 1;
 	Decimal powx = x.dup;
@@ -471,7 +465,7 @@ Decimal sin(const Decimal x) {
 }
 
 /// Decimal version of std.math function.
-Decimal sin(const Decimal arg, uint precision) {
+public Decimal sin(const Decimal arg, uint precision) {
 	pushContext(precision);
 	Decimal value = sin(arg);
 	popContext();
@@ -488,7 +482,7 @@ unittest {
 }
 
 /// Decimal version of std.math function.
-Decimal cos(const Decimal x) {
+public Decimal cos(const Decimal x) {
 	Decimal sum = 0;
 	int n = 0;
 	Decimal powx = 1;
@@ -506,7 +500,7 @@ Decimal cos(const Decimal x) {
 }
 
 /// Decimal version of std.math function.
-Decimal cos(const Decimal x, uint precision) {
+public Decimal cos(const Decimal x, uint precision) {
 	pushContext(precision);
 	Decimal value = cos(x);
 	popContext();
@@ -564,7 +558,7 @@ writefln("cosine = %s", cosine);
  * Decimal version of std.math function.
  *
  */
-Decimal tan(Decimal x) {
+public Decimal tan(Decimal x) {
 	Decimal sine;
 	Decimal cosine;
 	sincos(x, sine, cosine);
@@ -583,7 +577,7 @@ writefln("tan(1.0) = %s", tan(Decimal("1.0")));
  * Decimal version of std.math function.
  *
  */
-Decimal asin(Decimal arg) {
+public Decimal asin(Decimal arg) {
 	Decimal result;
 	return result;
 }
@@ -597,7 +591,7 @@ unittest {
  * Decimal version of std.math function.
  *
  */
-Decimal acos(Decimal arg) {
+public Decimal acos(Decimal arg) {
 	Decimal result;
 	return result;
 }
@@ -610,7 +604,7 @@ unittest {
 
 /// Decimal version of std.math function.
 // TODO: only valid if x < 1.0; convergence very slow if x ~ 1.0;
-Decimal atan(Decimal x) {
+public Decimal atan(Decimal x) {
 	Decimal sum = 0;
 	Decimal powx = x.dup;
 	Decimal sqrx = x * x;
@@ -639,7 +633,7 @@ writefln("atan(0.9)) = %s", atan(Decimal("0.9")));
  * Decimal version of std.math function.
  *
  */
-Decimal atan2(Decimal y, Decimal x) {
+public Decimal atan2(Decimal y, Decimal x) {
 	Decimal result;
 	return result;
 }
@@ -656,7 +650,7 @@ unittest {
 //--------------------------------
 
 /// Decimal version of std.math function.
-Decimal sinh(Decimal x) {
+public Decimal sinh(Decimal x) {
 	long n = 1;
 	Decimal sum = 0;
 	Decimal powx = x.dup;
@@ -684,7 +678,7 @@ writefln("sinh(1.0) = %s", sinh(Decimal("1.0")));
  * Decimal version of std.math function.
  *
  */
-Decimal cosh(Decimal x) {
+public Decimal cosh(Decimal x) {
 	long n = 0;
 	Decimal sum = 0;
 	Decimal powx = 1;
@@ -712,7 +706,7 @@ writefln("cosh(1.0) = %s", cosh(Decimal("1.0")));
  * Decimal version of std.math function.
  *
  */
-Decimal tanh(Decimal x) {
+public Decimal tanh(Decimal x) {
 	return cosh(x)/sinh(x);
 }
 
@@ -725,7 +719,7 @@ unittest {
  * Decimal version of std.math function.
  *
  */
-Decimal asinh(Decimal arg) {
+public Decimal asinh(Decimal arg) {
 	Decimal result;
 	return result;
 }
@@ -739,7 +733,7 @@ unittest {
  * Decimal version of std.math function.
  *
  */
-Decimal acosh(Decimal arg) {
+public Decimal acosh(Decimal arg) {
 	Decimal result;
 	return result;
 }
@@ -753,7 +747,7 @@ unittest {
  * Decimal version of std.math function.
  *
  */
-Decimal atanh(Decimal arg) {
+public Decimal atanh(Decimal arg) {
 	Decimal result;
 	return result;
 }
@@ -774,7 +768,7 @@ unittest {
  *
  * (M)TODO: implement
  */
-Decimal ln(Decimal op1) {
+public Decimal ln(Decimal op1) {
 	Decimal result;
 	return result;
 }

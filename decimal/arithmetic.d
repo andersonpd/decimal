@@ -35,6 +35,7 @@ unittest {
 	writeln("===================");
 }
 
+// TODO: move this to conv? distribute among types?
 //--------------------------------
 // classification functions
 //--------------------------------
@@ -313,6 +314,17 @@ unittest {	// sgn
 	assert(sgn(arg) == 0);
 	arg = Decimal.infinity(true);
 	assert(sgn(arg) == -1);
+	BigInt big = -5;
+	assert(sgn(big) == -1);
+}
+
+/// Returns -1, 0, or 1
+/// if the argument is negative, zero, or positive, respectively.
+public int sgn(T:BigInt)(const T num) {
+	BigInt big = mutable(num);
+	if (big < 0) return -1;
+	if (big > 0) return 1;
+	return 0;
 }
 
 /// Returns a copy of the argument with same sign as the argument.
@@ -1423,21 +1435,13 @@ public T mul(T)(const T arg1, const T arg2,
 		else {
 			product.coefficient = T.bigmul(arg1, arg2);
 		}
-
-/*		Decimal product = Decimal.zero;
-		BigInt mant1 = arg1.coefficient;
-		BigInt mant2 = arg2.coefficient;
-		product.coefficient = mant1 * mant2;*/
-		// (A)TODO: can't convert to BigInt below because the template can't
-		// determine the type.
-//		product.coefficient = BigInt(arg1.coefficient) * BigInt(arg2.coefficient);
 		product.exponent = arg1.exponent + arg2.exponent;
 		product.sign = arg1.sign ^ arg2.sign;
 		product.digits = numDigits(product.coefficient);
 		result = T(product);
 	}
 
-	// only needs rounding if
+	// round if rounding flag is set
 	if (roundResult) {
 		return round(result, T.context);
 	}

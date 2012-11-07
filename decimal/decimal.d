@@ -164,7 +164,7 @@ public:
 	this(const BigInt coefficient, const int exponent = 0) {
 		BigInt big = mutable(coefficient);
 		// TODO: why not add sgn to decimal?
-		bool sign = decimal.context.sgn(big) < 0;
+		bool sign = sgn(big) < 0;
 		this(sign, big, exponent);
 	};
 
@@ -750,50 +750,63 @@ public:
 		assert(!num.isSubnormal);
 		assert(!num.isNormal);
 	}
-	/// Returns true if this number is integral;
+
+/*	/// Returns true if this number is integral;
 	/// that is, if its fractional part is zero.
 	 const bool isIntegral() {
 	 	// TODO: need to take trailing zeros into account
 		return expo >= 0;
-	 }
+	 }*/
 
-	unittest {	// isIntegral
+	/// Returns true if the number is an integer.
+	const bool isIntegralValued() {
+		if (isSpecial) return false;
+		if (exponent >= 0) return true;
+		uint expo = std.math.abs(exponent);
+		if (expo >= context.precision) return false;
+		if (coefficient % 10^^expo == 0) return true;
+		return false;
+	}
+
+	unittest {	// isIntegralValued
 		Decimal num;
 		num = 12345;
-		assert(num.isIntegral);
+		assert(num.isIntegralValued);
 		num = BigInt("123456098420234978023480");
-		assert(num.isIntegral);
+		assert(num.isIntegralValued);
 		num = 1.5;
-		assert(!num.isIntegral);
+		assert(!num.isIntegralValued);
 		num = 1.5E+1;
-		assert(num.isIntegral);
+		assert(num.isIntegralValued);
 		num = 0;
-		assert(num.isIntegral);
+		assert(num.isIntegralValued);
 	}
 
-	/// Returns true if this number represents a logical true value.
-	/// Any number other than zero or NaN returns true.
-	/// NaN is false, infinity is true.
+	/// Returns true if this number is a true value.
+	/// Non-zero finite numbers are true.
+	/// Infinity is true and NaN is false.
 	const bool isTrue() {
-		return !isNaN || isInfinite || coefficient != 0;
+		return isFinite && !isZero || isInfinite;
 	}
 
-	/// Returns true if this number represents a logical false value.
-	/// Zero and NaN return true.
-	/// Any other number (e.g., infinity) returns false;
+	/// Returns true if this number is a false value.
+	/// Finite numbers with zero coefficient are false.
+	/// Infinity is true and NaN is false.
 	const bool isFalse() {
-		return isNaN || (isFinite && coefficient == 0);
+		return isNaN || isZero;
 	}
 
-unittest {
-	write("isTrue...");
-	writeln("test missing");
-}
+	unittest {	//isTrue/isFalse
+		assert(Decimal("1").isTrue);
+		assert(!Decimal("0").isTrue);
+		assert(infinity.isTrue);
+		assert(!nan.isTrue);
 
-unittest {
-	write("isFalse...");
-	writeln("test missing");
-}
+		assert(Decimal("0").isFalse);
+		assert(!Decimal("1").isFalse);
+		assert(!infinity.isFalse);
+		assert(nan.isFalse);
+	}
 
 	const bool isZeroCoefficient() {
 		return !isSpecial && coefficient == 0;

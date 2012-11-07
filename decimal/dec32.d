@@ -741,6 +741,10 @@ public:
 		return signed ? NEG_ZERO : ZERO;
 	}
 
+	static Dec32 one(const bool signed = false) {
+		return signed ? NEG_ONE : ONE;
+	}
+
 	static Dec32 max(const bool signed = false) {
 		return signed ? NEG_MAX : MAX;
 	}
@@ -871,56 +875,31 @@ public:
 		return testSpcl == 0xF;
 	}
 
+	/// Returns true if all bits of the coefficient are explicitly represented.
 	const bool isExplicit() {
 		return testIm != 0x3;
 	}
 
+	/// Returns true if the first bits of the coefficient are implicit.
 	const bool isImplicit() {
 		return testIm == 0x3 && testSpcl != 0xF;
 	}
 
-	/// Returns true if the number is negative. (Includes -0)
+	/// Returns true if the number is negative. Negative numbers include
+	/// -0 and -infinity. A NaN can be negative but the sign is always ignored.
 	const bool isSigned() {
 		return signed;
 	}
 
+	/// Returns true if the number is negative. Negative numbers include
+	/// -0 and -infinity. A NaN can be negative but the sign is always ignored.
 	const bool isNegative() {
 		return signed;
 	}
 
+	/// Returns true if the number is not negative. -0 is negative.
 	const bool isPositive() {
 		return !isNegative;
-	}
-
-	// NOTE: NaN is false, Infinity is true
-	const bool isTrue() {
-		return !isNaN || isInfinite || coefficient != 0;
-	}
-
-	// NOTE: NaN is false, Infinity is true
-	const bool isFalse() {
-		return isNaN || (isFinite && coefficient == 0);
-	}
-
-	const bool isZeroCoefficient() {
-		return !isSpecial && coefficient == 0;
-	}
-
-	/// Returns true if the number is subnormal.
-	const bool isSubnormal(const DecimalContext context = this.context) {
-		if (isSpecial) return false;
-		return adjustedExponent < context.minExpo;
-	}
-
-	/// Returns true if the number is normal.
-	const bool isNormal(const DecimalContext context = this.context) {
-		if (isSpecial) return false;
-		return adjustedExponent >= context.minExpo;
-	}
-
-	/// Returns the value of the adjusted exponent.
-	const int adjustedExponent() {
-		return exponent + digits - 1;
 	}
 
 	unittest {	// classification
@@ -967,8 +946,74 @@ public:
 		assert(num.isFinite);
 	}
 
+	/// Returns true if this number is a true value.
+	/// Non-zero finite numbers are true.
+	/// Infinity is true and NaN is false.
+	const bool isTrue() {
+		return isFinite && !isZero || isInfinite;
+	}
+
+	/// Returns true if this number is a false value.
+	/// Finite numbers with zero coefficient are false.
+	/// Infinity is true and NaN is false.
+	const bool isFalse() {
+		return isNaN || isZero;
+	}
+
+	unittest {	//isTrue/isFalse
+		assert(Dec32("1").isTrue);
+		assert(!Dec32("0").isTrue);
+		assert(infinity.isTrue);
+		assert(!nan.isTrue);
+
+		assert(Dec32("0").isFalse);
+		assert(!Dec32("1").isFalse);
+		assert(!infinity.isFalse);
+		assert(nan.isFalse);
+	}
+
+	/// Returns true if the coefficient of this number is zero.
+	const bool isZeroCoefficient() {
+		return !isSpecial && coefficient == 0;
+	}
+
+	unittest {	// isZeroCoefficient
+		Dec32 num;
+		num = Dec32.zero;
+		assert(num.isZeroCoefficient);
+		num = Dec32.zero(true);
+		assert(num.isZeroCoefficient);
+		num = Dec32("0E+4");
+		assert(num.isZeroCoefficient);
+		num = 12345;
+		assert(!num.isZeroCoefficient);
+		num = 1.5;
+		assert(!num.isZeroCoefficient);
+		num = Dec32.nan;
+		assert(!num.isZeroCoefficient);
+		num = Dec32.infinity;
+		assert(!num.isZeroCoefficient);
+	}
+
+	/// Returns true if the number is subnormal.
+	const bool isSubnormal(const DecimalContext context = this.context) {
+		if (isSpecial) return false;
+		return adjustedExponent < context.minExpo;
+	}
+
+	/// Returns true if the number is normal.
+	const bool isNormal(const DecimalContext context = this.context) {
+		if (isSpecial) return false;
+		return adjustedExponent >= context.minExpo;
+	}
+
+	/// Returns the value of the adjusted exponent.
+	const int adjustedExponent() {
+		return exponent + digits - 1;
+	}
+
 	/// Returns true if the number is an integer.
-	const bool isIntegral() {
+	const bool isIntegralValued() {
 		if (isSpecial) return false;
 		if (exponent >= 0) return true;
 		uint expo = std.math.abs(exponent);
@@ -977,23 +1022,23 @@ public:
 		return false;
 	}
 
-	unittest {	// isIntegral
+	unittest {	// isIntegralValued
 		Dec32 num;
 		num = 22;
-		assert(num.isIntegral);
+		assert(num.isIntegralValued);
 		num = 200E-2;
-		assert(num.isIntegral);
+		assert(num.isIntegralValued);
 		num = 201E-2;
-		assert(!num.isIntegral);
+		assert(!num.isIntegralValued);
 		num = Dec32.INFINITY;
-		assert(!num.isIntegral);
+		assert(!num.isIntegralValued);
 	}
 
 //--------------------------------
 //	conversions
 //--------------------------------
 
-	/// Converts a Dec32 to a Decimal
+	/// Converts a Dec32 number to a big Decimal number
 	const Decimal toBigDecimal() {
 		if (isFinite) {
 			return Decimal(sign, BigInt(coefficient), exponent);
@@ -1031,8 +1076,8 @@ public:
 		}
 		if (this > Dec32(int.max) || (isInfinite && !isSigned)) return int.max;
 		if (this < Dec32(int.min) || (isInfinite &&  isSigned)) return int.min;
-		quantize!Dec32(this, ONE, context);
-		n = coefficient;
+		Dec32 temp = roundToIntegralExact!Dec32(this, context);
+		n = temp.coefficient;
 		return signed ? -n : n;
 	}
 
@@ -1040,11 +1085,13 @@ public:
 		Dec32 num;
 		num = 12345;
 		assert(num.toInt == 12345);
+		num = 123.45;
+		assert(num.toInt == 123);
 		num = 1.0E6;
 		assert(num.toInt == 1000000);
 		num = -1.0E60;
 		assert(num.toInt == int.min);
-		num = Dec32.NEG_INF;
+		num = Dec32.infinity(true);
 		assert(num.toInt == int.min);
 	}
 
@@ -1056,8 +1103,8 @@ public:
 		}
 		if (this > long.max || (isInfinite && !isSigned)) return long.max;
 		if (this < long.min || (isInfinite &&  isSigned)) return long.min;
-		quantize!Dec32(this, ONE, context);
-		n = coefficient;
+		Dec32 temp = roundToIntegralExact!Dec32(this, context);
+		n = temp.coefficient;
 		return signed ? -n : n;
 	}
 
@@ -1223,13 +1270,11 @@ public:
 // assignment
 //--------------------------------
 
-	// (32)TODO: flags?
 	/// Assigns a Dec32 (copies that to this).
 	void opAssign(T:Dec32)(const T that) {
 		this.intBits = that.intBits;
 	}
 
-	// (32)TODO: flags?
 	///    Assigns a numeric value.
 	void opAssign(T)(const T that) {
 		this = Dec32(that);
@@ -1255,8 +1300,9 @@ public:
 			return plus!Dec32(this, context);
 		} else static if (op == "-") {
 			return minus!Dec32(this, context);
+		// TODO: convert to addLong
 		} else static if (op == "++") {
-			return add!Dec32(this, ONE, context);
+			return add!Dec32(this, one, context);
 		} else static if (op == "--") {
 			return sub!Dec32(this, ONE, context);
 		}
@@ -1310,6 +1356,27 @@ public:
 			return sub!Dec32(this, that, context);
 		} else static if (op == "*") {
 			return mul!Dec32(this, that, context);
+		} else static if (op == "/") {
+			return div!Dec32(this, that, context);
+		} else static if (op == "%") {
+			return remainder!Dec32(this, that, context);
+		} else static if (op == "&") {
+			return and!Dec32(this, that, context);
+		} else static if (op == "|") {
+			return or!Dec32(this, that, context);
+		} else static if (op == "^") {
+			return xor!Dec32(this, that, context);
+		}
+	}
+
+	const T opBinary(string op, T:Dec32)(const long that)
+	{
+		static if (op == "+") {
+			return addLong!Dec32(this, that, context);
+		} else static if (op == "-") {
+			return subLong!Dec32(this, that, context);
+		} else static if (op == "*") {
+			return mulLong!Dec32(this, that, context);
 		} else static if (op == "/") {
 			return div!Dec32(this, that, context);
 		} else static if (op == "%") {
@@ -1405,19 +1472,19 @@ public:
 	}
 
 	/// Returns uint ten raised to the specified power.
+	/// (Used in rounding.)
 	static uint pow10(const int n) {
 		// TODO: limit n to max exponent
 		return cast(uint)TENS[n];
 	}
 
 	unittest { // pow10
-		int n;
-		n = 3;
-		assert(Dec32.pow10(n) == 1000);
+		assert(Dec32.pow10(3) == 1000);
 	}
 
-	///	Helper function used in arithmetic multiply
-	static BigInt bigmul(const Dec32 arg1, const Dec32 arg2) {
+	///	Returns the BigInt product of the coefficients.
+	/// (Used in arithemtic multiply.)
+	public static BigInt bigmul(const Dec32 arg1, const Dec32 arg2) {
 		BigInt big = BigInt(arg1.coefficient);
 		return big * arg2.coefficient;
 	}
@@ -1586,7 +1653,7 @@ public Dec32 power(Dec32 x, int n) {
 }
 
 public Dec32 power(Dec32 x, Dec32 y) {
-	if (y.isIntegral) {
+	if (y.isIntegralValued) {
 		return power(x, y.toInt);
 	}
 	// if either arg is NaN, result is NaN

@@ -1604,10 +1604,8 @@ ref Dec128 opOpAssign(string op, T:Dec128) (T rhs) {
 		assert(pow10(n) == 1000);
 	}
 
-	/**
-	 *	Helper function used in arithmetic multiply
-	 */
-	static BigInt bigmul(const Dec128 arg1, const Dec128 arg2) {
+	///	Returns the BigInt product of the coefficients
+	public static BigInt bigmul(const Dec128 arg1, const Dec128 arg2) {
 		BigInt big = arg1.coefficient.toBigInt;
 		return big * arg2.coefficient.toBigInt;
 	}

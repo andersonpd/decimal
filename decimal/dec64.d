@@ -1127,14 +1127,30 @@ public:
 		return !isNegative;
 	}
 
-	// NOTE: NaN is false, Infinity is true
+	/// Returns true if this number is a true value.
+	/// Non-zero finite numbers are true.
+	/// Infinity is true and NaN is false.
 	const bool isTrue() {
-		return !isNaN || isInfinite || coefficient != 0;
+		return isFinite && !isZero || isInfinite;
 	}
 
-	// NOTE: NaN is false, Infinity is true
+	/// Returns true if this number is a false value.
+	/// Finite numbers with zero coefficient are false.
+	/// Infinity is true and NaN is false.
 	const bool isFalse() {
-		return isNaN || (isFinite && coefficient == 0);
+		return isNaN || isZero;
+	}
+
+	unittest {	//isTrue/isFalse
+		assert(Dec64("1").isTrue);
+		assert(!Dec64("0").isTrue);
+		assert(infinity.isTrue);
+		assert(!nan.isTrue);
+
+		assert(Dec64("0").isFalse);
+		assert(!Dec64("1").isFalse);
+		assert(!infinity.isFalse);
+		assert(nan.isFalse);
 	}
 
 	const bool isZeroCoefficient() {
@@ -1619,8 +1635,8 @@ const int opCmp(T:Dec64)(const T that) {
 		assert(pow10(3) == 1000);
 	}
 
-	///	Helper function used in arithmetic multiply
-	static BigInt bigmul(const Dec64 arg1, const Dec64 arg2) {
+	///	Returns the BigInt product of the coefficients
+	public static BigInt bigmul(const Dec64 arg1, const Dec64 arg2) {
 		BigInt big = BigInt(arg1.coefficient);
 		return big * arg2.coefficient;
 	}

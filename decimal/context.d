@@ -1234,22 +1234,12 @@ public BigInt mutable(const BigInt num) {
 /// Returns the absolute value of a BigInt
 public BigInt abs(const BigInt num) {
 	BigInt big = mutable(num);
-	return big < BIG_ZERO ? -big : big;
+	return big < 0 ? -big : big;
 }
 
 /// Returns the absolute value of a BigInt
 public uint128 abs(const uint128 num) {
-//	BigInt big = mutable(num);
 	return num < 0 ? -num : num;
-}
-
-/// Returns -1, 0, or 1
-/// if the argument is negative, zero, or positive, respectively.
-public int sgn(const BigInt num) {
-	BigInt big = mutable(num);
-	if (big < BIG_ZERO) return -1;
-	if (big > BIG_ZERO) return 1;
-	return 0;
 }
 
 //--------------------------------
