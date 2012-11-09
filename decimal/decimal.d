@@ -289,7 +289,7 @@ public:
 		return Decimal(this);
 	}
 
-	unittest {
+	unittest {	// dup
 		Decimal num = Decimal(std.math.PI);
 		Decimal copy = num.dup;
 		assert(num == copy);
@@ -608,7 +608,7 @@ public:
 		return isFinite && coefficient == 0;
 	}
 
-	unittest {
+	unittest {	// isZero
 		Decimal num;
 		num = Decimal("0");
 		assert(num.isZero);
@@ -633,7 +633,7 @@ public:
 		return this.sval == SV.QNAN;
 	}
 
-	unittest {
+	unittest {	// isNaN, isQuiet, isSignaling
 		Decimal num;
 		num = Decimal("2.50");
 		assert(!num.isNaN);
@@ -661,7 +661,7 @@ public:
 			&& sval != SV.SNAN;
 	}
 
-	unittest {
+	unittest {	// isFinite, isInfinite
 		Decimal num;
 		num = Decimal("2.50");
 		assert(!num.isInfinite);
@@ -685,7 +685,7 @@ public:
 			|| sval == SV.SNAN;
 	}
 
-	unittest {
+	unittest {	// isSpecial
 		Decimal num;
 		num = Decimal.infinity(true);
 		assert(num.isSpecial);
@@ -700,12 +700,9 @@ public:
 		return this.signed;
 	}
 
-	/// Returns true if this number is negative. (Includes -0)
-	const bool isNegative() {
-		return this.signed;
-	}
+	alias isSigned isNegative;
 
-	unittest {
+	unittest {	// isSigned, isNegative
 		Decimal num;
 		num = Decimal("2.50");
 		assert(!num.isSigned);
@@ -732,7 +729,7 @@ public:
 		return false;
 	}
 
-	unittest {
+	unittest { // isNormal, isSubnormal
 		Decimal num;
 		num = Decimal("2.50");
 		assert(num.isNormal);
@@ -971,13 +968,13 @@ public:
 		return opBinary!(op,Decimal)(Decimal(arg));
 	}*/
 
-	unittest {
+	unittest {	// ???
 		Decimal num = Decimal(591.3);
 		Decimal result = num * 5;
 		assert(result == Decimal(2956.5));
 	}
 
-	unittest {
+	unittest {	// isPromotable
 		write("isPromotable...");
 		writeln("test missing");
 	}
@@ -1055,7 +1052,7 @@ public:
 		return nextToward!Decimal(this, arg, context);
 	}
 
-	unittest {
+	unittest {	// nextUp, nextDown, nextAfter
 		Decimal big, expect;
 		big = 123.45;
 		assert(big.nextUp == Decimal(123.450001));
@@ -1133,7 +1130,7 @@ private struct ContextStack {
 // unittests
 //-----------------------------
 
-unittest {
+unittest {	// toString?
 	Decimal num;
 	string str;
 	num = Decimal(200000, 71);
@@ -1141,7 +1138,7 @@ unittest {
 	assert(num.toString == str);
 }
 
-unittest {
+unittest {	// exponent, coefficient, sign, payload
 	Decimal big = -123.45E12;
 	assert(big.exponent = 10);
 	assert(BigInt(12345) == big.coefficient);

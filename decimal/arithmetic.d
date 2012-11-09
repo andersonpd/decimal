@@ -340,6 +340,7 @@ public T plus(T)(const T arg,
 		return result;
 	}
 	result = arg;
+//writefln("arg  = %s", arg);
 	return round(result, context);
 }
 

@@ -23,7 +23,7 @@ import decimal.arithmetic;
 import decimal.context;
 import decimal.decimal;
 
-unittest {
+unittest {	// header
 	writeln("===================");
 	writeln("dec32.........begin");
 	writeln("===================");
@@ -101,8 +101,8 @@ private:
 	// The maximum coefficient allowed in an implicit number.
 	immutable uint C_MAX_IMPLICIT = 9999999;  // = 0x98967F;
 	// masks for coefficients
-	immutable uint C_IMPLICIT_MASK = 0x1FFFFF;
-	immutable uint C_EXPLICIT_MASK = 0x7FFFFF;
+//	immutable uint C_IMPLICIT_MASK = 0x1FFFFF;
+//	immutable uint C_EXPLICIT_MASK = 0x7FFFFF;
 
 	// The maximum unbiased exponent. The largest binary number that can fit
 	// in the width of the exponent field without setting
@@ -193,7 +193,7 @@ private:
 // This enum is used to force the constructor to copy the bit pattern,
 // rather than treating it as a integer.
 private:
-	static enum BITS : uint
+	static enum Bits : uint
 	{
 		POS_SIG = 0x7E000000,
 		NEG_SIG = 0xFE000000,
@@ -226,58 +226,58 @@ private:
 		PHI 	= 0x2F98B072,
 		GAMMA	= 0x2F58137D,
 		E		= 0x2FA97A4A,
-		LOG2_E	= 0x2F960387,
-		LOG10_E = 0x2F4244A1,
 		LN2 	= 0x2F69C410,
-		LOG10_2 = 0x30007597,
 		LN10	= 0x2FA32279,
+		LOG2_E	= 0x2F960387,
 		LOG2_10 = 0x2FB2B048,
+		LOG10_2 = 0x2F2DEEFC,
+		LOG10_E = 0x2F4244A1,
 		SQRT2	= 0x2F959446,
 		SQRT1_2 = 0x2F6BE55C
 	}
 
 public:
 	// special values
-	immutable Dec32 NAN 	 = Dec32(BITS.POS_NAN);
-	immutable Dec32 NEG_NAN  = Dec32(BITS.NEG_NAN);
-	immutable Dec32 SNAN	 = Dec32(BITS.POS_SIG);
-	immutable Dec32 NEG_SNAN = Dec32(BITS.NEG_SIG);
-	immutable Dec32 INFINITY = Dec32(BITS.POS_INF);
-	immutable Dec32 NEG_INF  = Dec32(BITS.NEG_INF);
-	immutable Dec32 ZERO	 = Dec32(BITS.POS_ZRO);
-	immutable Dec32 NEG_ZERO = Dec32(BITS.NEG_ZRO);
-	immutable Dec32 MAX 	 = Dec32(BITS.POS_MAX);
-	immutable Dec32 NEG_MAX  = Dec32(BITS.NEG_MAX);
+	immutable Dec32 NAN 	 = Dec32(Bits.POS_NAN);
+	immutable Dec32 NEG_NAN  = Dec32(Bits.NEG_NAN);
+	immutable Dec32 SNAN	 = Dec32(Bits.POS_SIG);
+	immutable Dec32 NEG_SNAN = Dec32(Bits.NEG_SIG);
+	immutable Dec32 INFINITY = Dec32(Bits.POS_INF);
+	immutable Dec32 NEG_INF  = Dec32(Bits.NEG_INF);
+	immutable Dec32 ZERO	 = Dec32(Bits.POS_ZRO);
+	immutable Dec32 NEG_ZERO = Dec32(Bits.NEG_ZRO);
+	immutable Dec32 MAX 	 = Dec32(Bits.POS_MAX);
+	immutable Dec32 NEG_MAX  = Dec32(Bits.NEG_MAX);
 
 	// small integers
-	immutable Dec32 ONE 	 = Dec32(BITS.POS_ONE);
-	immutable Dec32 NEG_ONE  = Dec32(BITS.NEG_ONE);
-	immutable Dec32 TWO 	 = Dec32(BITS.POS_TWO);
-	immutable Dec32 NEG_TWO  = Dec32(BITS.NEG_TWO);
-	immutable Dec32 FIVE	 = Dec32(BITS.POS_FIV);
-	immutable Dec32 NEG_FIVE = Dec32(BITS.NEG_FIV);
-	immutable Dec32 TEN 	 = Dec32(BITS.POS_TEN);
-	immutable Dec32 NEG_TEN  = Dec32(BITS.NEG_TEN);
+	immutable Dec32 ONE 	 = Dec32(Bits.POS_ONE);
+	immutable Dec32 NEG_ONE  = Dec32(Bits.NEG_ONE);
+	immutable Dec32 TWO 	 = Dec32(Bits.POS_TWO);
+	immutable Dec32 NEG_TWO  = Dec32(Bits.NEG_TWO);
+	immutable Dec32 FIVE	 = Dec32(Bits.POS_FIV);
+	immutable Dec32 NEG_FIVE = Dec32(Bits.NEG_FIV);
+	immutable Dec32 TEN 	 = Dec32(Bits.POS_TEN);
+	immutable Dec32 NEG_TEN  = Dec32(Bits.NEG_TEN);
 
 	// mathamatical constants
-	immutable Dec32 TAU 	 = Dec32(BITS.TAU);
-	immutable Dec32 PI		 = Dec32(BITS.PI);
-	immutable Dec32 PI_2	 = Dec32(BITS.PI_2);
-	immutable Dec32 PI_SQR	 = Dec32(BITS.PI_SQR);
-	immutable Dec32 SQRT_PI  = Dec32(BITS.SQRT_PI);
-	immutable Dec32 SQRT_2PI = Dec32(BITS.SQRT_2PI);
+	immutable Dec32 TAU 	 = Dec32(Bits.TAU);
+	immutable Dec32 PI		 = Dec32(Bits.PI);
+	immutable Dec32 PI_2	 = Dec32(Bits.PI_2);
+	immutable Dec32 PI_SQR	 = Dec32(Bits.PI_SQR);
+	immutable Dec32 SQRT_PI  = Dec32(Bits.SQRT_PI);
+	immutable Dec32 SQRT_2PI = Dec32(Bits.SQRT_2PI);
 
-	immutable Dec32 E		 = Dec32(BITS.E);
-	immutable Dec32 LOG2_E	 = Dec32(BITS.LOG2_E);
-	immutable Dec32 LOG10_E  = Dec32(BITS.LOG10_E);
-	immutable Dec32 LN2 	 = Dec32(BITS.LN2);
-	immutable Dec32 LOG10_2  = Dec32(BITS.LOG10_2);
-	immutable Dec32 LN10	 = Dec32(BITS.LN10);
-	immutable Dec32 LOG2_10  = Dec32(BITS.LOG2_10);
-	immutable Dec32 SQRT2	 = Dec32(BITS.SQRT2);
-	immutable Dec32 SQRT1_2	 = Dec32(BITS.SQRT1_2);
-	immutable Dec32 PHI 	 = Dec32(BITS.PHI);
-	immutable Dec32 GAMMA	 = Dec32(BITS.GAMMA);
+	immutable Dec32 E		 = Dec32(Bits.E);
+	immutable Dec32 LOG2_E	 = Dec32(Bits.LOG2_E);
+	immutable Dec32 LOG10_E  = Dec32(Bits.LOG10_E);
+	immutable Dec32 LN2 	 = Dec32(Bits.LN2);
+	immutable Dec32 LOG10_2  = Dec32(Bits.LOG10_2);
+	immutable Dec32 LN10	 = Dec32(Bits.LN10);
+	immutable Dec32 LOG2_10  = Dec32(Bits.LOG2_10);
+	immutable Dec32 SQRT2	 = Dec32(Bits.SQRT2);
+	immutable Dec32 SQRT1_2	 = Dec32(Bits.SQRT1_2);
+	immutable Dec32 PHI 	 = Dec32(Bits.PHI);
+	immutable Dec32 GAMMA	 = Dec32(Bits.GAMMA);
 
 	// boolean constants
 	immutable Dec32 TRUE	 = ONE;
@@ -288,7 +288,7 @@ public:
 //--------------------------------
 
 	/// Creates a Dec32 from a special value.
-	private this(const BITS bits) {
+	private this(const Bits bits) {
 		intBits = bits;
 	}
 
@@ -460,7 +460,7 @@ public:
 	public this(const real r) {
 		// check for special values
 		if (!std.math.isFinite(r)) {
-			this = std.math.isInfinity(r) ? INFINITY : NAN;
+			this = std.math.isInfinity(r) ? INFINITY : nan;
 			this.sign = cast(bool)std.math.signbit(r);
 			return;
 		}
@@ -662,7 +662,7 @@ public:
 				expoIm = expoEx;
 				testIm = 0x3;
 			}
-			mantIm = cast(uint)copy & C_IMPLICIT_MASK;
+			mantIm = cast(uint)copy & 0x1FFFFF;
 			return mantIm | (0b100 << implicitBits);
 		}
 	}
@@ -772,7 +772,7 @@ public:
 	}
 
 	// floating point properties
-	static Dec32 init() 	  { return NAN; }
+	static Dec32 init() 	  { return nan; }
 	static Dec32 epsilon()	  { return Dec32(1, -7); }
 	static Dec32 min()		  { return Dec32(1, context.tinyExpo); }
 
@@ -1122,7 +1122,7 @@ public:
 		assert(num.toLong == long.min);
 	}
 
-	public real toReal() {
+	const real toReal() {
 		if (isNaN) {
 			return real.nan;
 		}
@@ -1136,15 +1136,13 @@ public:
 		return to!real(str);
 	}
 
-	unittest {
-		write("toReal...");
+	unittest {	// toReal
 		Dec32 num;
 		real expect, actual;
 		num = Dec32(1.5);
 		expect = 1.5;
 		actual = num.toReal;
 		assert(actual == expect);
-		writeln("passed");
 	}
 
 	// Converts the number to an exact scientific-style string representation.
@@ -1495,13 +1493,13 @@ public:
 public Dec32 sqrt(Dec32 arg) {
 	if (arg.isNaN) {
 		// (32)TODO: set a flag
-		return Dec32.NAN;
+		return Dec32.nan;
 	}
 	if (arg.isZero) {
 		return Dec32.zero(arg.sign);
 	}
 	if (arg.isNegative) {
-		return Dec32.NAN;
+		return Dec32.nan;
 	}
 	if (arg.isInfinite) {
 		return Dec32.INFINITY;
@@ -1509,89 +1507,114 @@ public Dec32 sqrt(Dec32 arg) {
 	return Dec32(std.math.sqrt(arg.toReal));
 }
 
-unittest {
-	write("sqrt...");
+unittest {	// sqrt
 	Dec32 num = 1.0;
-	assert(num ==  sqrt(num));
+	assert(num == sqrt(num));
 	num = 2.0;
-	assert(Dec32(std.math.sqrt(2.0)) ==  sqrt(num));
-	assert(Dec32.SQRT_PI ==  sqrt(Dec32.PI));
+	assert(Dec32(std.math.sqrt(2.0)) == sqrt(num));
+	assert(Dec32.SQRT_PI == sqrt(Dec32.PI));
 	num = 2174;
 	assert(Dec32(std.math.sqrt(2174.0)) ==  sqrt(num));
-	writeln("test missing");
 }
 
-public Dec32 exp(Dec32 arg) {
+public Dec32 exp(const Dec32 arg) {
 	if (arg.isNaN) {
-		return Dec32.NAN;
+		return Dec32.nan;
 	}
 	if (arg.isInfinite) {
 		if (arg.isNegative) {
-			return Dec32.ZERO;
+			return Dec32.zero;
 		}
 		else {
-			return Dec32.INFINITY;
+			return Dec32.infinity;
 		}
 	}
 	if (arg.isZero) {
-		return Dec32.ONE;
+		return Dec32.one;
 	}
-//	if (arg == Dec32.ONE) {
-//		return arg;
-//	}
+	if (arg == Dec32.one) {
+		return Dec32.E;
+	}
 	return Dec32(std.math.exp(arg.toReal));
 }
 
-unittest {
-	write("exp...");
-	writeln("test missing");
+unittest {	// exp
+	Dec32 num;
+	assert(exp(num).isIdentical(Dec32.nan));	// NaN != NaN
+	num = Dec32.infinity;
+	assert(exp(num) == Dec32.infinity);
+	num = Dec32.infinity(true);
+	assert(exp(num) == Dec32.zero);
+	num = Dec32.zero(true);
+	assert(exp(num) == Dec32.one);
+	num = Dec32.one;
+	assert(exp(num) == Dec32.E);
+	num = 2;
+	assert(exp(num) == Dec32("7.389056"));
 }
 
 public Dec32 ln(Dec32 arg) {
 	if (arg.isNegative || arg.isNaN) {
 		// set invalid op flag(?)
-		return Dec32.NAN;
+		return Dec32.nan;
 	}
 	if (arg.isInfinite) {
-		return Dec32.INFINITY;
+		return Dec32.infinity;
 	}
 	if (arg.isZero) {
-		return Dec32.NEG_INF;
+		return Dec32.infinity(true);
 	}
-	if (arg == Dec32.ONE) {
-		return Dec32.ZERO;
+	if (arg == Dec32.one) {
+		return Dec32.zero;
 	}
 	// (32)TODO: check for a NaN? or special value?
 	return Dec32(std.math.log(arg.toReal));
 }
 
 
-unittest {
-	write("ln...");
-	writeln("test missing");
+unittest {	// ln
+	Dec32 num;
+	assert(ln(num).isNaN);
+	num = -1;
+	assert(ln(num).isNaN);
+	num = 1;
+	assert(ln(num).isZero);
+	num = 2;
+	assert(ln(num).isIdentical(Dec32.LN2));
+	num = 10;
+	assert(ln(num) == Dec32.LN10);
+	assert(ln(num).isIdentical(Dec32.LN10));
 }
 
 public Dec32 log10(Dec32 arg) {
 	if (arg.isNegative || arg.isNaN) {
 		// set invalid op flag(?)
-		return Dec32.NAN;
+		return Dec32.nan;
 	}
 	if (arg.isInfinite) {
-		return Dec32.INFINITY;
+		return Dec32.infinity;
 	}
 	if (arg.isZero) {
-		return Dec32.NEG_INF;
+		return Dec32.infinity(true);
 	}
-	if (arg == Dec32.ONE) {
-		return Dec32.ZERO;
+	if (arg == Dec32.one) {
+		return Dec32.zero;
 	}
 	// (32)TODO: check for a NaN? or special value?
 	return Dec32(std.math.log10(arg.toReal));
 }
 
-unittest {
-	write("log10...");
-	writeln("test missing");
+unittest {	// log10
+	Dec32 num;
+	assert(log10(num).isNaN);
+	num = -1;
+	assert(log10(num).isNaN);
+	num = 1;
+	assert(log10(num).isZero);
+	num = 2;
+	assert(log10(num).isIdentical(Dec32.LOG10_2));
+	num = std.math.E;
+	assert(log10(num).isIdentical(Dec32.LOG10_E));
 }
 
 /// a decimal32 raised to an integer power
@@ -1599,12 +1622,12 @@ public Dec32 power(Dec32 x, int n) {
 	// if x is NaN, result is NaN
 	if (x.isNaN) {
 		// set invalid op flag(?)
-		return Dec32.NAN;
+		return Dec32.nan;
 	}
 	// if x and n are zero, result is NaN
 	if (x.isZero && n == 0) {
 		// set invalid op flag(?)
-		return Dec32.NAN;
+		return Dec32.nan;
 	}
 	// if n is zero, result is one
 	if (n == 0) {
@@ -1659,12 +1682,12 @@ public Dec32 power(Dec32 x, Dec32 y) {
 	// if either arg is NaN, result is NaN
 	if (x.isNaN || y.isNaN) {
 		// set invalid op flag(?)
-		return Dec32.NAN;
+		return Dec32.nan;
 	}
 	// if both args are zero, result is NaN
 	if (x.isZero && y.isZero) {
 		// set invalid op flag(?)
-		return Dec32.NAN;
+		return Dec32.nan;
 	}
 	// if y is zero, result is one
 	if (y.isZero) {
@@ -1681,19 +1704,19 @@ public Dec32 power(Dec32 x, Dec32 y) {
 	// if x is negative, result is a NaN
 	if (x.isNegative) {
 		// set invalid op flag(?)
-		return Dec32.NAN;
+		return Dec32.nan;
 	}
 	// at this point all the special cases have been checked
 	// result will be inexact
 	return exp(y * ln(x));
 }
 
-unittest {
+unittest {	// power
 	write("power...");
 	writeln("test missing");
 }
 
-unittest {
+unittest { // footer
 	writeln("===================");
 	writeln("dec32...........end");
 	writeln("===================");

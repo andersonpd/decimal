@@ -234,7 +234,7 @@ public struct UInt(int Z) {
 		digits[N-2 - index] = low(value);
 	}
 
-unittest {
+unittest {	// get/set long values
 	write("get/set long values...");
 	writeln("test missing");
 }
@@ -276,7 +276,7 @@ unittest {
 		}
 	}
 
-unittest {
+unittest {	// to/from BigInt
 	write("to/from BigInt...");
 	writeln("test missing");
 }
@@ -569,16 +569,12 @@ writefln("opBinary = %s", "??");
 		return !value.isZero;
 	}
 
-unittest {
-	write("bit manipulation...");
-	uint128 test = uint128(0);
-writefln("test = %s", test);
-	assert(!test.testBit(5));
-	test.setBit(5);
-writefln("test = %s", test);
-	assert(test.testBit(5));
-	writeln("passed");
-}
+	unittest {	// bit manipulation
+		uint128 test = uint128(0);
+		assert(!test.testBit(5));
+		test.setBit(5);
+		assert(test.testBit(5));
+	}
 
 	public const setBits(int n, int count, uint value) {
 	};
@@ -621,7 +617,7 @@ private ulong pack(uint hi, uint lo) {
 		return divmodDigits(x.digits, y.digits, mod.digits);
 	}
 
-unittest {
+unittest {	// divmod
 	write("divmod...");
 	writeln("test missing");
 }

@@ -33,9 +33,6 @@ unittest {
 //--------------------------
 
 /// The context used in examples of operations in the specification.
-//immutable static DecimalContext TEST_CONTEXT = DecimalContext(9, 99, Rounding.HALF_EVEN);
-
-/// The context used in examples of operations in the specification.
 static DecimalContext testContext = DecimalContext(9, 99, Rounding.HALF_EVEN);
 
 /// The basic default context. In addition the inexact, rounded and subnormal
@@ -138,106 +135,7 @@ public struct DecimalContext {
 					~ "E" ~ std.string.format("%d", maxExpo);
 		return cstr;
 	}
-};
-// end struct DecimalContext
-
-
-//--------------------------
-// Context flags and trap-enablers
-//--------------------------
-
-/// The base class for all decimal arithmetic exceptions.
-class DecimalException: object.Exception {
-	this(string msg, string file = __FILE__,
-		uint line = cast(uint)__LINE__, Throwable next = null)
-	{
-		super(msg, file, line, next);
-	}
-};
-
-/// Raised when the exponent of a result has been altered or constrained
-/// in order to fit the constraints of a specific concrete representation.
-/// General Decimal Arithmetic Specification, p. 15.
-class ClampedException: DecimalException {
-	this(string msg, string file = __FILE__,
-	     uint line = cast(uint)__LINE__, Throwable next = null)
-	{
-		super(msg, file, line, next);
-	}
-};
-
-/// Raised when a non-zero dividend is divided by zero.
-/// General Decimal Arithmetic Specification, p. 15.
-class DivByZeroException: DecimalException {
-	this(string msg, string file = __FILE__,
-	     uint line = cast(uint)__LINE__, Throwable next = null)
-	{
-		super(msg, file, line, next);
-	}
-};
-
-/// Raised when a result is not exact (one or more non-zero coefficient
-/// digits were discarded during rounding).
-/// General Decimal Arithmetic Specification, p. 15.
-class InexactException: DecimalException {
-	this(string msg, string file = __FILE__,
-	     uint line = cast(uint)__LINE__, Throwable next = null)
-	{
-		super(msg, file, line, next);
-	}
-};
-
-/// Raised when a result would be undefined or impossible.
-/// General Decimal Arithmetic Specification, p. 15.
-class InvalidOperationException: DecimalException {
-	this(string msg, string file = __FILE__,
-	     uint line = cast(uint)__LINE__, Throwable next = null)
-	{
-		super(msg, file, line, next);
-	}
-};
-
-/// Raised when the exponent of a result is too large to be represented.
-/// General Decimal Arithmetic Specification, p. 15.
-class OverflowException: DecimalException {
-	this(string msg, string file = __FILE__,
-	     uint line = cast(uint)__LINE__, Throwable next = null)
-	{
-		super(msg, file, line, next);
-	}
-};
-
-/// Raised when a result has been rounded (that is, some zero or non-zero
-/// coefficient digits were discarded).
-/// General Decimal Arithmetic Specification, p. 15.
-class RoundedException: DecimalException {
-	this(string msg, string file = __FILE__,
-	     uint line = cast(uint)__LINE__, Throwable next = null)
-	{
-		super(msg, file, line, next);
-	}
-};
-
-/// Raised when a result is subnormal (its adjusted exponent is less
-/// than the minimum exponent) before any rounding.
-/// General Decimal Arithmetic Specification, p. 15.
-class SubnormalException: DecimalException {
-	this(string msg, string file = __FILE__,
-	     uint line = cast(uint)__LINE__, Throwable next = null)
-	{
-		super(msg, file, line, next);
-	}
-};
-
-/// Raised when a result is both subnormal and inexact.
-/// General Decimal Arithmetic Specification, p. 15.
-class UnderflowException: DecimalException {
-	this(string msg, string file = __FILE__,
-	     uint line = cast(uint)__LINE__, Throwable next = null)
-	{
-		super(msg, file, line, next);
-	}
-};
+}	// end struct DecimalContext
 
 /// "The exceptional conditions are grouped into signals,
 /// which can be controlled individually.
@@ -338,6 +236,7 @@ public struct ContextFlags {
 // this is the single instance of the context flags
 static ContextFlags contextFlags;
 
+
 private const uint128 TEN128 = uint128(10);
 private const uint128 THOU128 = TEN128^^3;
 private const uint128 MILL128 = THOU128^^3;
@@ -360,13 +259,13 @@ public T round(T)(ref T num,
 	// zero values aren't rounded, but they are checked for
 	// subnormal and out of range exponents.
 	if (num.isZero) {
-/*		if (num.exponent < context.minExpo) {
+		if (num.exponent < context.minExpo) {
 			contextFlags.setFlags(SUBNORMAL);
 			if (num.exponent < context.tinyExpo) {
 				int temp = context.tinyExpo;
 				num.exponent = context.tinyExpo;
 			}
-		}*/
+		}
 		return num;
 	}
 
@@ -392,12 +291,80 @@ public T round(T)(ref T num,
 	// check for overflow
 	if (overflow(num, context)) return num;
 	// round the number
+//writefln("num  = %s", num);
 	roundByMode(num, context);
 	// check again for an overflow
 	overflow(num, context);
 	return num;
 
 } // end round()
+
+unittest {	// round
+	import decimal.dec32;
+
+	Decimal before = Decimal(9999);
+	Decimal after = before;
+	DecimalContext ctx3 = DecimalContext(3, 99, Rounding.HALF_EVEN);
+	after = round(after, ctx3);
+	assert("1.00E+4" == after.toString);
+	before = Decimal(1234567890);
+	after = before;
+	after = round(after, ctx3);
+	assert(after.toString == "1.23E+9");
+	after = before;
+	DecimalContext ctx4 = DecimalContext(4, 99, Rounding.HALF_EVEN);
+	after = round(after, ctx4);;
+	assert(after.toString == "1.235E+9");
+	after = before;
+	DecimalContext ctx5 = DecimalContext(5, 99, Rounding.HALF_EVEN);
+	after = round(after, ctx5);;
+	assert(after.toString == "1.2346E+9");
+	after = before;
+	DecimalContext ctx6 = DecimalContext(6, 99, Rounding.HALF_EVEN);
+	after = round(after, ctx6);;
+	assert(after.toString == "1.23457E+9");
+	after = before;
+	DecimalContext ctx7 = DecimalContext(7, 99, Rounding.HALF_EVEN);
+	after = round(after, ctx7);;
+	assert(after.toString == "1.234568E+9");
+	after = before;
+	DecimalContext ctx8 = DecimalContext(8, 99, Rounding.HALF_EVEN);
+	after = round(after, ctx8);;
+	assert(after.toString == "1.2345679E+9");
+	before = 1235;
+	after = before;
+	after = round(after, ctx3);;
+	assert("[0,124,1]" == after.toAbstract());
+	before = 12359;
+	after = before;
+	after = round(after, ctx3);;
+	assert("[0,124,2]" == after.toAbstract());
+	before = 1245;
+	after = before;
+	after = round(after, ctx3);
+	assert("[0,124,1]" == after.toAbstract());
+	before = 12459;
+	after = before;
+	after = round(after, ctx3);;
+	assert(after.toAbstract() == "[0,125,2]");
+	Dec32 a = Dec32(0.1);
+	Dec32 b = Dec32.min * Dec32(8888888);
+	assert("[0,8888888,-101]" == b.toAbstract);
+	Dec32 c = a * b;
+	assert("[0,888889,-101]" == c.toAbstract);
+	Dec32 d = a * c;
+	assert("[0,88889,-101]" == d.toAbstract);
+	Dec32 e = a * d;
+	assert("[0,8889,-101]" == e.toAbstract);
+	Dec32 f = a * e;
+	assert("[0,889,-101]" == f.toAbstract);
+	Dec32 g = a * f;
+	assert("[0,89,-101]" == g.toAbstract);
+	Dec32 h = a * g;
+	assert("[0,9,-101]" == h.toAbstract);
+	Dec32 i = a * h;
+	assert("[0,1,-101]" == i.toAbstract);
+}
 
 //--------------------------------
 // private methods
@@ -437,44 +404,48 @@ private bool overflow(T)(ref T num,
 /// The number is rounded using the context rounding mode.
 private void roundByMode(T)(ref T num,
 		const DecimalContext context = T.context) if (isDecimal!T) {
+	int dig = num.digits;
+	T save = num;
+
 	// calculate remainder
 	T remainder = getRemainder(num, context);
 	// if the number wasn't rounded, return
 	if (remainder.isZero) {
 		return;
 	}
+	// check for deleted leading zeros in the remainder.
+	bool leadingZeros = numDigits(remainder.coefficient) != remainder.digits;
+
 	switch (context.rounding) {
 		case Rounding.UP:
-			T temp = T.zero;
-			if (remainder != temp) {
-				incrementAndRound(num);
-			}
+			incrementAndRound(num);
 			return;
 		case Rounding.DOWN:
 			return;
 		case Rounding.CEILING:
-			T temp = T.zero;
-			if (!num.sign && (remainder != temp)) {
+			if (!num.sign) {
 				incrementAndRound(num);
 			}
 			return;
 		case Rounding.FLOOR:
-			T temp = T.zero;
-			if (num.sign && remainder != temp) {
+			if (num.sign) {
 				incrementAndRound(num);
 			}
 			return;
 		case Rounding.HALF_UP:
+			if (leadingZeros) return;
 			if (firstDigit(remainder.coefficient) >= 5) {
 				incrementAndRound(num);
 			}
 			return;
 		case Rounding.HALF_DOWN:
+			if (leadingZeros) return;
 			if (testFive(remainder.coefficient) > 0) {
 				incrementAndRound(num);
 			}
 			return;
 		case Rounding.HALF_EVEN:
+			if (leadingZeros) return;
 			switch (testFive(remainder.coefficient)) {
 				case -1:
 					break;
@@ -492,6 +463,32 @@ private void roundByMode(T)(ref T num,
 			return;
 	}	// end switch(mode)
 }	// end roundByMode()
+
+unittest {
+	// roundByMode
+	DecimalContext ctxHE = DecimalContext(5, 99, Rounding.HALF_EVEN);
+	Decimal num;
+	num = 1000;
+	roundByMode(num, ctxHE);
+	assert(num.coefficient == 1000 && num.exponent == 0 && num.digits == 4);
+	num = 1000000;
+	roundByMode(num, ctxHE);
+	assert(num.coefficient == 10000 && num.exponent == 2 && num.digits == 5);
+	num = 99999;
+	roundByMode(num, ctxHE);
+	assert(num.coefficient == 99999 && num.exponent == 0 && num.digits == 5);
+	num = 1234550;
+	roundByMode(num, ctxHE);
+	assert(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
+	DecimalContext ctxDN = ctxHE.setRounding(Rounding.DOWN);
+	num = 1234550;
+	roundByMode(num, ctxDN);
+	assert(num.coefficient == 12345 && num.exponent == 2 && num.digits == 5);
+	DecimalContext ctxUP = ctxHE.setRounding(Rounding.UP);
+	num = 1234550;
+	roundByMode(num, ctxUP);
+	assert(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
+}
 
 /// Shortens the coefficient of the number to the context precision,
 /// adjusts the exponent, and returns the (unsigned) remainder.
@@ -526,6 +523,17 @@ private T getRemainder(T) (ref T num,
 	return remainder;
 }
 
+unittest {	// getRemainder
+	DecimalContext ctx5 = testContext.setPrecision(5);
+	Decimal num, acrem, exnum, exrem;
+	num = Decimal(1234567890123456L);
+	acrem = getRemainder(num, ctx5);
+	exnum = Decimal("1.2345E+15");
+	assert(num == exnum);
+	exrem = 67890123456;
+	assert(acrem == exrem);
+}
+
 /// Increments the coefficient by 1. If this causes an overflow
 /// the coefficient is adjusted by clipping the last digit (it will be zero)
 /// and incrementing the exponent.
@@ -543,6 +551,22 @@ private void incrementAndRound(T)(ref T num) if (isDecimal!T) {
 			num.exponent = num.exponent + 1;
 		}
 	}
+}
+
+unittest {	// increment(Decimal)
+	Decimal num, expect;
+	num = 10;
+	expect = 11;
+	incrementAndRound(num);
+	assert(num == expect);
+	num = 19;
+	expect = 20;
+	incrementAndRound(num);
+	assert(num == expect);
+	num = 999;
+	expect = 1000;
+	incrementAndRound(num);
+	assert(num == expect);
 }
 
 /// Returns -1, 0, or 1 if the remainder is less than, equal to, or more than
@@ -580,6 +604,11 @@ public int testFive(const BigInt arg) {
 	BigInt big = mutable(arg);
 	BigInt zeros = big % BIG_TEN^^(numDigits(arg)-1);
 	return (zeros != 0) ? 1 : 0;
+}
+
+unittest {	// firstDigit(BigInt)
+	BigInt big = BigInt("82345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678905");
+	assert(firstDigit(big) == 8);
 }
 
 /// Returns -1, 1, or 0 if the remainder is less than, more than,
@@ -670,6 +699,25 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
 	return expo;
 
 } // end setExponent()
+
+unittest {	// setExponent
+	DecimalContext ctx = testContext.setPrecision(5);
+	ulong num;
+	uint digits;
+	int expo;
+	num = 1000;
+	digits = numDigits(num);
+	expo = setExponent(false, num, digits, ctx);
+	assert(num == 1000 && expo == 0 && digits == 4);
+	num = 1000000;
+	digits = numDigits(num);
+	expo = setExponent(false, num, digits, ctx);
+	assert(num == 10000 && expo == 2 && digits == 5);
+	num = 99999;
+	digits = numDigits(num);
+	expo = setExponent(false, num, digits, ctx);
+	assert(num == 99999 && expo == 0 && digits == 5);
+}
 
 /// Converts an integer to a decimal (coefficient and exponent) form.
 /// The input value is rounded to the context precision,
@@ -771,6 +819,64 @@ private ulong clipRemainder(ref ulong num, ref uint digits, uint precision) {
 	return remainder;
 }
 
+unittest {	// clipRemainder
+	ulong num, acrem, exnum, exrem;
+	uint digits, precision;
+	num = 1234567890123456L;
+	digits = 16;
+	precision = 5;
+	acrem = clipRemainder(num, digits, precision);
+	exnum = 12345L;
+	assert(num == exnum);
+	exrem = 67890123456L;
+	assert(acrem == exrem);
+
+	num = 12345768901234567L;
+	digits = 17;
+	precision = 5;
+	acrem = clipRemainder(num, digits, precision);
+	exnum = 12345L;
+	assert(num == exnum);
+	exrem = 768901234567L;
+	assert(acrem == exrem);
+
+	num = 123456789012345678L;
+	digits = 18;
+	precision = 5;
+	acrem = clipRemainder(num, digits, precision);
+	exnum = 12345L;
+	assert(num == exnum);
+	exrem = 6789012345678L;
+	assert(acrem == exrem);
+
+	num = 1234567890123456789L;
+	digits = 19;
+	precision = 5;
+	acrem = clipRemainder(num, digits, precision);
+	exnum = 12345L;
+	assert(num == exnum);
+	exrem = 67890123456789L;
+	assert(acrem == exrem);
+
+	num = 1234567890123456789L;
+	digits = 19;
+	precision = 4;
+	acrem = clipRemainder(num, digits, precision);
+	exnum = 1234L;
+	assert(num == exnum);
+	exrem = 567890123456789L;
+	assert(acrem == exrem);
+
+	num = 9223372036854775807L;
+	digits = 19;
+	precision = 1;
+	acrem = clipRemainder(num, digits, precision);
+	exnum = 9L;
+	assert(num == exnum);
+	exrem = 223372036854775807L;
+	assert(acrem == exrem);
+}
+
 /// Shortens the number to the specified precision and
 /// returns the (unsigned) remainder.
 /// Flags: ROUNDED, INEXACT.
@@ -860,6 +966,11 @@ public int numDigits(const BigInt arg) {
 	return count + numDigits(n);
 }
 
+unittest {	// numDigits(BigInt)
+	BigInt big = BigInt("12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678905");
+	assert(101 == numDigits(big));
+}
+
 /// Returns the number of digits in the argument.
 public int numDigits(const uint128 arg) {
     // special cases
@@ -901,6 +1012,82 @@ public int numDigits(const ulong n) {
 		}
 	}
 	return min;
+}
+
+unittest {	// numDigits(ulong)
+	ulong num, expect;
+	uint digits;
+	num = 10;
+	expect = 11;
+	digits = numDigits(num);
+	increment(num, digits);
+	assert(num == expect);
+	assert(digits == 2);
+	num = 19;
+	expect = 20;
+	digits = numDigits(num);
+	increment(num, digits);
+	assert(num == expect);
+	assert(digits == 2);
+	num = 999;
+	expect = 1000;
+	digits = numDigits(num);
+	increment(num, digits);
+	assert(num == expect);
+	assert(digits == 4);
+}
+
+
+unittest {	// numDigits
+	long n;
+	n = 7;
+	int expect = 1;
+	int actual = numDigits(n);
+	assert(actual == expect);
+	n = 13;
+	expect = 2;
+	actual = numDigits(n);
+	assert(actual == expect);
+	n = 999;
+	expect = 3;
+	actual = numDigits(n);
+	assert(actual == expect);
+	n = 9999;
+	expect = 4;
+	actual = numDigits(n);
+	assert(actual == expect);
+	n = 25987;
+	expect = 5;
+	actual = numDigits(n);
+	assert(actual == expect);
+	n = 2008617;
+	expect = 7;
+	actual = numDigits(n);
+	assert(actual == expect);
+	n = 1234567890;
+	expect = 10;
+	actual = numDigits(n);
+	assert(actual == expect);
+	n = 10000000000;
+	expect = 11;
+	actual = numDigits(n);
+	assert(actual == expect);
+	n = 123456789012345;
+	expect = 15;
+	actual = numDigits(n);
+	assert(actual == expect);
+	n = 1234567890123456;
+	expect = 16;
+	actual = numDigits(n);
+	assert(actual == expect);
+	n = 123456789012345678;
+	expect = 18;
+	actual = numDigits(n);
+	assert(actual == expect);
+	n = long.max;
+	expect = 19;
+	actual = numDigits(n);
+	assert(actual == expect);
 }
 
 public ulong bigToLong(const BigInt arg) {
@@ -945,6 +1132,59 @@ public int firstDigit(const ulong n) { //, int maxValue = 19) {
 	return cast(int)(n/TENS[d-1]);
 }
 
+unittest {	// firstDigit
+	long n;
+	n = 7;
+	int expect, actual;
+	expect = 7;
+	actual = firstDigit(n);
+	assert(actual == expect);
+	n = 13;
+	expect = 1;
+	actual = firstDigit(n);
+	assert(actual == expect);
+	n = 999;
+	expect = 9;
+	actual = firstDigit(n);
+	assert(actual == expect);
+	n = 9999;
+	expect = 9;
+	actual = firstDigit(n);
+	assert(actual == expect);
+	n = 25987;
+	expect = 2;
+	actual = firstDigit(n);
+	assert(actual == expect);
+	n = 5008617;
+	expect = 5;
+	actual = firstDigit(n);
+	assert(actual == expect);
+	n = 3234567890;
+	expect = 3;
+	actual = firstDigit(n);
+	assert(actual == expect);
+	n = 10000000000;
+	expect = 1;
+	actual = firstDigit(n);
+	assert(actual == expect);
+	n = 823456789012345;
+	expect = 8;
+	actual = firstDigit(n);
+	assert(actual == expect);
+	n = 4234567890123456;
+	expect = 4;
+	actual = firstDigit(n);
+	assert(actual == expect);
+	n = 623456789012345678;
+	expect = 6;
+	actual = firstDigit(n);
+	assert(actual == expect);
+	n = long.max;
+	expect = 9;
+	actual = firstDigit(n);
+	assert(actual == expect);
+}
+
 /// Shifts the number left by the specified number of decimal digits.
 /// If n == 0 the number is returned unchanged.
 /// If n < 0 the number is shifted right.
@@ -975,6 +1215,36 @@ public BigInt shiftLeft(BigInt num, const int n) {
 		num = shiftRight(num, -n, precision);
 	}
 	return num;*/
+}
+
+unittest {	// shiftLeft(BigInt)
+	BigInt m;
+	int n;
+	m = 12345;
+	n = 2;
+	assert(shiftLeft(m, n, 100) == 1234500);
+	m = 1234567890;
+	n = 7;
+	assert(shiftLeft(m, n, 100) == BigInt(12345678900000000));
+	m = 12;
+	n = 2;
+	assert(shiftLeft(m, n, 100) == 1200);
+	m = 12;
+	n = 4;
+	assert(shiftLeft(m, n, 100) == 120000);
+	uint k;
+	k = 12345;
+	n = 2;
+	assert(1234500 == cast(uint)shiftLeft(k, n, 9));
+	k = 1234567890;
+	n = 7;
+	assert(900000000 == cast(uint)shiftLeft(k, n, 9));
+	k = 12;
+	n = 2;
+	assert(1200 == cast(uint)shiftLeft(k, n, 9));
+	k = 12;
+	n = 4;
+	assert(120000 == cast(uint)shiftLeft(k, n, 9));
 }
 
 /// Shifts the number to the left by the specified number of decimal digits.
@@ -1018,6 +1288,23 @@ public uint shiftLeft(uint num, const int n, int precision = MAX_INT_DIGITS) {
 		num = shiftRight(num, -n, precision);
 	}
 	return num;
+}
+
+unittest {	// shiftLeft
+	long m;
+	int n;
+	m = 12345;
+	n = 2;
+	assert(shiftLeft(m,n) == 1234500);
+	m = 1234567890;
+	n = 7;
+	assert(shiftLeft(m,n) == 12345678900000000);
+	m = 12;
+	n = 2;
+	assert(shiftLeft(m,n) == 1200);
+	m = 12;
+	n = 4;
+	assert(shiftLeft(m,n) == 120000);
 }
 
 /// Shifts the number right the specified number of decimal digits.
@@ -1135,6 +1422,34 @@ public uint lastDigit(const BigInt arg) {
 	return cast(uint)digit.toInt;
 }
 
+unittest {	// lastDigit(BigInt)
+	BigInt n;
+	n = 7;
+	assert(lastDigit(n) == 7);
+	n = -13;
+	assert(lastDigit(n) == 3);
+	n = 999;
+	assert(lastDigit(n) == 9);
+	n = -9999;
+	assert(lastDigit(n) == 9);
+	n = 25987;
+	assert(lastDigit(n) == 7);
+	n = -5008615;
+	assert(lastDigit(n) == 5);
+	n = 3234567893;
+	assert(lastDigit(n) == 3);
+	n = -10000000000;
+	assert(lastDigit(n) == 0);
+	n = 823456789012348;
+	assert(lastDigit(n) == 8);
+	n = 4234567890123456;
+	assert(lastDigit(n) == 6);
+	n = 623456789012345674;
+	assert(lastDigit(n) == 4);
+	n = long.max;
+	assert(lastDigit(n) == 7);
+}
+
 /// Returns the last digit of the argument.
 public uint lastDigit(const uint128 arg) {
 	return (abs(arg) % 10UL).toInt();
@@ -1143,6 +1458,34 @@ public uint lastDigit(const uint128 arg) {
 /// Returns the last digit of the argument.
 public uint lastDigit(const long num) {
 	return cast(uint)(std.math.abs(num) % 10UL);
+}
+
+unittest {	// lastDigit(ulong)
+	long n;
+	n = 7;
+	assert(lastDigit(n) == 7);
+	n = -13;
+	assert(lastDigit(n) == 3);
+	n = 999;
+	assert(lastDigit(n) == 9);
+	n = -9999;
+	assert(lastDigit(n) == 9);
+	n = 25987;
+	assert(lastDigit(n) == 7);
+	n = -5008615;
+	assert(lastDigit(n) == 5);
+	n = 3234567893;
+	assert(lastDigit(n) == 3);
+	n = -10000000000;
+	assert(lastDigit(n) == 0);
+	n = 823456789012348;
+	assert(lastDigit(n) == 8);
+	n = 4234567890123456;
+	assert(lastDigit(n) == 6);
+	n = 623456789012345674;
+	assert(lastDigit(n) == 4);
+	n = long.max;
+	assert(lastDigit(n) == 7);
 }
 
 /// Returns the number of trailing zeros in the argument.
@@ -1242,464 +1585,102 @@ public uint128 abs(const uint128 num) {
 	return num < 0 ? -num : num;
 }
 
-//--------------------------------
-// unit tests
-//--------------------------------
+//--------------------------
+// Context flags and trap-enablers
+//--------------------------
 
-import decimal.dec32;
-import decimal.dec64;
+/// The base class for all decimal arithmetic exceptions.
+class DecimalException: object.Exception {
+	this(string msg, string file = __FILE__,
+		uint line = cast(uint)__LINE__, Throwable next = null)
+	{
+		super(msg, file, line, next);
+	}
+};
 
-unittest {
-	// round
-	Decimal before = Decimal(9999);
-	Decimal after = before;
-	DecimalContext ctx3 = DecimalContext(3, 99, Rounding.HALF_EVEN);
-	after = round(after, ctx3);
-	assert("1.00E+4" == after.toString);
-	before = Decimal(1234567890);
-	after = before;
-	after = round(after, ctx3);
-	assert(after.toString == "1.23E+9");
-	after = before;
-	DecimalContext ctx4 = DecimalContext(4, 99, Rounding.HALF_EVEN);
-	after = round(after, ctx4);;
-	assert(after.toString == "1.235E+9");
-	after = before;
-	DecimalContext ctx5 = DecimalContext(5, 99, Rounding.HALF_EVEN);
-	after = round(after, ctx5);;
-	assert(after.toString == "1.2346E+9");
-	after = before;
-	DecimalContext ctx6 = DecimalContext(6, 99, Rounding.HALF_EVEN);
-	after = round(after, ctx6);;
-	assert(after.toString == "1.23457E+9");
-	after = before;
-	DecimalContext ctx7 = DecimalContext(7, 99, Rounding.HALF_EVEN);
-	after = round(after, ctx7);;
-	assert(after.toString == "1.234568E+9");
-	after = before;
-	DecimalContext ctx8 = DecimalContext(8, 99, Rounding.HALF_EVEN);
-	after = round(after, ctx8);;
-	assert(after.toString == "1.2345679E+9");
-	before = 1235;
-	after = before;
-	after = round(after, ctx3);;
-	assert("[0,124,1]" == after.toAbstract());
-	before = 12359;
-	after = before;
-	after = round(after, ctx3);;
-	assert("[0,124,2]" == after.toAbstract());
-	before = 1245;
-	after = before;
-	after = round(after, ctx3);
-	assert("[0,124,1]" == after.toAbstract());
-	before = 12459;
-	after = before;
-	after = round(after, ctx3);;
-	assert(after.toAbstract() == "[0,125,2]");
-	Dec32 a = Dec32(0.1);
-	Dec32 b = Dec32.min * Dec32(8888888);
-	assert("[0,8888888,-101]" == b.toAbstract);
-	Dec32 c = a * b;
-	assert("[0,888889,-101]" == c.toAbstract);
-	Dec32 d = a * c;
-	assert("[0,88889,-101]" == d.toAbstract);
-	Dec32 e = a * d;
-	assert("[0,8889,-101]" == e.toAbstract);
-	Dec32 f = a * e;
-	assert("[0,889,-101]" == f.toAbstract);
-	Dec32 g = a * f;
-	assert("[0,89,-101]" == g.toAbstract);
-	Dec32 h = a * g;
-	assert("[0,9,-101]" == h.toAbstract);
-	Dec32 i = a * h;
-	assert("[0,1,-101]" == i.toAbstract);
-}
+/// Raised when the exponent of a result has been altered or constrained
+/// in order to fit the constraints of a specific concrete representation.
+/// General Decimal Arithmetic Specification, p. 15.
+class ClampedException: DecimalException {
+	this(string msg, string file = __FILE__,
+	     uint line = cast(uint)__LINE__, Throwable next = null)
+	{
+		super(msg, file, line, next);
+	}
+};
 
-unittest {
-	// roundByMode
-	DecimalContext ctxHE = DecimalContext(5, 99, Rounding.HALF_EVEN);
-	Decimal num;
-	num = 1000;
-	roundByMode(num, ctxHE);
-	assert(num.coefficient == 1000 && num.exponent == 0 && num.digits == 4);
-	num = 1000000;
-	roundByMode(num, ctxHE);
-	assert(num.coefficient == 10000 && num.exponent == 2 && num.digits == 5);
-	num = 99999;
-	roundByMode(num, ctxHE);
-	assert(num.coefficient == 99999 && num.exponent == 0 && num.digits == 5);
-	num = 1234550;
-	roundByMode(num, ctxHE);
-	assert(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
-	DecimalContext ctxDN = ctxHE.setRounding(Rounding.DOWN);
-	num = 1234550;
-	roundByMode(num, ctxDN);
-	assert(num.coefficient == 12345 && num.exponent == 2 && num.digits == 5);
-	DecimalContext ctxUP = ctxHE.setRounding(Rounding.UP);
-	num = 1234550;
-	roundByMode(num, ctxUP);
-	assert(num.coefficient == 12346 && num.exponent == 2 && num.digits == 5);
-}
+/// Raised when a non-zero dividend is divided by zero.
+/// General Decimal Arithmetic Specification, p. 15.
+class DivByZeroException: DecimalException {
+	this(string msg, string file = __FILE__,
+	     uint line = cast(uint)__LINE__, Throwable next = null)
+	{
+		super(msg, file, line, next);
+	}
+};
 
-unittest {
-	// getRemainder
-	DecimalContext ctx5 = testContext.setPrecision(5);
-	Decimal num, acrem, exnum, exrem;
-	num = Decimal(1234567890123456L);
-	acrem = getRemainder(num, ctx5);
-	exnum = Decimal("1.2345E+15");
-	assert(num == exnum);
-	exrem = 67890123456;
-	assert(acrem == exrem);
-}
+/// Raised when a result is not exact (one or more non-zero coefficient
+/// digits were discarded during rounding).
+/// General Decimal Arithmetic Specification, p. 15.
+class InexactException: DecimalException {
+	this(string msg, string file = __FILE__,
+	     uint line = cast(uint)__LINE__, Throwable next = null)
+	{
+		super(msg, file, line, next);
+	}
+};
 
-unittest {
-	// increment(Decimal)
-	Decimal num, expect;
-	num = 10;
-	expect = 11;
-	incrementAndRound(num);
-	assert(num == expect);
-	num = 19;
-	expect = 20;
-	incrementAndRound(num);
-	assert(num == expect);
-	num = 999;
-	expect = 1000;
-	incrementAndRound(num);
-	assert(num == expect);
-}
+/// Raised when a result would be undefined or impossible.
+/// General Decimal Arithmetic Specification, p. 15.
+class InvalidOperationException: DecimalException {
+	this(string msg, string file = __FILE__,
+	     uint line = cast(uint)__LINE__, Throwable next = null)
+	{
+		super(msg, file, line, next);
+	}
+};
 
-unittest {
-	// numDigits(ulong)
-	ulong num, expect;
-	uint digits;
-	num = 10;
-	expect = 11;
-	digits = numDigits(num);
-	increment(num, digits);
-	assert(num == expect);
-	assert(digits == 2);
-	num = 19;
-	expect = 20;
-	digits = numDigits(num);
-	increment(num, digits);
-	assert(num == expect);
-	assert(digits == 2);
-	num = 999;
-	expect = 1000;
-	digits = numDigits(num);
-	increment(num, digits);
-	assert(num == expect);
-	assert(digits == 4);
-}
+/// Raised when the exponent of a result is too large to be represented.
+/// General Decimal Arithmetic Specification, p. 15.
+class OverflowException: DecimalException {
+	this(string msg, string file = __FILE__,
+	     uint line = cast(uint)__LINE__, Throwable next = null)
+	{
+		super(msg, file, line, next);
+	}
+};
 
-unittest {
-	// setExponent
-	DecimalContext ctx = testContext.setPrecision(5);
-	ulong num;
-	uint digits;
-	int expo;
-	num = 1000;
-	digits = numDigits(num);
-	expo = setExponent(false, num, digits, ctx);
-	assert(num == 1000 && expo == 0 && digits == 4);
-	num = 1000000;
-	digits = numDigits(num);
-	expo = setExponent(false, num, digits, ctx);
-	assert(num == 10000 && expo == 2 && digits == 5);
-	num = 99999;
-	digits = numDigits(num);
-	expo = setExponent(false, num, digits, ctx);
-	assert(num == 99999 && expo == 0 && digits == 5);
-}
+/// Raised when a result has been rounded (that is, some zero or non-zero
+/// coefficient digits were discarded).
+/// General Decimal Arithmetic Specification, p. 15.
+class RoundedException: DecimalException {
+	this(string msg, string file = __FILE__,
+	     uint line = cast(uint)__LINE__, Throwable next = null)
+	{
+		super(msg, file, line, next);
+	}
+};
 
-unittest {
-	// numDigits(BigInt)
-	BigInt big = BigInt("12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678905");
-	assert(101 == numDigits(big));
-}
+/// Raised when a result is subnormal (its adjusted exponent is less
+/// than the minimum exponent) before any rounding.
+/// General Decimal Arithmetic Specification, p. 15.
+class SubnormalException: DecimalException {
+	this(string msg, string file = __FILE__,
+	     uint line = cast(uint)__LINE__, Throwable next = null)
+	{
+		super(msg, file, line, next);
+	}
+};
 
-unittest {
-	// firstDigit(BigInt)
-	BigInt big = BigInt("82345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678905");
-	assert(8 == firstDigit(big));
-}
-
-unittest {
-	// shiftLeft(BigInt)
-	BigInt m;
-	int n;
-	m = 12345;
-	n = 2;
-	assert(shiftLeft(m, n, 100) == 1234500);
-	m = 1234567890;
-	n = 7;
-	assert(shiftLeft(m, n, 100) == BigInt(12345678900000000));
-	m = 12;
-	n = 2;
-	assert(shiftLeft(m, n, 100) == 1200);
-	m = 12;
-	n = 4;
-	assert(shiftLeft(m, n, 100) == 120000);
-	uint k;
-	k = 12345;
-	n = 2;
-	assert(1234500 == cast(uint)shiftLeft(k, n, 9));
-	k = 1234567890;
-	n = 7;
-	assert(900000000 == cast(uint)shiftLeft(k, n, 9));
-	k = 12;
-	n = 2;
-	assert(1200 == cast(uint)shiftLeft(k, n, 9));
-	k = 12;
-	n = 4;
-	assert(120000 == cast(uint)shiftLeft(k, n, 9));
-}
-
-unittest {
-	// lastDigit(ulong)
-	long n;
-	n = 7;
-	assert(lastDigit(n) == 7);
-	n = -13;
-	assert(lastDigit(n) == 3);
-	n = 999;
-	assert(lastDigit(n) == 9);
-	n = -9999;
-	assert(lastDigit(n) == 9);
-	n = 25987;
-	assert(lastDigit(n) == 7);
-	n = -5008615;
-	assert(lastDigit(n) == 5);
-	n = 3234567893;
-	assert(lastDigit(n) == 3);
-	n = -10000000000;
-	assert(lastDigit(n) == 0);
-	n = 823456789012348;
-	assert(lastDigit(n) == 8);
-	n = 4234567890123456;
-	assert(lastDigit(n) == 6);
-	n = 623456789012345674;
-	assert(lastDigit(n) == 4);
-	n = long.max;
-	assert(lastDigit(n) == 7);
-}
-
-unittest {
-	// lastDigit(BigInt)
-	BigInt n;
-	n = 7;
-	assert(lastDigit(n) == 7);
-	n = -13;
-	assert(lastDigit(n) == 3);
-	n = 999;
-	assert(lastDigit(n) == 9);
-	n = -9999;
-	assert(lastDigit(n) == 9);
-	n = 25987;
-	assert(lastDigit(n) == 7);
-	n = -5008615;
-	assert(lastDigit(n) == 5);
-	n = 3234567893;
-	assert(lastDigit(n) == 3);
-	n = -10000000000;
-	assert(lastDigit(n) == 0);
-	n = 823456789012348;
-	assert(lastDigit(n) == 8);
-	n = 4234567890123456;
-	assert(lastDigit(n) == 6);
-	n = 623456789012345674;
-	assert(lastDigit(n) == 4);
-	n = long.max;
-	assert(lastDigit(n) == 7);
-}
-
-unittest {
-	// shiftLeft
-	long m;
-	int n;
-	m = 12345;
-	n = 2;
-	assert(shiftLeft(m,n) == 1234500);
-	m = 1234567890;
-	n = 7;
-	assert(shiftLeft(m,n) == 12345678900000000);
-	m = 12;
-	n = 2;
-	assert(shiftLeft(m,n) == 1200);
-	m = 12;
-	n = 4;
-	assert(shiftLeft(m,n) == 120000);
-}
-
-unittest {
-	// firstDigit
-	long n;
-	n = 7;
-	int expect, actual;
-	expect = 7;
-	actual = firstDigit(n);
-	assert(actual == expect);
-	n = 13;
-	expect = 1;
-	actual = firstDigit(n);
-	assert(actual == expect);
-	n = 999;
-	expect = 9;
-	actual = firstDigit(n);
-	assert(actual == expect);
-	n = 9999;
-	expect = 9;
-	actual = firstDigit(n);
-	assert(actual == expect);
-	n = 25987;
-	expect = 2;
-	actual = firstDigit(n);
-	assert(actual == expect);
-	n = 5008617;
-	expect = 5;
-	actual = firstDigit(n);
-	assert(actual == expect);
-	n = 3234567890;
-	expect = 3;
-	actual = firstDigit(n);
-	assert(actual == expect);
-	n = 10000000000;
-	expect = 1;
-	actual = firstDigit(n);
-	assert(actual == expect);
-	n = 823456789012345;
-	expect = 8;
-	actual = firstDigit(n);
-	assert(actual == expect);
-	n = 4234567890123456;
-	expect = 4;
-	actual = firstDigit(n);
-	assert(actual == expect);
-	n = 623456789012345678;
-	expect = 6;
-	actual = firstDigit(n);
-	assert(actual == expect);
-	n = long.max;
-	expect = 9;
-	actual = firstDigit(n);
-	assert(actual == expect);
-}
-
-unittest {
-	// numDigits
-	long n;
-	n = 7;
-	int expect = 1;
-	int actual = numDigits(n);
-	assert(actual == expect);
-	n = 13;
-	expect = 2;
-	actual = numDigits(n);
-	assert(actual == expect);
-	n = 999;
-	expect = 3;
-	actual = numDigits(n);
-	assert(actual == expect);
-	n = 9999;
-	expect = 4;
-	actual = numDigits(n);
-	assert(actual == expect);
-	n = 25987;
-	expect = 5;
-	actual = numDigits(n);
-	assert(actual == expect);
-	n = 2008617;
-	expect = 7;
-	actual = numDigits(n);
-	assert(actual == expect);
-	n = 1234567890;
-	expect = 10;
-	actual = numDigits(n);
-	assert(actual == expect);
-	n = 10000000000;
-	expect = 11;
-	actual = numDigits(n);
-	assert(actual == expect);
-	n = 123456789012345;
-	expect = 15;
-	actual = numDigits(n);
-	assert(actual == expect);
-	n = 1234567890123456;
-	expect = 16;
-	actual = numDigits(n);
-	assert(actual == expect);
-	n = 123456789012345678;
-	expect = 18;
-	actual = numDigits(n);
-	assert(actual == expect);
-	n = long.max;
-	expect = 19;
-	actual = numDigits(n);
-	assert(actual == expect);
-}
-
-unittest {
-	// clipRemainder
-	ulong num, acrem, exnum, exrem;
-	uint digits, precision;
-	num = 1234567890123456L;
-	digits = 16;
-	precision = 5;
-	acrem = clipRemainder(num, digits, precision);
-	exnum = 12345L;
-	assert(num == exnum);
-	exrem = 67890123456L;
-	assert(acrem == exrem);
-
-	num = 12345768901234567L;
-	digits = 17;
-	precision = 5;
-	acrem = clipRemainder(num, digits, precision);
-	exnum = 12345L;
-	assert(num == exnum);
-	exrem = 768901234567L;
-	assert(acrem == exrem);
-
-	num = 123456789012345678L;
-	digits = 18;
-	precision = 5;
-	acrem = clipRemainder(num, digits, precision);
-	exnum = 12345L;
-	assert(num == exnum);
-	exrem = 6789012345678L;
-	assert(acrem == exrem);
-
-	num = 1234567890123456789L;
-	digits = 19;
-	precision = 5;
-	acrem = clipRemainder(num, digits, precision);
-	exnum = 12345L;
-	assert(num == exnum);
-	exrem = 67890123456789L;
-	assert(acrem == exrem);
-
-	num = 1234567890123456789L;
-	digits = 19;
-	precision = 4;
-	acrem = clipRemainder(num, digits, precision);
-	exnum = 1234L;
-	assert(num == exnum);
-	exrem = 567890123456789L;
-	assert(acrem == exrem);
-
-	num = 9223372036854775807L;
-	digits = 19;
-	precision = 1;
-	acrem = clipRemainder(num, digits, precision);
-	exnum = 9L;
-	assert(num == exnum);
-	exrem = 223372036854775807L;
-	assert(acrem == exrem);
-
-}
-
+/// Raised when a result is both subnormal and inexact.
+/// General Decimal Arithmetic Specification, p. 15.
+class UnderflowException: DecimalException {
+	this(string msg, string file = __FILE__,
+	     uint line = cast(uint)__LINE__, Throwable next = null)
+	{
+		super(msg, file, line, next);
+	}
+};
 
 unittest {
 	import std.stdio;
