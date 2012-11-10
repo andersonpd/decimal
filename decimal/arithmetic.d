@@ -1585,7 +1585,7 @@ public T div(T)(const T arg1, const T arg2,
 	quotient.sign = dividend.sign ^ divisor.sign;
 	quotient.digits = numDigits(quotient.coefficient);
 	if (roundResult) {
-		round(quotient, context);
+		quotient = round(quotient, context);
 		quotient = reduceToIdeal!Decimal(quotient, diff, context);
 	}
 	return T(quotient);
@@ -1891,7 +1891,7 @@ public T quantize(T)(const T arg1, const T arg2,
 	else {
 		uint precision = (-diff > arg1.digits) ? 0 : arg1.digits + diff;
 		DecimalContext tempContext = context.setPrecision(precision);
-		round!T(result, tempContext);
+		result = round!T(result, tempContext);
 		result.exponent = arg2.exponent;
 		if (result.isZero && arg1.isSigned) {
 			result.sign = true;

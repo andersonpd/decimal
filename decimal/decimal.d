@@ -574,6 +574,12 @@ public:
 		return pushContext(context);
 	}
 
+	static DecimalContext pushContext(Rounding mode) {
+		DecimalContext context = Decimal.context;
+		context.rounding = mode;
+		return pushContext(context);
+	}
+
 	static DecimalContext popContext() {
 		Decimal.context = contextStack.pop();
 		return Decimal.context;

@@ -14,6 +14,8 @@
 
 module decimal.math;
 
+import std.bigint;
+
 import decimal.arithmetic;
 import decimal.context;
 import decimal.decimal;
@@ -25,6 +27,72 @@ unittest {
 }
 
 //--------------------------------
+// ROUNDING
+//--------------------------------
+
+public Decimal rint(const Decimal arg) {
+	pushContext(Rounding.HALF_EVEN);
+	Decimal value = roundToIntegralExact(arg, bigContext);
+	popContext;
+	return value;
+}
+
+public Decimal floor(const Decimal arg) {
+	pushContext(Rounding.FLOOR);
+	Decimal value = roundToIntegralExact(arg, bigContext);
+	popContext;
+	return value;
+}
+
+public Decimal ceil(const Decimal arg) {
+	pushContext(Rounding.CEILING);
+	Decimal value = roundToIntegralExact(arg, bigContext);
+	popContext;
+	return value;
+}
+
+public Decimal trunc(const Decimal arg) {
+	pushContext(Rounding.DOWN);
+	Decimal value = roundToIntegralExact(arg, bigContext);
+	popContext;
+	return value;
+}
+
+unittest {	// rounding
+	Decimal num;
+	num = Decimal("2.1");
+	assert(rint(num)  == Decimal("2"));
+	assert(floor(num) == Decimal("2"));
+	assert(ceil(num)  == Decimal("3"));
+	assert(trunc(num) == Decimal("2"));
+	num = Decimal("2.5");
+	assert(rint(num)  == Decimal("2"));
+	assert(floor(num) == Decimal("2"));
+	assert(ceil(num)  == Decimal("3"));
+	assert(trunc(num) == Decimal("2"));
+	num = Decimal("3.5");
+	assert(rint(num)  == Decimal("4"));
+	assert(floor(num) == Decimal("3"));
+	assert(ceil(num)  == Decimal("4"));
+	assert(trunc(num) == Decimal("3"));
+	num = Decimal("2.9");
+	assert(rint(num)  == Decimal("3"));
+	assert(floor(num) == Decimal("2"));
+	assert(ceil(num)  == Decimal("3"));
+	assert(trunc(num) == Decimal("2"));
+	num = Decimal("-2.1");
+	assert(rint(num)  == Decimal("-2"));
+	assert(floor(num) == Decimal("-3"));
+	assert(ceil(num)  == Decimal("-2"));
+	assert(trunc(num) == Decimal("-2"));
+	num = Decimal("-2.9");
+	assert(rint(num)  == Decimal("-3"));
+	assert(floor(num) == Decimal("-3"));
+	assert(ceil(num)  == Decimal("-2"));
+	assert(trunc(num) == Decimal("-2"));
+}
+
+//--------------------------------
 // CONSTANTS
 //--------------------------------
 
@@ -33,7 +101,7 @@ public Decimal e(const uint precision) {
 	pushContext(precision+2);
 	Decimal value = e();
 	bigContext.precision -= 2;
-	round(value);
+	value = round(value);
 	popContext();
 	return value;
 }
@@ -72,6 +140,8 @@ unittest {
 	writeln("test missing");
 }
 
+//public const Decimal PI = Decimal(BigInt("3141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117068"), 100);
+
 /// Returns the value of pi to the specified precision.
 public Decimal pi(uint precision) {
 	pushContext(precision); // plus two guard digits?
@@ -88,6 +158,7 @@ public Decimal pi(uint precision) {
 public Decimal pi() {
 	const Decimal ONE = Decimal(1L);
 	const Decimal TWO = Decimal(2L);
+	const Decimal FOUR = Decimal(4L);
 	Decimal a = ONE.dup;
 	Decimal b = a/sqrt(TWO);
 	Decimal t = Decimal("0.25");
@@ -101,7 +172,7 @@ public Decimal pi() {
 		x = x * 2;
 		i++;
 	}
-	Decimal result = a*a/t;
+	Decimal result = sqr(a+b)/(FOUR*t);
 	return result;
 }
 
@@ -445,6 +516,11 @@ unittest {
 // TRIGONOMETRIC FUNCTIONS
 //--------------------------------
 
+
+private Decimal reduceRange(const Decimal arg) {
+	Decimal c = reciprocal(pi * 2.0);
+	return Decimal(1);
+}
 
 /// Decimal version of std.math function.
 public Decimal sin(const Decimal x) {

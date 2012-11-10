@@ -220,6 +220,10 @@ private:
 		PI_SQR	 = 0x6BF69924,
 		SQRT_PI  = 0x2F9B0BA6,
 		SQRT_2PI = 0x2F9B0BA6,
+		// INV_PI
+		// INV_2PI
+		// INV_SQRT_PI
+		// INV_SQRT_2PI
 		// 1/PI
 		// 1/SQRT_PI
 		// 1/SQRT_2PI

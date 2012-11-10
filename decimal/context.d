@@ -249,12 +249,14 @@ private const uint128 FIVE128 = uint128(5);
 /// Rounds the referenced number using the precision and rounding mode of
 /// the context parameter.
 /// Flags: SUBNORMAL, CLAMPED, OVERFLOW, INEXACT, ROUNDED.
-public T round(T)(ref T num,
+public T round(T)(const T num,
 		const DecimalContext context = T.context,
 		const bool setFlags = true) if (isDecimal!T) {
 
+	T result = num.dup;
+
 	// special values aren't rounded
-	if (!num.isFinite) return num;
+	if (!num.isFinite) return result;
 
 	// zero values aren't rounded, but they are checked for
 	// subnormal and out of range exponents.
@@ -263,39 +265,39 @@ public T round(T)(ref T num,
 			contextFlags.setFlags(SUBNORMAL);
 			if (num.exponent < context.tinyExpo) {
 				int temp = context.tinyExpo;
-				num.exponent = context.tinyExpo;
+				result.exponent = context.tinyExpo;
 			}
 		}
-		return num;
+		return result;
 	}
 
 	// handle subnormal numbers
 	if (num.isSubnormal(context)) {
 		if (setFlags) contextFlags.setFlags(SUBNORMAL);
-		int diff = context.minExpo - num.adjustedExponent;
+		int diff = context.minExpo - result.adjustedExponent;
 		// decrease the precision and round
 		int precision = context.precision - diff;
-		if (num.digits > precision) {
+		if (result.digits > precision) {
 			auto ctx = Decimal.setPrecision(precision);
-			roundByMode(num, ctx);
+			roundByMode(result, ctx);
 		}
 		// if the result of rounding a subnormal is zero
 		// the clamped flag is set. (Spec. p. 51)
-		if (num.isZero) {
-			num.exponent = context.tinyExpo;
+		if (result.isZero) {
+			result.exponent = context.tinyExpo;
 			if (setFlags) contextFlags.setFlags(CLAMPED);
 		}
-		return num;
+		return result;
 	}
 
 	// check for overflow
-	if (overflow(num, context)) return num;
+	if (overflow(result, context)) return result;
 	// round the number
-//writefln("num  = %s", num);
-	roundByMode(num, context);
+//writefln("result  = %s", result);
+	roundByMode(result, context);
 	// check again for an overflow
-	overflow(num, context);
-	return num;
+	overflow(result, context);
+	return result;
 
 } // end round()
 
@@ -400,12 +402,18 @@ private bool overflow(T)(ref T num,
 	return true;
 }
 
+private bool halfRounding(DecimalContext context) {
+	return (context.rounding == Rounding.HALF_EVEN ||
+	 		context.rounding == Rounding.HALF_UP ||
+	 		context.rounding == Rounding.HALF_DOWN);
+}
+
 /// Rounds the number to the context precision.
 /// The number is rounded using the context rounding mode.
 private void roundByMode(T)(ref T num,
 		const DecimalContext context = T.context) if (isDecimal!T) {
 	int dig = num.digits;
-	T save = num;
+	T save = num.dup;
 
 	// calculate remainder
 	T remainder = getRemainder(num, context);
@@ -414,7 +422,13 @@ private void roundByMode(T)(ref T num,
 		return;
 	}
 	// check for deleted leading zeros in the remainder.
-	bool leadingZeros = numDigits(remainder.coefficient) != remainder.digits;
+	// makes a difference only in round-half modes.
+	if (halfRounding(context) &&
+		numDigits(remainder.coefficient) != remainder.digits) {
+		return;
+	}
+//	// check for deleted leading zeros in the remainder.
+//	bool leadingZeros = numDigits(remainder.coefficient) != remainder.digits;
 
 	switch (context.rounding) {
 		case Rounding.UP:
@@ -433,19 +447,19 @@ private void roundByMode(T)(ref T num,
 			}
 			return;
 		case Rounding.HALF_UP:
-			if (leadingZeros) return;
+//			if (leadingZeros) return;
 			if (firstDigit(remainder.coefficient) >= 5) {
 				incrementAndRound(num);
 			}
 			return;
 		case Rounding.HALF_DOWN:
-			if (leadingZeros) return;
+//			if (leadingZeros) return;
 			if (testFive(remainder.coefficient) > 0) {
 				incrementAndRound(num);
 			}
 			return;
 		case Rounding.HALF_EVEN:
-			if (leadingZeros) return;
+//			if (leadingZeros) return;
 			switch (testFive(remainder.coefficient)) {
 				case -1:
 					break;
@@ -642,6 +656,13 @@ public uint setExponent(const bool sign, ref ulong mant, ref uint digits,
 		return expo;
 	}
 
+/*	// check for deleted leading zeros in the remainder.
+	// makes a difference only in round-half modes.
+	if (halfRounding(context) &&
+		numDigits(remainder.coefficient) != remainder.digits) {
+		return;
+	}*/
+
 	switch (context.rounding) {
 	case Rounding.DOWN:
 		break;
@@ -733,6 +754,13 @@ public uint setExponent(const bool sign, ref uint128 mant, ref uint digits,
 	if (remainder == 0) {
 		return expo;
 	}
+
+/*	// check for deleted leading zeros in the remainder.
+	// makes a difference only in round-half modes.
+	if (halfRounding(context) &&
+		numDigits(remainder.coefficient) != remainder.digits) {
+		return;
+	}*/
 
 	switch (context.rounding) {
 	case Rounding.DOWN:
