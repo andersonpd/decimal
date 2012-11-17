@@ -1212,14 +1212,17 @@ public T add(T)(const T arg1, const T arg2,
 	}
 	// add(0,f)
 	if (arg1.isZero) {
+//writefln("arg1 = %s", arg1);
 		result = arg2;
-		result.exponent = std.algorithm.min(arg1.exponent, arg2.exponent);
+//		result.exponent = std.algorithm.min(arg1.exponent, arg2.exponent);
 		return result;
 	}
 	// add(f,0)
 	if (arg2.isZero) {
+//writefln("arg2 = %s", arg2);
 		result = arg1;
-		result.exponent = std.algorithm.min(arg1.exponent, arg2.exponent);
+//writefln("arg1 = %s", arg1);
+//		result.exponent = std.algorithm.min(arg1.exponent, arg2.exponent);
 		return result;
 	}
 

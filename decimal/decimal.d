@@ -28,7 +28,7 @@ import decimal.context;
 import decimal.arithmetic;
 import decimal.integer;
 
-alias Decimal.context bigContext;
+alias Decimal.context getContext;
 alias Decimal.pushContext pushContext;
 alias Decimal.popContext popContext;
 
@@ -81,6 +81,7 @@ private:
 	immutable BigInt BIG_TWO  = cast(immutable)BigInt(2);
 
 	immutable Decimal ONE = Decimal(1);
+//	immutable Decimal PI = Decimal(314156);
 //	static Decimal DONE = Decimal(BIG_ONE);
 //	static immutable Decimal TWO  = cast(immutable)Decimal(2);
 //	static immutable Decimal FIVE = cast(immutable)Decimal(5);
@@ -182,6 +183,31 @@ public:
 		this(sign, BigInt(coefficient), exponent);
 	}
 
+	/// Constructs a number from a sign, a long integer coefficient and
+	/// an integer exponent.
+	this(const bool sign, const BigInt coefficient, const int exponent, const int digits) {
+		BigInt big = abs(coefficient);
+		this = zero();
+		this.signed = sign;
+		this.mant = big;
+		this.expo = exponent;
+        // (B)TODO: If we specify the number of digits this can be CTFE.
+        // The numDigits call is not CTFE.
+		this.digits = digits;
+	}
+
+unittest {
+	write("w/digits...");
+//	const BigInt mant = BigInt(314159);
+	BigInt mant = BigInt("314159");
+	Decimal d = Decimal(false, mant, -5, 6);
+	writefln("d = %s", d);
+	mant = BigInt("3141590000000000000000000000000000000000000");
+	d = Decimal(false, mant, -42, 43);
+	writefln("d = %s", d);
+
+	writeln("test missing");
+}
 	/// Constructs a number from an long coefficient
 	/// and an optional integer exponent.
 	this(const long coefficient, const int exponent) {
@@ -956,6 +982,96 @@ public:
 		}
 	}
 
+/*	/// Returns the result of performing the specified
+	/// binary operation on this number and the argument.
+	const Decimal opBinaryRight(string op, T:Decimal)(const T arg)
+	{
+		static if (op == "+") {
+			return add!Decimal(Decimal(arg), this, context);
+		}
+		else static if (op == "-") {
+			return sub!Decimal(Decimal(arg), this, context);
+		}
+		else static if (op == "*") {
+			return mul!Decimal(Decimal(arg), this, context);
+		}
+		else static if (op == "/") {
+			return div!Decimal(Decimal(arg), this, context);
+		}
+		else static if (op == "%") {
+			return remainder!Decimal(Decimal(arg), this, context);
+		}
+		else static if (op == "&") {
+			return and!Decimal(Decimal(arg), this, context);
+		}
+		else static if (op == "|") {
+			return or!Decimal(Decimal(arg), this, context);
+		}
+		else static if (op == "^") {
+			return xor!Decimal(Decimal(arg), this, context);
+		}
+	}*/
+
+	/// Returns the result of performing the specified
+	/// binary operation on this number and the argument.
+	const Decimal opBinary(string op, T:long)(const T arg)
+	{
+		static if (op == "+") {
+			return addLong!Decimal(this, arg, context);
+		}
+		else static if (op == "-") {
+			return subLong!Decimal(this, arg, context);
+		}
+		else static if (op == "*") {
+			return mulLong!Decimal(this, arg, context);
+		}
+		else static if (op == "/") {
+			return div!Decimal(this, Decimal(arg), context);
+		}
+		else static if (op == "%") {
+			return remainder!Decimal(this, Decimal(arg), context);
+		}
+		else static if (op == "&") {
+			return and!Decimal(this, Decimal(arg), context);
+		}
+		else static if (op == "|") {
+			return or!Decimal(this, Decimal(arg), context);
+		}
+		else static if (op == "^") {
+			return xor!Decimal(this, Decimal(arg), context);
+		}
+	}
+
+	/// Returns the result of performing the specified
+	/// binary operation on this number and the argument.
+	const Decimal opBinaryRight(string op, T:long)(const T arg)
+	{
+		static if (op == "+") {
+			return addLong!Decimal(this, arg, context);
+		}
+		else static if (op == "-") {
+			return sub!Decimal(Decimal(arg), this, context);
+		}
+		else static if (op == "*") {
+			return mulLong!Decimal(this, arg, context);
+		}
+		else static if (op == "/") {
+			return div!Decimal(Decimal(arg), this, context);
+		}
+		else static if (op == "%") {
+			return remainder!Decimal(Decimal(arg), this, context);
+		}
+		else static if (op == "&") {
+			return and!Decimal(this, Decimal(arg), context);
+		}
+		else static if (op == "|") {
+			return or!Decimal(this, Decimal(arg), context);
+		}
+		else static if (op == "^") {
+			return xor!Decimal(this, Decimal(arg), context);
+		}
+	}
+
 	/// Returns true if the type T is promotable to a decimal type.
 	private template isPromotable(T) {
 		enum bool isPromotable = is(T:ulong) || is(T:real);
@@ -965,6 +1081,35 @@ public:
 	/// binary operation on this number and the argument.
 	const Decimal opBinary(string op, T)(const T arg) if (isPromotable!T)	{
 		return opBinary!(op,Decimal)(Decimal(arg));
+	}
+
+	/// Returns the result of performing the specified
+	/// binary operation on this number and the argument.
+	const Decimal opBinaryRight(string op, T)(const T arg) if (isPromotable!T)	{
+		static if (op == "+") {
+			return add!Decimal(Decimal(arg), this, context);
+		}
+		else static if (op == "-") {
+			return sub!Decimal(Decimal(arg), this, context);
+		}
+		else static if (op == "*") {
+			return mul!Decimal(Decimal(arg), this, context);
+		}
+		else static if (op == "/") {
+			return div!Decimal(Decimal(arg), this, context);
+		}
+		else static if (op == "%") {
+			return remainder!Decimal(Decimal(arg), this, context);
+		}
+		else static if (op == "&") {
+			return and!Decimal(this, Decimal(arg), context);
+		}
+		else static if (op == "|") {
+			return or!Decimal(this, Decimal(arg), context);
+		}
+		else static if (op == "^") {
+			return xor!Decimal(this, Decimal(arg), context);
+		}
 	}
 
 	/// Returns the result of performing the specified
