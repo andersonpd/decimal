@@ -30,32 +30,86 @@ unittest {
 // ROUNDING
 //--------------------------------
 
+/// Rounds the argument to an integer using the specified context.
+public Decimal round(const Decimal arg,
+		const DecimalContext context) {
+	Decimal value = roundToIntegralExact(arg, context);
+	return value;
+}
+
+/// Rounds the argument to an integer using the specified rounding mode.
+public Decimal round(const Decimal arg,
+		const Rounding rounding = Rounding.HALF_EVEN) {
+	if (getContext.rounding == rounding) {
+		return round(arg, getContext);
+	}
+	else {
+		pushContext(rounding);
+		Decimal value = round(arg, getContext);
+		popContext;
+		return value;
+	}
+}
+
+/// Rounds the argument to the nearest integer. If the argument is exactly
+/// half-way between two integers the even integer is returned.
 public Decimal rint(const Decimal arg) {
-	pushContext(Rounding.HALF_EVEN);
-	Decimal value = roundToIntegralExact(arg, getContext);
-	popContext;
-	return value;
+	return round(arg, Rounding.HALF_EVEN);
 }
 
+/// Returns the nearest integer less than or equal to the argument.
+/// Rounds toward negative infinity.
 public Decimal floor(const Decimal arg) {
-	pushContext(Rounding.FLOOR);
-	Decimal value = roundToIntegralExact(arg, getContext);
-	popContext;
-	return value;
+	return round(arg, Rounding.FLOOR);
 }
 
+/// Returns the nearest integer greater than or equal to the argument.
+/// Rounds toward positive infinity.
 public Decimal ceil(const Decimal arg) {
-	pushContext(Rounding.CEILING);
-	Decimal value = roundToIntegralExact(arg, getContext);
-	popContext;
-	return value;
+	return round(arg, Rounding.CEILING);
 }
 
+/// Returns the truncated argument.
+/// Rounds toward zero.
 public Decimal trunc(const Decimal arg) {
-	pushContext(Rounding.DOWN);
-	Decimal value = roundToIntegralExact(arg, getContext);
-	popContext;
-	return value;
+	return round(arg, Rounding.DOWN);
+}
+
+/// Returns the nearest int value. If the value is greater (less) than
+/// the maximum (minimum) int value the maximum (minimum) value is returned.
+/// The value is rounded based on the specified rounding mode. The default
+/// mode is half-even.
+public int toInt(const Decimal arg,
+		const Rounding rounding = Rounding.HALF_EVEN) {
+	if (arg.isNaN) return 0;
+	if (arg.isInfinite) return arg.isNegative ? int.min : int.max;
+	return toBigInt(arg, rounding).toInt;
+}
+
+/// Returns the nearest long value. If the value is greater (less) than
+/// the maximum (minimum) long value the maximum (minimum) value is returned.
+/// The value is rounded based on the specified rounding mode. The default
+/// mode is half-even.
+public long toLong(const Decimal arg,
+		const Rounding rounding = Rounding.HALF_EVEN) {
+	if (arg.isNaN) return 0;
+	if (arg.isInfinite) return arg.isNegative ? long.min : long.max;
+	return toBigInt(arg, rounding).toLong;
+}
+
+/// Returns the nearest BigInt value.
+/// The value is rounded based on the specified rounding mode. The default
+/// mode is half-even.
+public BigInt toBigInt(const Decimal arg,
+		const Rounding rounding = Rounding.HALF_EVEN) {
+	if (arg.isNaN) return BigInt(0);
+	if (arg.isInfinite) {
+		return arg.isNegative ? Decimal.min.coefficient : Decimal.max.coefficient;
+	}
+	if (arg.exponent != 0) {
+		return round(arg, rounding).coefficient;
+	}
+	return arg.coefficient;
 }
 
 unittest {	// rounding
@@ -96,154 +150,130 @@ unittest {	// rounding
 // CONSTANTS
 //--------------------------------
 
+/// Template that initializes a constant value from a string.
 mixin template Constant(alias str) {
 	Decimal value(){
 		static bool initialized = false;
-		static Decimal value;
+		static Decimal val;
 		if (!initialized) {
 			int n = str.length;
-writefln("n = %s", n);
-			value = Decimal(false, BigInt(str), 1-n, n);
-writefln("value = %s", value);
+			val = Decimal(false, BigInt(str), 1-n, n);
 			initialized = true;
 		}
-		return value;
+		return val;
 	}
 }
 
 public Decimal E() {
-	string str = "27182818284590452353602874713526624977572470936999"
-				 "5957496696762772407663035354759457138217852516643";
-	mixin Constant!(str);
+	mixin Constant!("27182818284590452353602874713526624977572470936999"
+					"5957496696762772407663035354759457138217852516643");
 	return value();
 }
 
-public Decimal LG10() {
-	string str = "33219280948873623478703194294893901758648313930245"
-				 "8061205475639581593477660862521585013974335937016";
-	mixin Constant!(str);
+public Decimal LG_10() {
+	mixin Constant!("33219280948873623478703194294893901758648313930245"
+					"8061205475639581593477660862521585013974335937016");
 	return value();
 }
 
 public Decimal LG_E() {
-	string str = "14426950408889634073599246810018921374266459541529"
-				 "8593413544940693110921918118507988552662289350634";
-	mixin Constant!(str);
+	mixin Constant!("14426950408889634073599246810018921374266459541529"
+					"8593413544940693110921918118507988552662289350634");
 	return value();
 }
 
 public Decimal LOG_E() {
-	string str = "43429448190325182765112891891660508229439700580366"
-				 "65661144537831658646492088707747292249493384317483";
-	mixin Constant!(str);
+	mixin Constant!("43429448190325182765112891891660508229439700580366"
+					"6566114453783165864649208870774729224949338431748");
 	return value();
 }
 
 public Decimal LOG_2() {
-	string str = "030102999566398119521373889472449302676818988146210"
-				 "8541310427461127108189274424509486927252118186172";
-	mixin Constant!(str);
+	mixin Constant!("030102999566398119521373889472449302676818988146210"
+					"8541310427461127108189274424509486927252118186172");
 	return value;
 }
 
 public Decimal LN2() {
-	string str = "069314718055994530941723212145817656807550013436025"
-				 "5254120680009493393621969694715605863326996418688";
-	mixin Constant!(str);
+	mixin Constant!("069314718055994530941723212145817656807550013436025"
+					"5254120680009493393621969694715605863326996418688");
 	return value;
 }
 
 public Decimal LN10() {
-	string str = "23025850929940456840179914546843642076011014886287"
-				 "72976033327900967572609677352480235997205089598298";
-	mixin Constant!(str);
+	mixin Constant!("23025850929940456840179914546843642076011014886287"
+					"7297603332790096757260967735248023599720508959820");
 	return value;
 }
 
 public Decimal PI() {
-	string str = "31415926535897932384626433832795028841971693993751"
-				 "0582097494459230781640628620899862803482534211707";
-	mixin Constant!(str);
+	mixin Constant!("31415926535897932384626433832795028841971693993751"
+					"0582097494459230781640628620899862803482534211707");
 	return value;
 }
 
 public Decimal PI_2() {
-	string str = "15707963267948966192313216916397514420985846996875"
-				 "5291048747229615390820314310449931401741267105853";
-	mixin Constant!(str);
+	mixin Constant!("15707963267948966192313216916397514420985846996875"
+					"5291048747229615390820314310449931401741267105853");
 	return value;
 }
 
 public Decimal PI_4() {
-	string str = "078539816339744830961566084581987572104929234984377"
-				 "6455243736148076954101571552249657008706335529267";
-	mixin Constant!(str);
+	mixin Constant!("078539816339744830961566084581987572104929234984377"
+					"6455243736148076954101571552249657008706335529267");
 	return value;
 }
 
 public Decimal INV_PI() {
-	string str = "031830988618379067153776752674502872406891929148091"
-				 "2897495334688117793595268453070180227605532506172";
-	mixin Constant!(str);
+	mixin Constant!("031830988618379067153776752674502872406891929148091"
+					"2897495334688117793595268453070180227605532506172");
 	return value;
 }
 
 public Decimal INV_2PI() {
-	string str = "015915494309189533576888376337251436203445964574045"
-				 "6448747667344058896797634226535090113802766253086";
-	mixin Constant!(str);
+	mixin Constant!("015915494309189533576888376337251436203445964574045"
+					"6448747667344058896797634226535090113802766253086");
 	return value;
 }
 
 public Decimal INV2_SQRTPI() {
-	string str = "11283791670955125738961589031215451716881012586579"
-				 "9771368817144342128493688298682897348732040421473";
-	mixin Constant!(str);
+	mixin Constant!("11283791670955125738961589031215451716881012586579"
+					"9771368817144342128493688298682897348732040421473");
 	return value;
 }
 
 public Decimal SQRT2() {
-	string str = "14142135623730950488016887242096980785696718753769"
-				 "4807317667973799073247846210703885038753432764157";
-	mixin Constant!(str);
+	mixin Constant!("14142135623730950488016887242096980785696718753769"
+					"4807317667973799073247846210703885038753432764157");
 	return value;
 }
 
 public Decimal SQRT1_2() {
-	string str = "070710678118654752440084436210484903928483593768847"
-				 "4036588339868995366239231053519425193767163820786";
-	mixin Constant!(str);
+	mixin Constant!("070710678118654752440084436210484903928483593768847"
+					"4036588339868995366239231053519425193767163820786");
 	return value;
 }
 
 unittest {
-	write("mixin...");
-//mixin Constant!("LN2", "1.414213562373095048801688724209698078569671875376948073176679737990732478462107038850387534327641573");
-writefln("LN2 = %s", LN2());
+	writeln("mixin...");
+writefln("E     = %s", E);
+writefln("LN2   = %s", LN2());
+writefln("LN10  = %s", LN10);
+writefln("LOG_E = %s", LOG_E);
+writefln("LOG_2 = %s", LOG_2);
+writefln("LG_E  = %s", LG_E);
 writefln("SQRT2 = %s", SQRT2());
+writefln("LG_10 = %s", LG_10);
 writefln("LOG_2 = %s", LOG_2);
 	writeln("test missing");
 }
-
-/*// Returns e to 99 digit accuracy.
-public Decimal E() {
-	static bool initialized = false;
-	static Decimal value;
-	if (!initialized) {
-		value = Decimal(false,
-		BigInt("27182818284590452353602874713526624977572470936999"
-		       "5957496696762772407663035354759457138217852516643"), -98, 99);
-		initialized = true;
-	}
-	return value;
-}*/
 
 unittest {	// E
 	assert(E.digits == 99);
 	assert(numDigits(E.coefficient) == 99);
 }
 
-/// Returns the value of e to the specified precision.
+/// Returns the value of e at the specified precision.
 public Decimal e(uint precision) {
 	static int lastPrecision = 0;
 	static Decimal value;
@@ -256,69 +286,55 @@ public Decimal e(uint precision) {
 	return value;
 }
 
-/// Returns the value of e to the current precision.
+/// Returns the value of e at the current precision.
 public Decimal e() {
 	static int lastPrecision = 0;
 	static Decimal value;
 	int precision = getContext.precision;
 	if (precision != lastPrecision) {
 		if (precision > 99) {
-			value = Decimal.nan;
+			value = e0();
 		}
 		else {
-			value = round(E, getContext);
+			value = roundToPrecision(E);
 		}
 		lastPrecision = precision;
 	}
 	return value;
 }
 
-unittest {
-	write("e.............");
-writeln;
-writefln("E      = %s", E);
-writefln("e      = %s", e);
-writefln("e(25)  = %s", e(25));
-	writeln("test missing");
-}
-
-/*/// Returns the value of e to the specified precision.
-public Decimal e(const uint precision) {
-	pushContext(precision+2);
-	Decimal value = e();
-	getContext.precision -= 2;
-	value = round(value);
-	popContext();
-	return value;
-}
-
-/// Returns the value of e to the specified precision.
-public Decimal e() {
-	Decimal x = 1;
-	int n = 1;
-	Decimal fact = 1;
-	Decimal sum = 1;
+/// Calculates and returns the value of e at the current precision.
+private Decimal e0() {
+	long n = 1;
+//	Decimal fact = 1;
 	Decimal term = 1;
+	Decimal sum  = 1;
 	while (term > Decimal.epsilon) {
 		sum += term;
-		n++;
-		fact = fact * n;
-		term = x/fact;
+//		n++;
+		// TODOD: should be able to write "term /= ++n;"
+		term = term / ++n;
+//		fact = fact * n;
+//		term = Decimal(1.0)/fact;
 	}
 	return sum;
 }
 
 unittest {
-	write("e..............");
-writeln();
-	for (int i = 10; i < 25; i++) {
-		writefln("e(%d) = %s", i, e(i));
-	}
+	write("e.............");
+writeln;
+writefln("E      = %s", E);
+writefln("e      = %s", e(35));
+	pushContext(199);
+	getContext.maxExpo = 250;
+writefln("e0()  = %s", e0());
+	popContext;
+writefln("e(5)  = %s", e(5));
 	writeln("test missing");
-}*/
+}
 
 public Decimal sqr(const Decimal x) {
-	return x * x;
+	return decimal.arithmetic.sqr(x);
 }
 
 unittest {
@@ -326,17 +342,6 @@ unittest {
 	writeln("test missing");
 }
 
-/*// Returns pi to 99 digit accuracy.
-public Decimal PI() {
-	static bool initialized = false;
-	static Decimal value;
-	if (!initialized) {
-		value = Decimal(false, BigInt("314159265358979323846264338327950288419716939937510582097494459230781640628620899862803482534211707"), -98, 99);
-		initialized = true;
-	}
-	return value;
-}
-*/
 unittest {	// PI
 	assert(PI.digits == 99);
 	assert(numDigits(PI.coefficient) == 99);
@@ -362,35 +367,34 @@ public Decimal pi() {
 	int precision = getContext.precision;
 	if (precision != lastPrecision) {
 		if (precision > 99) {
-			value = Decimal.nan;
+			value = pi0();
 		}
 		else {
-			value = round(PI, getContext);
+			value = roundToPrecision(PI, getContext);
 		}
 		lastPrecision = precision;
 	}
 	return value;
 }
 
-/// Returns the value of pi to the current precision.
-public Decimal calculatePi() {
-	const Decimal ONE = Decimal(1L);
-	const Decimal TWO = Decimal(2L);
-	const Decimal FOUR = Decimal(4L);
-	Decimal a = ONE.dup;
-	Decimal b = a/sqrt(TWO);
-	Decimal t = Decimal("0.25");
-	Decimal x = ONE.dup;
-	int i = 0;
+/// Calculates the value of pi to the current precision.
+public Decimal pi0() {
+	const Decimal one = Decimal(1);
+	const Decimal two = Decimal(2L);
+	const Decimal four = Decimal(4L);
+	Decimal a = one.dup;
+	Decimal b = a / sqrt(two); // TODO: use sqrt2 constant
+	Decimal t = one/four;
+	Decimal x = one.dup;
 	while (a != b) {
 		Decimal y = a;    // save the value of a
-		a = (a + b)/TWO;     // arithmetic mean
-		b = sqrt(b*y);       // geometric mean
-		t -= x*(a*a - b*b);  // weighted sum of the difference of the means
+		a = (a + b)/two;     // arithmetic mean
+		b = sqrt(b * y);       // geometric mean
+		t -= x * (sqr(a) - sqr(b));  // weighted sum of the difference of the means
+		// TODO: x = 2;
 		x = x * 2;
-		i++;
 	}
-	Decimal result = sqr(a+b)/(FOUR*t);
+	Decimal result = sqr(a+b)/(four*t);
 	return result;
 }
 
@@ -483,18 +487,45 @@ public Decimal sqrt(const Decimal x) {
 unittest {
 	write("sqrt...........");
 writeln;
-writefln("sqrt(2, 29) = %s", sqrt(Decimal(2), 29));
-writefln("sqrt(2, 29) = %s", sqrt(Decimal(200), 29));
-writefln("sqrt(2, 29) = %s", sqrt(Decimal(25), 29));
-writefln("sqrt(2, 29) = %s", sqrt(Decimal(2E-5), 29));
-writefln("sqrt(2, 29) = %s", sqrt(Decimal(1E-15), 29));
-writefln("sqrt(2, 29) = %s", sqrt(Decimal(1E-16), 29));
+writefln("sqrt(2, 29)     = %s", sqrt(Decimal(2), 29));
+writefln("sqrt(200, 29)   = %s", sqrt(Decimal(200), 29));
+writefln("sqrt(25, 29)    = %s", sqrt(Decimal(25), 29));
+writefln("sqrt(2E-5, 29)  = %s", sqrt(Decimal(2E-5), 29));
+writefln("sqrt(1E-15, 29) = %s", sqrt(Decimal(1E-15), 29));
+writefln("sqrt(1E-16, 29) = %s", sqrt(Decimal(1E-16), 29));
 	writeln("test missing");
 }
 
-public Decimal reciprocal(const Decimal x) {
-	// TODO: implement reciprocal
-	return Decimal.nan;
+public Decimal reciprocalA(const Decimal x) {
+	return Decimal(1)/x;
+}
+
+public Decimal reciprocal(const Decimal a) {
+	// TODO: need to set flags, etc.
+	if (a.isNaN) return Decimal.nan;
+	if (a.isZero) {
+		contextFlags.setFlags(DIVISION_BY_ZERO);
+		return Decimal.infinity(a.sign);
+	}
+	if (a.isInfinite) return Decimal.zero(a.sign);
+	// TODO: need to fix opEquals: if (a.abs == 1)...
+	Decimal r = copyAbs(a);
+	if (r == Decimal(1)) return a.dup;
+
+	pushContext(getContext.precision+2);
+	Decimal xOld = Decimal(1, -ilogb(a)-1);  	// FIXTHIS: need pow2 like pow10?
+	Decimal xNew;// = xOld;
+	Decimal ek = 1 - xOld * a;
+//	while (xNew != xOld) { //ek > Decimal.epsilon) {
+//	while (ek > Decimal.epsilon) {
+	for (int i = 0; i < 10; i++) {
+//		ek = 1 - xOld * a;
+		xNew = xOld *(2 - a*xOld);
+		if (xNew == xOld) break;
+		xOld = xNew;
+	}
+	popContext;
+	return reduce(roundToPrecision(xNew));
 }
 
 public Decimal reciprocal(const Decimal x, uint precision) {
@@ -503,6 +534,18 @@ public Decimal reciprocal(const Decimal x, uint precision) {
 	popContext();
 	return value;
 }
+
+unittest {
+	writeln("reciprocal...");
+writefln("reciprocalA(Decimal(2.5)) = %s", reciprocalA(Decimal(2.5)));
+writefln("reciprocal(Decimal(2.5)) = %s", reciprocal(Decimal(2.5)));
+writefln("reciprocalA(Decimal(250)) = %s", reciprocalA(Decimal(250)));
+writefln("reciprocal(Decimal(250)) = %s", reciprocal(Decimal(250)));
+writefln("reciprocalA(Decimal(.025)) = %s", reciprocalA(Decimal(".025")));
+writefln("reciprocal(Decimal(.025)) = %s", reciprocal(Decimal(".025")));
+	writeln("test missing");
+}
+
 
 /// Decimal version of std.math function
 public Decimal hypot(const Decimal x, const Decimal y)
@@ -523,7 +566,7 @@ public Decimal hypot(const Decimal x, const Decimal y)
 		b = t;
 	}
     b /= a;
-    return a * sqrt(one + (b * b));
+    return a * sqrt(one + sqr(b));
 }
 
 unittest {
@@ -711,101 +754,60 @@ unittest {
 //--------------------------------
 
 
-// Returns the argument reduced to 0 <= pi/4 and the octant.
-private Decimal trigRange(const Decimal x, out int octant) {
-	// TODO: need to do all these with +2 precision
-	// TODO: need to get pi, 2*pi, pi/4, 3*pi/4 only once.
-	Decimal c = 2.0 * pi; // * 2L; // * pi; //Decimal("2.0") * pi;
-	Decimal k = trunc(x/c);
-	if (k.isNegative) k = 1 - k;
-	Decimal r = x - k * c;
-	if (r <= pi) {
-		if (r <= pi/2) {
-			if (r <= pi/4) octant = 0;
-			else octant = 1;
-			}
-		} // r > pi/2
-		if (r <= pi*(3.0/4.0)) octant = 3;
-		else octant = 4;
-
-	octant = 5;
-	if      (r.abs <= pi/4) octant = 0;
-	else if (r.abs > pi*3/4) octant = 2;
-	else if (r > Decimal("0"))	octant = 1;
-	else octant = 4;
-	return r;
-
-/*writefln("pi = %s", pi);
-//writefln("2*pi = %s", 2*pi);
-	Decimal c = Decimal(1)/(pi * 2.0);
-writefln("c = %s", c);
-writefln("arg * c = %s", arg * c);
-	Decimal k = trunc(arg * c);
-writefln("k = %s", k);
-writefln("k * c = %s", k * c);
-	Decimal r = arg - (k * c);
-writefln("r = %s", r);
-	return r;*/
+// Returns the argument reduced to 0 <= pi/4 and sets the octant.
+private Decimal reducedAngle(const Decimal x, out int octant) {
+	Decimal x2 = 4*x/pi;
+	Decimal ki = trunc(x2);
+	int k2 = trunc(x2).coefficient.toInt;
+	if (k2 < 0) k2 = 1 - k2;
+	Decimal red = pi/4 * (x2 - k2);
+	octant = k2 % 8;
+	return red;
 }
 
 unittest {
-	write("range reduction...");
-writeln;
-	Decimal deg = Decimal("180")/pi;
-	for (real x = 0; x <= std.math.PI*2; x += std.math.PI/8)	{
-writeln(" *** ");
-writefln("x      = %s", x*180/std.math.PI);
-writefln("sin(x)       = %s", std.math.sin(x));
-writefln("cos(x)       = %s", std.math.cos(x));
-writefln("sin(x - 45)  = %s", std.math.sin(x - std.math.PI/4));
-writefln("cos(x - 45)  = %s", std.math.cos(x - std.math.PI/4));
-writefln("sin(x - 90)  = %s", std.math.sin(x - std.math.PI/2));
-writefln("cos(x - 90)  = %s", std.math.cos(x - std.math.PI/2));
-writefln("sin(x - 135) = %s", std.math.sin(x - std.math.PI*3/4));
-writefln("cos(x - 135) = %s", std.math.cos(x - std.math.PI*3/4));
-writefln("sin(x - 180) = %s", std.math.sin(x - std.math.PI));
-writefln("cos(x - 180) = %s", std.math.cos(x - std.math.PI));
+	writeln("range reduction...");
+/*	Decimal deg = Decimal("180")/pi;
+	int octant;
+	for (int x = 0; x <= 720; x += 35) {
+		Decimal xr = x/deg;
+		Decimal y = reducedAngle(xr, octant);
+		Decimal yd = y*deg;
+		writefln("   x = %s, y = %s, octant = %s", x, rint(yd), octant);
+		y = reducedAngleOld(xr, octant);
+		yd = y*deg;
+		writefln("-- x = %s, y = %s, octant = %s", x, rint(yd), octant);
+	}*/
+	writeln("passed");
 }
-
-
-writeln("deg");
-	int quadrant;
-	Decimal x, y;
-	x = Decimal("30")/deg;
-	y = trigRange(x, quadrant);
-writefln("x = %s", x*deg);
-writefln("y = %s", y*deg);
-writefln("quadrant = %s", quadrant);
-	x = Decimal("180")/deg;
-	y = trigRange(x, quadrant);
-writefln("x = %s", x*deg);
-writefln("y = %s", y*deg);
-writefln("quadrant = %s", quadrant);
-	x = Decimal("315")/deg;
-	y = trigRange(x, quadrant);
-writefln("x = %s", x*deg);
-writefln("y = %s", y*deg);
-writefln("quadrant = %s", quadrant);
-
-writeln("rad");
-	x = Decimal("1.0");
-	y = trigRange(x, quadrant);
-writefln("x = %s", x);
-writefln("y = %s", y);
-	x = Decimal("10.0");
-	y = trigRange(x, quadrant);
-writefln("x = %s", x);
-writefln("y = %s", y);
-	x = Decimal("100.0");
-	y = trigRange(x, quadrant);
-writefln("x = %s", x);
-writefln("y = %s", y);
-	writeln("test missing");
-}
-
 
 /// Decimal version of std.math function.
 public Decimal sin(const Decimal x) {
+	int octant;
+	Decimal rx = reducedAngle(x, octant);
+	switch(octant) {
+		case 0: return( sin0( rx));
+		case 1: return( cos0(-rx));
+		case 2: return( cos0( rx));
+		case 3: return( sin0(-rx));
+		case 4: return(-sin0( rx));
+		case 5: return(-cos0(-rx));
+		case 6: return(-cos0( rx));
+		case 7: return(-sin0(-rx));
+		default: return Decimal.nan;
+	}
+}
+
+/// Decimal version of std.math function.
+public Decimal sin(const Decimal arg, uint precision) {
+	pushContext(precision);
+	Decimal value = sin(arg);
+	popContext();
+	return value;
+}
+
+/// Decimal version of std.math function.
+public Decimal sin0(const Decimal x) {
 	Decimal sum = 0;
 	int n = 1;
 	Decimal powx = x.dup;
@@ -822,25 +824,52 @@ public Decimal sin(const Decimal x) {
 	return sum;
 }
 
-/// Decimal version of std.math function.
-public Decimal sin(const Decimal arg, uint precision) {
-	pushContext(precision);
-	Decimal value = sin(arg);
-	popContext();
-	return value;
-}
-
 unittest {
 	write("sin..........");
-	// sin(1.0) = 0.84147098480789650665250232163029899962256306079837
 	writeln;
-	writefln("sin(1.0) = %s", sin(Decimal("1.0")));
+	writeln("sin(1) = 0.84147098480789650665250232163029899962256306079837");
+	pushContext(50);
+	writefln("sin0(1) = %s", sin0(Decimal(1)));
+//	Decimal test = Decimal(10,22);
+//	writefln("sin(10^^22) = %s", sin(test));
+	Decimal test = Decimal("22000.12345");
+	writeln("sin(22) = -0.008851309290403875921690256815772332463289203951");
+	writefln("sin(22) = %s", sin(test));
+/*
+//	popContext();
+	writefln("sin(101.23456789) = %s", sin(Decimal("101.23456789"), 25));
+	writefln("sin(pi + 1.0) = %s", sin(pi(25) + Decimal("1.0"),25));
 
-	writeln("..failed");
+	writeln("..failed");*/
 }
 
 /// Decimal version of std.math function.
 public Decimal cos(const Decimal x) {
+	int octant;
+	Decimal y = reducedAngle(x, octant);
+	switch(octant) {
+		case 0: return(cos0(y));
+		case 1: return(sin0(-y));
+		case 2: return(-sin0(y));
+		case 3: return(-cos0(-y));
+		case 4: return(-cos0(y));
+		case 5: return(-sin0(-y));
+		case 6: return(sin0(y));
+		case 7: return(cos0(-y));
+		default: return Decimal.nan;
+	}
+}
+
+/// Decimal version of std.math function.
+public Decimal cos(const Decimal x, uint precision) {
+	pushContext(precision);
+	Decimal value = cos(x);
+	popContext();
+	return value;
+}
+
+/// Decimal version of std.math function.
+public Decimal cos0(const Decimal x) {
 	Decimal sum = 0;
 	int n = 0;
 	Decimal powx = 1;
@@ -857,19 +886,13 @@ public Decimal cos(const Decimal x) {
 	return sum;
 }
 
-/// Decimal version of std.math function.
-public Decimal cos(const Decimal x, uint precision) {
-	pushContext(precision);
-	Decimal value = cos(x);
-	popContext();
-	return value;
-}
-
 unittest {
 	write("cos..........");
-	// cos(1.0) = 0.54030230586813971740093660744297660373231042061792
 	writeln;
-	writefln("cos(1.0) = %s", cos(Decimal("1.0")));
+	writeln("cos(1) = 0.54030230586813971740093660744297660373231042061792");
+	pushContext(50);
+	writefln("cos(1) = %s", cos0(Decimal(1)));
+	popContext();
 	writeln("..failed");
 }
 
@@ -1142,5 +1165,6 @@ unittest {
 	writeln("===================");
 	writeln();
 }
+
 
 

@@ -361,7 +361,7 @@ private string decimalForm(T)
 	if (diff < 0) {
 		int numPrecision = num.digits + num.exponent + precision;
 		DecimalContext context = num.context.setPrecision(numPrecision);
-		num = round!T(num, context);
+		num = roundToPrecision!T(num, context);
 	}
 
 	// convert the coefficient to a string
@@ -444,7 +444,7 @@ private string exponentForm(T)(const T number, const int precision = 6,
 	if (num.context.precision > precision + 1) {
 		int numPrecision = precision + 1;
 		DecimalContext ctx = num.context.setPrecision(numPrecision);
-		num = round!T(num, ctx);
+		num = roundToPrecision!T(num, ctx);
 	}
 	char[] mant = to!string(num.coefficient).dup;
 	auto expo = num.exponent;

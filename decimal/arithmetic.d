@@ -138,7 +138,33 @@ unittest {	// copy
 	assert(compareTotal(copySign(arg1, arg2),expect) == 0);
 }
 
-/// Returns "the integer which is the exponent of the magnitude
+/// Returns the truncated base 10 logarithm of the argument.
+/// "...The integer which is the exponent of the magnitude
+/// of the most significant digit of the operand.
+/// (As though the operand were truncated to a single digit
+/// while maintaining the value of that digit and without
+/// limiting the resulting exponent)".
+/// May set the INVALID_OPERATION and DIVISION_BY_ZERO flags.
+/// Implements the 'logb' function in the specification. (p. 47)
+public int ilogb(T)(const T arg) {
+
+	T result = T.nan;
+
+	if (invalidOperand!T(arg, result)) {
+		return 0;
+	}
+	if (arg.isInfinite) {
+		return int.max;
+	}
+	if (arg.isZero) {
+		contextFlags.setFlags(DIVISION_BY_ZERO);
+		return int.min;
+	}
+	return arg.digits + arg.exponent - 1;
+}
+
+/// Returns the truncated base 10 logarithm of the argument.
+/// "...The integer which is the exponent of the magnitude
 /// of the most significant digit of the operand.
 /// (As though the operand were truncated to a single digit
 /// while maintaining the value of that digit and without
@@ -157,19 +183,18 @@ public T logb(T)(const T arg) {
 	}
 	if (arg.isZero) {
 		contextFlags.setFlags(DIVISION_BY_ZERO);
-		result = T.infinity(true);
-		return result;
+		return T.infinity(true);
 	}
 	int expo = arg.digits + arg.exponent - 1;
-	return T(cast(long)expo);
+	return T(expo);
 }
 
 unittest {	// logb
-	Decimal arg, expect, actual;
-	arg = 250;
-	expect = 2;
-	actual = logb(arg);
-	assert(actual == expect);
+	assert(logb(Decimal(250))    == Decimal(2));
+	assert(logb(Decimal("2.5"))  == Decimal(0));
+	assert(logb(Decimal("0.03")) == Decimal(-2));
+	// TODO: this shouldn't be this complicated.
+	assert(logb(Decimal(0))   == Decimal(Decimal.infinity(true)));
 }
 
 /// If the first operand is infinite then that operand is returned,
@@ -258,6 +283,13 @@ unittest {	// reduce
 	actual = reduce(arg);
 	assert(arg.toString != expect.toString);
 	assert(actual.toString == expect.toString);
+	arg = Decimal("12.34");
+	expect = Decimal("1.234");
+	actual = reduce(arg);
+writefln("arg.toString = %s", arg.toString);
+writefln("actual.toString = %s", actual.toString);
+//	assert(arg.toString != expect.toString);
+//	assert(actual.toString == expect.toString);
 }
 
 /// Returns the absolute value of the argument.
@@ -275,7 +307,7 @@ public T abs(T)(const T arg,
 		return result;
 	}
 	result = copyAbs!T(arg);
-	return round!T(result, context);
+	return roundToPrecision!T(result, context);
 }
 
 unittest {	// abs
@@ -341,7 +373,7 @@ public T plus(T)(const T arg,
 	}
 	result = arg;
 //writefln("arg  = %s", arg);
-	return round(result, context);
+	return roundToPrecision(result, context);
 }
 
 /// Returns a copy of the argument with the opposite sign.
@@ -357,7 +389,7 @@ public T minus(T)(const T arg,
 		return result;
 	}
 	result = copyNegate!T(arg);
-	return round(result, context);
+	return roundToPrecision(result, context);
 }
 
 unittest {	// plus
@@ -468,7 +500,7 @@ public T nextToward(T)(const T arg1, const T arg2,
 	if (comp < 0) return nextPlus!T(arg1, context);
 	if (comp > 0) return nextMinus!T(arg1, context);
 	result = copySign!T(arg1, arg2);
-	return round(result, context);
+	return roundToPrecision(result, context);
 }
 
 unittest {	// nextPlus
@@ -910,7 +942,7 @@ const(T) max(T)(const T arg1, const T arg2,
 		}
 	}
 	// result must be rounded
-	return round(result);
+	return roundToPrecision(result);
 }
 
 /// Returns the larger of the two operands (or NaN). Returns the same result
@@ -992,7 +1024,7 @@ const(T) min(T)(const T arg1, const T arg2,
 		}
 	}
 	// result must be rounded
-	return round(result);
+	return roundToPrecision(result);
 }
 
 /// Returns the smaller of the two operands (or NaN). Returns the same result
@@ -1040,6 +1072,8 @@ unittest {	// quantum
 // binary shift
 //--------------------------------
 
+// TODO: these don't work because we don't want to truncate the coefficient.
+// shl is okay, but shr isn't.
 public Decimal shl(const Decimal arg, const int n,
 		const DecimalContext context = Decimal.context) {
 
@@ -1049,8 +1083,8 @@ public Decimal shl(const Decimal arg, const int n,
 	}
 	result = arg;
 	result.coefficient = result.coefficient << n;
-	result.digits = result.digits + 1;
-	return round(result, context);
+	result.digits = numDigits(result.coefficient);
+	return roundToPrecision(result, context);
 }
 
 public Decimal shr(const Decimal arg, const int n,
@@ -1062,8 +1096,8 @@ public Decimal shr(const Decimal arg, const int n,
 	}
 	result = arg;
 	result.coefficient = result.coefficient >> n;
-	result.digits = result.digits - 1;
-	return round(result, context);
+	result.digits = numDigits(result.coefficient);
+	return roundToPrecision(result, context);
 }
 
 unittest {	// shr, shl.
@@ -1261,7 +1295,7 @@ public T add(T)(const T arg1, const T arg2,
 	result = T(sum);
 	// round the result
 	if (roundResult) {
-		return round(result, context);
+		return roundToPrecision(result, context);
 	}
 	return result;
 }	 // end add(arg1, arg2)
@@ -1346,7 +1380,7 @@ public T addLong(T)(const T arg1, const long arg2,
 	result = T(sum);
 	// round the result
 	if (roundResult) {
-		return round(result, context);
+		return roundToPrecision(result, context);
 	}
 	return result;
 }	 // end add(arg1, arg2)
@@ -1447,7 +1481,7 @@ public T mul(T)(const T arg1, const T arg2,
 
 	// round if rounding flag is set
 	if (roundResult) {
-		return round(result, T.context);
+		return roundToPrecision(result, T.context);
 	}
 	return result;
 }
@@ -1495,7 +1529,7 @@ public T mulLong(T)(const T arg1, long arg2,
 	}
 	// only needs rounding if
 	if (roundResult) {
-		return round(result, context);
+		return roundToPrecision(result, context);
 	}
 	return result;
 }
@@ -1521,6 +1555,52 @@ unittest { // mulLong
 	arg1 = -7000;
 	result = mulLong(arg1, arg2, testContext);
 	assert("-21000" == result.toString());
+}
+
+/// Squares the argument and returns the result.
+/// The result may be rounded and context flags may be set.
+public T sqr(T)(const T arg,
+		const DecimalContext context = T.context,
+		const bool roundResult = true) if (isDecimal!T) {
+
+	T result = T.nan;
+	// if invalid, return NaN
+	if (invalidBinaryOp!T(arg, arg, result)) {
+		return result;
+	}
+	// if operand is infinite, return infinity
+	if (arg.isInfinite) {
+		result = T.infinity;
+		return result;
+	}
+
+	// if operand is zero, return zero
+	if (arg.isZero) {
+		result = T.zero;
+		return result;
+	}
+
+	// product is non-zero
+	else {
+		Decimal product = Decimal.zero;
+		static if (is(T:Decimal)) {
+			product.coefficient = arg.coefficient^^2;
+		}
+		else {
+			// TODO: this should also be ^^2
+			product.coefficient = T.bigmul(arg, arg);
+		}
+		product.exponent = 2 * arg.exponent;
+		product.sign = false;
+		product.digits = numDigits(product.coefficient);
+		result = T(product);
+	}
+
+	// round if rounding flag is set
+	if (roundResult) {
+		return roundToPrecision(result, T.context);
+	}
+	return result;
 }
 
 /// Multiplies the first two operands and adds the third operand to the result.
@@ -1583,12 +1663,14 @@ public T div(T)(const T arg1, const T arg2,
 		dividend.exponent = dividend.exponent - shift;
 		dividend.digits = dividend.digits + shift;
 	}
+//writefln("dividend.coefficient = %s", dividend.coefficient);
+//writefln("divisor.coefficient = %s", divisor.coefficient);
 	quotient.coefficient = dividend.coefficient / divisor.coefficient;
 	quotient.exponent = dividend.exponent - divisor.exponent;
 	quotient.sign = dividend.sign ^ divisor.sign;
 	quotient.digits = numDigits(quotient.coefficient);
 	if (roundResult) {
-		quotient = round(quotient, context);
+		quotient = roundToPrecision(quotient, context);
 		quotient = reduceToIdeal!Decimal(quotient, diff, context);
 	}
 	return T(quotient);
@@ -1894,7 +1976,7 @@ public T quantize(T)(const T arg1, const T arg2,
 	else {
 		uint precision = (-diff > arg1.digits) ? 0 : arg1.digits + diff;
 		DecimalContext tempContext = context.setPrecision(precision);
-		result = round!T(result, tempContext);
+		result = roundToPrecision!T(result, tempContext);
 		result.exponent = arg2.exponent;
 		if (result.isZero && arg1.isSigned) {
 			result.sign = true;
@@ -1998,7 +2080,7 @@ public T roundToIntegralExact(T)(const T arg,
 
 	DecimalContext temp = context;
 	temp.precision = result.digits + result.exponent;
-	result = round(result, temp);
+	result = roundToPrecision(result, temp);
 	return result;
 }
 
@@ -2051,7 +2133,7 @@ public T roundToIntegralValue(T)(const T arg,
 
 	DecimalContext temp = context;
 	temp.precision = result.digits + result.exponent;
-	result = round(result, temp, false);
+	result = roundToPrecision(result, temp, false);
 	return result;
 }
 

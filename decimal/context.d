@@ -249,7 +249,7 @@ private const uint128 FIVE128 = uint128(5);
 /// Rounds the referenced number using the precision and rounding mode of
 /// the context parameter.
 /// Flags: SUBNORMAL, CLAMPED, OVERFLOW, INEXACT, ROUNDED.
-public T round(T)(const T num,
+public T roundToPrecision(T)(const T num,
 		const DecimalContext context = T.context,
 		const bool setFlags = true) if (isDecimal!T) {
 
@@ -293,61 +293,60 @@ public T round(T)(const T num,
 	// check for overflow
 	if (overflow(result, context)) return result;
 	// round the number
-//writefln("result  = %s", result);
 	roundByMode(result, context);
 	// check again for an overflow
 	overflow(result, context);
 	return result;
 
-} // end round()
+} // end roundToPrecision()
 
-unittest {	// round
+unittest {	// roundToPrecision
 	import decimal.dec32;
 
 	Decimal before = Decimal(9999);
 	Decimal after = before;
 	DecimalContext ctx3 = DecimalContext(3, 99, Rounding.HALF_EVEN);
-	after = round(after, ctx3);
+	after = roundToPrecision(after, ctx3);
 	assert("1.00E+4" == after.toString);
 	before = Decimal(1234567890);
 	after = before;
-	after = round(after, ctx3);
+	after = roundToPrecision(after, ctx3);
 	assert(after.toString == "1.23E+9");
 	after = before;
 	DecimalContext ctx4 = DecimalContext(4, 99, Rounding.HALF_EVEN);
-	after = round(after, ctx4);;
+	after = roundToPrecision(after, ctx4);;
 	assert(after.toString == "1.235E+9");
 	after = before;
 	DecimalContext ctx5 = DecimalContext(5, 99, Rounding.HALF_EVEN);
-	after = round(after, ctx5);;
+	after = roundToPrecision(after, ctx5);;
 	assert(after.toString == "1.2346E+9");
 	after = before;
 	DecimalContext ctx6 = DecimalContext(6, 99, Rounding.HALF_EVEN);
-	after = round(after, ctx6);;
+	after = roundToPrecision(after, ctx6);;
 	assert(after.toString == "1.23457E+9");
 	after = before;
 	DecimalContext ctx7 = DecimalContext(7, 99, Rounding.HALF_EVEN);
-	after = round(after, ctx7);;
+	after = roundToPrecision(after, ctx7);;
 	assert(after.toString == "1.234568E+9");
 	after = before;
 	DecimalContext ctx8 = DecimalContext(8, 99, Rounding.HALF_EVEN);
-	after = round(after, ctx8);;
+	after = roundToPrecision(after, ctx8);;
 	assert(after.toString == "1.2345679E+9");
 	before = 1235;
 	after = before;
-	after = round(after, ctx3);;
+	after = roundToPrecision(after, ctx3);;
 	assert("[0,124,1]" == after.toAbstract());
 	before = 12359;
 	after = before;
-	after = round(after, ctx3);;
+	after = roundToPrecision(after, ctx3);;
 	assert("[0,124,2]" == after.toAbstract());
 	before = 1245;
 	after = before;
-	after = round(after, ctx3);
+	after = roundToPrecision(after, ctx3);
 	assert("[0,124,1]" == after.toAbstract());
 	before = 12459;
 	after = before;
-	after = round(after, ctx3);;
+	after = roundToPrecision(after, ctx3);;
 	assert(after.toAbstract() == "[0,125,2]");
 	Dec32 a = Dec32(0.1);
 	Dec32 b = Dec32.min * Dec32(8888888);

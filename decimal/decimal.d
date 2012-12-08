@@ -69,11 +69,11 @@ struct Decimal {
 private:
 
 // common decimal "numbers"
-	immutable Decimal NAN	  = Decimal(SV.QNAN);
-	immutable Decimal SNAN	  = Decimal(SV.SNAN);
+	immutable Decimal NAN	   = Decimal(SV.QNAN);
+	immutable Decimal SNAN	   = Decimal(SV.SNAN);
 	immutable Decimal INFINITY = Decimal(SV.INF);
 	immutable Decimal NEG_INF  = Decimal(SV.INF, true);
-	immutable Decimal ZERO	  = Decimal(SV.NONE);
+	immutable Decimal ZERO	   = Decimal(SV.NONE);
 	immutable Decimal NEG_ZERO = Decimal(SV.NONE, true);
 
 	immutable BigInt BIG_ZERO = cast(immutable)BigInt(0);
@@ -134,7 +134,6 @@ public:
 		assert(num.toString == "1");
 	}
 
-
 	/// Constructs a number from a boolean sign, a BigInt coefficient and
 	/// an optional integer exponent.
 	/// The sign of the number is the value of the sign parameter
@@ -191,8 +190,6 @@ public:
 		this.signed = sign;
 		this.mant = big;
 		this.expo = exponent;
-        // (B)TODO: If we specify the number of digits this can be CTFE.
-        // The numDigits call is not CTFE.
 		this.digits = digits;
 	}
 
@@ -509,6 +506,11 @@ unittest {
 	/// Returns zero.
 	static Decimal zero(bool signed = false) {
 		return signed ? NEG_ZERO.dup : ZERO.dup;
+	}
+
+	/// Returns one.
+	static Decimal one(bool signed = false) {
+		return signed ? -ONE.dup : ONE.dup;
 	}
 
 	/// Returns the maximum number of decimal digits in this context.
@@ -1264,13 +1266,14 @@ private struct ContextStack {
 		if (count == 0) {
 			// throw? push();
 		}
-		if (count == 1) {
+/*		if (count == 1) {
+			count--;
 			return stack[0];
 		}
-		else {
+		else {*/
 			count--;
-			return stack[count-1];
-		}
+			return stack[count];
+//		}
 	}
 
 } // end struct ContextStack
