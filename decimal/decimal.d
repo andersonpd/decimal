@@ -28,7 +28,7 @@ import decimal.context;
 import decimal.arithmetic;
 import decimal.integer;
 
-alias Decimal.context getContext;
+alias Decimal.context decimalContext;
 alias Decimal.pushContext pushContext;
 alias Decimal.popContext popContext;
 

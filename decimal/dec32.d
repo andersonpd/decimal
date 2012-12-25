@@ -1302,11 +1302,10 @@ public:
 			return plus!Dec32(this, context);
 		} else static if (op == "-") {
 			return minus!Dec32(this, context);
-		// TODO: convert to addLong
 		} else static if (op == "++") {
-			return add!Dec32(this, one, context);
+			return addLong!Dec32(this, 1, context);
 		} else static if (op == "--") {
-			return sub!Dec32(this, ONE, context);
+			return subLong!Dec32(this, 1, context);
 		}
 	}
 

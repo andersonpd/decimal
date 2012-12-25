@@ -1453,7 +1453,7 @@ unittest {
 	writeln("===================");
 }
 
-/+ public struct SizedInt(int Z) {
+public struct Int(int Z) {
 
 //--------------------------------
 // structure
@@ -1468,17 +1468,17 @@ unittest {
 	private uint[N] digits = 0;
 
 	@property
-	public static SizedInt!Z init() {
+	public static Int!Z init() {
 		return ZERO;
 	}
 
 	@property
-	public static SizedInt!Z max() {
+	public static Int!Z max() {
 		return MAX;
 	}
 
 	@property
-	public static SizedInt!Z min() {
+	public static Int!Z min() {
 		return MIN;
 	}
 
@@ -1498,12 +1498,12 @@ unittest {
 	}
 
 	unittest {	// construction
-		SizedInt!Z num = SizedInt!Z(7503UL);
+		Int!Z num = Int!Z(7503UL);
 		assert(num.digits[0] == 7503);
 		assert(num.digits[0] != 7502);
-		num = SizedInt!Z(2^^16);
-		num = SizedInt!Z(uint.max);
-		num = SizedInt!Z(cast(ulong)uint.max + 1);
+		num = Int!Z(2^^16);
+		num = Int!Z(uint.max);
+		num = Int!Z(cast(ulong)uint.max + 1);
 		assert(num.digits[0] == 0);
 		assert(num.digits[1] == 1);
 		num.digits[0] = 16;
@@ -1515,35 +1515,35 @@ unittest {
 //--------------------------------
 
 	/// Copy constructor.
-	public this(const SizedInt!Z that) {
+	public this(const Int!Z that) {
 		this.digits = that.digits;
 	}
 
 	/// Returns a copy of the number.
-	public const SizedInt!Z dup() {
-		return SizedInt!Z(this);
+	public const Int!Z dup() {
+		return Int!Z(this);
 	}
 
 	unittest {	// copy
-		SizedInt!Z num = SizedInt!Z(9305);
-		assert(SizedInt!Z(num) == num);
+		Int!Z num = Int!Z(9305);
+		assert(Int!Z(num) == num);
 		assert(num.dup == num);
-//		assert(num.abs == SizedInt!Z(9305));
-//		assert(abs(num) == SizedInt!Z(9305));
+//		assert(num.abs == Int!Z(9305));
+//		assert(abs(num) == Int!Z(9305));
 	}
 
 //--------------------------------
 // constants
 //--------------------------------
 
-	public const SizedInt!Z ZERO = SizedInt!Z(0);
-	public static SizedInt!Z ONE  = SizedInt!Z(1);
-	public static SizedInt!Z TWO  = SizedInt!Z(2);
-	public static SizedInt!Z FIVE = SizedInt!Z(5);
-	public static SizedInt!Z TEN  = SizedInt!Z(10);
+	public const Int!Z ZERO = Int!Z(0);
+	public static Int!Z ONE  = Int!Z(1);
+	public static Int!Z TWO  = Int!Z(2);
+	public static Int!Z FIVE = Int!Z(5);
+	public static Int!Z TEN  = Int!Z(10);
 	// TODO: value of MAX & MIN
-	public const SizedInt!Z MAX = SizedInt!Z([uint.max, uint.max, uint.max, uint.max]);
-	public static SizedInt!Z MIN = SizedInt!Z(0);
+	public const Int!Z MAX = Int!Z([uint.max, uint.max, uint.max, uint.max]);
+	public static Int!Z MIN = Int!Z(0);
 
 //--------------------------------
 // classification
@@ -1576,12 +1576,12 @@ unittest {
 
 	unittest // toString
 	{
-		SizedInt!Z a;
-		a = SizedInt!Z([11]);
+		Int!Z a;
+		a = Int!Z([11]);
 		assert(a.toString == "11");
-		a = SizedInt!Z(1234567890123);
+		a = Int!Z(1234567890123);
 		assert(a.toString == "1234567890123");
-		a = SizedInt!Z(0x4872EACF123346FF);
+		a = Int!Z(0x4872EACF123346FF);
 		assert(a.toString == "5220493093160306431");
 	}
 
@@ -1609,9 +1609,9 @@ unittest {
 	}
 
 	unittest {	// conversion
-		assert(SizedInt!Z(156).toHexString == "0x_0000009C");
-		assert(SizedInt!Z(8754).toInt == 8754);
-		assert(SizedInt!Z(9100).toLong == 9100L);
+		assert(Int!Z(156).toHexString == "0x_0000009C");
+		assert(Int!Z(8754).toInt == 8754);
+		assert(Int!Z(9100).toLong == 9100L);
 	}
 
 //--------------------------------
@@ -1620,40 +1620,40 @@ unittest {
 
 	/// Returns -1, 0, or 1, if this number is, respectively,
 	/// less than, equal to or greater than the argument.
-	private const int opCmp(T:SizedInt!Z)(const T that) {
+	private const int opCmp(T:Int!Z)(const T that) {
 		return compare(this.digits, that.digits);
 	}
 
 	/// Returns -1, 0, or 1, if this number is, respectively,
 	/// less than, equal to or greater than the argument.
 	private const int opCmp(T)(const T that) if (isIntegral!T) {
-		return opCmp(SizedInt!Z(that));
+		return opCmp(Int!Z(that));
 	}
 
 	 ///Returns true if the number is equal to the argument.
-	private const bool opEquals(T:SizedInt!Z)(const T that) {
+	private const bool opEquals(T:Int!Z)(const T that) {
 		return this.digits == that.digits;
 	}
 
 	 ///Returns true if the number is equal to the argument.
 	private const bool opEquals(T)(const T that) if (isIntegral!T) {
-		return opEquals(SizedInt!Z(that));
+		return opEquals(Int!Z(that));
 	}
 
 	unittest { // comparison
-		assert(SizedInt!Z(5) < SizedInt!Z(6));
-		assert(SizedInt!Z(5) < 6);
-		assert(SizedInt!Z(3) < SizedInt!Z(10));
-		assert(SizedInt!Z(195) >= SizedInt!Z(195));
-		assert(SizedInt!Z(195) >= 195);
+		assert(Int!Z(5) < Int!Z(6));
+		assert(Int!Z(5) < 6);
+		assert(Int!Z(3) < Int!Z(10));
+		assert(Int!Z(195) >= Int!Z(195));
+		assert(Int!Z(195) >= 195);
 	}
 
-	public static SizedInt!Z max(const SizedInt!Z arg1, const SizedInt!Z arg2) {
+	public static Int!Z max(const Int!Z arg1, const Int!Z arg2) {
 		if (arg1 < arg2) return arg2;
 		return arg1;
 	}
 
-	public static SizedInt!Z min(const SizedInt!Z arg1, const SizedInt!Z arg2) {
+	public static Int!Z min(const Int!Z arg1, const Int!Z arg2) {
 		if (arg1 > arg2) return arg2;
 		return arg1;
 	}
@@ -1670,70 +1670,70 @@ unittest {
 		digits[i] = that;
 	}
 
-	/// Assigns an SizedInt!Z integer (copies that to this).
-	private void opAssign(T:SizedInt!Z)(const T that) {
+	/// Assigns an Int!Z integer (copies that to this).
+	private void opAssign(T:Int!Z)(const T that) {
 		this.digits = that.digits;
 	}
 
-	/// Assigns an SizedInt!Z integral value
+	/// Assigns an Int!Z integral value
 	private void opAssign(T)(const T that) if (isIntegral!T) {
-		opAssign(SizedInt!Z(that));
+		opAssign(Int!Z(that));
 	}
 
-	private ref SizedInt!Z opOpAssign(string op, T:SizedInt!Z) (T that) {
+	private ref Int!Z opOpAssign(string op, T:Int!Z) (T that) {
 		this = opBinary!op(that);
 		return this;
 	}
 
-	/// Assigns an SizedInt!Z (copies that to this).
-	private ref SizedInt!Z opOpAssign(T)
+	/// Assigns an Int!Z (copies that to this).
+	private ref Int!Z opOpAssign(T)
 			(string op, const T that) if (isIntegral!T) {
-		opOpAssign(SizedInt!Z(that));
+		opOpAssign(Int!Z(that));
 	}
 
 //--------------------------------
 // unary operations
 //--------------------------------
 
-	private const SizedInt!Z opUnary(string op)() {
+	private const Int!Z opUnary(string op)() {
 		static if (op == "+") {
 			return plus();
 		} else static if (op == "-") {
 			return negate();
 		} else static if (op == "++") {
-			return add(this, SizedInt!Z(1));
+			return add(this, Int!Z(1));
 		} else static if (op == "--") {
-			return sub(this, SizedInt!Z(1));
+			return sub(this, Int!Z(1));
 		} else static if (op == "~") {
 			return complement();
 		}
 	}
 
-	public const SizedInt!Z plus() {
-		return SizedInt!Z(this.digits);
+	public const Int!Z plus() {
+		return Int!Z(this.digits);
 	}
 
-	public const SizedInt!Z complement()() {
-		SizedInt!Z w;
+	public const Int!Z complement()() {
+		Int!Z w;
 		for (int i = 0; i < N; i++)
 			w.digits[i] = ~digits[i];
 		return w;
 	}
 
-	public const SizedInt!Z negate()() {
-		SizedInt!Z w = this.complement;
+	public const Int!Z negate()() {
+		Int!Z w = this.complement;
 		return ++w;
 	}
 
 	unittest {	// opUnary
-		SizedInt!Z op1 = 4;
+		Int!Z op1 = 4;
 		import std.stdio;
 //		assert(+op1 == op1);
-//		assert( -op1 == SizedInt!Z(-4));
-//		assert( -(-op1) == SizedInt!Z(4));
-		assert(++op1 == SizedInt!Z(5));
-//		assert(--op1 == SizedInt!Z(3));
-		op1 = SizedInt!Z(0x000011111100UL);
+//		assert( -op1 == Int!Z(-4));
+//		assert( -(-op1) == Int!Z(4));
+		assert(++op1 == Int!Z(5));
+//		assert(--op1 == Int!Z(3));
+		op1 = Int!Z(0x000011111100UL);
 //		assert(~op1 == 0xFFFFFFFFEEEEEEFFUL);
 //		assert(op1.negate == 0xFFFFFFFFEEEEEF00UL);
 
@@ -1743,7 +1743,7 @@ unittest {
 // binary operations
 //--------------------------------
 
-	private const SizedInt!Z opBinary(string op, T:SizedInt!Z)(const T that)
+	private const Int!Z opBinary(string op, T:Int!Z)(const T that)
 	{
 		static if (op == "+") {
 			return add(this, that);
@@ -1770,17 +1770,17 @@ unittest {
 		}
 	}
 
-	private const SizedInt!Z opBinary(string op, T)(const T that) if (isIntegral!T) {
-		return opBinary!(op, SizedInt!Z)(SizedInt!Z(that));
+	private const Int!Z opBinary(string op, T)(const T that) if (isIntegral!T) {
+		return opBinary!(op, Int!Z)(Int!Z(that));
 	}
 
 /*	unittest {	// opBinary
-		SizedInt!Z op1, op2;
+		Int!Z op1, op2;
 		op1 = 4; op2 = 8;
 		assert(op1 + op2 == 12);
 		op1 = 4; int iop = 8;
 		assert(op1 + iop == 12);
-		assert(op2 - op1 == SizedInt!Z(4));
+		assert(op2 - op1 == Int!Z(4));
 		assert(op1 * op2 == 32);
 		op1 = 5; op2 = 2;
 //writefln("op1/op2 = %s", op1/op2);
@@ -1794,91 +1794,91 @@ unittest {
 		op2 = 2;
 		assert(op1 << op2 == 40404);
 		assert(op1 >> op2 == 2525);
-		op1 = 4; op2 = SizedInt!Z([0,1]);
+		op1 = 4; op2 = Int!Z([0,1]);
 		assert(op1 + op2 == 0x100000004);
 
 	}*/
 
-	public const SizedInt!Z add(const SizedInt!Z x, const SizedInt!Z y) {
-        return SizedInt!Z(addDigits(x.digits, y.digits));
+	public const Int!Z add(const Int!Z x, const Int!Z y) {
+        return Int!Z(addDigits(x.digits, y.digits));
 	}
 
-	public const SizedInt!Z sub(const SizedInt!Z x, const SizedInt!Z y) {
-		return SizedInt!Z(subDigits(x.digits, y.digits));
+	public const Int!Z sub(const Int!Z x, const Int!Z y) {
+		return Int!Z(subDigits(x.digits, y.digits));
 	}
 
-	public const SizedInt!Z mul(const SizedInt!Z x, const SizedInt!Z y) {
+	public const Int!Z mul(const Int!Z x, const Int!Z y) {
 		// special cases
 		if (x == ZERO || y == ZERO) return ZERO;
 		if (y == ONE) return x;
 		if (x == ONE) return y;
 
 		uint[] w = mulDigits(x.digits, y.digits);
-		return SizedInt!Z(w[0..N-1]);
+		return Int!Z(w[0..N-1]);
 	}
 
-	public const SizedInt!Z div(const SizedInt!Z x, const SizedInt!Z y) {
-		return SizedInt!Z(divDigits(x.digits, y.digits));
+	public const Int!Z div(const Int!Z x, const Int!Z y) {
+		return Int!Z(divDigits(x.digits, y.digits));
 	}
 
-	public const SizedInt!Z mod(const SizedInt!Z x, const SizedInt!Z y) {
-		return SizedInt!Z(modDigits(x.digits, y.digits));
+	public const Int!Z mod(const Int!Z x, const Int!Z y) {
+		return Int!Z(modDigits(x.digits, y.digits));
 	}
 
-	public const SizedInt!Z pow(const SizedInt!Z x, const SizedInt!Z y) {
-		return SizedInt!Z(powDigits(x.digits, y.toInt));
+	public const Int!Z pow(const Int!Z x, const Int!Z y) {
+		return Int!Z(powDigits(x.digits, y.toInt));
 	}
 
-	public const SizedInt!Z pow(const SizedInt!Z x, const uint n) {
-		return SizedInt!Z(powDigits(x.digits, n));
+	public const Int!Z pow(const Int!Z x, const uint n) {
+		return Int!Z(powDigits(x.digits, n));
 	}
 
-	public const SizedInt!Z and(const SizedInt!Z x, const SizedInt!Z y) {
-		SizedInt!Z result;
+	public const Int!Z and(const Int!Z x, const Int!Z y) {
+		Int!Z result;
 		for (int i = 0; i < N; i++)
 			result[i] = (x[i] & y[i]);
 		return result;
 	}
 
-	public const SizedInt!Z or(const SizedInt!Z x, const SizedInt!Z y) {
-		SizedInt!Z result;
+	public const Int!Z or(const Int!Z x, const Int!Z y) {
+		Int!Z result;
 		for (int i = 0; i < N; i++)
 			result[i] = (x[i] | y[i]);
 		return result;
 	}
 
-	public const SizedInt!Z xor(const SizedInt!Z x, const SizedInt!Z y) {
-		SizedInt!Z result;
+	public const Int!Z xor(const Int!Z x, const Int!Z y) {
+		Int!Z result;
 		for (int i = 0; i < N; i++)
 			result[i] = (x[i] ^ y[i]);
 		return result;
 	}
 
-	public const SizedInt!Z shl(const SizedInt!Z x, const SizedInt!Z y) {
+	public const Int!Z shl(const Int!Z x, const Int!Z y) {
 		return shl(x, y.toInt);
 	}
 
-	public const SizedInt!Z shl(const SizedInt!Z x, const uint n) {
+	public const Int!Z shl(const Int!Z x, const uint n) {
 		int digits = n / 32;
 		int bits = n % 32;
 		uint [] array = x.digits.dup;
 		shlDigits(array, digits);
 		shlBits(array, bits);
-		return SizedInt!Z(array);
+		return Int!Z(array);
 	}
 
-	public const SizedInt!Z shr(const SizedInt!Z x, const SizedInt!Z y) {
+	public const Int!Z shr(const Int!Z x, const Int!Z y) {
 		return shr(x, y.toInt);
 	}
 
-	public const SizedInt!Z shr(const SizedInt!Z x, const uint n) {
+	public const Int!Z shr(const Int!Z x, const uint n) {
 		int digits = n / 32;
 		int bits = n % 32;
 		uint [] array = x.digits.dup;
 		shrDigits(array, digits);
 		shrBits(array, bits);
-		return SizedInt!Z(array);
+		return Int!Z(array);
 	}
 
-}	// end SizedInt
-+/
+}	// end Int
+

@@ -2732,12 +2732,12 @@ unittest {
 	writeln("passed");
 }
 
-unittest {
+/*unittest {
 	write("pow10.............");
 	assertEqual!int(Dec32.pow10(3), 1000);
 	writeln("passed");
 }
-
+*/
 unittest {
 	write("hexstring.........");
 	Dec32 num = 12345;

@@ -1072,7 +1072,7 @@ unittest {	// quantum
 // binary shift
 //--------------------------------
 
-// TODO: these don't work because we don't want to truncate the coefficient.
+/*// TODO: these don't work because we don't want to truncate the coefficient.
 // shl is okay, but shr isn't.
 public Decimal shl(const Decimal arg, const int n,
 		const DecimalContext context = Decimal.context) {
@@ -1106,7 +1106,7 @@ unittest {	// shr, shl.
 	expect = Decimal(16);
 	actual = shl(big, 2);
 	assert(actual == expect);
-}
+}*/
 
 //--------------------------------
 // decimal shift and rotate
@@ -1663,6 +1663,10 @@ public T div(T)(const T arg1, const T arg2,
 		dividend.exponent = dividend.exponent - shift;
 		dividend.digits = dividend.digits + shift;
 	}
+/*	// divisor may have become zero. Check again.
+	if (invalidDivision!T(dividend, divisor, quotient)) {
+		return result;
+	}*/
 //writefln("dividend.coefficient = %s", dividend.coefficient);
 //writefln("divisor.coefficient = %s", divisor.coefficient);
 	quotient.coefficient = dividend.coefficient / divisor.coefficient;

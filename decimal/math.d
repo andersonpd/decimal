@@ -1,5 +1,6 @@
 ﻿// Written in the D programming language
 
+// www.speechchips.com
 /**
  *	A D programming language implementation of the
  *	General Decimal Arithmetic Specification,
@@ -40,12 +41,12 @@ public Decimal round(const Decimal arg,
 /// Rounds the argument to an integer using the specified rounding mode.
 public Decimal round(const Decimal arg,
 		const Rounding rounding = Rounding.HALF_EVEN) {
-	if (getContext.rounding == rounding) {
-		return round(arg, getContext);
+	if (decimalContext.rounding == rounding) {
+		return round(arg, decimalContext);
 	}
 	else {
 		pushContext(rounding);
-		Decimal value = round(arg, getContext);
+		Decimal value = round(arg, decimalContext);
 		popContext;
 		return value;
 	}
@@ -290,7 +291,7 @@ public Decimal e(uint precision) {
 public Decimal e() {
 	static int lastPrecision = 0;
 	static Decimal value;
-	int precision = getContext.precision;
+	int precision = decimalContext.precision;
 	if (precision != lastPrecision) {
 		if (precision > 99) {
 			value = e0();
@@ -326,7 +327,7 @@ writeln;
 writefln("E      = %s", E);
 writefln("e      = %s", e(35));
 	pushContext(199);
-	getContext.maxExpo = 250;
+	decimalContext.maxExpo = 250;
 writefln("e0()  = %s", e0());
 	popContext;
 writefln("e(5)  = %s", e(5));
@@ -364,13 +365,13 @@ public Decimal pi(uint precision) {
 public Decimal pi() {
 	static int lastPrecision = 0;
 	static Decimal value;
-	int precision = getContext.precision;
+	int precision = decimalContext.precision;
 	if (precision != lastPrecision) {
 		if (precision > 99) {
 			value = pi0();
 		}
 		else {
-			value = roundToPrecision(PI, getContext);
+			value = roundToPrecision(PI, decimalContext);
 		}
 		lastPrecision = precision;
 	}
@@ -512,7 +513,7 @@ public Decimal reciprocal(const Decimal a) {
 	Decimal r = copyAbs(a);
 	if (r == Decimal(1)) return a.dup;
 
-	pushContext(getContext.precision+2);
+	pushContext(decimalContext.precision+2);
 	Decimal xOld = Decimal(1, -ilogb(a)-1);  	// FIXTHIS: need pow2 like pow10?
 	Decimal xNew;// = xOld;
 	Decimal ek = 1 - xOld * a;
@@ -595,7 +596,16 @@ public Decimal exp(const Decimal arg, const uint precision) {
 /// Decimal version of std.math function.
 /// Required by General Decimal Arithmetic Specification
 public Decimal exp(const Decimal x) {
-	Decimal sqrx = x*x;
+	if (x.isNaN) return Decimal.nan;
+//	if (x.isNegative) return Decimal.nan;
+//	if (x.dup == Decimal.one) return e();
+	return exp0(x);
+}
+
+/// Decimal version of std.math function.
+/// Required by General Decimal Arithmetic Specification
+public Decimal exp0(const Decimal x) {
+	Decimal sqrx = sqr(x);
 	long n = 1;
 	Decimal fact = 1;
 	Decimal t1 = 1;
@@ -635,13 +645,28 @@ unittest {
 	writeln("test missing");
 }
 
-/**
- * Decimal version of std.math function.
- * exp(x) - 1
- */
-public Decimal expm1(Decimal arg) {
-	Decimal result;
-	return result;
+/// Returns exp(x) - 1.
+/// expm1(x) will be more accurate than exp(x) - 1 for x near 1.
+/// Decimal version of std.math function.
+/// Reference: Beebe, Nelson H. F., "Computation of expm1(x) = exp(x) - 1".
+public Decimal expm1(Decimal x) {
+//	if (invalidOperand!Decimal(arg, arg)) {
+	if (x.isNaN) return Decimal.nan;
+	if (x.isZero) return x;
+	// this function only useful near zero
+	const Decimal lower = Decimal("-0.7");
+	const Decimal upper = Decimal("0.5");
+	if (x < lower || x > upper) return exp(x) - Decimal.one;
+
+	Decimal term = x;
+	Decimal sum = Decimal.zero;
+	long n = 1;
+	// TODO: make this test more efficient
+	while (term.copyAbs > Decimal.epsilon) {
+		sum += term;
+		term *= (x / ++n);
+	}
+	return sum;
 }
 
 unittest {
@@ -649,24 +674,37 @@ unittest {
 	writeln("test missing");
 }
 
-/**
- * Decimal version of std.math function.
- * Required by General Decimal Arithmetic Specification
- *
- */
-public Decimal log(const Decimal arg) {
-	Decimal y = (arg - 1)/(arg + 1);
-	Decimal y2 = y*y;
-	Decimal term = y; //ONE;
-	Decimal sum  = y; //ONE;
-	Decimal newSum;
-	for (long n = 3; ; n+=2) {
-		term *= y2;
-		newSum = sum + (term/n);
-		if (sum == newSum) {
+/// Decimal version of std.math function.
+/// Required by General Decimal Arithmetic Specification
+public Decimal log(const Decimal x) {
+	if (x.isZero) {
+		contextFlags.setFlags(DIVISION_BY_ZERO);
+		return Decimal.infinity;
+	}
+	if (x.isNegative) {
+		return Decimal.nan;
+	}
+	int k = ilogb(x) + 1;
+	Decimal a = Decimal(x.sign, x.coefficient, x.exponent - k);
+	return log0(a) + LN10 * k;
+}
+
+/// Decimal version of std.math function.
+/// Required by General Decimal Arithmetic Specification
+public Decimal log0(const Decimal x) {
+	Decimal y = (x - 1)/(x + 1);
+	Decimal ysq = sqr(y);
+	Decimal term = y;
+	Decimal sum  = y;
+	long n = 3;
+	while (true) {
+		term *= ysq;
+		auto nsum = sum + (term/n);
+		if (sum == nsum) {
 			return sum * 2;
 		}
-		sum = newSum;
+		sum = nsum;
+		n += 2;
 	}
 }
 
@@ -692,18 +730,35 @@ unittest {
 	writeln("test missing");
 }
 
-/**
- * Decimal version of std.math.log10.
- * Required by General Decimal Arithmetic Specification
- *
- */
-public Decimal log10(Decimal arg) {
-	Decimal result;
-	return result;
+/// Decimal version of std.math.log10.
+/// Required by General Decimal Arithmetic Specification
+public Decimal log10(const Decimal x) {
+	if (x.isZero) {
+		contextFlags.setFlags(DIVISION_BY_ZERO);
+		return Decimal.infinity;
+	}
+	if (x.isNegative) {
+		return Decimal.nan;
+	}
+	int k = ilogb(x) + 1;
+	Decimal a = Decimal(x.sign, x.coefficient, x.exponent - k);
+	return log0(a)/LN10 + k;
 }
 
 unittest {
-	write("log10..........");
+	writeln("log10..........");
+	Decimal x = Decimal("2.55");
+writefln("x = %s", x);
+writefln("log(x) = %s", log10(x));
+writeln("std.math.log10(2.55) = ", std.math.log10(2.55));
+	x = 123.456;
+writefln("x = %s", x);
+writefln("log(x) = %s", log10(x));
+writeln("std.math.log(123.456) = ", std.math.log10(123.456));
+	x = 10.0;
+writefln("x = %s", x);
+writefln("log(x) = %s", log(x));
+
 	writeln("test missing");
 }
 
@@ -725,9 +780,8 @@ unittest {
  * Decimal version of std.math.pow.
  * Required by General Decimal Arithmetic Specification
  */
-public Decimal pow(Decimal op1, Decimal op2) {
-	Decimal result;
-	return result;
+public Decimal pow(Decimal x, Decimal y) {
+	return power(x,y);
 }
 
 unittest {
@@ -739,9 +793,8 @@ unittest {
  * power.
  * Required by General Decimal Arithmetic Specification
  */
-public Decimal power(Decimal op1, Decimal op2) {
-	Decimal result;
-	return result;
+public Decimal power(Decimal x, Decimal y) {
+	return exp(x*ln(y));
 }
 
 unittest {
