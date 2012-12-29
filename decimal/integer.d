@@ -18,13 +18,13 @@ import std.bigint;
 
 unittest {
 	writeln("===================");
-	writeln("unsigned......begin");
+	writeln("integer.......begin");
 	writeln("===================");
 }
 
 alias UInt!128 uint128;
-alias UInt!192 uint192;
-alias UInt!256 uint256;
+//alias UInt!192 uint192;
+//alias UInt!256 uint256;
 
 //uint128 ten28 = uint128(10);
 
@@ -37,6 +37,12 @@ public enum Overflow {
 public static const ulong BASE = 1UL << 32;
 
 public struct UInt(int Z) {
+
+unittest {
+	writeln("===================");
+	writeln("unsigned......begin");
+	writeln("===================");
+}
 
 //--------------------------------
 // structure
@@ -69,24 +75,10 @@ public struct UInt(int Z) {
 // construction
 //--------------------------------
 
-/*
-	// these constructors are covered by the following ctor.
-	public this(const ulong value) {
-		digits[1] = high(value);
-	 	digits[0] = low(value);
-	}
-
-	public this(const ulong higher, const ulong lower) {
-	 	digits[3] = high(higher);
-	 	digits[2] = low(higher);
-	 	digits[1] = high(lower);
-	 	digits[0] = low(lower);
-	}*/
-
 	/// Constructs an integer from a list of unsigned long values.
-	/// The list can be a single value or a comma-separated list
+	/// The list can be a single value, a comma-separated list
 	/// or an array.
-	/// The list should be ordered right to left:
+	/// The list is ordered right to left:
 	/// most significant value first, least significant value last.
 	public this(const ulong[] list ...) {
 		uint len = list.length >= N/2 ? N/2 : list.length;
@@ -99,7 +91,7 @@ public struct UInt(int Z) {
 	/// Private constructor for internal use.
 	/// Constructs an integer from a list of unsigned int (not long) values.
 	/// The list must be an array.
-	/// The list should be ordered left to right:
+	/// The list is ordered left to right:
 	/// least significant value first, most significant value last.
 	private this(const uint[] array) {
 		uint len = array.length >= N ? N : array.length;
@@ -148,10 +140,10 @@ public struct UInt(int Z) {
 //--------------------------------
 
 	public const UInt!Z ZERO = UInt!Z(0);
-	public static UInt!Z ONE  = UInt!Z(1);
-	public static UInt!Z TWO  = UInt!Z(2);
-	public static UInt!Z FIVE = UInt!Z(5);
-	public static UInt!Z TEN  = UInt!Z(10);
+	public const UInt!Z ONE  = UInt!Z(1);
+	public const UInt!Z TWO  = UInt!Z(2);
+	public const UInt!Z FIVE = UInt!Z(5);
+	public const UInt!Z TEN  = UInt!Z(10);
 	// TODO: value of MAX & MIN
 //	private static UInt!Z[N] maxArray; // = uint.max;
 //		for (int i
@@ -168,6 +160,14 @@ public struct UInt(int Z) {
 
 	public const bool isZero() {
 		return numDigits(this.digits) == 0;
+	}
+
+	public const bool isOdd() {
+		return digits[0] & 1;
+	}
+
+	public const bool isEven() {
+		return !isOdd();
 	}
 
 //--------------------------------
@@ -208,7 +208,7 @@ public struct UInt(int Z) {
 	{
 		uint128 a;
 		a = uint128([11UL]);
-		assert(a.toString == "11");
+		decimal.test.assertEqual("11", a.toString);
 		a = uint128(1234567890123);
 		assert(a.toString == "1234567890123");
 		a = uint128(0x4872EACF123346FF);
@@ -276,10 +276,10 @@ unittest {	// get/set long values
 		}
 	}
 
-unittest {	// to/from BigInt
-	write("to/from BigInt...");
-	writeln("test missing");
-}
+	unittest {	// to/from BigInt
+		write("to/from BigInt...");
+		writeln("test missing");
+	}
 
 //--------------------------------
 // comparison
@@ -363,18 +363,19 @@ unittest {	// to/from BigInt
 // unary operations
 //--------------------------------
 
-	private const UInt!Z opUnary(string op)() {
+	private UInt!Z opUnary(string op)() {
 		static if (op == "+") {
-			return plus();
+			this = plus();
 		} else static if (op == "-") {
-			return negate();
+			this = negate();
 		} else static if (op == "++") {
-			return add(this, UInt!Z(1));
+			this = add(this, UInt!Z(1));
 		} else static if (op == "--") {
-			return sub(this, UInt!Z(1));
+			this = sub(this, UInt!Z(1));
 		} else static if (op == "~") {
-			return complement();
+			this = complement();
 		}
+		return this;
 	}
 
 	public const UInt!Z plus() {
@@ -400,7 +401,7 @@ unittest {	// to/from BigInt
 //		assert( -op1 == uint128(-4));
 //		assert( -(-op1) == uint128(4));
 		assert(++op1 == uint128(5));
-		assert(--op1 == uint128(3));
+		assert(--op1 == uint128(4));
 		op1 = uint128(0x000011111100UL);
 //		assert(~op1 == 0xFFFFFFFFEEEEEEFFUL);
 //		assert(op1.negate == 0xFFFFFFFFEEEEEF00UL);
@@ -433,8 +434,8 @@ unittest {	// to/from BigInt
 			return xor(this, that);
 		} else static if (op == "<<") {
 			return shl(this, that);
-		} else static if (op == ">>") {
-			return shr(this, that);
+		} else static if (op == ">>" || op == ">>>") {
+			return lshr(this, that);
 		}
 	}
 
@@ -536,18 +537,18 @@ writefln("opBinary = %s", "??");
 		return UInt!Z(array);
 	}
 
-	public const UInt!Z shr(const UInt!Z x, const UInt!Z y) {
-		return shr(x, y.toInt);
+	public const UInt!Z lshr(const UInt!Z x, const UInt!Z y) {
+		return lshr(x, y.toInt);
 	}
 
-	public const UInt!Z shr(const UInt!Z x, const uint n) {
+	public const UInt!Z lshr(const UInt!Z x, const uint n) {
 		int digs = n / 32;
 		int bits = n % 32;
 		uint [] array = x.digits.dup;
 		if (digs !=0 ) {
-			array = shrDigits(array, digs);
+			array = lshrDigits(array, digs);
 		}
-		array = shrBits(array, bits);
+		array = lshrBits(array, bits);
 		return UInt!Z(array);
 	}
 
@@ -583,19 +584,31 @@ writefln("opBinary = %s", "??");
 		return false;
 	}
 
+	unittest {
+		writeln("===================");
+		writeln("unsigned........end");
+		writeln("===================");
+	}
+
 }	// end UInt
 
 //============================================================================//
+
+unittest {
+	writeln("===================");
+	writeln("arrayops......begin");
+	writeln("===================");
+}
 
 //--------------------------------
 // digit pack/unpack methods
 //--------------------------------
 
-private uint low(const ulong packed)
-    { return packed & 0xFFFFFFFFUL; }
+private uint low(const ulong nn)
+    { return nn & 0xFFFFFFFFUL; }
 
-private uint high(const ulong packed)
-    { return (packed & 0xFFFFFFFF00000000UL) >> 32; }
+private uint high(const ulong nn)
+    { return (nn & 0xFFFFFFFF00000000UL) >> 32; }
 
 private ulong pack(uint hi, uint lo) {
 	ulong packed = (cast(ulong) hi) << 32;
@@ -692,6 +705,38 @@ unittest {	// divmod
 	// shifts by whole digits (not bits)
 	private uint[] shrDigits(const uint[] x, int n) {
 		if (n >= x.length) {
+			throw new InvalidOperationException();
+		}
+		if (n > 0) {
+writefln("x = %s", x);
+writefln("int128(x) = %s", int128(x).toHexString);
+writefln("x[n..$] = %s", x[n..$]);
+writefln("x+ = %s", int128([-1, -2, -3, -4]).toHexString);
+/*			if (x[0] > 7FFF) {
+			}*/
+			return x[n..$].dup;
+		}
+		return x.dup;
+	}
+
+	// shifts by bits
+	private uint[] lshrBits(const uint[] x, int n) {
+		uint nx = numDigits(x);
+		uint[] shifted = new uint[nx];
+		uint shout, shin;
+		for (uint i = 0; i < nx; i++) {
+			ulong temp = x[i];
+			temp >>= n;
+			shout = high(temp);
+			shifted[i] = low(temp) | shin;
+			shin = shout;
+		}
+		return shifted;
+	}
+
+	// shifts by whole digits (not bits)
+	private uint[] lshrDigits(const uint[] x, int n) {
+		if (n >= x.length) {
 			return [0];
 		}
 		if (n > 0) {
@@ -725,7 +770,7 @@ unittest {	// divmod
 		return numDigits(a) == 0;
 	}
 
-	private bool isOdd(const uint[] a) {
+ 	private bool isOdd(const uint[] a) {
 		return a[0] & 1;
 	}
 
@@ -1449,11 +1494,23 @@ unittest {
 
 unittest {
 	writeln("===================");
-	writeln("unsigned........end");
+	writeln("arrayops........end");
 	writeln("===================");
 }
 
+alias Int!128 int128;
+
+/*public Int!Z abs(Int!Z)(const Int!Z arg) {
+	return arg.isNegative ? negate(arg) : arg.dup;
+}*/
+
 public struct Int(int Z) {
+
+unittest {
+	writeln("===================");
+	writeln("signed........begin");
+	writeln("===================");
+}
 
 //--------------------------------
 // structure
@@ -1486,28 +1543,54 @@ public struct Int(int Z) {
 // construction
 //--------------------------------
 
-	public this(const ulong value) {
+	public this(const long value) {
 		digits[0] = low(value);
 		digits[1] = high(value);
+		if (digits[1] > 0x7FFFFFF) {
+			for (int i = 2; i < N; i++) {
+				digits[i] = 0xFFFFFFFF;
+			}
+		}
 	}
 
-	public this(const uint[] array) {
+	unittest {	// construction
+		// TODO: add tests
+		Int!Z num = Int!Z(1);
+//		assert(num.digits[0] == 7503);
+//		assert(num.digits[0] != 7502);
+		num = Int!Z(-1);
+		num = Int!Z(-2);
+		num = Int!Z(-4);
+		num = Int!Z(-256);
+		num = Int!Z(int.max);
+		num = Int!Z(int.min);
+
+//		num = Int!Z(cast(long)int.max + 1);
+//		assert(num.digits[0] == 0);
+//		assert(num.digits[1] == 1);
+//		num.digits[0] = 16;
+//		num.digits[1] = 32;
+	}
+
+
+	private this(const uint[] array) {
 		uint length = array.length >= N ? N : array.length;
 		for (int i = 0; i < length; i++)
 			digits[i] = array[i];
 	}
 
 	unittest {	// construction
-		Int!Z num = Int!Z(7503UL);
+		// TODO: add tests
+/*		Int!Z num = Int!Z(7503UL);
 		assert(num.digits[0] == 7503);
 		assert(num.digits[0] != 7502);
 		num = Int!Z(2^^16);
 		num = Int!Z(uint.max);
-		num = Int!Z(cast(ulong)uint.max + 1);
+		num = Int!Z(cast(long)uint.max + 1);
 		assert(num.digits[0] == 0);
 		assert(num.digits[1] == 1);
 		num.digits[0] = 16;
-		num.digits[1] = 32;
+		num.digits[1] = 32;*/
 	}
 
 //--------------------------------
@@ -1529,7 +1612,7 @@ public struct Int(int Z) {
 		assert(Int!Z(num) == num);
 		assert(num.dup == num);
 //		assert(num.abs == Int!Z(9305));
-//		assert(abs(num) == Int!Z(9305));
+		assert(abs(num) == Int!Z(9305));
 	}
 
 //--------------------------------
@@ -1538,6 +1621,7 @@ public struct Int(int Z) {
 
 	public const Int!Z ZERO = Int!Z(0);
 	public static Int!Z ONE  = Int!Z(1);
+	public static Int!Z NEG_ONE  = Int!Z(-1);
 	public static Int!Z TWO  = Int!Z(2);
 	public static Int!Z FIVE = Int!Z(5);
 	public static Int!Z TEN  = Int!Z(10);
@@ -1553,6 +1637,18 @@ public struct Int(int Z) {
 		return numDigits(this.digits) == 0;
 	}
 
+	public const bool isOdd() {
+		return digits[0] & 1;
+	}
+
+	public const bool isEven() {
+		return !isOdd();
+	}
+
+	public const bool isNegative() {
+		return cast(int)digits[N-1] < 0;
+	}
+
 //--------------------------------
 // conversion
 //--------------------------------
@@ -1560,7 +1656,12 @@ public struct Int(int Z) {
 	/// Converts to a string.
 	public const string toString() {
 		char[] str;
-		uint[] from = digits.dup;
+		Int!Z copy = this.dup;
+		bool signed = this.isNegative;
+		if (signed) {
+			copy = negate(copy);
+		}
+		uint[] from = copy.digits;
 		uint n = numDigits(from);
 		if (n == 0) return "0";
 		while (n > 0) {
@@ -1571,18 +1672,45 @@ public struct Int(int Z) {
 			str = ch ~ str;
 			n = numDigits(from);
 		}
+		if (signed) str = "-" ~ str;
 		return str.idup;
 	}
 
 	unittest // toString
 	{
-		Int!Z a;
-		a = Int!Z([11]);
-		assert(a.toString == "11");
-		a = Int!Z(1234567890123);
+		int128 a;
+		a = int128(1);
+		assert(a.toString == "1");
+		a = int128(-1);
+		assert(a.toString == "-1");
+		a = int128(2);
+		assert(a.toString == "2");
+		a = int128(-2);
+		assert(a.toString == "-2");
+		a = int128(256);
+		assert(a.toString == "256");
+		a = int128(-256);
+		assert(a.toString == "-256");
+		a = int128(-11);
+		decimal.test.assertEqual("-11", a.toString);
+		a = int128(1234567890123);
+writefln("a.toString = %s", a.toString);
+writefln("a.toHexString = %s", a.toHexString);
 		assert(a.toString == "1234567890123");
+		a = int128(0x4872EACF123346FF);
+writefln("a.toString = %s", a.toString);
+writefln("a.toHexString = %s", a.toHexString);
+		decimal.test.assertEqual(a.toString, "-13226250980549245185");
+//		assert(a.toString == "5220493093160306431");
+//		assert(int128(156).toHexString == "0x_0000009C");
+//		Int!Z a;
+		a = Int!Z([11]);
+//		assert(a.toString == "11");
+		a = Int!Z(1234567890123);
+//		assert(a.toString == "1234567890123");
 		a = Int!Z(0x4872EACF123346FF);
-		assert(a.toString == "5220493093160306431");
+writefln("a = %s", a);
+//		assert(a.toString == "5220493093160306431");
 	}
 
 	/// Converts to a string.
@@ -1599,12 +1727,12 @@ public struct Int(int Z) {
 	}
 
 	/// Converts to an integer.
-	public const uint toInt() {
-		return cast(uint)digits[0];
+	public const int toInt() {
+		return cast(int)digits[0];
 	}
 
 	/// Converts to a long integer.
-	public const ulong toLong() {
+	public const long toLong() {
 		return digits[0];
 	}
 
@@ -1666,7 +1794,8 @@ public struct Int(int Z) {
 		return digits[i];
 	}
 
-	private void opIndexAssign(T)(const uint i, const T that) if (isIntegral!T) {
+	private void opIndexAssign(T)
+			(const T that, const uint i) if (isIntegral!T) {
 		digits[i] = that;
 	}
 
@@ -1695,48 +1824,56 @@ public struct Int(int Z) {
 // unary operations
 //--------------------------------
 
-	private const Int!Z opUnary(string op)() {
+	private Int!Z opUnary(string op)() {
 		static if (op == "+") {
 			return plus();
 		} else static if (op == "-") {
-			return negate();
+			return negate(this);
 		} else static if (op == "++") {
-			return add(this, Int!Z(1));
+			this = add(this, Int!Z(1));
+			return this;
 		} else static if (op == "--") {
-			return sub(this, Int!Z(1));
+			this = sub(this, Int!Z(1));
+			return this;
 		} else static if (op == "~") {
-			return complement();
+			return complement(this);
 		}
+		return this;
 	}
 
 	public const Int!Z plus() {
 		return Int!Z(this.digits);
 	}
 
-	public const Int!Z complement()() {
-		Int!Z w;
-		for (int i = 0; i < N; i++)
-			w.digits[i] = ~digits[i];
-		return w;
+	public static Int!Z complement(const Int!Z arg) {
+		Int!Z copy;
+		for (uint i = 0; i < N; i++)
+			copy.digits[i] = ~arg.digits[i];
+		return copy;
 	}
 
-	public const Int!Z negate()() {
-		Int!Z w = this.complement;
-		return ++w;
+	public static Int!Z negate(const Int!Z arg) {
+		Int!Z neg = complement(arg);
+		neg++;
+		// TODO: add opAssignEquals += long
+		return neg;
+	}
+
+	public static Int!Z abs(const Int!Z arg) {
+		return arg.isNegative ? negate(arg) : arg.dup;
 	}
 
 	unittest {	// opUnary
 		Int!Z op1 = 4;
 		import std.stdio;
-//		assert(+op1 == op1);
-//		assert( -op1 == Int!Z(-4));
-//		assert( -(-op1) == Int!Z(4));
+		assert(+op1 == op1);
+		assert(-op1 == Int!Z(-4));
+		assert(-(-op1) == Int!Z(4));
 		assert(++op1 == Int!Z(5));
-//		assert(--op1 == Int!Z(3));
 		op1 = Int!Z(0x000011111100UL);
-//		assert(~op1 == 0xFFFFFFFFEEEEEEFFUL);
-//		assert(op1.negate == 0xFFFFFFFFEEEEEF00UL);
-
+		assert(~op1 == 0xFFFFFFFFEEEEEEFFUL);
+//		~op1;
+		assert(-op1 == 0xFFFFFFFFEEEEEF00UL);
 	}
 
 //--------------------------------
@@ -1767,6 +1904,8 @@ public struct Int(int Z) {
 			return shl(this, that);
 		} else static if (op == ">>") {
 			return shr(this, that);
+		} else static if (op == ">>>") {
+			return lshr(this, that);
 		}
 	}
 
@@ -1774,30 +1913,34 @@ public struct Int(int Z) {
 		return opBinary!(op, Int!Z)(Int!Z(that));
 	}
 
-/*	unittest {	// opBinary
-		Int!Z op1, op2;
+	unittest {	// opBinary
+		int128 op1, op2;
 		op1 = 4; op2 = 8;
-		assert(op1 + op2 == 12);
+//		assert(op1 + op2 == 12);
 		op1 = 4; int iop = 8;
-		assert(op1 + iop == 12);
-		assert(op2 - op1 == Int!Z(4));
+//		assert(op1 + iop == 12);
+//		assert(op2 - op1 == Int!Z(4));
 		assert(op1 * op2 == 32);
 		op1 = 5; op2 = 2;
 //writefln("op1/op2 = %s", op1/op2);
 //		assert(op1 / op2 == 2);
 		assert(op1 % op2 == 1);
-		assert(op1 ^^ op2 == 25);
+//		assert(op1 ^^ op2 == 25);
 		op1 = 10101; op2 = 10001;
+//writefln("op1 = %s", op1);
+//writefln("op2 = %s", op2);
 		assert((op1 & op2) == 10001);
 		assert((op1 | op2) == 10101);
 		assert((op1 ^ op2) == 100);
 		op2 = 2;
-		assert(op1 << op2 == 40404);
-		assert(op1 >> op2 == 2525);
+writefln("op1 << op2 = %s", op1 << op2);
+//		assert(op1 << op2 == 40404);
+writefln("op1 >> op2 = %s", op1 >> op2);
+//		assert(op1 >> op2 == 2525);
 		op1 = 4; op2 = Int!Z([0,1]);
-		assert(op1 + op2 == 0x100000004);
+//		assert(op1 + op2 == 0x100000004);
 
-	}*/
+	}
 
 	public const Int!Z add(const Int!Z x, const Int!Z y) {
         return Int!Z(addDigits(x.digits, y.digits));
@@ -1812,31 +1955,132 @@ public struct Int(int Z) {
 		if (x == ZERO || y == ZERO) return ZERO;
 		if (y == ONE) return x;
 		if (x == ONE) return y;
+		if (y == NEG_ONE) return negate(x);
+		if (x == NEG_ONE) return negate(y);
 
-		uint[] w = mulDigits(x.digits, y.digits);
-		return Int!Z(w[0..N-1]);
+		Int!Z xx = x.dup;
+		Int!Z yy = y.dup;
+		bool signed = false;
+		if (x.isNegative) {
+			signed = !signed;
+			// TODO: should be -x...
+			xx = negate(x);
+		}
+		if (y.isNegative) {
+			signed = !signed;
+			yy = negate(y);
+		}
+//writefln("signed = %s", signed);
+		uint[] w = mulDigits(xx.digits, yy.digits);
+		Int!Z product = Int!Z(w[0..N-1]);
+//writefln("product = %s", product);
+		return signed ? -product : product;
 	}
 
+unittest {
+	write("mul...");
+	int128 x = 2;
+	int128 y = 6;
+	assert(x*y == int128(12));
+	x = -x;
+	assert(x*y == int128(-12));
+	y = -y;
+	assert(x*y == int128(12));
+	x = -x;
+	assert(x*y == int128(-12));
+	writeln("passed");
+}
 	public const Int!Z div(const Int!Z x, const Int!Z y) {
-		return Int!Z(divDigits(x.digits, y.digits));
+		Int!Z xx = x.dup;
+		Int!Z yy = y.dup;
+		bool signed = false;
+		if (x.isNegative) {
+			signed = !signed;
+			// TODO: should be -x...
+			xx = negate(x);
+		}
+		if (y.isNegative) {
+			signed = !signed;
+			yy = negate(y);
+		}
+		Int!Z quotient = Int!Z(divDigits(xx.digits, yy.digits));
+		return signed ? negate(quotient) : quotient;
 	}
+
+unittest {
+	write("div...");
+	int128 x = 6;
+	int128 y = 2;
+	assert(x/y == int128(3));
+	x = -x;
+	assert(x/y == int128(-3));
+	y = -y;
+//writefln("x = %s", x);
+//writefln("y = %s", y);
+//writefln("x/y = %s", (x/y).toHexString);
+	assert(x/y == int128(3));
+	x = -x;
+	assert(x/y == int128(-3));
+	writeln("passed");
+}
 
 	public const Int!Z mod(const Int!Z x, const Int!Z y) {
-		return Int!Z(modDigits(x.digits, y.digits));
+		Int!Z xx = x.dup;
+		Int!Z yy = y.dup;
+		bool signed = false;
+		if (x.isNegative) {
+			signed = !signed;
+			// TODO: should be -x...
+			xx = negate(x);
+		}
+		if (y.isNegative) {
+			signed = !signed;
+			yy = negate(y);
+		}
+		Int!Z remainder = Int!Z(modDigits(xx.digits, yy.digits));
+		return x.isNegative ? negate(remainder) : remainder;
 	}
+
+unittest {
+	write("mod...");
+	int128 x = 7;
+	int128 y = 2;
+	assert(x % y == 1);
+	x = -x;
+	assert(x % y == -1);
+	y = -y;
+	assert(x % y == -1);
+	x = -x;
+	assert(x % y == 1);
+	writeln("passed");
+}
 
 	public const Int!Z pow(const Int!Z x, const Int!Z y) {
 		return Int!Z(powDigits(x.digits, y.toInt));
 	}
 
 	public const Int!Z pow(const Int!Z x, const uint n) {
-		return Int!Z(powDigits(x.digits, n));
+		if (n < 0) return ZERO;	// TODO: should throw
+		if (n == 0) return ONE;
+		Int!Z result = Int!Z(powDigits(x.digits, n));
+		return x.isOdd() ? result : -result;
 	}
+
+unittest {
+	write("pow...");
+	int128 a = 5;
+	assert(a^^2 == int128(25));
+	a = -5;
+	assert(a^^2 == int128(25));
+	assert(a^^3 == int128(-125));
+	writeln("passed");
+}
 
 	public const Int!Z and(const Int!Z x, const Int!Z y) {
 		Int!Z result;
-		for (int i = 0; i < N; i++)
-			result[i] = (x[i] & y[i]);
+		for (uint i = 0; i < N; i++) {
+			result[i] = x[i] & y[i];
+		}
 		return result;
 	}
 
@@ -1880,5 +2124,60 @@ public struct Int(int Z) {
 		return Int!Z(array);
 	}
 
+	public const Int!Z lshr(const Int!Z x, const Int!Z y) {
+		return shr(x, y.toInt);
+	}
+
+	public const Int!Z lshr(const Int!Z x, const uint n) {
+		int digits = n / 32;
+		int bits = n % 32;
+		uint [] array = x.digits.dup;
+		lshrDigits(array, digits);
+		lshrBits(array, bits);
+		return Int!Z(array);
+	}
+
+	unittest {
+		writeln("===================");
+		writeln("signed..........end");
+		writeln("===================");
+	}
+
 }	// end Int
+
+/// The base class for all integer arithmetic exceptions.
+class IntegerException: object.Exception {
+	this(string msg, string file = __FILE__,
+		uint line = cast(uint)__LINE__, Throwable next = null)
+	{
+		super(msg, file, line, next);
+	}
+};
+
+/// Raised when a result would be undefined or impossible.
+/// General Decimal Arithmetic Specification, p. 15.
+class InvalidOperationException: IntegerException {
+	this(string msg = "Invalid Integer Operation", string file = __FILE__,
+	     uint line = cast(uint)__LINE__, Throwable next = null)
+	{
+		super(msg, file, line, next);
+	}
+};
+
+/// Raised when a result would be undefined or impossible.
+/// General Decimal Arithmetic Specification, p. 15.
+class DivByZeroException: IntegerException {
+	this(string msg = "Integer Division by Zero", string file = __FILE__,
+	     uint line = cast(uint)__LINE__, Throwable next = null)
+	{
+		super(msg, file, line, next);
+	}
+};
+
+
+unittest {
+	writeln("===================");
+	writeln("integer.........end");
+	writeln("===================");
+}
 

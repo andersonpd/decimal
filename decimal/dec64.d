@@ -1490,15 +1490,17 @@ const int opCmp(T:Dec64)(const T that) {
 // unary operators
 //--------------------------------
 
-	const Dec64 opUnary(string op)() {
+	private Dec64 opUnary(string op)() {
 		static if (op == "+") {
 			return plus!Dec64(this, context);
 		} else static if (op == "-") {
 			return minus!Dec64(this, context);
 		} else static if (op == "++") {
-			return add!Dec64(this, Dec64(1), context);
+			this = add!Dec64(this, Dec64(1), context);
+			return this;
 		} else static if (op == "--") {
-			return sub!Dec64(this, Dec64(1), context);
+			this = sub!Dec64(this, Dec64(1), context);
+			return this;
 		}
 	}
 

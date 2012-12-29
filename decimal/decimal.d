@@ -902,7 +902,7 @@ unittest {
 
 	/// Returns the result of performing the specified
 	/// unary operation on this number.
-	const Decimal opUnary(string op)()
+	private Decimal opUnary(string op)()
 	{
 		static if (op == "+") {
 			return plus!Decimal(this, context);
@@ -911,10 +911,12 @@ unittest {
 			return minus!Decimal(this, context);
 		}
 		else static if (op == "++") {
-			return add!Decimal(this, Decimal(1), context);
+			this = add!Decimal(this, Decimal(1), context);
+			return this;
 		}
 		else static if (op == "--") {
-			return sub!Decimal(this, Decimal(1), context);
+			this = sub!Decimal(this, Decimal(1), context);
+			return this;
 		}
 	}
 
@@ -929,8 +931,10 @@ unittest {
 		actual = -num;
 		assert(actual == expect);
 		num = 134;
+writefln("num = %s", num);
 		expect = 135;
 		actual = ++num;
+writefln("num = %s", num);
 		assert(actual == expect);
 		num = 1.00E8;
 		expect = num - 1;

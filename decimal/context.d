@@ -1607,9 +1607,10 @@ public BigInt abs(const BigInt num) {
 	return big < 0 ? -big : big;
 }
 
-/// Returns the absolute value of a BigInt
+/// Returns the absolute value of a uint128
 public uint128 abs(const uint128 num) {
-	return num < 0 ? -num : num;
+	uint128 copy = num.dup;
+	return num < 0 ? -copy : copy;
 }
 
 //--------------------------

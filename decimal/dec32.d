@@ -1297,15 +1297,17 @@ public:
 // unary operators
 //--------------------------------
 
-	const Dec32 opUnary(string op)() {
+	private Dec32 opUnary(string op)() {
 		static if (op == "+") {
 			return plus!Dec32(this, context);
 		} else static if (op == "-") {
 			return minus!Dec32(this, context);
 		} else static if (op == "++") {
-			return addLong!Dec32(this, 1, context);
+			this = addLong!Dec32(this, 1, context);
+			return this;
 		} else static if (op == "--") {
-			return subLong!Dec32(this, 1, context);
+			this = subLong!Dec32(this, 1, context);
+			return this;
 		}
 	}
 

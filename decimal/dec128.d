@@ -1450,15 +1450,17 @@ writefln("a == d = %s", a == d);
 // unary operators
 //--------------------------------
 
-	const Dec128 opUnary(string op)() {
+	private Dec128 opUnary(string op)() {
 		static if (op == "+") {
 			return plus!Dec128(this, context);
 		} else static if (op == "-") {
 			return minus!Dec128(this, context);
 		} else static if (op == "++") {
-			return add!Dec128(this, Dec128(1), context);
+			this = add!Dec128(this, Dec128(1), context);
+			return this;
 		} else static if (op == "--") {
-			return sub!Dec128(this, Dec128(1), context);
+			this = sub!Dec128(this, Dec128(1), context);
+			return this;
 		}
 	}
 
