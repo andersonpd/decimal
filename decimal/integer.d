@@ -1872,7 +1872,6 @@ writefln("a = %s", a);
 		assert(++op1 == Int!Z(5));
 		op1 = Int!Z(0x000011111100UL);
 		assert(~op1 == 0xFFFFFFFFEEEEEEFFUL);
-//		~op1;
 		assert(-op1 == 0xFFFFFFFFEEEEEF00UL);
 	}
 
@@ -1885,7 +1884,7 @@ writefln("a = %s", a);
 		static if (op == "+") {
 			return add(this, that);
 		} else static if (op == "-") {
-			return sub(this, that);
+			return add(this, negate(that));
 		} else static if (op == "*") {
 			return mul(this, that);
 		} else static if (op == "/") {
@@ -1916,11 +1915,19 @@ writefln("a = %s", a);
 	unittest {	// opBinary
 		int128 op1, op2;
 		op1 = 4; op2 = 8;
-//		assert(op1 + op2 == 12);
-		op1 = 4; int iop = 8;
-//		assert(op1 + iop == 12);
-//		assert(op2 - op1 == Int!Z(4));
+		assert(op1 + op2 == 12);
+		op1 = 4; int iop = -8;
+		assert(op1 + iop == -4);
+		assert(op1 - iop == 12);
+		assert(int128(iop) + op1 == -4);
+		assert(op2 - op1 == 4);
 		assert(op1 * op2 == 32);
+		op1 = -4; op2 = -8;
+		assert(op1 + op2 == -12);
+		assert(op1 - op2 == 4);
+		op1 = -4; op2 = 8;
+		assert(op1 + op2 == 4);
+		assert(op1 - op2 == -12);
 		op1 = 5; op2 = 2;
 //writefln("op1/op2 = %s", op1/op2);
 //		assert(op1 / op2 == 2);
