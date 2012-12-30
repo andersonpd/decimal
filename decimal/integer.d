@@ -693,7 +693,7 @@ unittest {	// divmod
 		uint[] shifted = new uint[nx];
 		uint shout, shin;
 		for (uint i = 0; i < nx; i++) {
-			ulong temp = x[i];
+			long temp = cast(int)x[i];
 			temp >>= n;
 			shout = high(temp);
 			shifted[i] = low(temp) | shin;
@@ -704,16 +704,17 @@ unittest {	// divmod
 
 	// shifts by whole digits (not bits)
 	private uint[] shrDigits(const uint[] x, int n) {
-		if (n >= x.length) {
+		if (n >= x.length || n < 0) {
 			throw new InvalidOperationException();
 		}
 		if (n > 0) {
-writefln("x = %s", x);
-writefln("int128(x) = %s", int128(x).toHexString);
-writefln("x[n..$] = %s", x[n..$]);
-writefln("x+ = %s", int128([-1, -2, -3, -4]).toHexString);
-/*			if (x[0] > 7FFF) {
-			}*/
+			bool signed = cast(int)x[$-1] < 0;
+			if (signed) {
+				auto y = x[n..$].dup;
+				for (int i = n; i < x.length; i++)
+					y ~= 0xFFFFFFFF;
+				return y;
+			}
 			return x[n..$].dup;
 		}
 		return x.dup;
@@ -1553,6 +1554,11 @@ unittest {
 		}
 	}
 
+	// needed for sign extension of int values
+	public this(const int value) {
+		this(cast(long)value);
+	}
+
 	unittest {	// construction
 		// TODO: add tests
 		Int!Z num = Int!Z(1);
@@ -1940,13 +1946,23 @@ writefln("a = %s", a);
 		assert((op1 | op2) == 10101);
 		assert((op1 ^ op2) == 100);
 		op2 = 2;
+writefln("op1 = %s", op1);
+writefln("op2 = %s", op2);
 writefln("op1 << op2 = %s", op1 << op2);
 //		assert(op1 << op2 == 40404);
 writefln("op1 >> op2 = %s", op1 >> op2);
+		op1 = -16;
+writefln("op1 = %s", op1);
+writefln("op1 >> op2 = %s", op1 >> op2);
+		op1 = 0xFFFFFFFF;
+		op2 = 48;
+writefln("op1 = %s", op1.toHexString);
+writefln("op1 = %s", op1);
+writefln("op1 >> op2 = %s", (op1 >> op2).toHexString);
+writefln("op1 >> op2 = %s", (op1 >> op2));
 //		assert(op1 >> op2 == 2525);
 		op1 = 4; op2 = Int!Z([0,1]);
 //		assert(op1 + op2 == 0x100000004);
-
 	}
 
 	public const Int!Z add(const Int!Z x, const Int!Z y) {
@@ -2112,9 +2128,9 @@ unittest {
 	public const Int!Z shl(const Int!Z x, const uint n) {
 		int digits = n / 32;
 		int bits = n % 32;
-		uint [] array = x.digits.dup;
-		shlDigits(array, digits);
-		shlBits(array, bits);
+		uint[] array = x.digits.dup;
+		array = shlDigits(array, digits);
+		array = shlBits(array, bits);
 		return Int!Z(array);
 	}
 
@@ -2125,9 +2141,12 @@ unittest {
 	public const Int!Z shr(const Int!Z x, const uint n) {
 		int digits = n / 32;
 		int bits = n % 32;
+writefln("n = %s", n);
+writefln("digits = %s", digits);
+writefln("bits = %s", bits);
 		uint [] array = x.digits.dup;
-		shrDigits(array, digits);
-		shrBits(array, bits);
+		array = shrDigits(array, digits);
+		array = shrBits(array, bits);
 		return Int!Z(array);
 	}
 
