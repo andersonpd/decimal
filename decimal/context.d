@@ -238,13 +238,13 @@ static ContextFlags contextFlags;
 
 
 private const uint128 TEN128 = uint128(10);
-private const uint128 THOU128 = TEN128^^3;
+/*private const uint128 THOU128 = TEN128^^3;
 private const uint128 MILL128 = THOU128^^3;
 private const uint128 BILL128 = MILL128^^3;
 private const uint128 TRIL128 = BILL128^^3;
 private const uint128 QUAD128 = TRIL128^^3;
 private const uint128 QUINT128 = QUAD128^^3;
-private const uint128 FIVE128 = uint128(5);
+private const uint128 FIVE128 = uint128(5);*/
 
 /// Rounds the referenced number using the precision and rounding mode of
 /// the context parameter.
@@ -602,7 +602,7 @@ public int testFive(const uint128 arg) {
 	int first = firstDigit(arg);
 	if (first < 5) return -1;
 	if (first > 5) return +1;
-	uint128 zeros = (arg % TEN128^^(numDigits(arg)-1)).toInt;
+	uint128 zeros = (arg % TEN128^^(numDigits(arg)-1)).toUint;
 	return (zeros != 0) ? 1 : 0;
 }
 
@@ -1013,7 +1013,7 @@ writefln("QUINT128 = %s", QUINT128);
 		count += 18;
 	}*/
 	/// ...and delegate result to long integer version
-	long n = num.toLong;
+	long n = num.toUlong;
 //writefln("num = %s", num);
 //writefln("n = %s", n);
 	return count + numDigits(n);
@@ -1143,12 +1143,12 @@ public int firstDigit(const BigInt arg) {
 /// Returns the first digit of the argument.
 public int firstDigit(const uint128 arg) {
 	if (arg == 0) return 0;
-	if (arg < 10) return arg.toInt();
+	if (arg < 10) return arg.toUint();
 	uint128 n = arg;
-	while (n > QUINT128) {
-		n /= QUINT128;
+	while (n > TEN128^^18) {
+		n /= TEN128^^18;
 	}
-	return firstDigit(n.toLong());
+	return firstDigit(n.toUlong());
 }
 
 /// Returns the first digit of the argument.
@@ -1479,7 +1479,7 @@ unittest {	// lastDigit(BigInt)
 
 /// Returns the last digit of the argument.
 public uint lastDigit(const uint128 arg) {
-	return (abs(arg) % 10UL).toInt();
+	return (abs(arg) % 10UL).toUint();
 }
 
 /// Returns the last digit of the argument.

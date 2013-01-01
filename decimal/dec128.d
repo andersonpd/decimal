@@ -1173,7 +1173,7 @@ writefln("num.toExact = %s", num.toExact);
 		if (this < Dec128(long.min) || (isInfinite &&  isSigned)) return long.min;
 		//quantize!Dec128(this, ONE, context);
 //writefln("coefficient = %s", coefficient);
-		n = coefficient.toLong;
+		n = coefficient.toUlong;
 		return sign ? -n : n;
 	}
 
