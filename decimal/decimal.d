@@ -26,7 +26,7 @@ import std.string;
 
 import decimal.context;
 import decimal.arithmetic;
-import decimal.integer;
+import decimal.xint;
 
 alias Decimal.context decimalContext;
 alias Decimal.pushContext pushContext;

@@ -19,7 +19,7 @@ import std.bigint;
 import decimal.arithmetic: compare, copyNegate, equals;
 import decimal.conv;
 import decimal.decimal;
-import decimal.integer;
+import decimal.xint;
 
 unittest {
 	import std.stdio;

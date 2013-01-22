@@ -23,7 +23,7 @@ import decimal.context;
 import decimal.decimal;
 import decimal.dec32;
 import decimal.dec64;
-import decimal.integer;
+import decimal.xint;
 
 unittest {
 	writeln("===================");

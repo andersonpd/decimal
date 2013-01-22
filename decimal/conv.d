@@ -19,7 +19,7 @@ import std.ascii: isDigit;
 import std.bigint;
 import std.string;
 import std.format;
-import decimal.integer;
+import decimal.xint;
 
 import decimal.context;
 import decimal.dec32;
