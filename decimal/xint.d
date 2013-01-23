@@ -26,7 +26,7 @@ alias Uxint!256 uint256;
 alias Xint!128 int128;
 alias Xint!256 int256;
 
-public enum Overflow {
+public enum OnOverflow {
 	IGNORE,
 	CLAMP,
 	THROW
@@ -35,7 +35,7 @@ public enum Overflow {
 public static const ulong BASE = 1UL << 32;
 
 public struct Uxint(int Z,
-	Overflow overflow = Overflow.IGNORE) {
+	OnOverflow overflow = OnOverflow.IGNORE) {
 
 unittest {
 	writeln("===================");
@@ -50,7 +50,7 @@ unittest {
 	// The number of uint digits in an extended integer
 	private static const uint N = Z/32;
 
-	/// uint array of the digits of an extended integer
+	/// Array of the (uint) digits of an extended integer
 	///	least significant digit is digits[0];
 	///	most signiciant digit is digits[N-1]
 	private uint[N] digits = 0;
@@ -189,10 +189,21 @@ writefln("Uxint!(256,false).min = %s", Uxint!(256,false).min);*/
 // string constructor
 //--------------------------------
 
-//	public this(string str) {
-//		//this.digits = that.digits;
-//	}
+	public this(string str) {
+		auto value = new uint[N];
+		foreach (char ch; str) {
+			value = mulDigit(value, 10U);
+			value = addDigit(value, cast(uint)(ch - '0'));
+		}
+		this(value);
+	}
 
+unittest {
+	write("string...");
+	uint128 num = uint128("123");
+writefln("num = %s", num);
+	writeln("test missing");
+}
 //--------------------------------
 // constants
 //--------------------------------
@@ -506,7 +517,24 @@ writefln("min(a,b) = %s", min(a,b));
 
 	/// Assigns a BigInt value to this.
 	private void opAssign(T:BigInt)(const T that) {
+		opAssign(Uxint!Z(cast(BigInt)that));
+	}
+
+	/// Assigns a string value to this.
+	private void opAssign(T:string)(const T that) {
 		opAssign(Uxint!Z(that));
+	}
+
+	unittest {	// assignment
+		uint128 actual = uint128(123);
+		uint128 expect = actual;
+		assert(actual == expect);
+		actual = 123L;
+		assert(actual == expect);
+		actual = BigInt(123);
+		assert(actual == expect);
+		actual = "123";
+		assert(actual == expect);
 	}
 
 	/// Performs an operation on this and assigns the result to this.
@@ -705,10 +733,10 @@ writefln("op1+op2 = %s", (op1+op2).toHexString);
 	/// Tests the result for overflow.
 	public const Uxint!Z add(const Uxint!Z x, const Uxint!Z y) {
 		uint[] sum = addDigits(x.digits, y.digits);
-		if (overflow == Overflow.IGNORE || didNotOverflow(sum)) {
+		if (overflow == OnOverflow.IGNORE || didNotOverflow(sum)) {
 			return Uxint!Z(sum);
 		}
-		if (overflow == Overflow.CLAMP) {
+		if (overflow == OnOverflow.CLAMP) {
 			return Uxint!Z.max;
 		}
 		throw new IntegerException("Extended Integer Addition Overflow");
@@ -722,9 +750,9 @@ writefln("op1+op2 = %s", (op1+op2).toHexString);
 	/// Subtracts one unsigned extended integer from another and returns the difference.
 	/// Performs a pre-test for overflow.
 	public const Uxint!Z sub(const Uxint!Z x, const Uxint!Z y) {
-		if (overflow != Overflow.IGNORE) {
+		if (overflow != OnOverflow.IGNORE) {
 			if (y > x) {
-				if (Overflow.CLAMP) {
+				if (OnOverflow.CLAMP) {
 					return Uxint!Z.min;
 				}
 				else {
@@ -748,10 +776,10 @@ writefln("op1+op2 = %s", (op1+op2).toHexString);
 		if (y == ONE) return x;
 		if (x == ONE) return y;
 		uint[] w = mulDigits(x.digits, y.digits);
-		if (overflow == Overflow.IGNORE || didNotOverflow(w)) {
+		if (overflow == OnOverflow.IGNORE || didNotOverflow(w)) {
 			return Uxint!Z(w);
 		}
-		if (overflow == Overflow.CLAMP) {
+		if (overflow == OnOverflow.CLAMP) {
 			return Uxint!Z.max;
 		}
 		throw new IntegerException("Integer Multiplication Overflow");
@@ -829,10 +857,10 @@ writefln("op1+op2 = %s", (op1+op2).toHexString);
 		if (n == 0) return ONE;
 
 		uint[] result = powDigits(x.digits, n);
-		if (overflow == Overflow.IGNORE || didNotOverflow(result)) {
+		if (overflow == OnOverflow.IGNORE || didNotOverflow(result)) {
 			return Uxint!Z(result);
 		}
-		if (overflow == Overflow.CLAMP) {
+		if (overflow == OnOverflow.CLAMP) {
 			return Uxint!Z.max;
 		}
 		throw new IntegerException("Integer Addition Overflow");
@@ -985,7 +1013,7 @@ writefln("sqr!uint128(uint128(5)) = %s", int128.sqr(b ));
 //============================================================================//
 
 public struct Xint(int Z,
-	Overflow overflow = Overflow.IGNORE) {
+	OnOverflow overflow = OnOverflow.IGNORE) {
 
 unittest {
 	writeln("===================");
@@ -1292,15 +1320,16 @@ unittest {	// get/set long values
 	}
 
 	/// Construct from a big integer.
-	public this(BigInt big) {
-		if (big < 0) big = - big;
+	public this(const BigInt big) {
+//		if (big < 0) big = - big;
+		BigInt arg = cast(BigInt) big;
 		BigInt base = BigInt(BASE);
-		int len = big.uintLength;
+		int len = arg.uintLength;
 		if (len > N) len = N;
 		for (int i = 0; i < len; i++) {
-			digits[i] = cast(uint)(big % base).toLong;
-			big /= base;
-			if (big == 0) break;
+			digits[i] = cast(uint)(arg % base).toLong;
+			arg /= base;
+			if (arg == 0) break;
 		}
 	}
 
@@ -1667,19 +1696,19 @@ writefln("op1 >> op2 = %s", (op1 >> op2));
 
 	public const Xint!(Z) add(const Xint!(Z) x, const Xint!(Z) y) {
 		uint[] sum = addDigits(x.digits, y.digits);
-		if (overflow == Overflow.IGNORE || didNotOverflow(sum)) {
+		if (overflow == OnOverflow.IGNORE || didNotOverflow(sum)) {
 			return Xint!(Z)(sum);
 		}
-		if (overflow == Overflow.CLAMP) {
+		if (overflow == OnOverflow.CLAMP) {
 			return Xint!(Z).max;
 		}
 		throw new IntegerException("Integer Addition Overflow");
 	}
 
 	public const Xint!(Z) sub(const Xint!(Z) x, const Xint!(Z) y) {
-		if (overflow != Overflow.IGNORE) {
+		if (overflow != OnOverflow.IGNORE) {
 			if (y > x) {
-				if (Overflow.CLAMP) {
+				if (OnOverflow.CLAMP) {
 					return Xint!(Z).min;
 				}
 				else {
@@ -2251,7 +2280,7 @@ unittest {
 		ulong temp = x[0] + y;
 		sum[0] = low(temp);
 		uint carry = high(temp);
-		uint i = 0;
+		uint i = 1;
 		while (carry && i < nx) {
 			temp = cast(ulong)x[i] + carry;
 			sum[i] = low(temp);
@@ -2263,9 +2292,6 @@ unittest {
 			i++;
 		}
 		if (carry == 1) {
-writefln("overflow occurred");
-writefln("i = %s", i);
-writefln("nx = %s", nx);
 			sum[i] = carry;
 		}
 		return sum;
