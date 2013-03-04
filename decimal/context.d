@@ -19,7 +19,7 @@ import std.bigint;
 import decimal.arithmetic: compare, copyNegate, equals;
 import decimal.conv;
 import decimal.decimal;
-import decimal.xint;
+import xint;
 
 unittest {
 	import std.stdio;
@@ -1591,7 +1591,7 @@ public bool isOdd(const ulong n) {
 }
 
 public bool isOdd(const uint128 n) {
-	return n.getLong(1) & 1;
+	return n.isOdd;
 }
 
 

@@ -1072,7 +1072,7 @@ unittest {	// quantum
 // binary shift
 //--------------------------------
 
-/*// TODO: these don't work because we don't want to truncate the coefficient.
+// TODO: these don't work because we don't want to truncate the coefficient.
 // shl is okay, but shr isn't.
 public Decimal shl(const Decimal arg, const int n,
 		const DecimalContext context = Decimal.context) {
@@ -1082,12 +1082,31 @@ public Decimal shl(const Decimal arg, const int n,
 		return result;
 	}
 	result = arg;
-	result.coefficient = result.coefficient << n;
-	result.digits = numDigits(result.coefficient);
+	with (result) {
+		coefficient = coefficient << n;
+		digits = numDigits(coefficient);
+	}
 	return roundToPrecision(result, context);
 }
 
-public Decimal shr(const Decimal arg, const int n,
+unittest {	// shl
+	Decimal big, expect, actual;
+	big = Decimal(4);
+	expect = Decimal(16);
+	actual = shl(big, 2);
+	assert(actual == expect);
+	big = Decimal(437);
+	expect = Decimal(1748);
+	actual = shl(big, 2);
+	assert(actual == expect);
+	big = Decimal(-0.07);
+	expect = Decimal(-0.56);
+	actual = shl(big, 3);
+	assert(actual == expect);
+}
+
+/*
+public Decimal shr(const Decimal arg,
 		const DecimalContext context = Decimal.context) {
 
 	Decimal result = Decimal.nan;
@@ -1095,18 +1114,27 @@ public Decimal shr(const Decimal arg, const int n,
 		return result;
 	}
 	result = arg;
-	result.coefficient = result.coefficient >> n;
-	result.digits = numDigits(result.coefficient);
+	with (result) {
+	if (isOdd(coefficient)) {
+		coefficient = coefficient >> 1;
+		coefficient += 5;
+		exponent = exponent - 1;
+	}
+	else {
+		coefficient = coefficient >> 1;
+	}
+		digits = numDigits(coefficient);
+	}
 	return roundToPrecision(result, context);
 }
 
-unittest {	// shr, shl.
-	Decimal big, expect, actual;
-	big = Decimal(4);
-	expect = Decimal(16);
-	actual = shl(big, 2);
-	assert(actual == expect);
-}*/
+public bool isOdd(const BigInt big) {
+	BigInt test = mutable(big);
+	test >>= 1;
+	test <<= 1;
+	return (test != big);
+}
+*/
 
 //--------------------------------
 // decimal shift and rotate
@@ -1473,9 +1501,11 @@ public T mul(T)(const T arg1, const T arg2,
 		else {
 			product.coefficient = T.bigmul(arg1, arg2);
 		}
-		product.exponent = arg1.exponent + arg2.exponent;
-		product.sign = arg1.sign ^ arg2.sign;
-		product.digits = numDigits(product.coefficient);
+		with (product) {
+			exponent = arg1.exponent + arg2.exponent;
+			sign = arg1.sign ^ arg2.sign;
+			digits = numDigits(coefficient);
+		}
 		result = T(product);
 	}
 
@@ -1521,10 +1551,12 @@ public T mulLong(T)(const T arg1, long arg2,
 	// product is non-zero
 	else {
 		Decimal product = Decimal.zero;
-		product.coefficient = arg1.coefficient * arg2;
-		product.exponent = arg1.exponent;
-		product.sign = arg1.sign ^ (arg2 < 0);
-		product.digits = numDigits(product.coefficient);
+		with (product) {
+			coefficient = arg1.coefficient * arg2;
+			exponent = arg1.exponent;
+			sign = arg1.sign ^ (arg2 < 0);
+			digits = numDigits(coefficient);
+		}
 		result = T(product);
 	}
 	// only needs rounding if

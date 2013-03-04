@@ -26,7 +26,7 @@ import std.string;
 
 import decimal.context;
 import decimal.arithmetic;
-import decimal.xint;
+import xint;
 
 alias Decimal.context decimalContext;
 alias Decimal.pushContext pushContext;
@@ -508,9 +508,19 @@ unittest {
 		return signed ? NEG_ZERO.dup : ZERO.dup;
 	}
 
-	/// Returns one.
+	/// Returns 1.
 	static Decimal one(bool signed = false) {
 		return signed ? -ONE.dup : ONE.dup;
+	}
+
+	/// Returns 2.
+	static Decimal two() {
+		return Decimal(false, 2, 0);
+	}
+
+	/// Returns 1/2.
+	static Decimal half() {
+		return Decimal(false, 5, -1);
 	}
 
 	/// Returns the maximum number of decimal digits in this context.
@@ -635,6 +645,35 @@ unittest {
 		assert(num.isCanonical);
 		Decimal copy = num.canonical;
 		assert(compareTotal(num, copy) == 0);
+	}
+
+	/// Returns true if this number is exactly one.
+	const bool isOne() {
+		if (isOneReduced()) {
+			return true;
+		}
+		if (exponent > 0) {
+			return false;
+		}
+		Decimal test = reduce(this);
+		if (test.isOneReduced()) {
+			return true;
+		}
+		return false;
+	}
+
+	/// Returns true if this number is exactly (false, 1, 0).
+	const bool isOneReduced() {
+		return isFinite && !isSigned && coefficient == 1 && exponent == 0;
+	}
+
+	 unittest { // isOne
+		Decimal num;
+		num = Decimal("1");
+		assert(num.isOne);
+		num = Decimal(false, 10, -1);
+		assert(num.isOne);
+		assert(!num.isOneReduced);
 	}
 
 	/// Returns true if this number is + or - zero.
@@ -878,11 +917,16 @@ unittest {
 	/// Zeros are equal regardless of sign.
 	/// A NaN is not equal to any number, not even to another NaN.
 	/// A number is not even equal to itself (this != this) if it is a NaN.
-	const bool opEquals (ref const Decimal that) {
+	const bool opEquals(T:Decimal)(ref const T that) {
 		return equals!Decimal(this, that, context);
 	}
 
-	unittest {	// comparison
+	/// Returns true if this extended integer is equal to the argument.
+	const bool opEquals(T)(ref const T that) /*if (isIntegral!T)*/  {
+		return opEquals(Decimal(that));
+	}
+
+unittest {	// comparison
 		Decimal num1, num2;
 		num1 = 105;
 		num2 = 10.543;

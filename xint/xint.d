@@ -7,12 +7,14 @@
  *	http://www.boost.org/LICENSE_1_0.txt)
 **/
 
-module decimal.xint;
+module xint;
 
+import std.ascii;
+import std.bigint;
 import std.conv;
 import std.stdio;
+import std.string;
 import std.traits;
-import std.bigint;
 
 unittest {
 	writeln("===================");
@@ -20,13 +22,13 @@ unittest {
 	writeln("===================");
 }
 
-alias Uxint!128 uint128;
-alias Uxint!256 uint256;
+alias UXInt!128 uint128;
+alias UXInt!256 uint256;
 
-alias Xint!128 int128;
-alias Xint!256 int256;
+alias XInt!128 int128;
+alias XInt!256 int256;
 
-public enum OnOverflow {
+public enum OverflowMode {
 	IGNORE,
 	CLAMP,
 	THROW
@@ -34,8 +36,8 @@ public enum OnOverflow {
 
 public static const ulong BASE = 1UL << 32;
 
-public struct Uxint(int Z,
-	OnOverflow overflow = OnOverflow.IGNORE) {
+public struct UXInt(int Z,
+	OverflowMode overflow = OverflowMode.IGNORE) {
 
 unittest {
 	writeln("===================");
@@ -51,71 +53,125 @@ unittest {
 	private static const uint N = Z/32;
 
 	/// Array of the (uint) digits of an extended integer
-	///	least significant digit is digits[0];
-	///	most signiciant digit is digits[N-1]
+	///	The digits are stored in increasing value:
+	/// least significant digit is digits[0],
+	/// most significiant digit is digits[N-1]
 	private uint[N] digits = 0;
 
-	/// Returns zero, the initial value for extended integer types.
+//--------------------------------
+// digits
+//--------------------------------
+
+	/// Returns the number of digits in the extended integer.
 	@property
-	public static Uxint!Z init() {
-		return ZERO;
+	public static uint size() {
+		return N;
 	}
 
-	/// Returns the maximum value for this type.
-	/// For unsigned extended integers the maximum value is 0xFF...FF.
-	public static Uxint!Z max() {
-		static Uxint!Z value;
-		static bool initialized = false;
-		if (initialized) return value;
-		for (int i = 0; i < N; i++) {
-			value.digits[i] = uint.max;
-		}
-		initialized = true;
-		return value;
+	/// Returns the value of the nth digit in the extended integer.
+	/// getDigit(0) returns the most significant digit.
+	/// getDigit(size-1) returns the least significant digit.
+	public const uint getDigit(uint n) {
+writefln("n = %s", n);
+writefln("N = %s", N);
+writefln("N-n = %s", N-n);
+writefln("N-n+1 = %s", N-n+1);
+writefln("N-n-1 = %s", N-n-1);
+        int i = N-n-1;
+writefln("i = %s", i);
+//writeln();
+		return cast(uint)digits[i];
 	}
 
-	/// Returns the larger of the two extended integers.
-	public static Uxint!Z max(const Uxint!Z arg1, const Uxint!Z arg2) {
-		if (arg1 < arg2) return arg2;
-		return arg1;
+	/// Returns the value of the nth word in the extended integer.
+	/// getWord(0) returns the most significant word.
+	/// getWord(size-1) returns the least significant word.
+	public const ulong getWord(int index) {
+		index *= 2;
+		return pack(digits[N-1 - index], digits[N-2 - index]);
 	}
 
-	/// Returns the minimum value for this type.
-	/// For unsigned extended integers the minimum value is 0x00...00.
-	public static Uxint!Z min() {
-		static Uxint!Z value;
-		static bool initialized = false;
-		if (initialized) return value;
-		value = Uxint!Z(0);
-		initialized = true;
-		return value;
+	/// Sets the nth word in the extended integer to the specified value.
+	/// setWord(size-1, value) sets the value of the most significant word.
+	public void setWord(int index, ulong value) {
+		index *= 2;
+		digits[N-1 - index] = high(value);
+		digits[N-2 - index] = low(value);
 	}
 
 unittest {
-	int128 a = 5;
-	int128 b = 7;
-	assert(int128.max(a,b) == 7);
-	assert( Xint!64.max == long.max);
-	assert(Uxint!64.max == ulong.max);
-	assert( Xint!64.min == long.min);
-	assert(Uxint!64.min == ulong.min);
-	assert(Xint!256.max.toString == "57896044618658097711785492504343953926634992332820282019728792003956564819967");
-	assert(Xint!256.min.toString == "-57896044618658097711785492504343953926634992332820282019728792003956564819968");
-	assert(Uxint!256.max.toString == "115792089237316195423570985008687907853269984665640564039457584007913129639935");
-//writefln("max(int128(5), int128(7)) = %s", max!int128(int128(5), int128(7)));
-/*writefln("Uxint!(256,true).max.toHexString = %s", Uxint!(256,true).max.toHexString);
-writefln("Uxint!(256,false).max.toHexString = %s", Uxint!(256,false).max.toHexString);
-writefln("Uxint!(256,true).min.toHexString = %s", Uxint!(256,true).min.toHexString);
-writefln("Uxint!(256,false).min.toHexString = %s", Uxint!(256,false).min.toHexString);
-writefln("Uxint!(256,true).max = %s", Uxint!(256,true).max);
-writefln("Uxint!(256,false).max = %s", Uxint!(256,false).max);
-writefln("Uxint!(256,true).min = %s", Uxint!(256,true).min);
-writefln("Uxint!(256,false).min = %s", Uxint!(256,false).min);*/
+	write("digits...");
+	uint128 num;
+	num = uint128([1u,2u,3u,4u]);
+	uint first = num.getDigit(0);
+	assert(first == 4);
+writefln("Z = %s", Z);
+writefln("N = %s", N);
+writefln("N-1 = %s", size-1);
+	uint last = num.getDigit(3);
+	assert(last == 1);
+	ulong firstword = num.getWord(0);
+	assert(firstword == 0x400000003);
+	ulong lastword = num.getWord(1);
+	assert(lastword == 0x200000001);
+	writeln("test missing");
 }
+
+//--------------------------------
+// bit manipulation
+//--------------------------------
+
+	/// Sets a single bit in an unsigned extended integer.
+	public void setBit(int n, bool value = true) {
+		if (value) {
+			this |= shl(ONE, n);
+		}
+		else {
+			this &= complement(shl(ONE, n));
+		}
+	}
+
+	/// Tests a single bit in an unsigned extended integer.
+	public const bool testBit(int n) {
+		UXInt!Z value = this & shl(ONE, n);
+		return !value.isZero;
+	}
+
+	unittest {	// bit manipulation
+		uint128 test = uint128(0);
+		assert(!test.testBit(5));
+		test.setBit(5);
+		assert(test.testBit(5));
+	}
+
+/*	public const setBits(int n, int count, uint value) {
+	};
+
+	public const bool testBits(int n, int count, uint value) {
+		return false;
+	}*/
+
+	unittest {	// get/set long values
+		write("get/set long values...");
+		writeln("test missing");
+	}
 
 //--------------------------------
 // construction
 //--------------------------------
+
+	/// Private constructor for internal use.
+	/// Constructs an extended integer from an array of
+	/// unsigned integer values. In the internal array
+	/// digits[0] is the least significant digit while
+	/// digits[$-1] is most significant digit. This
+	/// is the reverse of the public constructor and
+	/// of the get/set digit and word methods.
+	private this(const uint[] array) {
+		uint len = array.length >= N ? N : array.length;
+		for (int i = 0; i < len; i++)
+			digits[i] = array[i];
+	}
 
 	/// Constructs an extended integer from a list of unsigned long values.
 	///	The list can be a single value, a comma-separated list or an array.
@@ -129,87 +185,221 @@ writefln("Uxint!(256,false).min = %s", Uxint!(256,false).min);*/
 		}
 	}
 
-	unittest {	// construction
-		// TODO: test single value
-		// TODO: test comma-separated list
-		// TODO: test a left-to-right array
-	}
-
-	/// Private constructor for internal use.
-	/// Constructs an extended integer from a list of
-	/// unsigned integer (not long) values.
-	/// The list must be an array. The list is ordered right to left:
-	/// Least significant value first, most significant value last.
-	private this(const uint[] array) {
-		uint len = array.length >= N ? N : array.length;
-		for (int i = 0; i < len; i++)
-			digits[i] = array[i];
-	}
 
 	unittest {	// construction
-		// TODO: test single array element
-		// TODO: test a right-to-left array
-		uint128 num = uint128(7503UL, 12UL);
+		uint128 num, expected;
+		assert(uint128(7) == uint128(7));
+		assert(uint128(17) != uint128(7));
+		assert(uint128(7UL) == uint128(7));
+		assert(uint128([7UL]) == uint128(7));
+		expected = 7503;
 		num = uint128(7503UL);
+		assert(num == expected);
+		expected = uint128("138405920785042765774860");
+		num = uint128(7503UL, 12UL);
+		assert(num == expected);
+		// array of unsigned longs
+		num = uint128([7503UL, 12UL]);
+		assert(num == expected);
+		// array of unsigned ints
+		num = uint128([7503U, 12U]);
+		assert(num != expected);
+
+		num = uint128([7503UL]);
 		assert(num.digits[0] == 7503);
 		assert(num.digits[0] != 7502);
 		num = uint128(2^^16);
+		assert(num == 65536);
 		num = uint128(uint.max);
+		assert(num == "4294967295");
 		num = uint128(cast(ulong)uint.max + 1);
+		num = 4294967296;
 		assert(num.digits[0] == 0);
 		assert(num.digits[1] == 1);
 		num.digits[0] = 16;
 		num.digits[1] = 32;
+		assert(num == 137438953488);
 	}
+
+//--------------------------------
+// constants
+//--------------------------------
+
+	public const UXInt!Z ZERO = UXInt!Z(0);
+	public const UXInt!Z ONE  = UXInt!Z(1);
 
 //--------------------------------
 // copy
 //--------------------------------
 
-	/// Copy constructor.
-	public this(const Uxint!Z that) {
+	/// Constructs a copy of the extended integer.
+	public this(const UXInt!Z that) {
 		this.digits = that.digits;
 	}
 
-	/// Returns a copy of the value of the extended integer.
-	public const Uxint!Z dup() {
-		return Uxint!Z(this);
+	/// Returns a copy of the extended integer.
+	public const UXInt!Z dup() {
+		return UXInt!Z(this);
 	}
 
 	unittest {	// copy
 		uint128 num = uint128(9305);
 		assert(uint128(num) == num);
 		assert(num.dup == num);
-// TODO: move these tests or eliminate them
-//		assert(num.abs == uint128(9305));
-//		assert(abs(num) == uint128(9305));
 	}
 
 //--------------------------------
 // string constructor
 //--------------------------------
 
-	public this(string str) {
+	public this(const string str) {
 		auto value = new uint[N];
-		foreach (char ch; str) {
-			value = mulDigit(value, 10U);
-			value = addDigit(value, cast(uint)(ch - '0'));
+		char[] chars = strip(str.dup);
+		// if the string start withs a non-zero digit,
+		// it must be a decimal number.
+		if (chars[0] != '0') {
+			parseDecimal(chars);
+		}
+		// Otherwise it may be hex or binary
+		toLowerInPlace(chars);
+		if (startsWith(chars, "0x")) {
+			value = parseHex(chars[2..$]);
+		} else if (startsWith(chars, "0b")) {
+			value = parseBinary(chars[2..$]);
+		} else {
+			value = parseDecimal(chars);
 		}
 		this(value);
 	}
 
-unittest {
-	write("string...");
-	uint128 num = uint128("123");
-writefln("num = %s", num);
-	writeln("test missing");
-}
+	private static uint[] parseHex(ref char[] chars) {
+		auto value = new uint[N];
+		uint charValue = 0;
+		foreach (char ch; chars) {
+			if (ch == '_') continue;
+			if (!isHexDigit(ch)) {
+			throw new ConvException("Invalid hexadecimal character: [" ~ ch ~ "]");
+			}
+			value = mulDigit(value, 16);
+			if (isDigit(ch)) {
+				charValue = ch - '0';
+			}
+			else {
+				charValue = ch - 'a' + 10;
+			}
+			value = addDigit(value, charValue);
+		}
+		return value;
+	}
+
+	private static uint[] parseBinary(ref char[] chars) {
+		auto value = new uint[N];
+		uint charValue = 0;
+		foreach (char ch; chars) {
+			if (ch == '_') continue;
+			if (ch != '0' && ch != '1') throw
+				new ConvException("[" ~ ch ~ "] is not a binary character");
+			value = mulDigit(value, 2);
+			if (ch == '1') value = addDigit(value, 1);
+		}
+		return value;
+	}
+
+	private static uint[] parseDecimal(ref char[] chars) {
+		auto value = new uint[N];
+		if (!isDigit(chars[0])) {
+			throw new ConvException("Invalid initial character: [" ~ chars[0] ~ "]");
+		}
+		foreach (char ch; chars) {
+			if (ch == '_') continue;
+			if (!isDigit(ch)) {
+			throw new ConvException("Invalid decimal character: [" ~ ch ~ "]");
+			}
+			value = mulDigit(value, 10U);
+			value = addDigit(value, cast(uint)(ch - '0'));
+		}
+		return value;
+	}
+
+	unittest {
+		string str;
+		uint128 num;
+		num = uint128(123);
+		str = "123";
+		assert(num == uint128(str));
+		str = "0x7B";
+		assert(num == uint128(str));
+		str = "0b1111011";
+		assert(num == uint128(str));
+		str = "0_234_445";
+		num = uint128(str);
+		assert(num == 234445);
+	}
+
+
 //--------------------------------
-// constants
+// properties
 //--------------------------------
 
-	public const auto ZERO = Uxint!Z(0);
-	public const auto ONE  = Uxint!Z(1);
+	/// Returns zero, the initial value for extended integer types.
+	@property
+	public static UXInt!Z init() {
+		return ZERO;
+	}
+
+	/// Returns the maximum value for this type.
+	/// For unsigned extended integers the maximum value is 0xFF...FF.
+	public static UXInt!Z max() {
+		static UXInt!Z value;
+		static bool initialized = false;
+		if (initialized) return value;
+		for (int i = 0; i < N; i++) {
+			value.digits[i] = uint.max;
+		}
+		initialized = true;
+		return value;
+	}
+
+	/// Returns the minimum value for this type.
+	/// For unsigned extended integers the minimum value is 0x00...00.
+	public static UXInt!Z min() {
+		static UXInt!Z value;
+		static bool initialized = false;
+		if (initialized) return value;
+		value = UXInt!Z(0);
+		initialized = true;
+		return value;
+	}
+
+
+	// TODO: move this to abs() or negate().
+	/// Returns the larger of the two extended integers.
+	public static UXInt!Z max(const UXInt!Z arg1, const UXInt!Z arg2) {
+		if (arg1 < arg2) return arg2;
+		return arg1;
+	}
+
+	unittest {
+		int128 a = 5;
+		int128 b = 7;
+		assert(int128.max(a,b) == 7);
+		assert( XInt!64.max == long.max);
+		assert(UXInt!64.max == ulong.max);
+		assert( XInt!64.min == long.min);
+		assert(UXInt!64.min == ulong.min);
+		assert(XInt!256.max.toString == "57896044618658097711785492504343953926634992332820282019728792003956564819967");
+		assert(XInt!256.min.toString == "-57896044618658097711785492504343953926634992332820282019728792003956564819968");
+		assert(UXInt!256.max.toString == "115792089237316195423570985008687907853269984665640564039457584007913129639935");
+	//writefln("max(int128(5), int128(7)) = %s", max!int128(int128(5), int128(7)));
+	/*writefln("UXInt!(256,true).max.toHexString = %s", UXInt!(256,true).max.toHexString);
+	writefln("UXInt!(256,false).max.toHexString = %s", UXInt!(256,false).max.toHexString);
+	writefln("UXInt!(256,true).min.toHexString = %s", UXInt!(256,true).min.toHexString);
+	writefln("UXInt!(256,false).min.toHexString = %s", UXInt!(256,false).min.toHexString);
+	writefln("UXInt!(256,true).max = %s", UXInt!(256,true).max);
+	writefln("UXInt!(256,false).max = %s", UXInt!(256,false).max);
+	writefln("UXInt!(256,true).min = %s", UXInt!(256,true).min);
+	writefln("UXInt!(256,false).min = %s", UXInt!(256,false).min);*/
+	}
 
 //--------------------------------
 // classification
@@ -270,11 +460,24 @@ writefln("num = %s", num);
 		return "0x" ~ str[1..$].idup;
 	}
 
+/*	/// Converts the extended integer value to a hexadecimal string.
+	public const string toBinaryString() {
+		char[] str;
+		int length = numDigits(digits);
+		if (length == 0) {
+			return ("0b00000000");
+		}
+		for (int i = 0; i < length; i++) {
+			str = std.string.format("_%08X", digits[i]) ~ str;
+		}
+		return "0x" ~ str[1..$].idup;
+	}*/
+
 	unittest // toString
 	{
 		uint128 a;
 		a = uint128([11UL]);
-		decimal.test.assertEqual("11", a.toString);
+		assert("11" == a.toString);
 		a = uint128(1234567890123);
 		assert(a.toString == "1234567890123");
 		a = uint128(0x4872EACF123346FF);
@@ -282,83 +485,24 @@ writefln("num = %s", num);
 		assert(uint128(156).toHexString == "0x0000009C");
 	}
 
-	/// Returns the value of the nth digit in the extended integer.
-	/// Reads left to right: getInt(0) returns the most significant digit.
-	public const uint getInt(int n) {
-		return cast(uint)digits[N-n];
-	}
-
-	/// Returns the value of the nth word in the extended integer.
-	/// Reads left to right: getLong(0) returns the most significant word.
-	public const ulong getLong(int index) {
-		index *= 2;
-		return pack(digits[N-1 - index], digits[N-2 - index]);
-	}
-
-	/// Sets the nth word in the extended integer to the specified value.
-	/// Acts left to right:
-	/// 	setLong(0, value) sets the value of the most significant word.
-	public void setLong(int index, ulong value) {
-		index *= 2;
-		digits[N-1 - index] = high(value);
-		digits[N-2 - index] = low(value);
-	}
-
-	/// Sets a single bit in an unsigned extended integer.
-	public void setBit(int n, bool value = true) {
-		if (value) {
-			this |= shl(ONE, n);
-		}
-		else {
-			this &= complement(shl(ONE, n));
-		}
-	}
-
-	/// Tests a single bit in an unsigned extended integer.
-	public const bool testBit(int n) {
-		Uxint!Z value = this & shl(ONE, n);
-		return !value.isZero;
-	}
-
-	unittest {	// bit manipulation
-		uint128 test = uint128(0);
-		assert(!test.testBit(5));
-		test.setBit(5);
-		assert(test.testBit(5));
-	}
-
-/*	public const setBits(int n, int count, uint value) {
-	};
-
-	public const bool testBits(int n, int count, uint value) {
-		return false;
-	}*/
-
-	unittest {	// get/set long values
-		write("get/set long values...");
-		writeln("test missing");
-	}
-
-	// TODO: should this clamp?
 	/// Converts the unsigned extended integer to an unsigned integer.
 	public const uint toUint() {
-		return cast(uint)digits[0];
+		return this > uint.max ? uint.max : cast(uint)digits[0];
 	}
 
-	// TODO: should this clamp?
 	/// Converts the unsigned extended integer to an unsigned long integer.
 	public const ulong toUlong() {
-		return getLong(1);
+		return this > ulong.max ? ulong.max : getWord(1);
 	}
 
 	/// Converts the unsigned extended integer to an integer.
 	public const int toInt() {
-		return cast(int)digits[0];
+		return this > int.max ? int.max : cast(int)digits[0];
 	}
 
 	/// Converts the unsigned extended integer to a long integer.
 	public const long toLong() {
-		return digits[0];
+		return this > long.max ? long.max : cast(long)getWord(1);
 	}
 
 	unittest {	// conversion
@@ -377,22 +521,22 @@ writefln("num = %s", num);
 	}
 
 	/// Constructs an unsigned extended integer from a big integer.
-	public this(BigInt big) {
+	public this(const BigInt big) {
+		static BigInt base = BigInt(BASE);
 		// TODO: this returns abs(big) -- do we want cast(unsigned) big?
-		if (big < 0) big = - big;
-		BigInt base = BigInt(BASE);
-		int len = big.uintLength;
+		BigInt value = cast(BigInt) big;
+		int len = value.uintLength;
 		if (len > N) len = N;
 		for (int i = 0; i < len; i++) {
-			digits[i] = cast(uint)(big % base).toLong;
-			big /= base;
-			if (big == 0) break;
+			digits[i] = cast(uint)(value % base).toLong;
+			value /= base;
+			if (value == 0) break;
 		}
 	}
 
 	unittest {	// BigInt interoperability
 		// TODO: test with multi-digits numbers
-		// TODO: test with BigInts too large to fit into Uxint!Z.
+		// TODO: test with BigInts too large to fit into UXInt!Z.
 		BigInt big = 5;
 		uint128 num = 21;
 		assert(big != num);
@@ -406,40 +550,33 @@ writefln("num = %s", num);
 	}
 
 //--------------------------------
+// internal values
+//--------------------------------
+
+//--------------------------------
 // comparison
 //--------------------------------
 
 	/// Returns -1, 0, or 1, if this extended integer is, respectively,
 	/// less than, equal to or greater than the argument.
-	private const int opCmp(T:Uxint!Z)(const T that) {
+	private const int opCmp(T:UXInt!Z)(const T that) {
 		return compare(this.digits, that.digits);
 	}
 
 	/// Returns -1, 0, or 1, if this extended integer is, respectively,
 	/// less than, equal to or greater than the argument.
-	private const int opCmp(T)(const T that) if (isIntegral!T) {
-		return opCmp(Uxint!Z(that));
-	}
-
-	/// Returns -1, 0, or 1, if this extended integer is, respectively,
-	/// less than, equal to or greater than the argument.
-	private const int opCmp(T:BigInt)(const T that) {
-		return compare(this.digits, Uxint!Z(cast(BigInt)that).digits);
+	private const int opCmp(T)(const T that) {
+		return opCmp(UXInt!Z(that));
 	}
 
 	 /// Returns true if this extended integer is equal to the argument.
-	private const bool opEquals(T:Uxint!Z)(const T that) {
+	private const bool opEquals(T:UXInt!Z)(const T that) {
 		return this.digits == that.digits;
 	}
 
 	 /// Returns true if this extended integer is equal to the argument.
-	private const bool opEquals(T)(const T that) if (isIntegral!T) {
-		return opEquals(Uxint!Z(that));
-	}
-
-	 /// Returns true if this extended integer is equal to the argument.
-	private const bool opEquals(T:BigInt)(const T that) {
-		return this.digits == Uxint!Z(cast(BigInt)that).digits;
+	private const bool opEquals(T)(const T that){
+		return opEquals(UXInt!Z(that));
 	}
 
 	unittest { // comparison
@@ -463,11 +600,11 @@ writefln("num = %s", num);
 		assert(int128(195) >= -195);
 	}
 
-//	public static Uxint!Z max(const Uxint!Z arg1, const Uxint!Z arg2) {
+//	public static UXInt!Z max(const UXInt!Z arg1, const UXInt!Z arg2) {
 //		if (arg1 < arg2) return arg2;
 //		return arg1;
 //	}
-//	public static Uxint!Z max(const Uxint!Z arg1, const Uxint!Z arg2) {
+//	public static UXInt!Z max(const UXInt!Z arg1, const UXInt!Z arg2) {
 //		if (arg1 < arg2) return arg2;
 //		return arg1;
 //	}
@@ -477,7 +614,7 @@ writefln("num = %s", num);
 		return arg1;
 	}*/
 
-	public static Uxint!Z min(const Uxint!Z arg1, const Uxint!Z arg2) {
+	public static UXInt!Z min(const UXInt!Z arg1, const UXInt!Z arg2) {
 		if (arg1 > arg2) return arg2;
 		return arg1;
 	}
@@ -492,37 +629,28 @@ writefln("min(a,b) = %s", min(a,b));
 //	assert(max(int128(5), int128(7)) == 7);*/
 	writeln("test missing");
 }
+
 //--------------------------------
-// assignment
+// indexing and assignment
 //--------------------------------
 
-	private const uint opIndex(const uint i) {
+/*	private const uint opIndex(const uint i) {
 		return digits[i];
 	}
 
 	private void opIndexAssign(T)
 			(const T that, const uint i) if (isIntegral!T) {
 		digits[i] = cast(uint)that;
-	}
+	}*/
 
 	/// Assigns an unsigned extended integer value to this.
-	private void opAssign(T:Uxint!Z)(const T that) {
+	private void opAssign(T:UXInt!Z)(const T that) {
 		this.digits = that.digits;
 	}
 
 	/// Assigns an integral value to this.
-	private void opAssign(T)(const T that) if (isIntegral!T) {
-		opAssign(Uxint!Z(that));
-	}
-
-	/// Assigns a BigInt value to this.
-	private void opAssign(T:BigInt)(const T that) {
-		opAssign(Uxint!Z(cast(BigInt)that));
-	}
-
-	/// Assigns a string value to this.
-	private void opAssign(T:string)(const T that) {
-		opAssign(Uxint!Z(that));
+	private void opAssign(T)(const T that) {
+		opAssign(UXInt!Z(that));
 	}
 
 	unittest {	// assignment
@@ -538,36 +666,22 @@ writefln("min(a,b) = %s", min(a,b));
 	}
 
 	/// Performs an operation on this and assigns the result to this.
-	private ref Uxint!Z opOpAssign(string op, T:Uxint!Z)(const T that) {
+	private ref UXInt!Z opOpAssign(string op, T:UXInt!Z)(const T that) {
 		this = opBinary!op(that);
 		return this;
 	}
 
 	/// Performs an operation on this and assigns the result to this.
-	private ref Uxint!Z opOpAssign(string op, T)(const T that) {
+	private ref UXInt!Z opOpAssign(string op, T)(const T that) {
 		this = opBinary!op(that);
 		return this;
 	}
-
-	// TODO are these specialization needed?
-/*	/// Performs an operation on this and assigns the result to this.
-	private ref Uxint!Z opOpAssign(string op, T)
-			(const T that) if (isIntegral!T) {
-		this = opBinary!op(Uxint!Z(that));
-		return this;
-	}
-
-	/// Performs an operation on this and assigns the result to this.
-	private ref Uxint!Z opOpAssign(T:BigInt)(string op, const T that) {
-		this = opBinary!op(Uxint!Z(that));
-		return this;
-	}*/
 
 //--------------------------------
 // unary operations
 //--------------------------------
 
-	private Uxint!Z opUnary(string op)() {
+	private UXInt!Z opUnary(string op)() {
 		static if (op == "+") {
 			return plus();
 		} else static if (op == "-") {
@@ -575,38 +689,38 @@ writefln("min(a,b) = %s", min(a,b));
 		} else static if (op == "~") {
 			return complement(this);
 		}else static if (op == "++") {
-			this = add(this, Uxint!Z(1));
+			this = add(this, ONE);
 			return this;
 		} else static if (op == "--") {
-			this = sub(this, Uxint!Z(1));
+			this = sub(this, ONE);
 			return this;
 		}
 	}
 
 	/// Returns a copy of this unsigned extended integer
-	public const Uxint!Z plus() {
-		return Uxint!Z(this.digits);
+	public const UXInt!Z plus() {
+		return UXInt!Z(this.digits);
 	}
 
 	/// Returns the one's complement of this unsigned extended integer
-	public static Uxint!Z complement(const Uxint!Z arg) {
+	public static UXInt!Z complement(const UXInt!Z arg) {
 		auto cmp = arg.dup;
 		for (uint i = 0; i < N; i++)
 			cmp.digits[i] = ~arg.digits[i];
 		return cmp;
 	}
 
-/*	public const Uxint!Z complement()() {
+/*	public const UXInt!Z complement()() {
 		return complement(this);
 	}*/
 
 	/// Returns the two's complement of this unsigned extended integer
-	public static Uxint!Z negate(const Uxint!Z arg) {
+	public static UXInt!Z negate(const UXInt!Z arg) {
 		auto neg = complement(arg);
 		return ++neg;
 	}
 
-/*	public const Uxint!Z negate()() {
+/*	public const UXInt!Z negate()() {
 		auto w = this.complement;
 		return ++w;
 	}*/
@@ -630,7 +744,7 @@ writefln("min(a,b) = %s", min(a,b));
 // binary operations
 //--------------------------------
 
-	private const Uxint!Z opBinary(string op, T:Uxint!Z)(const T that)
+	private const UXInt!Z opBinary(string op, T:UXInt!Z)(const T that)
 	{
 		static if (op == "+") {
 			return add(this, that);
@@ -659,17 +773,9 @@ writefln("min(a,b) = %s", min(a,b));
 		}
 	}
 
-	private const Uxint!Z opBinary(string op, T)(const T that) {
-		return opBinary!(op, Uxint!Z)(Uxint!Z(that));
+	private const UXInt!Z opBinary(string op, T)(const T that) {
+		return opBinary!(op, UXInt!Z)(UXInt!Z(that));
 	}
-
-/*	private const Uxint!Z opBinary(string op, T)(const T that) if (isIntegral!T) {
-		return opBinary!(op, Uxint!Z)(Uxint!Z(that));
-	}
-
-	private const Uxint!Z opBinary(string op, T:BigInt)(const T that) {
-		return opBinary!(op, Uxint!Z)(Uxint!Z(cast(BigInt)that));
-	}*/
 
 	unittest {	// opBinary
 		uint128 op1, op2;
@@ -724,20 +830,20 @@ writefln("op1+op2 = %s", (op1+op2).toHexString);
 
 	/// Returns true if the result did not overflow,
 	/// false if the result is too large for the size of the extended integer.)
-	public static bool didNotOverflow(uint[] result) {
+	public static bool overflowOccurred(uint[] result) {
 		int k = numDigits(result);
-		return (k < N);
+		return (k >= N);
 	}
 
 	/// Adds two unsigned extended integers and returns the sum.
 	/// Tests the result for overflow.
-	public const Uxint!Z add(const Uxint!Z x, const Uxint!Z y) {
+	public const UXInt!Z add(const UXInt!Z x, const UXInt!Z y) {
 		uint[] sum = addDigits(x.digits, y.digits);
-		if (overflow == OnOverflow.IGNORE || didNotOverflow(sum)) {
-			return Uxint!Z(sum);
+		if (overflow == OverflowMode.IGNORE || !overflowOccurred(sum)) {
+			return UXInt!Z(sum);
 		}
-		if (overflow == OnOverflow.CLAMP) {
-			return Uxint!Z.max;
+		if (overflow == OverflowMode.CLAMP) {
+			return UXInt!Z.max;
 		}
 		throw new IntegerException("Extended Integer Addition Overflow");
 	}
@@ -749,11 +855,11 @@ writefln("op1+op2 = %s", (op1+op2).toHexString);
 
 	/// Subtracts one unsigned extended integer from another and returns the difference.
 	/// Performs a pre-test for overflow.
-	public const Uxint!Z sub(const Uxint!Z x, const Uxint!Z y) {
-		if (overflow != OnOverflow.IGNORE) {
+	public const UXInt!Z sub(const UXInt!Z x, const UXInt!Z y) {
+		if (overflow != OverflowMode.IGNORE) {
 			if (y > x) {
-				if (OnOverflow.CLAMP) {
-					return Uxint!Z.min;
+				if (OverflowMode.CLAMP) {
+					return UXInt!Z.min;
 				}
 				else {
 					throw new IntegerException("Extended Integer Subtraction Overflow");
@@ -761,7 +867,7 @@ writefln("op1+op2 = %s", (op1+op2).toHexString);
 			}
 		}
 		uint[] diff = subDigits(x.digits, y.digits);
-		return Uxint!Z(diff);
+		return UXInt!Z(diff);
 	}
 
 	unittest {
@@ -770,17 +876,17 @@ writefln("op1+op2 = %s", (op1+op2).toHexString);
 	}
 	/// Multiplies two unsigned extended integers and returns the product.
 	/// Tests the result for overflow.
-	public const Uxint!Z mul(const Uxint!Z x, const Uxint!Z y) {
+	public const UXInt!Z mul(const UXInt!Z x, const UXInt!Z y) {
 		// special cases
 		if (x == ZERO || y == ZERO) return ZERO;
 		if (y == ONE) return x;
 		if (x == ONE) return y;
 		uint[] w = mulDigits(x.digits, y.digits);
-		if (overflow == OnOverflow.IGNORE || didNotOverflow(w)) {
-			return Uxint!Z(w);
+		if (overflow == OverflowMode.IGNORE || !overflowOccurred(w)) {
+			return UXInt!Z(w);
 		}
-		if (overflow == OnOverflow.CLAMP) {
-			return Uxint!Z.max;
+		if (overflow == OverflowMode.CLAMP) {
+			return UXInt!Z.max;
 		}
 		throw new IntegerException("Integer Multiplication Overflow");
 	}
@@ -801,8 +907,8 @@ writefln("op1+op2 = %s", (op1+op2).toHexString);
 
 	/// Divides one unsigned extended integer by another
 	/// and returns the quotient.
-	public const Uxint!Z div(const Uxint!Z x, const Uxint!Z y) {
-		return Uxint!Z(divDigits(x.digits, y.digits));
+	public const UXInt!Z div(const UXInt!Z x, const UXInt!Z y) {
+		return UXInt!Z(divDigits(x.digits, y.digits));
 	}
 
 	unittest {
@@ -824,8 +930,8 @@ writefln("op1+op2 = %s", (op1+op2).toHexString);
 
 	/// Divides one unsigned extended integer by another
 	/// and returns the remainder.
-	public const Uxint!Z mod(const Uxint!Z x, const Uxint!Z y) {
-		return Uxint!Z(modDigits(x.digits, y.digits));
+	public const UXInt!Z mod(const UXInt!Z x, const UXInt!Z y) {
+		return UXInt!Z(modDigits(x.digits, y.digits));
 	}
 
 	unittest {
@@ -844,24 +950,24 @@ writefln("op1+op2 = %s", (op1+op2).toHexString);
 
 	/// Raises an unsigned extended integer to an integer power
 	/// and returns the result. Tests the result for overflow.
-	public const Uxint!Z pow(const Uxint!Z x, const Uxint!Z y) {
-		return Uxint!Z(pow(x, y.toUint));
+	public const UXInt!Z pow(const UXInt!Z x, const UXInt!Z y) {
+		return UXInt!Z(pow(x, y.toUint));
 	}
 
 	/// Raises an unsigned extended integer to an integer power
 	/// and returns the result. Tests the result for overflow.
-	public const Uxint!Z pow(const Uxint!Z x, const uint n) {
+	public const UXInt!Z pow(const UXInt!Z x, const uint n) {
 
 		if (n < 0) throw new InvalidOperationException();
 
 		if (n == 0) return ONE;
 
 		uint[] result = powDigits(x.digits, n);
-		if (overflow == OnOverflow.IGNORE || didNotOverflow(result)) {
-			return Uxint!Z(result);
+		if (overflow == OverflowMode.IGNORE || !overflowOccurred(result)) {
+			return UXInt!Z(result);
 		}
-		if (overflow == OnOverflow.CLAMP) {
-			return Uxint!Z.max;
+		if (overflow == OverflowMode.CLAMP) {
+			return UXInt!Z.max;
 		}
 		throw new IntegerException("Integer Addition Overflow");
 	}
@@ -872,37 +978,29 @@ writefln("op1+op2 = %s", (op1+op2).toHexString);
 	}
 
 	/// Returns the logical AND of two unsigned extended integers
-	public const Uxint!Z and(const Uxint!Z x, const Uxint!Z y) {
-		Uxint!Z result;
-		for (int i = 0; i < N; i++)
-			result[i] = (x[i] & y[i]);
-		return result;
+	public const UXInt!Z and(const UXInt!Z x, const UXInt!Z y) {
+		return UXInt!Z(andDigits(x.digits, y.digits));
 	}
 
 	/// Returns the logical OR of two unsigned extended integers
-	public const Uxint!Z or(const Uxint!Z x, const Uxint!Z y) {
-		Uxint!Z result;
-		for (int i = 0; i < N; i++)
-			result[i] = (x[i] | y[i]);
-		return result;
+	public const UXInt!Z or(const UXInt!Z x, const UXInt!Z y) {
+		return UXInt!Z(orDigits(x.digits, y.digits));
 	}
 
 	/// Returns the logical XOR of two unsigned extended integers
-	public const Uxint!Z xor(const Uxint!Z x, const Uxint!Z y) {
-		Uxint!Z result;
-		for (int i = 0; i < N; i++)
-			result[i] = (x[i] ^ y[i]);
-		return result;
+	public const UXInt!Z xor(const UXInt!Z x, const UXInt!Z y) {
+		return UXInt!Z(xorDigits(x.digits, y.digits));
 	}
 
 	/// Shifts an unsigned extended integer left by an integral value.
-	public const Uxint!Z shl(const Uxint!Z x, const Uxint!Z y) {
+	/// No check for overflow is made.
+	public const UXInt!Z shl(const UXInt!Z x, const UXInt!Z y) {
 		return shl(x, y.toUint);
 	}
 
-	// TODO: Make overflow check optional?
 	/// Shifts an unsigned extended integer left by an integral value.
-	public const Uxint!Z shl(const Uxint!Z x, const uint n) {
+	/// No check for overflow is made.
+	public const UXInt!Z shl(const UXInt!Z x, const uint n) {
 		int digs = n / 32;
 		int bits = n % 32;
 		uint [] array = x.digits.dup;
@@ -910,31 +1008,31 @@ writefln("op1+op2 = %s", (op1+op2).toHexString);
 			array = shlDigits(array, digs);
 		}
 		array = shlBits(array, bits);
-		return Uxint!Z(array);
+		return UXInt!Z(array);
 	}
 
 	/// Shifts an unsigned extended integer right by an integral value.
-	public static Uxint!Z shr(const Uxint!Z x, const Uxint!Z y) {
+	public static UXInt!Z shr(const UXInt!Z x, const UXInt!Z y) {
 		return shr(x, y.toInt);
 	}
 
 	/// Shifts an unsigned extended integer right by an integral value.
-	public static Uxint!Z shr(const Uxint!Z x, const uint n) {
+	public static UXInt!Z shr(const UXInt!Z x, const uint n) {
 		int digits = n / 32;
 		int bits = n % 32;
 		uint [] array = x.digits.dup;
 		array = shrDigits(array, digits);
 		array = shrBits(array, bits);
-		return Uxint!Z(array);
+		return UXInt!Z(array);
 	}
 
 	/// Shifts an unsigned extended integer right by an integral value.
-	public const Uxint!Z lshr(const Uxint!Z x, const Uxint!Z y) {
+	public const UXInt!Z lshr(const UXInt!Z x, const UXInt!Z y) {
 		return lshr(x, y.toUint);
 	}
 
 	/// Shifts an unsigned extended integer right by an integral value.
-	public const Uxint!Z lshr(const Uxint!Z x, const uint n) {
+	public const UXInt!Z lshr(const UXInt!Z x, const uint n) {
 		int digs = n / 32;
 		int bits = n % 32;
 		uint [] array = x.digits.dup;
@@ -942,20 +1040,20 @@ writefln("op1+op2 = %s", (op1+op2).toHexString);
 			array = lshrDigits(array, digs);
 		}
 		array = lshrBits(array, bits);
-		return Uxint!Z(array);
+		return UXInt!Z(array);
 	}
 
 	/// Returns the absolute value of the value of the extended integer.
 	/// No effect on unsigned extended integers -- returns a copy.
-	public static T abs(T:Uxint!Z)(const T arg) {
+	public static T abs(T:UXInt!Z)(const T arg) {
 		return arg.dup;
 	}
 
-	public static T sqr(T:Uxint!Z)(const T x) {
+	public static T sqr(T:UXInt!Z)(const T x) {
 		return T(sqrDigits(x.digits));
 	}
 
-/*	public static T max(T:Uxint!Z)(const T arg1, const T arg2) {
+/*	public static T max(T:UXInt!Z)(const T arg1, const T arg2) {
 		if (arg1 < arg2) return arg2;
 		return arg1;
 	}*/
@@ -966,36 +1064,36 @@ writefln("op1+op2 = %s", (op1+op2).toHexString);
 		writeln("===================");
 	}
 
-}	// end Uxint
+}	// end UXInt
 
 //--------------------------------
-// Uxint!Z operations
+// UXInt!Z operations
 //--------------------------------
 
 	/// Returns the absolute value of the value of the extended integer.
 	/// No effect on unsigned extended integers -- returns a copy.
-/*	public T abs(T:Uxint!Z)(const T arg) {
+/*	public T abs(T:UXInt!Z)(const T arg) {
 		static if (signed)
 			return arg.isNegative ? negate(arg) : arg.dup;
 		else
 			return arg.dup;
 	}*/
 
-/*	public static Uxint!Z max(Z)( arg1, const Uxint!Z arg2) {
+/*	public static UXInt!Z max(Z)( arg1, const UXInt!Z arg2) {
 		if (arg1 < arg2) return arg2;
 		return arg1;
 	}*/
-/*	public static Uxint!Z max(Z)( arg1, const Uxint!Z arg2) {
+/*	public static UXInt!Z max(Z)( arg1, const UXInt!Z arg2) {
 		if (arg1 < arg2) return arg2;
 		return arg1;
 	}*/
 
 
-	public Uxint!Z divmod()(const Uxint!Z x, const Uxint!Z y, out Uxint!Z mod) {
+	public UXInt!Z divmod()(const UXInt!Z x, const UXInt!Z y, out UXInt!Z mod) {
 		return divmodDigits(x.digits, y.digits, mod.digits);
 	}
 
-	public Uxint!Z wideMul(z)(const Uxint!Z x, const Uxint!Z y, out Uxint!Z mod) {
+	public UXInt!Z wideMul(z)(const UXInt!Z x, const UXInt!Z y, out UXInt!Z mod) {
 		return divmodDigits(x.digits, y.digits, mod.digits);
 	}
 
@@ -1012,8 +1110,8 @@ writefln("sqr!uint128(uint128(5)) = %s", int128.sqr(b ));
 
 //============================================================================//
 
-public struct Xint(int Z,
-	OnOverflow overflow = OnOverflow.IGNORE) {
+public struct XInt(int Z,
+	OverflowMode overflow = OverflowMode.IGNORE) {
 
 unittest {
 	writeln("===================");
@@ -1033,17 +1131,17 @@ unittest {
 	//	most signiciant digit is digits[N-1]
 	private uint[N] digits = 0;
 
-	/// Returns zero, the initial value for Xint!(Z) types.
+	/// Returns zero, the initial value for XInt!(Z) types.
 //	@property
-	public static Xint!(Z) init() {
+	public static XInt!(Z) init() {
 		return ZERO;
 	}
 
 	/// Returns the maximum value for this type.
 	/// For unsigned extended integers the maximum value is 0xFF...FF.
 	/// For signed extended integers the maximum value is 0x7F...FF.
-	public static Xint!(Z) max() {
-		static Xint!(Z) value;
+	public static XInt!(Z) max() {
+		static XInt!(Z) value;
 		static bool initialized = false;
 		if (initialized) return value;
 		for (int i = 0; i < N; i++) {
@@ -1054,7 +1152,7 @@ unittest {
 		return value;
 	}
 
-	public static Xint!(Z) max(const Xint!(Z) arg1, const Xint!(Z) arg2) {
+	public static XInt!(Z) max(const XInt!(Z) arg1, const XInt!(Z) arg2) {
 		if (arg1 < arg2) return arg2;
 		return arg1;
 	}
@@ -1062,11 +1160,11 @@ unittest {
 	/// Returns the minimum value for this type.
 	/// For unsigned extended integers the minimum value is 0x00...00.
 	/// For signed extended integers the minimum value is 0x80...00.
-	public static Xint!(Z) min() {
-		static Xint!(Z) value;
+	public static XInt!(Z) min() {
+		static XInt!(Z) value;
 		static bool initialized = false;
 		if (initialized) return value;
-		value = Xint!(Z)(0);
+		value = XInt!(Z)(0);
 		value.digits[N-1] = int.min;
 		initialized = true;
 		return value;
@@ -1076,22 +1174,22 @@ unittest {
 	int128 a = 5;
 	int128 b = 7;
 	assert(int128.max(a,b) == 7);
-	assert(Xint!64.max == long.max);
-	assert(Uxint!64.max == ulong.max);
-	assert(Xint!64.min == long.min);
-	assert(Uxint!64.min == ulong.min);
-	assert(Xint!256.max.toString == "57896044618658097711785492504343953926634992332820282019728792003956564819967");
-	assert(Xint!256.min.toString == "-57896044618658097711785492504343953926634992332820282019728792003956564819968");
-	assert(Uxint!256.max.toString == "115792089237316195423570985008687907853269984665640564039457584007913129639935");
+	assert(XInt!64.max == long.max);
+	assert(UXInt!64.max == ulong.max);
+	assert(XInt!64.min == long.min);
+	assert(UXInt!64.min == ulong.min);
+	assert(XInt!256.max.toString == "57896044618658097711785492504343953926634992332820282019728792003956564819967");
+	assert(XInt!256.min.toString == "-57896044618658097711785492504343953926634992332820282019728792003956564819968");
+	assert(UXInt!256.max.toString == "115792089237316195423570985008687907853269984665640564039457584007913129639935");
 //writefln("max(int128(5), int128(7)) = %s", max!int128(int128(5), int128(7)));
-/*writefln("Xint!(256,true).max.toHexString = %s", Xint!(256,true).max.toHexString);
-writefln("Xint!(256,false).max.toHexString = %s", Xint!(256,false).max.toHexString);
-writefln("Xint!(256,true).min.toHexString = %s", Xint!(256,true).min.toHexString);
-writefln("Xint!(256,false).min.toHexString = %s", Xint!(256,false).min.toHexString);
-writefln("Xint!(256,true).max = %s", Xint!(256,true).max);
-writefln("Xint!(256,false).max = %s", Xint!(256,false).max);
-writefln("Xint!(256,true).min = %s", Xint!(256,true).min);
-writefln("Xint!(256,false).min = %s", Xint!(256,false).min);*/
+/*writefln("XInt!(256,true).max.toHexString = %s", XInt!(256,true).max.toHexString);
+writefln("XInt!(256,false).max.toHexString = %s", XInt!(256,false).max.toHexString);
+writefln("XInt!(256,true).min.toHexString = %s", XInt!(256,true).min.toHexString);
+writefln("XInt!(256,false).min.toHexString = %s", XInt!(256,false).min.toHexString);
+writefln("XInt!(256,true).max = %s", XInt!(256,true).max);
+writefln("XInt!(256,false).max = %s", XInt!(256,false).max);
+writefln("XInt!(256,true).min = %s", XInt!(256,true).min);
+writefln("XInt!(256,false).min = %s", XInt!(256,false).min);*/
 }
 
 //--------------------------------
@@ -1146,13 +1244,13 @@ writefln("Xint!(256,false).min = %s", Xint!(256,false).min);*/
 //--------------------------------
 
 	/// Copy constructor.
-	public this(const Xint!(Z) that) {
+	public this(const XInt!(Z) that) {
 		this.digits = that.digits;
 	}
 
 	/// Returns a copy of the value of the extended integer.
-	public const Xint!(Z) dup() {
-		return Xint!(Z)(this);
+	public const XInt!(Z) dup() {
+		return XInt!(Z)(this);
 	}
 
 	unittest {	// copy
@@ -1175,8 +1273,8 @@ writefln("Xint!(256,false).min = %s", Xint!(256,false).min);*/
 // constants
 //--------------------------------
 
-	public const auto ZERO = Xint!(Z)(0);
-	public const auto ONE  = Xint!(Z)(1);
+	public const XInt!Z ZERO = XInt!Z(0);
+	public const XInt!Z ONE  = XInt!Z(1);
 
 //--------------------------------
 // classification
@@ -1242,7 +1340,7 @@ writefln("Xint!(256,false).min = %s", Xint!(256,false).min);*/
 	{
 		uint128 a;
 		a = uint128([11UL]);
-		decimal.test.assertEqual("11", a.toString);
+		assert("11" == a.toString);
 		a = uint128(1234567890123);
 		assert(a.toString == "1234567890123");
 		a = uint128(0x4872EACF123346FF);
@@ -1251,7 +1349,7 @@ writefln("Xint!(256,false).min = %s", Xint!(256,false).min);*/
 		int128 b;
 		b = int128(-11);
 		assert(b.toString == "-11");
-		decimal.test.assertEqual("-11", b.toString);
+		assert("-11" == b.toString);
 		b = int128(1234567890123);
 		assert(b.toString == "1234567890123");
 		assert(b.toHexString == "0x0000011F_71FB04CB");
@@ -1262,19 +1360,19 @@ writefln("Xint!(256,false).min = %s", Xint!(256,false).min);*/
 		assert(int256(156).toHexString == "0x0000009C");
 	}
 
-	// reads left-to-right, i.e., getInt(0) returns the highest order value
-	public const uint getInt(int n) {
+	// reads left-to-right, i.e., getDigit(0) returns the highest order value
+	public const uint getDigit(int n) {
 		return cast(uint)digits[N-n];
 	}
 
-	// reads left-to-right, i.e., getLong(0) returns the highest order value
-	public const ulong getLong(int index) {
+	// reads left-to-right, i.e., getWord(0) returns the highest order value
+	public const ulong getWord(int index) {
 		index *= 2;
 		return pack(digits[N-1 - index], digits[N-2 - index]);
 	}
 
-	// reads left-to-right, i.e., setLong(0) sets the highest order value
-	public void setLong(int index, ulong value) {
+	// reads left-to-right, i.e., setWord(0) sets the highest order value
+	public void setWord(int index, ulong value) {
 		index *= 2;
 		digits[N-1 - index] = high(value);
 		digits[N-2 - index] = low(value);
@@ -1292,7 +1390,7 @@ unittest {	// get/set long values
 
 	/// Converts to an unsigned long integer.
 	public const ulong toUlong() {
-		return getLong(1);
+		return getWord(1);
 	}
 
 	/// Converts to an integer.
@@ -1352,7 +1450,7 @@ unittest {	// get/set long values
 
 	/// Returns -1, 0, or 1, if this extended integer is, respectively,
 	/// less than, equal to or greater than the argument.
-	private const int opCmp(T:Xint!(Z))(const T that) {
+	private const int opCmp(T:XInt!(Z))(const T that) {
 		if (this.isNegative && !that.isNegative) return -1;
 		if (that.isNegative && !this.isNegative) return  1;
 		return compare(this.digits, that.digits);
@@ -1361,28 +1459,33 @@ unittest {	// get/set long values
 	/// Returns -1, 0, or 1, if this extended integer is, respectively,
 	/// less than, equal to or greater than the argument.
 	private const int opCmp(T)(const T that) if (isIntegral!T) {
-		return opCmp(Xint!(Z)(that));
+		return opCmp(XInt!(Z)(that));
 	}
 
 	/// Returns -1, 0, or 1, if this extended integer is, respectively,
 	/// less than, equal to or greater than the argument.
 	private const int opCmp(T:BigInt)(const T that) {
-		return compare(this.digits, Xint!(Z)(cast(BigInt)that).digits);
+		return compare(this.digits, XInt!(Z)(cast(BigInt)that).digits);
 	}
 
 	 /// Returns true if this extended integer is equal to the argument.
-	private const bool opEquals(T:Xint!(Z))(const T that) {
+	private const bool opEquals(T:XInt!(Z))(const T that) {
 		return this.digits == that.digits;
 	}
 
+/*	 /// Returns true if this extended integer is equal to the argument.
+	private const bool opEquals(T,Z)(const T that) {
+		return this.digits == XInt!Z(that).digits;
+	}*/
+
 	 /// Returns true if this extended integer is equal to the argument.
 	private const bool opEquals(T)(const T that) if (isIntegral!T) {
-		return opEquals(Xint!(Z)(that));
+		return opEquals(XInt!(Z)(that));
 	}
 
 	 /// Returns true if this extended integer is equal to the argument.
 	private const bool opEquals(T:BigInt)(const T that) {
-		return this.digits == Xint!(Z)(cast(BigInt)that).digits;
+		return this.digits == XInt!(Z)(cast(BigInt)that).digits;
 	}
 
 	unittest { // comparison
@@ -1406,11 +1509,11 @@ unittest {	// get/set long values
 		assert(int128(195) >= -195);
 	}
 
-//	public static Xint!(Z) max(const Xint!(Z) arg1, const Xint!(Z) arg2) {
+//	public static XInt!(Z) max(const XInt!(Z) arg1, const XInt!(Z) arg2) {
 //		if (arg1 < arg2) return arg2;
 //		return arg1;
 //	}
-//	public static Xint!(Z) max(const Xint!(Z) arg1, const Xint!(Z) arg2) {
+//	public static XInt!(Z) max(const XInt!(Z) arg1, const XInt!(Z) arg2) {
 //		if (arg1 < arg2) return arg2;
 //		return arg1;
 //	}
@@ -1420,7 +1523,7 @@ unittest {	// get/set long values
 		return arg1;
 	}
 
-	public static Xint!(Z) min(const Xint!(Z) arg1, const Xint!(Z) arg2) {
+	public static XInt!(Z) min(const XInt!(Z) arg1, const XInt!(Z) arg2) {
 		if (arg1 > arg2) return arg2;
 		return arg1;
 	}*/
@@ -1447,32 +1550,32 @@ writefln("min(a,b) = %s", min(a,b));
 		digits[i] = that;
 	}
 
-	/// Assigns a Xint!(Z) extended integer (copies that to this).
-	private void opAssign(T:Xint!(Z))(const T that) {
+	/// Assigns a XInt!(Z) extended integer (copies that to this).
+	private void opAssign(T:XInt!(Z))(const T that) {
 		this.digits = that.digits;
 	}
 
-	/// Assigns a Xint!(Z) integral value
+	/// Assigns a XInt!(Z) integral value
 	private void opAssign(T)(const T that) if (isIntegral!T) {
-		opAssign(Xint!(Z)(that));
+		opAssign(XInt!(Z)(that));
 	}
 
-	private ref Xint!(Z) opOpAssign(string op, T:Xint!(Z)) (T that) {
+	private ref XInt!(Z) opOpAssign(string op, T:XInt!(Z)) (T that) {
 		this = opBinary!op(that);
 		return this;
 	}
 
-	/// Assigns an Xint!(Z) (copies that to this).
-	private ref Xint!(Z) opOpAssign(T)
+	/// Assigns an XInt!(Z) (copies that to this).
+	private ref XInt!(Z) opOpAssign(T)
 			(string op, const T that) if (isIntegral!T) {
-		opOpAssign(Xint!(Z)(that));
+		opOpAssign(XInt!(Z)(that));
 	}
 
 //--------------------------------
 // unary operations
 //--------------------------------
 
-	private Xint!(Z) opUnary(string op)() {
+	private XInt!(Z) opUnary(string op)() {
 		static if (op == "+") {
 			return plus();
 		} else static if (op == "-") {
@@ -1480,40 +1583,40 @@ writefln("min(a,b) = %s", min(a,b));
 		} else static if (op == "~") {
 			return complement(this);
 		}else static if (op == "++") {
-			this = add(this, Xint!(Z)(1));
+			this = add(this, XInt!(Z)(1));
 			return this;
 		} else static if (op == "--") {
-			this = sub(this, Xint!(Z)(1));
+			this = sub(this, XInt!(Z)(1));
 			return this;
 		}
 	}
 
-	public const Xint!(Z) plus() {
-		return Xint!(Z)(this.digits);
+	public const XInt!(Z) plus() {
+		return XInt!(Z)(this.digits);
 	}
 
-	public static Xint!(Z) complement(const Xint!(Z) arg) {
+	public static XInt!(Z) complement(const XInt!(Z) arg) {
 		auto copy = arg.dup;
 		for (uint i = 0; i < N; i++)
 			copy.digits[i] = ~copy.digits[i];
 		return copy;
 	}
 
-/*	public const Xint!(Z) complement()() {
-		Xint!(Z) w;
+/*	public const XInt!(Z) complement()() {
+		XInt!(Z) w;
 		for (int i = 0; i < N; i++)
 			w.digits[i] = ~digits[i];
 		return w;
 	}*/
 
-	public static Xint!(Z) negate(const Xint!(Z) arg) {
+	public static XInt!(Z) negate(const XInt!(Z) arg) {
 		auto neg = complement(arg);
 		neg++;
 		// TODO: add opAssignEquals += long
 		return neg;
 	}
 
-/*	public const Xint!(Z) negate()() {
+/*	public const XInt!(Z) negate()() {
 		auto w = this.complement;
 		return ++w;
 	}*/
@@ -1548,7 +1651,7 @@ writefln("min(a,b) = %s", min(a,b));
 // binary operations
 //--------------------------------
 
-	private const Xint!(Z) opBinary(string op, T:Xint!(Z))(const T that)
+	private const XInt!(Z) opBinary(string op, T:XInt!(Z))(const T that)
 	{
 		static if (op == "+") {
 			return add(this, that);
@@ -1577,12 +1680,12 @@ writefln("min(a,b) = %s", min(a,b));
 		}
 	}
 
-	private const Xint!(Z) opBinary(string op, T)(const T that) if (isIntegral!T) {
-		return opBinary!(op, Xint!(Z))(Xint!(Z)(that));
+	private const XInt!(Z) opBinary(string op, T)(const T that) if (isIntegral!T) {
+		return opBinary!(op, XInt!(Z))(XInt!(Z)(that));
 	}
 
-	private const Xint!(Z) opBinary(string op, T:BigInt)(const T that) {
-		return opBinary!(op, Xint!(Z))(Xint!(Z)(cast(BigInt)that));
+	private const XInt!(Z) opBinary(string op, T:BigInt)(const T that) {
+		return opBinary!(op, XInt!(Z))(XInt!(Z)(cast(BigInt)that));
 	}
 
 	unittest {	// opBinary
@@ -1689,27 +1792,27 @@ writefln("op1 >> op2 = %s", (op1 >> op2));
 //		assert(op1 + op2 == 0x100000004);
 	}
 
-	public static bool didNotOverflow(uint[] result) {
+	public static bool overflowOccurred(uint[] result) {
 		int k = numDigits(result);
 		return (k < N);
 	}
 
-	public const Xint!(Z) add(const Xint!(Z) x, const Xint!(Z) y) {
+	public const XInt!(Z) add(const XInt!(Z) x, const XInt!(Z) y) {
 		uint[] sum = addDigits(x.digits, y.digits);
-		if (overflow == OnOverflow.IGNORE || didNotOverflow(sum)) {
-			return Xint!(Z)(sum);
+		if (overflow == OverflowMode.IGNORE || !overflowOccurred(sum)) {
+			return XInt!(Z)(sum);
 		}
-		if (overflow == OnOverflow.CLAMP) {
-			return Xint!(Z).max;
+		if (overflow == OverflowMode.CLAMP) {
+			return XInt!(Z).max;
 		}
 		throw new IntegerException("Integer Addition Overflow");
 	}
 
-	public const Xint!(Z) sub(const Xint!(Z) x, const Xint!(Z) y) {
-		if (overflow != OnOverflow.IGNORE) {
+	public const XInt!(Z) sub(const XInt!(Z) x, const XInt!(Z) y) {
+		if (overflow != OverflowMode.IGNORE) {
 			if (y > x) {
-				if (OnOverflow.CLAMP) {
-					return Xint!(Z).min;
+				if (OverflowMode.CLAMP) {
+					return XInt!(Z).min;
 				}
 				else {
 					throw new IntegerException("Integer Subtraction Overflow");
@@ -1717,18 +1820,18 @@ writefln("op1 >> op2 = %s", (op1 >> op2));
 			}
 		}
 		uint[] diff = subDigits(x.digits, y.digits);
-		return Xint!(Z)(diff);
+		return XInt!(Z)(diff);
 	}
 
-	public const Xint!(Z) mul(const Xint!(Z) x, const Xint!(Z) y) {
+	public const XInt!(Z) mul(const XInt!(Z) x, const XInt!(Z) y) {
 		// special cases
 		if (x == ZERO || y == ZERO) return ZERO;
 		if (y == ONE) return x;
 		if (x == ONE) return y;
 		if (x == negate(ONE)) return negate(y);
 		if (y == negate(ONE)) return negate(x);
-		Xint!(Z) xx = x.dup;
-		Xint!(Z) yy = y.dup;
+		XInt!(Z) xx = x.dup;
+		XInt!(Z) yy = y.dup;
 		bool sign = false;
 		if (x.isNegative) {
 			sign = !sign;
@@ -1740,7 +1843,7 @@ writefln("op1 >> op2 = %s", (op1 >> op2));
 			yy = negate(y);
 		}
 		uint[] w = mulDigits(xx.digits, yy.digits);
-		Xint!(Z) product = Xint!(Z)(w[0..N-1]);
+		XInt!(Z) product = XInt!(Z)(w[0..N-1]);
 		return sign ? -product : product;
 	}
 
@@ -1758,11 +1861,11 @@ unittest {
 	writeln("passed");
 }
 
-	public const Xint!(Z) div(const Xint!(Z) x, const Xint!(Z) y) {
+	public const XInt!(Z) div(const XInt!(Z) x, const XInt!(Z) y) {
 		bool sign = x.isNegative ^ y.isNegative;
-		Xint!(Z) xx = x.isNegative ? negate(x) : x.dup;
-		Xint!(Z) yy = y.isNegative ? negate(y) : y.dup;
-		Xint!(Z) quotient = Xint!(Z)(divDigits(xx.digits, yy.digits));
+		XInt!(Z) xx = x.isNegative ? negate(x) : x.dup;
+		XInt!(Z) yy = y.isNegative ? negate(y) : y.dup;
+		XInt!(Z) quotient = XInt!(Z)(divDigits(xx.digits, yy.digits));
 		return sign ? negate(quotient) : quotient;
 	}
 
@@ -1783,10 +1886,10 @@ unittest {
 	writeln("passed");
 }
 
-	public const Xint!(Z) mod(const Xint!(Z) x, const Xint!(Z) y) {
-		Xint!(Z) xx = x.isNegative ? negate(x) : x.dup;
-		Xint!(Z) yy = y.isNegative ? negate(y) : y.dup;
-		Xint!(Z) remainder = Xint!(Z)(modDigits(xx.digits, yy.digits));
+	public const XInt!(Z) mod(const XInt!(Z) x, const XInt!(Z) y) {
+		XInt!(Z) xx = x.isNegative ? negate(x) : x.dup;
+		XInt!(Z) yy = y.isNegative ? negate(y) : y.dup;
+		XInt!(Z) remainder = XInt!(Z)(modDigits(xx.digits, yy.digits));
 		return x.isNegative ? negate(remainder) : remainder;
 	}
 
@@ -1804,50 +1907,50 @@ unittest {
 	writeln("passed");
 }
 
-	public const Xint!(Z) pow(const Xint!(Z) x, const Xint!(Z) y) {
-		return Xint!(Z)(pow(x, y.toUint));
+	public const XInt!(Z) pow(const XInt!(Z) x, const XInt!(Z) y) {
+		return XInt!(Z)(pow(x, y.toUint));
 	}
 
-	public const Xint!(Z) pow(const Xint!(Z) x, const uint n) {
+	public const XInt!(Z) pow(const XInt!(Z) x, const uint n) {
 
 		if (n < 0) throw new InvalidOperationException();
 
 		if (n == 0) return ONE;
 
 		bool sign = x.isNegative;
-		Xint!(Z) xx = sign ? negate(x) : x.dup;
+		XInt!(Z) xx = sign ? negate(x) : x.dup;
 		uint[] result = powDigits(xx.digits, n);
 		// TODO: insert overflow check here.
 		// odd powers of negative numbers are negative
-		return sign && (n & 1) ? -Xint!(Z)(result) : Xint!(Z)(result);
+		return sign && (n & 1) ? -XInt!(Z)(result) : XInt!(Z)(result);
 	}
 
-	public const Xint!(Z) and(const Xint!(Z) x, const Xint!(Z) y) {
-		Xint!(Z) result;
+	public const XInt!(Z) and(const XInt!(Z) x, const XInt!(Z) y) {
+		XInt!(Z) result;
 		for (int i = 0; i < N; i++)
 			result[i] = (x[i] & y[i]);
 		return result;
 	}
 
-	public const Xint!(Z) or(const Xint!(Z) x, const Xint!(Z) y) {
-		Xint!(Z) result;
+	public const XInt!(Z) or(const XInt!(Z) x, const XInt!(Z) y) {
+		XInt!(Z) result;
 		for (int i = 0; i < N; i++)
 			result[i] = (x[i] | y[i]);
 		return result;
 	}
 
-	public const Xint!(Z) xor(const Xint!(Z) x, const Xint!(Z) y) {
-		Xint!(Z) result;
+	public const XInt!(Z) xor(const XInt!(Z) x, const XInt!(Z) y) {
+		XInt!(Z) result;
 		for (int i = 0; i < N; i++)
 			result[i] = (x[i] ^ y[i]);
 		return result;
 	}
 
-	public const Xint!(Z) shl(const Xint!(Z) x, const Xint!(Z) y) {
+	public const XInt!(Z) shl(const XInt!(Z) x, const XInt!(Z) y) {
 		return shl(x, y.toUint);
 	}
 
-	public const Xint!(Z) shl(const Xint!(Z) x, const uint n) {
+	public const XInt!(Z) shl(const XInt!(Z) x, const uint n) {
 		int digs = n / 32;
 		int bits = n % 32;
 		uint [] array = x.digits.dup;
@@ -1855,27 +1958,27 @@ unittest {
 			array = shlDigits(array, digs);
 		}
 		array = shlBits(array, bits);
-		return Xint!(Z)(array);
+		return XInt!(Z)(array);
 	}
 
-	public static Xint!(Z) shr(const Xint!(Z) x, const Xint!(Z) y) {
+	public static XInt!(Z) shr(const XInt!(Z) x, const XInt!(Z) y) {
 		return shr(x, y.toInt);
 	}
 
-	public static Xint!(Z) shr(const Xint!(Z) x, const uint n) {
+	public static XInt!(Z) shr(const XInt!(Z) x, const uint n) {
 		int digits = n / 32;
 		int bits = n % 32;
 		uint [] array = x.digits.dup;
 		array = shrDigits(array, digits);
 		array = shrBits(array, bits);
-		return Xint!(Z)(array);
+		return XInt!(Z)(array);
 	}
 
-	public const Xint!(Z) lshr(const Xint!(Z) x, const Xint!(Z) y) {
+	public const XInt!(Z) lshr(const XInt!(Z) x, const XInt!(Z) y) {
 		return lshr(x, y.toUint);
 	}
 
-	public const Xint!(Z) lshr(const Xint!(Z) x, const uint n) {
+	public const XInt!(Z) lshr(const XInt!(Z) x, const uint n) {
 		int digs = n / 32;
 		int bits = n % 32;
 		uint [] array = x.digits.dup;
@@ -1883,11 +1986,11 @@ unittest {
 			array = lshrDigits(array, digs);
 		}
 		array = lshrBits(array, bits);
-		return Xint!(Z)(array);
+		return XInt!(Z)(array);
 	}
 
 	public void setBit(int n, bool value = true) {
-		const Xint!(Z) ONE = Xint!(Z)(1);
+		const XInt!(Z) ONE = XInt!(Z)(1);
 		if (value) {
 			this |= shl(ONE, n);
 		}
@@ -1897,8 +2000,8 @@ unittest {
 	}
 
 	public const bool testBit(int n) {
-		const Xint!(Z) ONE = Xint!(Z)(1);
-		Xint!(Z) value = this & shl(ONE,n);
+		const XInt!(Z) ONE = XInt!(Z)(1);
+		XInt!(Z) value = this & shl(ONE,n);
 //	 throw(new Exception("Why is this three times??"));
 		return !value.isZero;
 	}
@@ -1925,49 +2028,49 @@ unittest {
 
 	/// Returns the absolute value of the value of the extended integer.
 	/// No effect on unsigned extended integers -- returns a copy.
-	public static T abs(T:Xint!(Z))(const T arg) {
+	public static T abs(T:XInt!(Z))(const T arg) {
 		return arg.isNegative ? negate(arg) : arg.dup;
 	}
 
-	public static T sqr(T:Xint!(Z))(const T x) {
+	public static T sqr(T:XInt!(Z))(const T x) {
 		return T(sqrDigits(x.digits));
 	}
 
-/*	public static T max(T:Xint!(Z))(const T arg1, const T arg2) {
+/*	public static T max(T:XInt!(Z))(const T arg1, const T arg2) {
 		if (arg1 < arg2) return arg2;
 		return arg1;
 	}*/
 
-}	// end Xint
+}	// end XInt
 
 //--------------------------------
-// Xint!(Z) operations
+// XInt!(Z) operations
 //--------------------------------
 
 	/// Returns the absolute value of the value of the extended integer.
 	/// No effect on unsigned extended integers -- returns a copy.
-/*	public T abs(T:Xint!(Z))(const T arg) {
+/*	public T abs(T:XInt!(Z))(const T arg) {
 		static if (signed)
 			return arg.isNegative ? negate(arg) : arg.dup;
 		else
 			return arg.dup;
 	}*/
 
-/*	public static Xint!(Z) max(Z)( arg1, const Xint!(Z) arg2) {
+/*	public static XInt!(Z) max(Z)( arg1, const XInt!(Z) arg2) {
 		if (arg1 < arg2) return arg2;
 		return arg1;
 	}*/
-/*	public static Xint!(Z) max(Z)( arg1, const Xint!(Z) arg2) {
+/*	public static XInt!(Z) max(Z)( arg1, const XInt!(Z) arg2) {
 		if (arg1 < arg2) return arg2;
 		return arg1;
 	}*/
 
 
-	public Xint!(Z) divmod()(const Xint!(Z) x, const Xint!(Z) y, out Xint!(Z) mod) {
+	public XInt!(Z) divmod()(const XInt!(Z) x, const XInt!(Z) y, out XInt!(Z) mod) {
 		return divmodDigits(x.digits, y.digits, mod.digits);
 	}
 
-	public Xint!(Z) wideMul(z)(const Xint!(Z) x, const Xint!(Z) y, out Xint!(Z) mod) {
+	public XInt!(Z) wideMul(z)(const XInt!(Z) x, const XInt!(Z) y, out XInt!(Z) mod) {
 		return divmodDigits(x.digits, y.digits, mod.digits);
 	}
 
@@ -2442,8 +2545,8 @@ writefln("nx = %s", nx);
 		uint[] d = [0xF4DEF769, 0x941F2754];
 		d = sqrDigits(d);
 		string expect = "0x55B40944_C7C01ADE_DF5C24BA_3137C911";
-		writefln("actual = %s", (Uxint!128(d).toHexString()));
-		assert(Uxint!128(d).toHexString() == expect);
+		writefln("actual = %s", (UXInt!128(d).toHexString()));
+		assert(UXInt!128(d).toHexString() == expect);
 	}
 
 	// returns the argument raised to the specified power.
@@ -2763,21 +2866,21 @@ unittest {
 	input = [28, 20, 48, 76];
 	output = divDigit(input, 2);
 //writefln("output = %s", output);
-//writefln("Uxint!Z(output) = %s", Uxint!Z(output));
+//writefln("UXInt!Z(output) = %s", UXInt!Z(output));
 	input = random(4);
 //writefln("input = %s", input);
-//writefln("Uxint!Z(input) = %s", Uxint!Z(input));
+//writefln("UXInt!Z(input) = %s", UXInt!Z(input));
 	k = randomDigit;
 //writefln("k = %X", k);
 	output = divDigit(input, k);
-//writefln("Uxint!Z(output) = %s", Uxint!Z(output));
+//writefln("UXInt!Z(output) = %s", UXInt!Z(output));
 //writefln("output = %s", output);
 	uint[] ka = [ k ];
 	uint[] m = mulDigits(output, ka);
 	uint r = modDigit(input, k);
 //writefln("r = %X", r);
-//writefln("Uxint!Z(m) = %s", Uxint!Z(m));
-//writefln("Uxint!Z( ) = %s", Uxint!Z(addDigit(m, r)));
+//writefln("UXInt!Z(m) = %s", UXInt!Z(m));
+//writefln("UXInt!Z( ) = %s", UXInt!Z(addDigit(m, r)));
 }
 
 //--------------------------------
@@ -2837,42 +2940,42 @@ unittest {
 unittest {
 	writeln("random digits...");
 	uint[] r = random(4);
-/*writefln*/("Uxint!Z(r) = %s", Uxint!128(r));
+/*writefln*/("UXInt!Z(r) = %s", UXInt!128(r));
 	uint[] s = random(4);
-//writefln("Uxint!Z(s) = %s", Uxint!Z(s));
+//writefln("UXInt!Z(s) = %s", UXInt!Z(s));
 //writefln("compare(r,s) = %s", compare(r,s));
 	uint[] t;
 	if (compare(r,s) > 0) {
 		t = subDigits(r,s);
-//writefln("t == r - s = %s", Uxint!Z(t));
-//writefln("r ?= t - s = %s", Uxint!Z(addDigits(t,s)));
+//writefln("t == r - s = %s", UXInt!Z(t));
+//writefln("r ?= t - s = %s", UXInt!Z(addDigits(t,s)));
 	}
 	else {
 		t = addDigits(r,s);
-//writefln("t == r + s = %s", Uxint!Z(t));
-//writefln("s ?= t - r = %s", Uxint!Z(subDigits(t,r)));
+//writefln("t == r + s = %s", UXInt!Z(t));
+//writefln("s ?= t - r = %s", UXInt!Z(subDigits(t,r)));
 	}
    	uint[] x = random(2);
 	uint[] y = random(2);
 	uint[] z = mulDigits(x,y);
-//writefln("Uxint!Z(x) = %s", Uxint!Z(x));
-//writefln("Uxint!Z(y) = %s", Uxint!Z(y));
-//writefln("Uxint!Z(z) = %s", Uxint!Z(z));
+//writefln("UXInt!Z(x) = %s", UXInt!Z(x));
+//writefln("UXInt!Z(y) = %s", UXInt!Z(y));
+//writefln("UXInt!Z(z) = %s", UXInt!Z(z));
 
 	uint[] w = divDigits(z,y);
-//writefln("Uxint!Z(w) = %s", Uxint!Z(w));
-//writefln("Uxint!Z(x) = %s", Uxint!Z(x));
+//writefln("UXInt!Z(w) = %s", UXInt!Z(w));
+//writefln("UXInt!Z(x) = %s", UXInt!Z(x));
 //	uint[] k = random(1);
 //	z = mulDigits(x,k[0..1]);
-//writefln("Uxint!Z(k) = %s", Uxint!Z(k));
-//writefln("Uxint!Z(z) = %s", Uxint!Z(z));
+//writefln("UXInt!Z(k) = %s", UXInt!Z(k));
+//writefln("UXInt!Z(z) = %s", UXInt!Z(z));
 
 //	uint[] rt = random(1);
-//writefln("Uxint!Z(rt) = %s", Uxint!Z(rt));
+//writefln("UXInt!Z(rt) = %s", UXInt!Z(rt));
 //	uint[] px = mulDigits(rt,rt);
-//writefln("Uxint!Z(px) = %s", Uxint!Z(px));
+//writefln("UXInt!Z(px) = %s", UXInt!Z(px));
 //	rt = sqrDigits(rt);
-//writefln("Uxint!Z(rt) = %s", Uxint!Z(rt));
+//writefln("UXInt!Z(rt) = %s", UXInt!Z(rt));
 	writeln("passed");
 }
 
@@ -2882,9 +2985,9 @@ unittest {
 	writeln("===================");
 }
 
-//alias Xint!128 int128;
+//alias XInt!128 int128;
 
-/*public Xint!Z abs(Xint!Z)(const Xint!Z arg) {
+/*public XInt!Z abs(XInt!Z)(const XInt!Z arg) {
 	return arg.isNegative ? negate(arg) : arg.dup;
 }*/
 

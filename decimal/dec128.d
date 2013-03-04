@@ -23,7 +23,7 @@ import decimal.context;
 import decimal.decimal;
 import decimal.dec32;
 import decimal.dec64;
-import decimal.xint;
+import xint;
 
 unittest {
 	writeln("===================");
@@ -128,22 +128,22 @@ private:
 	private static const DecimalContext
 		context = DecimalContext(PRECISION, E_MAX, Rounding.HALF_EVEN);
 
-	/*public*/ private uint128 bits = uint128(0x7C00000000000000UL, 0x0000000000000000UL);
+	private uint128 bits = uint128(0x7C00000000000000UL, 0x0000000000000000UL);
 
 	private const ulong highBits() {
-		return bits.getLong(0);
+		return bits.getWord(0);
 	}
 
 	private void highBits(ulong value) {
-		bits.setLong(0, value);
+		bits.setWord(0, value);
 	}
 
 	private const ulong lowBits() {
-		return bits.getLong(1);
+		return bits.getWord(1);
 	}
 
 	private void lowBits(ulong value) {
-		bits.setLong(1, value);
+		bits.setWord(1, value);
 	}
 	private ulong SIGN_BIT =  0x8000000000000000UL;
 
@@ -709,8 +709,8 @@ writefln("num.toExact = %s", num.toExact);
 	private void setCoefficient(uint128 mant) {
 		ulong mantMask = ~EXPL_MANT;
 		ulong high = highBits & mantMask;
-		highBits = high | mant.getLong(0);
-		lowBits = mant.getLong(1);
+		highBits = high | mant.getWord(0);
+		lowBits = mant.getWord(1);
 	}
 
 	// Sets the coefficient of this number.
