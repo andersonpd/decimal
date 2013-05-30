@@ -25,9 +25,9 @@ module decimal.arithmetic;
 import std.bigint;
 import std.string;
 
-import decimal.context;
+import decimal.context: DecimalContext, INVALID_OPERATION;
 import decimal.conv: isDecimal, isFixedDecimal, toBigDecimal;
-import decimal.decimal;
+import decimal.bigfloat;
 
 unittest {
 	writeln("===================");
@@ -1179,9 +1179,9 @@ public T shift(T)(const T arg, const int n,
 
 unittest {
 	write("shift...");
-	import decimal.dec32;
-    Dec32 num;
-	shift!Dec32(num, 4, num.context);
+//	import decimal.dec32;
+//    Dec32 num;
+//	shift!Dec32(num, 4, num.context);
 	writeln("test missing");
 }
 

@@ -56,7 +56,7 @@ unittest {
 	///	The digits are stored in increasing value:
 	/// least significant digit is digits[0],
 	/// most significiant digit is digits[N-1]
-	private uint[N] digits = 0;
+	private uint[N] digits; // = 0;
 
 //--------------------------------
 // digits
@@ -1129,7 +1129,7 @@ unittest {
 	// digits are right to left:
 	//	least significant digit is digits[0];
 	//	most signiciant digit is digits[N-1]
-	private uint[N] digits = 0;
+	private uint[N] digits; // = 0;
 
 	/// Returns zero, the initial value for XInt!(Z) types.
 //	@property

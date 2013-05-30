@@ -19,13 +19,13 @@ import std.ascii: isDigit;
 import std.bigint;
 import std.string;
 import std.format;
-import xint;
+//import xint;
 
 import decimal.context;
-import decimal.dec32;
+/*import decimal.dec32;
 import decimal.dec64;
-import decimal.dec128;
-import decimal.decimal;
+import decimal.dec128;*/
+import decimal.bigfloat;
 
 unittest {
 	writeln("===================");
@@ -73,9 +73,9 @@ public template isBigDecimal(T) {
 }
 
 /// Returns true if T is a fixed-precision decimal type.
-public template isFixedDecimal(T) {
-	enum bool isFixedDecimal = is(T: Dec32) || is(T: Dec64) || is(T: Dec128);
-}
+//public template isFixedDecimal(T) {
+//	enum bool isFixedDecimal = is(T: Dec32) || is(T: Dec64) || is(T: Dec128);
+//}
 
 /// Converts a decimal number to an arbitrary-precision decimal type
 public T toDecimal(T, U)(const U num) if (isDecimal!T && isBigDecimal!U) {

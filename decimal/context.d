@@ -18,8 +18,8 @@ import std.bigint;
 
 import decimal.arithmetic: compare, copyNegate, equals;
 import decimal.conv;
-import decimal.decimal;
-import xint;
+import decimal.bigfloat;
+//import xint;
 
 unittest {
 	import std.stdio;
@@ -301,7 +301,7 @@ public T roundToPrecision(T)(const T num,
 } // end roundToPrecision()
 
 unittest {	// roundToPrecision
-	import decimal.dec32;
+//	import decimal.dec32;
 
 	Decimal before = Decimal(9999);
 	Decimal after = before;

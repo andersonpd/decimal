@@ -20,7 +20,7 @@ import std.string;
 
 import decimal.arithmetic;
 import decimal.context;
-import decimal.decimal;
+import decimal.bigfloat;
 import decimal.dec32;
 import decimal.dec64;
 import xint;

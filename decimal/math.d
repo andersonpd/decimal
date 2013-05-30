@@ -18,7 +18,7 @@ import std.bigint;
 
 import decimal.arithmetic;
 import decimal.context;
-import decimal.decimal;
+import decimal.bigfloat;
 
 unittest {
 	writeln("===================");
@@ -391,7 +391,6 @@ public Decimal sqrt(const Decimal arg, uint precision) {
 /// Returns the square root of the argument to the specified precision.
 /// Uses Newton's method. The starting value should be close to the result
 /// to speed convergence and to avoid unstable operation.
-/// TODO: better to compute (1/sqrt(arg)) * arg?
 /// TODO: the precision can be adjusted as the computation proceeds
 public Decimal sqrt(const Decimal a) {
 	// special values
@@ -405,25 +404,21 @@ public Decimal sqrt(const Decimal a) {
 	if (x.isOne) return x;
 
 	// reduce the argument and estimate the result
-	Decimal x0;
+	Decimal x0 = Decimal(6, -1);
 	int k = ilogb(x);
 	if (!isOdd(k)) {
 		k++;
 		x0 = Decimal(2, -1);
 	}
-	else {
-		x0 = Decimal(6, -1);
-	}
 	x.exponent = x.exponent - k - 1;
 
 	Decimal x1 = x0;
-	int i = 0;
 	while(true) {
 		x0 = x1;
 		x1 = Decimal.half * (x0 + x/x0);
 		if (x1 == x0) break;
-		i++;
 	}
+	// restore the reduced argument
 	x1.exponent = x1.exponent + k/2 + 1;
 	return x1;
 }
@@ -451,11 +446,11 @@ public Decimal hypot(const Decimal x, const Decimal y)
 	// special values
 	if (x.isNaN) return Decimal.nan;
 	if (x.isInfinite || y.isInfinite) return Decimal.infinity();
-    if (x.isZero) return y.dup;
-	if (y.isZero) return x.dup;
+    if (x.isZero) return y.copy;
+	if (y.isZero) return x.copy;
 
-	Decimal a = copyAbs(x);
-    Decimal b = copyAbs(y);
+	Decimal a = x.copyAbs;
+    Decimal b = y.copyAbs;
 	if (a < b) {
 		//swap operands
 		Decimal t = a;

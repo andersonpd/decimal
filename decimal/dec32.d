@@ -21,7 +21,7 @@ import std.string;
 
 import decimal.arithmetic;
 import decimal.context;
-import decimal.decimal;
+import decimal.bigfloat;
 
 unittest {	// header
 	writeln("===================");
